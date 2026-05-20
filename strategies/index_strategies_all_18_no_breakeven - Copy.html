@@ -56,18 +56,6 @@ p.thick {
 p.thicker {
     font-weight: 900;
 }
-
-html {
-    scroll-behavior: smooth;
-}
-.rs-calc {
-    scroll-margin-top: 20px;
-}
-a.strategy-link {
-    color: #005a9c;
-    text-decoration: underline;
-    cursor: pointer;
-}
 </style>
 <div class="a">
 
@@ -122,7 +110,7 @@ a.strategy-link {
 	
   </tr>
   <tr>
-    <td><a class="strategy-link" href="#calculator-1">1. Bull Call Spread</a></td>
+    <td>1.Bull Call Spread</td>
     <td><img src="./images/1.png" alt="Bull Call Spread" ></td>
     <td>Buy a lower strike call and sell a higher strike call.</td>
     <td>long</td>
@@ -131,7 +119,7 @@ a.strategy-link {
     <td>higher strike less lower strike less net premium paid</td>
   </tr>
   <tr>
-    <td><a class="strategy-link" href="#calculator-2">2. Bull Put Spread</a></td>
+    <td>2.Bull Put Spread</td>
     <td><img src="./images/2.png" alt="Bull Put Spread" ></td>
     <td>Buy a lower strike put and sell a higher strike put</td>
     <td>long</td>
@@ -140,7 +128,7 @@ a.strategy-link {
     <td>Net premium received</td>
   </tr>
   <tr>
-    <td><a class="strategy-link" href="#calculator-3">3. Bear Call Spread</a></td>
+    <td>3.Bear Call Spread</td>
     <td><img src="./images/3.png" alt="Bear Call Spread" ></td>
     <td>Sell a lower strike call and buy a higher strike call</td>
     <td>short</td>
@@ -149,7 +137,7 @@ a.strategy-link {
     <td>Net premium received</td>
   </tr>
   <tr>
-    <td><a class="strategy-link" href="#calculator-4">4. Bear Put Spread</a></td>
+    <td>4.Bear Put Spread</td>
     <td><img src="./images/4.png" alt="Bear Put Spread" ></td>
     <td>Sell a lower strike put and buy a higher strike put</td>
     <td>short</td>
@@ -158,7 +146,7 @@ a.strategy-link {
     <td>higher strike less lower strike less net premium paid</td>
   </tr>
   <tr>
-    <td><a class="strategy-link" href="#calculator-5">5. Long Strangle</a></td>
+    <td>5.Long Strangle</td>
     <td><img src="./images/5.png" alt="Long Strangle" ></td>
     <td>Buy an OTM call and Buy an OTM put</td>
     <td>neutral</td>
@@ -167,7 +155,7 @@ a.strategy-link {
     <td>Unlimited</td>
   </tr>
   <tr>
-    <td><a class="strategy-link" href="#calculator-6">6. Short Strangle</a></td>
+    <td>6.Short Strangle</td>
     <td><img src="./images/6.png" alt="Short Strangle" ></td>
     <td>Sell an OTM call and sell an OTM put</td>
     <td>neutral</td>
@@ -176,7 +164,7 @@ a.strategy-link {
     <td>Net premium received</td>
   </tr>
   <tr>
-    <td><a class="strategy-link" href="#calculator-7">7. Long Straddle</a></td>
+    <td>7.Long Straddle</td>
     <td><img src="./images/7.png" alt="Long Straddle" ></td>
     <td>Buy a call and buy a put at same strikes</td>
     <td>neutral</td>
@@ -185,16 +173,16 @@ a.strategy-link {
     <td>Unlimited</td>
   </tr>
   <tr>
-    <td><a class="strategy-link" href="#calculator-8">8. Short Straddle</a></td>
+    <td>8.Short Straddle</td>
     <td><img src="./images/8.png" alt="Short Straddle" ></td>
     <td>Sell a call and sell a put at same strikes</td>
     <td>neutral</td>
     <td>short</td>
     <td>Unlimited</td>
-    <td>Net premium received less difference between put strike and call strike if not exactly same. </td>
+    <td>Net premium received</td>
   </tr>
   <tr>
-    <td><a class="strategy-link" href="#calculator-9">9. Negative Risk Reversal</a></td>
+    <td>9.Negative Risk Reversal</td>
     <td><img src="./images/9.png" alt="Negative Risk Reversal" ></td>
     <td>Sell OTM call and buy OTM put</td>
     <td>short</td>
@@ -203,7 +191,7 @@ a.strategy-link {
     <td>Put strike less net premium paid</td>
   </tr>
   <tr>
-    <td><a class="strategy-link" href="#calculator-10">10. Positive Risk Reversal</a></td>
+    <td>10.Positive Risk Reversal</td>
     <td><img src="./images/10.png" alt="Positive Risk Reversal" ></td>
     <td>Buy OTM call and sell OTM Put</td>
     <td>long</td>
@@ -212,25 +200,25 @@ a.strategy-link {
     <td>Unlimited</td>
   </tr>
   <tr>
-    <td><a class="strategy-link" href="#calculator-11">11. Long Call Butterfly Spread</a></td>
+    <td>11.Long Call Butterfly Spread</td>
     <td><img src="./images/11.png" alt="Long Call Butterfly Spread" ></td>
     <td>Buy one ITM call, sell 2 ATM Calls, buy one OTM Call; strikes equidistant</td>
     <td>neutral</td>
     <td>Short</td>
     <td>Net premium paid</td>
-    <td>ATM strike less lower strike less net premium paid</td>
+    <td>1 ATM strike les OTM strike less net premium paid</td>
   </tr>
   <tr>
-    <td><a class="strategy-link" href="#calculator-12">12. Short Call Butterfly Spread</a></td>
+    <td>12.Short Call Butterfly Spread</td>
     <td><img src="./images/12.png" alt="Short Call Butterfly Spread" ></td>
     <td>Sell one ITM call, buy 2 ATM Calls, sell one OTM Call; strikes equidistant</td>
     <td>neutral</td>
     <td>long</td>
-    <td>ATM strike less OTM strike less net premium received</td>
+    <td>1 ATM strike less OTM strike less net premium received</td>
     <td>Net premium received</td>
   </tr>
   <tr>
-    <td><a class="strategy-link" href="#calculator-13">13. Long Put Butterfly Spread</a></td>
+    <td>13.Long Put Butterfly Spread</td>
     <td><img src="./images/13.png" alt="Long Put Butterfly Spread" ></td>
     <td>Buy one OTM Put, sell 2 ATM Puts, buy one ITM Put; strikes equidistant</td>
     <td>neutral</td>
@@ -239,7 +227,7 @@ a.strategy-link {
     <td>ITM strike less 1 ATM strike less net premium paid</td>
   </tr>
   <tr>
-    <td><a class="strategy-link" href="#calculator-14">14. Short Put Butterfly Spread</a></td>
+    <td>14.Short Put Butterfly Spread</td>
     <td><img src="./images/14.png" alt="Short Put Butterfly Spread" ></td>
     <td>Sell one OTM put, buy 2 ATM Puts, sell one ITM Put; strikes equidistant</td>
     <td>neutral</td>
@@ -248,7 +236,7 @@ a.strategy-link {
     <td>Net premium received</td>
   </tr>
   <tr>
-    <td><a class="strategy-link" href="#calculator-15">15. Short Iron Condor</a></td>
+    <td>15.Short Iron Condor</td>
     <td><img src="./images/15.png" alt="Short Iron Condor" ></td>
     <td>Buy one OTM Put, Sell one ATM put, Sell one OTM Call, Buy one OTM Call further above; strikes equidistant apart</td>
     <td>neutral</td>
@@ -257,7 +245,7 @@ a.strategy-link {
     <td>Net premium received</td>
   </tr>
   <tr>
-    <td><a class="strategy-link" href="#calculator-16">16. Long Iron Condor</a></td>
+    <td>16.Long Iron Condor</td>
     <td><img src="./images/16.png" alt="Long Iron Condor" ></td>
     <td>Sell one OTM Put, Buy one ATM put, Buy one OTM Call, Sell one OTM Call further above; strikes equidistant apart</td>
     <td>neutral</td>
@@ -266,7 +254,7 @@ a.strategy-link {
     <td>Higher put strike less lower put strike, or, higher call strike less lower call strike; less net premium paid</td>
   </tr>
   <tr>
-    <td><a class="strategy-link" href="#calculator-17">17. Bullish Seagull</a></td>
+    <td>17.Bullish Seagull</td>
     <td><img src="./images/17.png" alt="Bullish Seagull" ></td>
     <td>Buy a lower strike call and sell a higher strike call, Sell one OTM Put, zero premium</td>
     <td>long</td>
@@ -275,7 +263,7 @@ a.strategy-link {
     <td>Higher call strike less lower call strike</td>
   </tr>
   <tr>
-    <td><a class="strategy-link" href="#calculator-18">18. Bearish Seagull</a></td>
+    <td>18.Bearish Seagull</td>
     <td><img src="./images/18.png" alt="Bearish Seagull" ></td>
     <td>Sell a lower strike put and buy a higher strike put, , Sell one OTM Call, zero premium</td>
     <td>short</td>
@@ -285,6 +273,7 @@ a.strategy-link {
   </tr>
 
 </table>
+<
 
 
 <hr>
@@ -426,218 +415,8 @@ function rsSignedPremium(price, qty, shares) {
   return -qty * price * shares;
 }
 
-
-async function rsSolveStrikeForTargetPrice(spot, vol, rate, time, dividend, type, targetPrice) {
-  if (targetPrice <= 0) {
-    throw new Error("Zero-premium solve failed: target financing option price must be positive.");
-  }
-
-  let low = 0.0001;
-  let high = spot * 5;
-
-  async function priceAtStrike(k) {
-    const data = await rsPriceOption(spot, k, vol, rate, time, dividend, type);
-    return data.price;
-  }
-
-  if (type === "put") {
-    let highPrice = await priceAtStrike(high);
-    let guard = 0;
-
-    while (highPrice < targetPrice && guard < 20) {
-      high *= 2;
-      highPrice = await priceAtStrike(high);
-      guard++;
-    }
-
-    for (let i = 0; i < 45; i++) {
-      let mid = (low + high) / 2;
-      let midPrice = await priceAtStrike(mid);
-
-      if (midPrice < targetPrice) {
-        low = mid;
-      } else {
-        high = mid;
-      }
-    }
-
-    return (low + high) / 2;
-  }
-
-  if (type === "call") {
-    let lowPrice = await priceAtStrike(low);
-
-    if (lowPrice < targetPrice) {
-      throw new Error("Zero-premium solve failed: target call price is too high.");
-    }
-
-    for (let i = 0; i < 45; i++) {
-      let mid = (low + high) / 2;
-      let midPrice = await priceAtStrike(mid);
-
-      if (midPrice > targetPrice) {
-        low = mid;
-      } else {
-        high = mid;
-      }
-    }
-
-    return (low + high) / 2;
-  }
-
-  throw new Error("Unknown option type for zero-premium solve.");
-}
-
-async function priceZeroPremiumSeagull(prefix) {
-  const def = STRATEGY_DEFS[prefix];
-  const S = Number(document.getElementById(prefix + "_spot").value);
-  const rate = Number(document.getElementById(prefix + "_rate").value);
-  const dividend = Number(document.getElementById(prefix + "_dividend").value);
-  const time = Number(document.getElementById(prefix + "_time").value);
-  const shares = Number(document.getElementById(prefix + "_shares").value);
-
-  let financeLegIndex;
-
-  if (prefix === "s17") {
-    financeLegIndex = 0;  // sold put finances the call spread
-  } else if (prefix === "s18") {
-    financeLegIndex = 2;  // sold call finances the put spread
-  } else {
-    throw new Error("Zero-premium solver called for wrong strategy.");
-  }
-
-  const solved = [];
-  let fixedNetOptionPrice = 0;
-
-  for (let i = 0; i < def.legs.length; i++) {
-    const leg = def.legs[i];
-
-    if (i === financeLegIndex) {
-      solved[i] = null;
-      continue;
-    }
-
-    const targetDelta = Number(document.getElementById(leg.deltaId).value);
-    const vol = Number(document.getElementById(leg.volId).value);
-    const strike = rsStrikeFromDelta(S, vol, rate, dividend, time, leg.type, targetDelta);
-    const data = await rsPriceOption(S, strike, vol, rate, time, dividend, leg.type);
-
-    fixedNetOptionPrice += leg.qty * data.price;
-
-    solved[i] = {
-      ...leg,
-      targetDelta,
-      vol,
-      strike,
-      price: data.price,
-      actualDelta: data.delta
-    };
-  }
-
-  const financeLeg = def.legs[financeLegIndex];
-  const financeVol = Number(document.getElementById(financeLeg.volId).value);
-  const targetFinancePrice = -fixedNetOptionPrice / financeLeg.qty;
-
-  const financeStrike = await rsSolveStrikeForTargetPrice(
-    S, financeVol, rate, time, dividend, financeLeg.type, targetFinancePrice
-  );
-
-  const financeData = await rsPriceOption(
-    S, financeStrike, financeVol, rate, time, dividend, financeLeg.type
-  );
-
-  solved[financeLegIndex] = {
-    ...financeLeg,
-    targetDelta: "Zero",
-    vol: financeVol,
-    strike: financeStrike,
-    price: financeData.price,
-    actualDelta: financeData.delta
-  };
-
-  let totalCashPremium = 0;
-  let netOptionPrice = 0;
-  let netDelta = 0;
-  let payoffAtSpot = 0;
-
-  for (const leg of solved) {
-    const cashPremium = rsSignedPremium(leg.price, leg.qty, shares);
-    const thisPayoffAtSpot = rsPayoffAtExpiry(S, leg) * shares;
-
-    leg.cashPremium = cashPremium;
-    leg.thisPayoffAtSpot = thisPayoffAtSpot;
-
-    totalCashPremium += cashPremium;
-    netOptionPrice += leg.qty * leg.price;
-    netDelta += leg.qty * leg.actualDelta;
-    payoffAtSpot += thisPayoffAtSpot;
-  }
-
-  for (const leg of solved) {
-    document.getElementById(leg.ids.target).innerText =
-      typeof leg.targetDelta === "number" ? rsFmt(leg.targetDelta, 4) : leg.targetDelta;
-    document.getElementById(leg.ids.vol).innerText = rsFmt(leg.vol, 4);
-    document.getElementById(leg.ids.strike).innerText = rsFmt(leg.strike, 6);
-    document.getElementById(leg.ids.price).innerText = rsFmt(leg.price, 6);
-    document.getElementById(leg.ids.actualDelta).innerText = rsFmt(leg.actualDelta, 6);
-    document.getElementById(leg.ids.premium).innerText = rsFmt(leg.cashPremium, 2);
-    document.getElementById(leg.ids.payoff).innerText = rsFmt(leg.thisPayoffAtSpot, 2);
-  }
-
-  let strikes = solved.map(x => x.strike).sort((a, b) => a - b);
-  let minStrike = strikes[0];
-  let maxStrike = strikes[strikes.length - 1];
-
-  let testPrices = [0, ...strikes, (minStrike + maxStrike) / 2, maxStrike * 2];
-  testPrices = [...new Set(testPrices)].sort((a, b) => a - b);
-
-  let pnlValues = [];
-
-  for (const testS of testPrices) {
-    let payoff = 0;
-
-    for (const leg of solved) {
-      let intrinsic = 0;
-      if (leg.type === "call") {
-        intrinsic = Math.max(testS - leg.strike, 0);
-      } else {
-        intrinsic = Math.max(leg.strike - testS, 0);
-      }
-      payoff += leg.qty * intrinsic;
-    }
-
-    pnlValues.push(payoff - netOptionPrice);
-  }
-
-  let netCallQty = solved
-    .filter(x => x.type === "call")
-    .reduce((sum, x) => sum + x.qty, 0);
-
-  let unlimitedGain = netCallQty > 0;
-  let unlimitedLoss = netCallQty < 0;
-
-  let maxGain = unlimitedGain ? Infinity : Math.max(...pnlValues);
-  let maxLoss = unlimitedLoss ? -Infinity : Math.min(...pnlValues);
-
-  document.getElementById(prefix + "_summary").innerHTML =
-    "Net option value per share: " + rsFmt(netOptionPrice, 6) +
-    " &nbsp; | &nbsp; Net cash premium: " + rsFmt(totalCashPremium, 2) +
-    " &nbsp; | &nbsp; Net delta: " + rsFmt(netDelta, 6) +
-    "<br>Payoff at current spot, before premium: " + rsFmt(payoffAtSpot, 2) +
-    "<br>Max Gain per share: " + (unlimitedGain ? "Unlimited" : rsFmt(maxGain, 6)) +
-    " &nbsp; | &nbsp; Max Loss per share: " + (unlimitedLoss ? "Unlimited" : rsFmt(maxLoss, 6)) +
-    "<br>Contract Max Gain: " + (unlimitedGain ? "Unlimited" : rsFmt(maxGain * shares, 2)) +
-    " &nbsp; | &nbsp; Contract Max Loss: " + (unlimitedLoss ? "Unlimited" : rsFmt(maxLoss * shares, 2)) +
-    "<br>Zero-premium financing leg solved automatically.";
-}
-
 async function priceStrategy(prefix) {
   try {
-    if (prefix === "s17" || prefix === "s18") {
-      await priceZeroPremiumSeagull(prefix);
-      return;
-    }
-
     const def = STRATEGY_DEFS[prefix];
     const S = Number(document.getElementById(prefix + "_spot").value);
     const rate = Number(document.getElementById(prefix + "_rate").value);
@@ -681,31 +460,14 @@ async function priceStrategy(prefix) {
     let minStrike = Math.min(...strikes);
     let maxStrike = Math.max(...strikes);
 
-    // Tail exposure:
-    // As spot rises without limit, calls dominate.
-    // Net long calls => unlimited gain.
-    // Net short calls => unlimited loss.
-    let netCallQty = solved
-      .filter(x => x.type === "call")
-      .reduce((sum, x) => sum + x.qty, 0);
-
-    let unlimitedGain = netCallQty > 0;
-    let unlimitedLoss = netCallQty < 0;
-
     let testPrices = [];
     testPrices.push(0);
-
-    // Include every solved strike. This matters for butterflies and condors,
-    // where the maximum gain or maximum loss often occurs exactly at a strike.
-    for (const k of strikes) {
-      testPrices.push(k);
-    }
-
+    testPrices.push(minStrike * 0.5);
+    testPrices.push(minStrike);
     testPrices.push((minStrike + maxStrike) / 2);
+    testPrices.push(maxStrike);
+    testPrices.push(maxStrike * 1.5);
     testPrices.push(maxStrike * 2);
-
-    // Remove duplicates and sort.
-    testPrices = [...new Set(testPrices)].sort((a, b) => a - b);
 
     let pnlValues = [];
 
@@ -728,189 +490,18 @@ async function priceStrategy(prefix) {
       pnlValues.push(pnl);
     }
 
-    let maxGain = unlimitedGain ? Infinity : Math.max(...pnlValues);
-    let maxLoss = unlimitedLoss ? -Infinity : Math.min(...pnlValues);
-
-    function sortedStrikeArray() {
-      return solved.map(x => x.strike).sort((a, b) => a - b);
-    }
-
-    function netCredit() {
-      return -netOptionPrice;
-    }
-
-    function netDebit() {
-      return netOptionPrice;
-    }
-
-    // Strategy-specific risk formulas.
-    // Positive = gain. Negative = loss.
-    // These override the generic sampled values where simple sampling can be wrong.
-
-    if (prefix === "s1") {
-      // Bull Call Spread: + lower call, - higher call
-      let k = sortedStrikeArray();
-      let debit = netDebit();
-      maxGain = (k[1] - k[0]) - debit;
-      maxLoss = -debit;
-    }
-
-    if (prefix === "s2") {
-      // Bull Put Spread: + lower put, - higher put
-      let k = sortedStrikeArray();
-      let credit = netCredit();
-      maxGain = credit;
-      maxLoss = -((k[1] - k[0]) - credit);
-    }
-
-    if (prefix === "s3") {
-      // Bear Call Spread: - lower call, + higher call
-      let k = sortedStrikeArray();
-      let credit = netCredit();
-      maxGain = credit;
-      maxLoss = -((k[1] - k[0]) - credit);
-    }
-
-    if (prefix === "s4") {
-      // Bear Put Spread: - lower put, + higher put
-      let k = sortedStrikeArray();
-      let debit = netDebit();
-      maxGain = (k[1] - k[0]) - debit;
-      maxLoss = -debit;
-    }
-
-    if (prefix === "s5") {
-      // Long Strangle: unlimited upside, limited loss = debit
-      let debit = netDebit();
-      maxGain = Infinity;
-      maxLoss = -debit;
-    }
-
-    if (prefix === "s6") {
-      // Short Strangle: gain = credit, unlimited upside loss
-      let credit = netCredit();
-      maxGain = credit;
-      maxLoss = -Infinity;
-    }
-
-    if (prefix === "s7") {
-      // Long Straddle:
-      // Use payoff scan because call/put strikes may differ after delta solving.
-      maxGain = Infinity;
-      maxLoss = Math.min(...pnlValues);
-    }
-
-    if (prefix === "s8") {
-      // Short Straddle:
-      // Use payoff scan because call/put strikes may differ after delta solving.
-      maxGain = Math.max(...pnlValues);
-      maxLoss = -Infinity;
-    }
-
-    if (prefix === "s9") {
-      // Negative Risk Reversal: + put, - call. Unlimited upside loss.
-      // Max gain is approximately put strike minus net debit, because spot cannot go below zero.
-      let k = sortedStrikeArray();
-      let lowestPutStrike = solved.filter(x => x.type === "put").map(x => x.strike).sort((a,b) => a-b)[0];
-      maxGain = lowestPutStrike - netDebit();
-      maxLoss = -Infinity;
-    }
-
-    if (prefix === "s10") {
-      // Positive Risk Reversal: - put, + call. Unlimited upside gain.
-      // Max loss is approximately -(put strike - net credit), because spot cannot go below zero.
-      let putStrike = solved.filter(x => x.type === "put").map(x => x.strike).sort((a,b) => a-b)[0];
-      maxGain = Infinity;
-      maxLoss = -(putStrike - netCredit());
-    }
-
-    if (prefix === "s11") {
-      // Long Call Butterfly.
-      let k = sortedStrikeArray();
-      let lowerStrike = k[0];
-      let middleStrike = k[1];
-      let debit = netDebit();
-      maxGain = (middleStrike - lowerStrike) - debit;
-      maxLoss = -debit;
-    }
-
-    if (prefix === "s12") {
-      // Short Call Butterfly.
-      let k = sortedStrikeArray();
-      let lowerStrike = k[0];
-      let middleStrike = k[1];
-      let credit = netCredit();
-      maxGain = credit;
-      maxLoss = -((middleStrike - lowerStrike) - credit);
-    }
-
-    if (prefix === "s13") {
-      // Long Put Butterfly:
-      // Use actual payoff scan because delta-derived strikes may not be symmetric.
-      maxGain = Math.max(...pnlValues);
-      maxLoss = Math.min(...pnlValues);
-    }
-
-    if (prefix === "s14") {
-      // Short Put Butterfly:
-      // Use actual payoff scan because delta-derived strikes may not be symmetric.
-      maxGain = Math.max(...pnlValues);
-      maxLoss = Math.min(...pnlValues);
-    }
-
-    if (prefix === "s15") {
-      // Short Iron Condor: max gain = credit; max loss = larger wing width less credit.
-      let puts = solved.filter(x => x.type === "put").map(x => x.strike).sort((a,b) => a-b);
-      let calls = solved.filter(x => x.type === "call").map(x => x.strike).sort((a,b) => a-b);
-      let putWidth = puts[1] - puts[0];
-      let callWidth = calls[1] - calls[0];
-      let credit = netCredit();
-      let width = Math.max(putWidth, callWidth);
-      maxGain = credit;
-      maxLoss = -(width - credit);
-    }
-
-    if (prefix === "s16") {
-      // Long Iron Condor: max loss = debit; max gain = larger wing width less debit.
-      let puts = solved.filter(x => x.type === "put").map(x => x.strike).sort((a,b) => a-b);
-      let calls = solved.filter(x => x.type === "call").map(x => x.strike).sort((a,b) => a-b);
-      let putWidth = puts[1] - puts[0];
-      let callWidth = calls[1] - calls[0];
-      let debit = netDebit();
-      let width = Math.max(putWidth, callWidth);
-      maxGain = width - debit;
-      maxLoss = -debit;
-    }
-
-    if (prefix === "s17") {
-      // Bullish Seagull: - put, + call spread. Downside loss can be large but finite to zero.
-      // Upside gain capped by call spread plus/minus net premium.
-      let puts = solved.filter(x => x.type === "put").map(x => x.strike).sort((a,b) => a-b);
-      let calls = solved.filter(x => x.type === "call").map(x => x.strike).sort((a,b) => a-b);
-      let putStrike = puts[0];
-      let callWidth = calls[1] - calls[0];
-      maxGain = callWidth - netDebit();
-      maxLoss = -(putStrike + netDebit());
-    }
-
-    if (prefix === "s18") {
-      // Bearish Seagull: put spread plus short call. Upside loss unlimited.
-      // Downside gain capped by put spread plus/minus net premium.
-      let puts = solved.filter(x => x.type === "put").map(x => x.strike).sort((a,b) => a-b);
-      let putWidth = puts[1] - puts[0];
-      maxGain = putWidth - netDebit();
-      maxLoss = -Infinity;
-    }
+    let maxGain = Math.max(...pnlValues);
+    let maxLoss = Math.min(...pnlValues);
 
     document.getElementById(prefix + "_summary").innerHTML =
       "Net option value per share: " + rsFmt(netOptionPrice, 6) +
       " &nbsp; | &nbsp; Net cash premium: " + rsFmt(totalCashPremium, 2) +
       " &nbsp; | &nbsp; Net delta: " + rsFmt(netDelta, 6) +
       "<br>Payoff at current spot, before premium: " + rsFmt(payoffAtSpot, 2) +
-      "<br>Max Gain per share: " + (unlimitedGain ? "Unlimited" : rsFmt(maxGain, 6)) +
-      " &nbsp; | &nbsp; Max Loss per share: " + (unlimitedLoss ? "Unlimited" : rsFmt(maxLoss, 6)) +
-      "<br>Contract Max Gain: " + (unlimitedGain ? "Unlimited" : rsFmt(maxGain * shares, 2)) +
-      " &nbsp; | &nbsp; Contract Max Loss: " + (unlimitedLoss ? "Unlimited" : rsFmt(maxLoss * shares, 2));
+      "<br>Max Gain per share: " + (isFinite(maxGain) ? rsFmt(maxGain, 6) : "Unlimited") +
+      " &nbsp; | &nbsp; Max Loss per share: " + (isFinite(maxLoss) ? rsFmt(maxLoss, 6) : "Unlimited") +
+      "<br>Contract Max Gain: " + (isFinite(maxGain) ? rsFmt(maxGain * shares, 2) : "Unlimited") +
+      " &nbsp; | &nbsp; Contract Max Loss: " + (isFinite(maxLoss) ? rsFmt(maxLoss * shares, 2) : "Unlimited");
 
   } catch (err) {
     document.getElementById(prefix + "_summary").innerText = "Error: " + err.message;
@@ -2106,7 +1697,7 @@ STRATEGY_DEFS["s16"] = {
   <label>Time to Expiry</label><input id="s17_time" value="0.082191">
   <label>Contract Size / Shares</label><input id="s17_shares" value="100">
 
-  <label>Sell OTM Put Delta (not used for zero premium)</label><input id="s17_leg1_delta" value="-0.25">
+  <label>Sell OTM Put Delta</label><input id="s17_leg1_delta" value="-0.25">
   <label>Sell OTM Put Volatility</label><input id="s17_leg1_vol" value="0.24">
 
   <label>Buy Lower Call Delta</label><input id="s17_leg2_delta" value="0.5">
@@ -2193,7 +1784,7 @@ STRATEGY_DEFS["s17"] = {
   <label>Buy Higher Put Delta</label><input id="s18_leg2_delta" value="-0.5">
   <label>Buy Higher Put Volatility</label><input id="s18_leg2_vol" value="0.22">
 
-  <label>Sell OTM Call Delta (not used for zero premium)</label><input id="s18_leg3_delta" value="0.25">
+  <label>Sell OTM Call Delta</label><input id="s18_leg3_delta" value="0.25">
   <label>Sell OTM Call Volatility</label><input id="s18_leg3_vol" value="0.18">
 
 </div>

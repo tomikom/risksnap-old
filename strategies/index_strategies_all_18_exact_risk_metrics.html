@@ -426,218 +426,8 @@ function rsSignedPremium(price, qty, shares) {
   return -qty * price * shares;
 }
 
-
-async function rsSolveStrikeForTargetPrice(spot, vol, rate, time, dividend, type, targetPrice) {
-  if (targetPrice <= 0) {
-    throw new Error("Zero-premium solve failed: target financing option price must be positive.");
-  }
-
-  let low = 0.0001;
-  let high = spot * 5;
-
-  async function priceAtStrike(k) {
-    const data = await rsPriceOption(spot, k, vol, rate, time, dividend, type);
-    return data.price;
-  }
-
-  if (type === "put") {
-    let highPrice = await priceAtStrike(high);
-    let guard = 0;
-
-    while (highPrice < targetPrice && guard < 20) {
-      high *= 2;
-      highPrice = await priceAtStrike(high);
-      guard++;
-    }
-
-    for (let i = 0; i < 45; i++) {
-      let mid = (low + high) / 2;
-      let midPrice = await priceAtStrike(mid);
-
-      if (midPrice < targetPrice) {
-        low = mid;
-      } else {
-        high = mid;
-      }
-    }
-
-    return (low + high) / 2;
-  }
-
-  if (type === "call") {
-    let lowPrice = await priceAtStrike(low);
-
-    if (lowPrice < targetPrice) {
-      throw new Error("Zero-premium solve failed: target call price is too high.");
-    }
-
-    for (let i = 0; i < 45; i++) {
-      let mid = (low + high) / 2;
-      let midPrice = await priceAtStrike(mid);
-
-      if (midPrice > targetPrice) {
-        low = mid;
-      } else {
-        high = mid;
-      }
-    }
-
-    return (low + high) / 2;
-  }
-
-  throw new Error("Unknown option type for zero-premium solve.");
-}
-
-async function priceZeroPremiumSeagull(prefix) {
-  const def = STRATEGY_DEFS[prefix];
-  const S = Number(document.getElementById(prefix + "_spot").value);
-  const rate = Number(document.getElementById(prefix + "_rate").value);
-  const dividend = Number(document.getElementById(prefix + "_dividend").value);
-  const time = Number(document.getElementById(prefix + "_time").value);
-  const shares = Number(document.getElementById(prefix + "_shares").value);
-
-  let financeLegIndex;
-
-  if (prefix === "s17") {
-    financeLegIndex = 0;  // sold put finances the call spread
-  } else if (prefix === "s18") {
-    financeLegIndex = 2;  // sold call finances the put spread
-  } else {
-    throw new Error("Zero-premium solver called for wrong strategy.");
-  }
-
-  const solved = [];
-  let fixedNetOptionPrice = 0;
-
-  for (let i = 0; i < def.legs.length; i++) {
-    const leg = def.legs[i];
-
-    if (i === financeLegIndex) {
-      solved[i] = null;
-      continue;
-    }
-
-    const targetDelta = Number(document.getElementById(leg.deltaId).value);
-    const vol = Number(document.getElementById(leg.volId).value);
-    const strike = rsStrikeFromDelta(S, vol, rate, dividend, time, leg.type, targetDelta);
-    const data = await rsPriceOption(S, strike, vol, rate, time, dividend, leg.type);
-
-    fixedNetOptionPrice += leg.qty * data.price;
-
-    solved[i] = {
-      ...leg,
-      targetDelta,
-      vol,
-      strike,
-      price: data.price,
-      actualDelta: data.delta
-    };
-  }
-
-  const financeLeg = def.legs[financeLegIndex];
-  const financeVol = Number(document.getElementById(financeLeg.volId).value);
-  const targetFinancePrice = -fixedNetOptionPrice / financeLeg.qty;
-
-  const financeStrike = await rsSolveStrikeForTargetPrice(
-    S, financeVol, rate, time, dividend, financeLeg.type, targetFinancePrice
-  );
-
-  const financeData = await rsPriceOption(
-    S, financeStrike, financeVol, rate, time, dividend, financeLeg.type
-  );
-
-  solved[financeLegIndex] = {
-    ...financeLeg,
-    targetDelta: "Zero",
-    vol: financeVol,
-    strike: financeStrike,
-    price: financeData.price,
-    actualDelta: financeData.delta
-  };
-
-  let totalCashPremium = 0;
-  let netOptionPrice = 0;
-  let netDelta = 0;
-  let payoffAtSpot = 0;
-
-  for (const leg of solved) {
-    const cashPremium = rsSignedPremium(leg.price, leg.qty, shares);
-    const thisPayoffAtSpot = rsPayoffAtExpiry(S, leg) * shares;
-
-    leg.cashPremium = cashPremium;
-    leg.thisPayoffAtSpot = thisPayoffAtSpot;
-
-    totalCashPremium += cashPremium;
-    netOptionPrice += leg.qty * leg.price;
-    netDelta += leg.qty * leg.actualDelta;
-    payoffAtSpot += thisPayoffAtSpot;
-  }
-
-  for (const leg of solved) {
-    document.getElementById(leg.ids.target).innerText =
-      typeof leg.targetDelta === "number" ? rsFmt(leg.targetDelta, 4) : leg.targetDelta;
-    document.getElementById(leg.ids.vol).innerText = rsFmt(leg.vol, 4);
-    document.getElementById(leg.ids.strike).innerText = rsFmt(leg.strike, 6);
-    document.getElementById(leg.ids.price).innerText = rsFmt(leg.price, 6);
-    document.getElementById(leg.ids.actualDelta).innerText = rsFmt(leg.actualDelta, 6);
-    document.getElementById(leg.ids.premium).innerText = rsFmt(leg.cashPremium, 2);
-    document.getElementById(leg.ids.payoff).innerText = rsFmt(leg.thisPayoffAtSpot, 2);
-  }
-
-  let strikes = solved.map(x => x.strike).sort((a, b) => a - b);
-  let minStrike = strikes[0];
-  let maxStrike = strikes[strikes.length - 1];
-
-  let testPrices = [0, ...strikes, (minStrike + maxStrike) / 2, maxStrike * 2];
-  testPrices = [...new Set(testPrices)].sort((a, b) => a - b);
-
-  let pnlValues = [];
-
-  for (const testS of testPrices) {
-    let payoff = 0;
-
-    for (const leg of solved) {
-      let intrinsic = 0;
-      if (leg.type === "call") {
-        intrinsic = Math.max(testS - leg.strike, 0);
-      } else {
-        intrinsic = Math.max(leg.strike - testS, 0);
-      }
-      payoff += leg.qty * intrinsic;
-    }
-
-    pnlValues.push(payoff - netOptionPrice);
-  }
-
-  let netCallQty = solved
-    .filter(x => x.type === "call")
-    .reduce((sum, x) => sum + x.qty, 0);
-
-  let unlimitedGain = netCallQty > 0;
-  let unlimitedLoss = netCallQty < 0;
-
-  let maxGain = unlimitedGain ? Infinity : Math.max(...pnlValues);
-  let maxLoss = unlimitedLoss ? -Infinity : Math.min(...pnlValues);
-
-  document.getElementById(prefix + "_summary").innerHTML =
-    "Net option value per share: " + rsFmt(netOptionPrice, 6) +
-    " &nbsp; | &nbsp; Net cash premium: " + rsFmt(totalCashPremium, 2) +
-    " &nbsp; | &nbsp; Net delta: " + rsFmt(netDelta, 6) +
-    "<br>Payoff at current spot, before premium: " + rsFmt(payoffAtSpot, 2) +
-    "<br>Max Gain per share: " + (unlimitedGain ? "Unlimited" : rsFmt(maxGain, 6)) +
-    " &nbsp; | &nbsp; Max Loss per share: " + (unlimitedLoss ? "Unlimited" : rsFmt(maxLoss, 6)) +
-    "<br>Contract Max Gain: " + (unlimitedGain ? "Unlimited" : rsFmt(maxGain * shares, 2)) +
-    " &nbsp; | &nbsp; Contract Max Loss: " + (unlimitedLoss ? "Unlimited" : rsFmt(maxLoss * shares, 2)) +
-    "<br>Zero-premium financing leg solved automatically.";
-}
-
 async function priceStrategy(prefix) {
   try {
-    if (prefix === "s17" || prefix === "s18") {
-      await priceZeroPremiumSeagull(prefix);
-      return;
-    }
-
     const def = STRATEGY_DEFS[prefix];
     const S = Number(document.getElementById(prefix + "_spot").value);
     const rate = Number(document.getElementById(prefix + "_rate").value);
@@ -694,18 +484,9 @@ async function priceStrategy(prefix) {
 
     let testPrices = [];
     testPrices.push(0);
-
-    // Include every solved strike. This matters for butterflies and condors,
-    // where the maximum gain or maximum loss often occurs exactly at a strike.
-    for (const k of strikes) {
-      testPrices.push(k);
-    }
-
+    testPrices.push(minStrike);
     testPrices.push((minStrike + maxStrike) / 2);
-    testPrices.push(maxStrike * 2);
-
-    // Remove duplicates and sort.
-    testPrices = [...new Set(testPrices)].sort((a, b) => a - b);
+    testPrices.push(maxStrike);
 
     let pnlValues = [];
 
@@ -794,16 +575,16 @@ async function priceStrategy(prefix) {
     }
 
     if (prefix === "s7") {
-      // Long Straddle:
-      // Use payoff scan because call/put strikes may differ after delta solving.
+      // Long Straddle: unlimited upside, limited loss = debit
+      let debit = netDebit();
       maxGain = Infinity;
-      maxLoss = Math.min(...pnlValues);
+      maxLoss = -debit;
     }
 
     if (prefix === "s8") {
-      // Short Straddle:
-      // Use payoff scan because call/put strikes may differ after delta solving.
-      maxGain = Math.max(...pnlValues);
+      // Short Straddle: gain = credit, unlimited upside loss
+      let credit = netCredit();
+      maxGain = credit;
       maxLoss = -Infinity;
     }
 
@@ -845,17 +626,23 @@ async function priceStrategy(prefix) {
     }
 
     if (prefix === "s13") {
-      // Long Put Butterfly:
-      // Use actual payoff scan because delta-derived strikes may not be symmetric.
-      maxGain = Math.max(...pnlValues);
-      maxLoss = Math.min(...pnlValues);
+      // Long Put Butterfly.
+      let k = sortedStrikeArray();
+      let middleStrike = k[1];
+      let higherStrike = k[2];
+      let debit = netDebit();
+      maxGain = (higherStrike - middleStrike) - debit;
+      maxLoss = -debit;
     }
 
     if (prefix === "s14") {
-      // Short Put Butterfly:
-      // Use actual payoff scan because delta-derived strikes may not be symmetric.
-      maxGain = Math.max(...pnlValues);
-      maxLoss = Math.min(...pnlValues);
+      // Short Put Butterfly.
+      let k = sortedStrikeArray();
+      let middleStrike = k[1];
+      let higherStrike = k[2];
+      let credit = netCredit();
+      maxGain = credit;
+      maxLoss = -((higherStrike - middleStrike) - credit);
     }
 
     if (prefix === "s15") {
@@ -2106,7 +1893,7 @@ STRATEGY_DEFS["s16"] = {
   <label>Time to Expiry</label><input id="s17_time" value="0.082191">
   <label>Contract Size / Shares</label><input id="s17_shares" value="100">
 
-  <label>Sell OTM Put Delta (not used for zero premium)</label><input id="s17_leg1_delta" value="-0.25">
+  <label>Sell OTM Put Delta</label><input id="s17_leg1_delta" value="-0.25">
   <label>Sell OTM Put Volatility</label><input id="s17_leg1_vol" value="0.24">
 
   <label>Buy Lower Call Delta</label><input id="s17_leg2_delta" value="0.5">
@@ -2193,7 +1980,7 @@ STRATEGY_DEFS["s17"] = {
   <label>Buy Higher Put Delta</label><input id="s18_leg2_delta" value="-0.5">
   <label>Buy Higher Put Volatility</label><input id="s18_leg2_vol" value="0.22">
 
-  <label>Sell OTM Call Delta (not used for zero premium)</label><input id="s18_leg3_delta" value="0.25">
+  <label>Sell OTM Call Delta</label><input id="s18_leg3_delta" value="0.25">
   <label>Sell OTM Call Volatility</label><input id="s18_leg3_vol" value="0.18">
 
 </div>
