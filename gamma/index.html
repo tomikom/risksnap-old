@@ -1,0 +1,238 @@
+---
+layout: options-template
+---
+<div class="text-section">
+<style>
+h1 {
+    color: white;
+    text-align: center;
+	background-color: #3A5FCD;
+}
+h2 {
+    color: white;
+    text-align: center;
+	background-color: #59B300;
+}
+
+.rs-pricer-row {
+    display: flex;
+    gap: 25px;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    margin-top: 15px;
+}
+
+.rs-pricer-box {
+    flex: 1 1 330px;
+    max-width: 460px;
+    padding: 15px;
+    border: 1px solid #cccccc;
+    background-color: #f9f9f9;
+}
+
+.rs-pricer-box h4 {
+    margin-top: 0;
+    background-color: #00994d;
+    color: white;
+    text-align: center;
+    padding: 6px;
+}
+
+.rs-pricer-box input,
+.rs-pricer-box select {
+    width: 160px;
+    padding: 5px;
+    margin-bottom: 8px;
+}
+
+.rs-pricer-box button {
+    background-color: #008CBA;
+    border: none;
+    color: white;
+    padding: 9px 16px;
+    font-size: 14px;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+.rs-pricer-result {
+    margin-top: 18px;
+    font-weight: bold;
+}
+
+.rs-strategy-link-note {
+    margin-top: 8px;
+    font-weight: bold;
+}
+</style>
+<style>
+.button {
+    background-color: #4CAF50; /* Green */
+    border: neutral;
+    color: white;
+    padding: 15px 32px;
+    text-align: center;
+    text-decoration: neutral;
+    display: inline-block;
+    font-size: 16px;
+    margin: 4px 2px;
+    cursor: pointer;
+}
+
+.button2 {background-color: #008CBA;} /* Blue */
+.button3 {background-color: #f44336;} /* Red */ 
+
+.button {border-radius: 12px;}
+.button2 {border-radius: 12px;}
+.button3 {border-radius: 12px;}
+
+</style>
+
+
+
+<span id="Options"/>
+<H2>Options</H2>
+<p>calculators are general tools for understanding risk characteristics of various market products.
+<H3>Option Pricer</H3>
+
+<p>The Black-Scholes generalized formula can be used to price european options on stocks without dividends (the original model by Black and Scholes, 1973), options on stocks with a continuous dividend yield (Merton, 1973), options on futures (Black 1976) and options on currencies (Garman and Kohlhagen - 1983).
+<!-- </div> 
+
+<div class ="image-section">
+    <img class="figure" alt="" src="./images/Pricer2.PNG" width="800" height="400"/>
+</div> image-section -->
+
+<div class="text-section">
+<H3>About Options</H3>
+<p>  &#8226;	Equity Options<p>
+The expected forward for an equity option in the generalized Black-Sholes is f = s * exp((r-q)t) that is, the alternative to selling the equity now, investing the proceeds at r but foregoing the dividends, q,  until the forward date t.  However, the forward price of an equity where there is no active market for the forward will be influenced by other factors such as unpredictability and timing of dividends, supply and demand as determined by the repo market (ie. borrowing of shares for collateral or short selling).  Where there is a reasonably active options market, the forward can be determined through put-call parity.  From the forward, the dividend yield can be backed out.  The forward can also be derived through the futures market if such exists for the equity.<p>
+<p>  &#8226;	Options on Futures<p>
+In the futures market, the futures price is the forward, so the forward is generally unequivocal.  Therefore there is no need for a carrying charge (such as the dividend yield for equities). The settlement date is taken to be the last trading day of the contract underlying the option contract, and impacts the discounting of the expected price.<p>
+<p>  &#8226;	Foreign Exchange Options<p>
+The over-the-counter market for foreign exchange is somewhat complicated by the quoting conventions.  For example, the Euro, Pound Sterling and Australian dollar are quoted conventionally as the number of U.S. dollars required to purchase one unit of foreign currency.  Most other currencies are quoted as the number of foreign currency needed to buy one U.S. dollar, e.g. the Canadian Dollar, the Japanese Yen and Chinese Yuan.  In the option pricer, if a price is on the EURUSD pair, then the Numerator Currency is USD, or the domestic currency. In the north american trading capital markets USD is the nominal domestic currency, with reporting in the actual domestic currency. 
+<p>  &#8226;	Volatility<p>
+Volatility normally is derived from market quotes (implied volatility), and in cases where liquidity is reduced or lacking, can be derived from proxies, including historical standard deviation.  Market volatility usually has curvature such that an adjustment is needed for time to expiry, as well as the strike/delta of an option.  As an option becomes less in the money or more in the money, the hedging characteristics change, and a premium is charged for the increased risk.  In addition, in some markets, puts are preferred over calls and vice versa.  Therefore, the volatility for a one month option of a particular strike may not be the same for the same option but at a different strike or delta.
+<p>  &#8226;	Delta<p>
+The most immediate risk to the price of an option is the market price of the underlying.  The initial hedge, for writers of options, is the completion of a delta hedge.  The delta provides the number of units of the underlying required.  When the option is at-the-money, the strike of that option is at the current market price and the delta of the option is 0.50 or 50 delta.  The option has a 50/50 chance of moving in or out-of-the money.  That is, the option's value changes as if 1/2 of the notional was at risk.  An option that is very deep in-the-money has a delta of 1 and behaves the same as the underlying with very little impact from the implied volatility.  An option with a very low delta has almost no value.  The forward delta is important to foreign exchange options since the forward price (expected spot at expiry) is derived from interest rates, which at times can change more rapidly than the spot price.  A writer of foreign exchange options will hedge the forward risk through the forward market.  The forward delta, indicates the hedge amount needed.
+<p>
+
+
+Please click on User Agreement before using any calculators on RiskSnap. 
+<a href="https://www.risksnap.com/contact/#UserAgreement"> User Agreement</a>
+</p>
+
+<hr>
+<h3>Online Black-Scholes Option Pricer</h3>
+<p class="rs-strategy-link-note">
+  For strategy calculators refer to:
+  <a href="https://www.risksnap.com/strategies/#Calculators">Strategies calculators</a>
+</p>
+
+<div class="rs-pricer-row">
+
+  <div class="rs-pricer-box">
+    <h4>Option Pricer 1</h4>
+
+    <label>Spot</label><br>
+    <input id="p1_spot" value="100"><br>
+
+    <label>Strike</label><br>
+    <input id="p1_strike" value="97"><br>
+
+    <label>Volatility</label><br>
+    <input id="p1_vol" value="0.20"><br>
+
+    <label>Rate</label><br>
+    <input id="p1_rate" value="0.006"><br>
+
+    <label>Time (years)</label><br>
+    <input id="p1_time" value="0.082191"><br>
+
+    <label>Dividend Yield</label><br>
+    <input id="p1_dividend" value="0.04"><br>
+
+    <label>Type</label><br>
+    <select id="p1_type">
+      <option value="call">Call</option>
+      <option value="put">Put</option>
+    </select><br><br>
+
+    <button onclick="priceOption('p1')">Price Option</button>
+
+    <div id="p1_result" class="rs-pricer-result"></div>
+  </div>
+
+  <div class="rs-pricer-box">
+    <h4>Option Pricer 2</h4>
+
+    <label>Spot</label><br>
+    <input id="p2_spot" value="100"><br>
+
+    <label>Strike</label><br>
+    <input id="p2_strike" value="103"><br>
+
+    <label>Volatility</label><br>
+    <input id="p2_vol" value="0.20"><br>
+
+    <label>Rate</label><br>
+    <input id="p2_rate" value="0.006"><br>
+
+    <label>Time (years)</label><br>
+    <input id="p2_time" value="0.082191"><br>
+
+    <label>Dividend Yield</label><br>
+    <input id="p2_dividend" value="0.04"><br>
+
+    <label>Type</label><br>
+    <select id="p2_type">
+      <option value="call">Call</option>
+      <option value="put">Put</option>
+    </select><br><br>
+
+    <button onclick="priceOption('p2')">Price Option</button>
+
+    <div id="p2_result" class="rs-pricer-result"></div>
+  </div>
+
+</div>
+
+<script>
+async function priceOption(prefix) {
+
+  const spot = document.getElementById(prefix + "_spot").value;
+  const strike = document.getElementById(prefix + "_strike").value;
+  const vol = document.getElementById(prefix + "_vol").value;
+  const rate = document.getElementById(prefix + "_rate").value;
+  const time = document.getElementById(prefix + "_time").value;
+  const dividend = document.getElementById(prefix + "_dividend").value;
+  const type = document.getElementById(prefix + "_type").value;
+
+  const url =
+    "https://priceoption-203178530029.northamerica-northeast2.run.app" +
+    "?spot=" + encodeURIComponent(spot) +
+    "&strike=" + encodeURIComponent(strike) +
+    "&vol=" + encodeURIComponent(vol) +
+    "&rate=" + encodeURIComponent(rate) +
+    "&time=" + encodeURIComponent(time) +
+    "&dividend=" + encodeURIComponent(dividend) +
+    "&type=" + encodeURIComponent(type);
+
+  try {
+
+    const response = await fetch(url);
+    const data = await response.json();
+
+    document.getElementById(prefix + "_result").innerHTML =
+      "Price: " + data.price.toFixed(6) +
+      "<br>Delta: " + data.delta.toFixed(6);
+
+  } catch(err) {
+
+    document.getElementById(prefix + "_result").innerHTML =
+      "Error calling pricing engine";
+
+  }
+}
+</script>
+
+</div><!-- text-section -->
