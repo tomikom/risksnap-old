@@ -115,7 +115,9 @@ A trader that has sold an option, gains the premium received but is subject to e
 <p>  &#8226;	Gamma<p>
 Gamma helps the trader to manage the risk by providing expectations of the delta under various spot, time and volatility assumptions.
 <p>
-
+<p>  &#8226;	Heston<p>
+A volatility "smile" or "skew" can be created by using the "Heston" curve, a stochastic volatilty model which considers the correlation between a stock's price and volatility.
+<p>
 
 Please click on User Agreement before using any calculators on RiskSnap. 
 <a href="https://www.risksnap.com/contact/#UserAgreement"> User Agreement</a>
@@ -379,7 +381,7 @@ const RiskSnapGamma = (() => {
             else row.gamma = row.delta - origDelta * units;
         });
         const tbody = document.querySelector("#rsGammaTable tbody");
-        tbody.innerHTML = rows.map(row => `<tr><td>${fmt(row.move, 2)}</td><td>${money(row.spot)}</td><td>${fmt(row.vol, 2)}</td><td>${money(row.premium)}</td><td>${money(row.pnl)}</td><td>${fmt(row.delta, 2)}</td><td>${fmt(row.gamma, 2)}</td></tr>`).join("");
+        tbody.innerHTML = rows.map(row => `<tr><td>${fmt(row.move, 2)}</td><td>${money(row.spot)}</td><td>${fmt(row.vol, 4)}</td><td>${money(row.premium)}</td><td>${money(row.pnl)}</td><td>${fmt(row.delta, 2)}</td><td>${fmt(row.gamma, 2)}</td></tr>`).join("");
         document.getElementById("rsGammaSummary").textContent = `Starting premium: ${money(basePrice * units)} | Starting delta: ${fmt(origDelta * units, 2)} | ${useCurve ? "Heston-derived vol curve" : "Flat vol"}`;
     }
 

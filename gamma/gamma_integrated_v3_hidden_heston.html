@@ -379,7 +379,7 @@ const RiskSnapGamma = (() => {
             else row.gamma = row.delta - origDelta * units;
         });
         const tbody = document.querySelector("#rsGammaTable tbody");
-        tbody.innerHTML = rows.map(row => `<tr><td>${fmt(row.move, 2)}</td><td>${money(row.spot)}</td><td>${fmt(row.vol, 2)}</td><td>${money(row.premium)}</td><td>${money(row.pnl)}</td><td>${fmt(row.delta, 2)}</td><td>${fmt(row.gamma, 2)}</td></tr>`).join("");
+        tbody.innerHTML = rows.map(row => `<tr><td>${fmt(row.move, 2)}</td><td>${money(row.spot)}</td><td>${fmt(row.vol, 4)}</td><td>${money(row.premium)}</td><td>${money(row.pnl)}</td><td>${fmt(row.delta, 2)}</td><td>${fmt(row.gamma, 2)}</td></tr>`).join("");
         document.getElementById("rsGammaSummary").textContent = `Starting premium: ${money(basePrice * units)} | Starting delta: ${fmt(origDelta * units, 2)} | ${useCurve ? "Heston-derived vol curve" : "Flat vol"}`;
     }
 
