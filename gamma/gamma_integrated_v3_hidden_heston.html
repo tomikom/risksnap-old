@@ -1,0 +1,391 @@
+---
+layout: gamma-template
+---
+<div class="text-section">
+<style>
+h1 {
+    color: white;
+    text-align: center;
+	background-color: #3A5FCD;
+}
+h2 {
+    color: white;
+    text-align: center;
+	background-color: #59B300;
+}
+
+.rs-pricer-row {
+    display: flex;
+    gap: 25px;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    margin-top: 15px;
+}
+
+.rs-pricer-box {
+    flex: 1 1 330px;
+    max-width: 460px;
+    padding: 15px;
+    border: 1px solid #cccccc;
+    background-color: #f9f9f9;
+}
+
+.rs-pricer-box h4 {
+    margin-top: 0;
+    background-color: #00994d;
+    color: white;
+    text-align: center;
+    padding: 6px;
+}
+
+.rs-pricer-box input,
+.rs-pricer-box select {
+    width: 160px;
+    padding: 5px;
+    margin-bottom: 8px;
+}
+
+.rs-pricer-box button {
+    background-color: #008CBA;
+    border: none;
+    color: white;
+    padding: 9px 16px;
+    font-size: 14px;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+.rs-pricer-result {
+    margin-top: 18px;
+    font-weight: bold;
+}
+
+.rs-strategy-link-note {
+    margin-top: 8px;
+    font-weight: bold;
+}
+</style>
+<style>
+.button {
+    background-color: #4CAF50; /* Green */
+    border: neutral;
+    color: white;
+    padding: 15px 32px;
+    text-align: center;
+    text-decoration: neutral;
+    display: inline-block;
+    font-size: 16px;
+    margin: 4px 2px;
+    cursor: pointer;
+}
+
+.button2 {background-color: #008CBA;} /* Blue */
+.button3 {background-color: #f44336;} /* Red */ 
+
+.button {border-radius: 12px;}
+.button2 {border-radius: 12px;}
+.button3 {border-radius: 12px;}
+
+</style>
+
+
+
+<span id="Gamma"/>
+<H2>Gamma</H2>
+<p>A Gamma ladder illustrates the risk in an option as spot and time change, and also due to the volatility curve.  The ladder is used by option traders to manage the spot position caused by these shifts.
+<H3>Gamma Ladder</H3>
+
+<p>Gamma can be positive or negative dependent on the position taken.  Option buyers experience positive gamma, ie. a change in spot benefits the value of the option and also increases the underlying position in a positive manner.  Option sellers experience negative gamma, a change in spot decreases the value of the option and also increases the underlying position but in a negative manner.  Option buyers lose value due to time decay and option sellers gain value due to time decay
+<!-- </div> 
+
+<div class ="image-section">
+    <img class="figure" alt="" src="./images/Pricer2.PNG" width="800" height="400"/>
+</div> image-section -->
+
+<div class="text-section">
+<H3>About Gamma</H3>
+<p>  &#8226;	Gamma<p>
+Gamma is simply, the change in delta at various levels of spot.<p>
+<p>  &#8226;	Ladder<p>
+The ladder shows the impact at the various spot levels.<p>
+<p>  &#8226;	Traders that have purchased options<p>
+Outside of a strategic position, ie. buying an option and limiting the risk to the premium paid, a trader can hedge the purchased option by selling shares in the same delta amount.  If call options on 100 shares were bought at 50 delta the buyer is essentially long 50 shares. The hedge is to sell 50 shares of the underlying. As spot falls and the value of the call options decline, the short share position offsets the loss.
+<p>  &#8226;	Traders that have sold option<p>
+A trader that has sold an option, gains the premium received but is subject to exercise by the buyer.  The seller can also hedge the delta amount.  For a 50 delta call option on 100 shares sold, the trader is essentially short 50 shares. The trader buys 50 shares.  If spot rises and the option buyer exercises the call, the trader can deliver the shares.
+<p>  &#8226;	Gamma<p>
+Gamma helps the trader to manage the risk by providing expectations of the delta under various spot, time and volatility assumptions.
+<p>
+
+
+Please click on User Agreement before using any calculators on RiskSnap. 
+<a href="https://www.risksnap.com/contact/#UserAgreement"> User Agreement</a>
+</p>
+
+<hr>
+<h3>Gamma Ladder</h3>
+
+<div class="rs-pricer-box rs-gamma-box">
+    <h4>Gamma Ladder Calculator</h4>
+    <div class="rs-gamma-grid">
+        <label>Spot<br><input id="rsSpot" type="number" value="100" step="0.01"></label>
+        <label>Strike<br><input id="rsStrike" type="number" value="100" step="0.01"></label>
+        <label>Days to expiry<br><input id="rsDays" type="number" value="90" step="1" min="0"></label>
+        <label>Rate<br><input id="rsRate" type="number" value="0.04" step="0.001"></label>
+        <label>Dividend yield<br><input id="rsDividend" type="number" value="0.00" step="0.001"></label>
+        <label>ATM vol<br><input id="rsVol" type="number" value="0.20" step="0.01"></label>
+        <label>Units<br><input id="rsUnits" type="number" value="100" step="1"></label>
+        <label>Time decay, days<br><input id="rsDecay" type="number" value="1" step="1"></label>
+        <label>Call / Put<br><select id="rsCallPut"><option value="C">Call</option><option value="P">Put</option></select></label>
+        <label>Buy / Sell<br><select id="rsBuySell"><option value="B">Buy</option><option value="S">Sell</option></select></label>
+        <label>Vol curve<br><select id="rsCurve"><option value="Curve">Heston curve</option><option value="No Curve">Flat vol</option></select></label>
+        <label>Heston rho<br><input id="rsRho" type="number" value="-0.85" step="0.01" min="-1" max="1"></label>
+    </div>
+    <button type="button" onclick="RiskSnapGamma.calculate()">Calculate Gamma Ladder</button>
+    <div id="rsGammaSummary" class="rs-pricer-result"></div>
+    <div class="rs-table-wrap">
+        <table id="rsGammaTable" class="rs-gamma-table">
+            <thead>
+                <tr><th>Move %</th><th>Spot</th><th>Vol</th><th>Premium</th><th>P&amp;L</th><th>Delta</th><th>Gamma</th></tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+</div>
+
+<style>
+.rs-gamma-box { max-width: 980px; }
+.rs-gamma-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 10px 14px;
+    margin-bottom: 14px;
+}
+.rs-gamma-grid label { font-weight: bold; }
+.rs-gamma-table { border-collapse: collapse; width: 100%; margin-top: 14px; }
+.rs-gamma-table th, .rs-gamma-table td { border: 1px solid #cccccc; padding: 6px 8px; text-align: right; }
+.rs-gamma-table th { background: #eeeeee; }
+.rs-table-wrap { overflow-x: auto; }
+</style>
+
+<script>
+const RiskSnapGamma = (() => {
+    const PI = Math.PI;
+
+    function c(re, im) { return { re, im }; }
+    function cAdd(a, b) { return c(a.re + b.re, a.im + b.im); }
+    function cSub(a, b) { return c(a.re - b.re, a.im - b.im); }
+    function cMul(a, b) { return c(a.re * b.re - a.im * b.im, a.re * b.im + a.im * b.re); }
+    function cDiv(a, b) {
+        const den = b.re * b.re + b.im * b.im;
+        return c((a.re * b.re + a.im * b.im) / den, (a.im * b.re - a.re * b.im) / den);
+    }
+    function cExp(a) { const er = Math.exp(a.re); return c(er * Math.cos(a.im), er * Math.sin(a.im)); }
+    function cLog(a) { return c(Math.log(Math.hypot(a.re, a.im)), Math.atan2(a.im, a.re)); }
+    function cSqrt(a) {
+        const r = Math.hypot(a.re, a.im);
+        const theta = Math.atan2(a.im, a.re) / 2;
+        return c(Math.sqrt(r) * Math.cos(theta), Math.sqrt(r) * Math.sin(theta));
+    }
+
+    function cnd(x) {
+        const y = Math.abs(x);
+        let value;
+        if (y > 37) {
+            value = 0;
+        } else {
+            const exponential = Math.exp(-y * y / 2);
+            if (y < 7.07106781186547) {
+                let sumA = 0.0352624965998911 * y + 0.700383064443688;
+                sumA = sumA * y + 6.37396220353165;
+                sumA = sumA * y + 33.912866078383;
+                sumA = sumA * y + 112.079291497871;
+                sumA = sumA * y + 221.213596169931;
+                sumA = sumA * y + 220.206867912376;
+                let sumB = 0.0883883476483184 * y + 1.75566716318264;
+                sumB = sumB * y + 16.064177579207;
+                sumB = sumB * y + 86.7807322029461;
+                sumB = sumB * y + 296.564248779674;
+                sumB = sumB * y + 637.333633378831;
+                sumB = sumB * y + 793.826512519948;
+                sumB = sumB * y + 440.413735824752;
+                value = exponential * sumA / sumB;
+            } else {
+                let sumA = y + 0.65;
+                sumA = y + 4 / sumA;
+                sumA = y + 3 / sumA;
+                sumA = y + 2 / sumA;
+                sumA = y + 1 / sumA;
+                value = exponential / (sumA * 2.506628274631);
+            }
+        }
+        return x > 0 ? 1 - value : value;
+    }
+
+    function normSInv(p) {
+        const a = [-39.6968302866538, 220.946098424521, -275.928510446969, 138.357751867269, -30.6647980661472, 2.50662827745924];
+        const b = [-54.4760987982241, 161.585836858041, -155.698979859887, 66.8013118877197, -13.2806815528857];
+        const cc = [-0.00778489400243029, -0.322396458041136, -2.40075827716184, -2.54973253934373, 4.37466414146497, 2.93816398269878];
+        const d = [0.00778469570904146, 0.32246712907004, 2.445134137143, 3.75440866190742];
+        const pLow = 0.02425, pHigh = 1 - pLow;
+        if (p <= 0 || p >= 1) throw new Error("Probability must be between 0 and 1.");
+        let q, r;
+        if (p < pLow) {
+            q = Math.sqrt(-2 * Math.log(p));
+            return (((((cc[0] * q + cc[1]) * q + cc[2]) * q + cc[3]) * q + cc[4]) * q + cc[5]) /
+                   ((((d[0] * q + d[1]) * q + d[2]) * q + d[3]) * q + 1);
+        }
+        if (p <= pHigh) {
+            q = p - 0.5; r = q * q;
+            return (((((a[0] * r + a[1]) * r + a[2]) * r + a[3]) * r + a[4]) * r + a[5]) * q /
+                   (((((b[0] * r + b[1]) * r + b[2]) * r + b[3]) * r + b[4]) * r + 1);
+        }
+        q = Math.sqrt(-2 * Math.log(1 - p));
+        return -(((((cc[0] * q + cc[1]) * q + cc[2]) * q + cc[3]) * q + cc[4]) * q + cc[5]) /
+                ((((d[0] * q + d[1]) * q + d[2]) * q + d[3]) * q + 1);
+    }
+
+    function blackScholes(greek, phi, S, K, t, r, q, sig) {
+        K = Math.max(K, 1e-11); t = Math.max(t, 1e-11); sig = Math.max(sig, 1e-10);
+        const d1 = (Math.log(S / K) + (r - q + sig * sig * 0.5) * t) / (sig * Math.sqrt(t));
+        const d2 = d1 - sig * Math.sqrt(t);
+        if (greek === "d") return phi === "C" ? Math.exp(-q * t) * cnd(d1) : Math.exp(-q * t) * cnd(-d1);
+        if (phi === "C") return S * Math.exp(-q * t) * cnd(d1) - K * Math.exp(-r * t) * cnd(d2);
+        return K * Math.exp(-r * t) * cnd(-d2) - S * Math.exp(-q * t) * cnd(-d1);
+    }
+
+    function impliedVol(phi, S, K, t, r, q, price) {
+        let low = 0.001, high = 100, vol = 0.2;
+        for (let i = 0; i < 100; i++) {
+            vol = (low + high) / 2;
+            const newPrice = blackScholes("pr", phi, S, K, t, r, q, vol);
+            if (Math.abs(price - newPrice) < 0.0001) break;
+            if (newPrice > price) high = vol; else low = vol;
+        }
+        return Math.max(vol, 0.0001);
+    }
+
+    function hestonProb(phi, kappa, theta, lambda, rho, sigma, tau, K, S, r, q, v0, pNum) {
+        const x = Math.log(S), i = c(0, 1), one = c(1, 0), two = c(2, 0);
+        const a = kappa * theta;
+        const u = pNum === 1 ? 0.5 : -0.5;
+        const b = pNum === 1 ? kappa + lambda - rho * sigma : kappa + lambda;
+        const rhoSigmaPhiI = cMul(c(rho * sigma * phi, 0), i);
+        const twoUPhiI = cMul(c(2 * u * phi, 0), i);
+        const phiTauI = cMul(c(phi * tau, 0), i);
+        const d1 = cSub(rhoSigmaPhiI, c(b, 0));
+        const term1 = cMul(d1, d1);
+        const d2 = cSub(twoUPhiI, c(phi * phi, 0));
+        const term2 = cMul(c(sigma * sigma, 0), d2);
+        const dd = cSqrt(cSub(term1, term2));
+        const num1 = cSub(cAdd(c(b, 0), dd), rhoSigmaPhiI);
+        const den1 = cSub(cSub(c(b, 0), dd), rhoSigmaPhiI);
+        const g = cDiv(num1, den1);
+        const expDt = cExp(cMul(dd, c(tau, 0)));
+        const bigG = cDiv(cSub(one, cMul(g, expDt)), cSub(one, g));
+        const term3 = cMul(c(r - q, 0), phiTauI);
+        const bigC = cAdd(term3, cMul(c(a / (sigma * sigma), 0), cSub(cMul(c(tau, 0), num1), cMul(two, cLog(bigG)))));
+        const term5 = cDiv(num1, c(sigma * sigma, 0));
+        const term6 = cDiv(cSub(one, expDt), cSub(one, cMul(expDt, g)));
+        const bigD = cMul(term5, term6);
+        const f = cExp(cAdd(cAdd(bigC, cMul(bigD, c(v0, 0))), cMul(c(phi * x, 0), i)));
+        const e = cDiv(cMul(cExp(cMul(c(-Math.log(K) * phi, 0), i)), f), cMul(i, c(phi, 0)));
+        return e.re;
+    }
+
+    function hestonPriceTrapz(phiCP, kappa, theta, lambda, rho, sigma, t, K, S, r, q, v0, lPhi, uPhi, n) {
+        let i1 = 0, i2 = 0;
+        const dPhi = (uPhi - lPhi) / (n - 1);
+        for (let j = 0; j < n; j++) {
+            const phi = lPhi + j * dPhi;
+            const w = (j === 0 || j === n - 1) ? 0.5 * dPhi : dPhi;
+            i1 += hestonProb(phi, kappa, theta, lambda, rho, sigma, t, K, S, r, q, v0, 1) * w;
+            i2 += hestonProb(phi, kappa, theta, lambda, rho, sigma, t, K, S, r, q, v0, 2) * w;
+        }
+        const p1 = 0.5 + i1 / PI, p2 = 0.5 + i2 / PI;
+        const call = S * Math.exp(-q * t) * p1 - K * Math.exp(-r * t) * p2;
+        const put = call - S * Math.exp(-q * t) + K * Math.exp(-r * t);
+        return phiCP === "C" ? call : put;
+    }
+
+    function spline(xs, ys, x) {
+        const n = xs.length, y2 = Array(n).fill(0), u = Array(n - 1).fill(0);
+        for (let i = 1; i < n - 1; i++) {
+            const sig = (xs[i] - xs[i - 1]) / (xs[i + 1] - xs[i - 1]);
+            const p = sig * y2[i - 1] + 2;
+            y2[i] = (sig - 1) / p;
+            u[i] = ((ys[i + 1] - ys[i]) / (xs[i + 1] - xs[i]) - (ys[i] - ys[i - 1]) / (xs[i] - xs[i - 1]));
+            u[i] = (6 * u[i] / (xs[i + 1] - xs[i - 1]) - sig * u[i - 1]) / p;
+        }
+        for (let k = n - 2; k >= 0; k--) y2[k] = y2[k] * y2[k + 1] + u[k];
+        let klo = 0, khi = n - 1;
+        while (khi - klo > 1) {
+            const k = Math.floor((khi + klo) / 2);
+            if (xs[k] > x) khi = k; else klo = k;
+        }
+        const h = xs[khi] - xs[klo];
+        const a = (xs[khi] - x) / h, b = (x - xs[klo]) / h;
+        return a * ys[klo] + b * ys[khi] + ((a ** 3 - a) * y2[klo] + (b ** 3 - b) * y2[khi]) * h * h / 6;
+    }
+
+    function buildHestonCurve(S, t, r, q, atmVol, rho) {
+        const m = [0.8, 0.9, 0.95, 0.975, 1, 1.025, 1.05, 1.1, 1.2];
+        const pc = ["P", "P", "P", "P", "P", "C", "C", "C", "C"];
+        const vols = [];
+        for (let i = 0; i < m.length; i++) {
+            const K = m[i] * S;
+            const price = hestonPriceTrapz(pc[i], 5, 0.05, 0, rho, 0.5, t, K, S, r, q, atmVol * atmVol, 1e-8, 150, 900);
+            vols.push(impliedVol(pc[i], S, K, t, r, q, Math.max(price, 0.000001)));
+        }
+        const ratio = atmVol / vols[4];
+        return { m, vols: vols.map(v => v * ratio) };
+    }
+
+    function getCurveVol(curve, money) {
+        if (money <= curve.m[0]) return curve.vols[0];
+        if (money >= curve.m[curve.m.length - 1]) return curve.vols[curve.vols.length - 1];
+        return Math.max(0.0001, spline(curve.m, curve.vols, money));
+    }
+
+    function val(id) { return Number(document.getElementById(id).value); }
+    function fmt(x, digits = 4) { return Number.isFinite(x) ? x.toLocaleString(undefined, { maximumFractionDigits: digits, minimumFractionDigits: digits }) : ""; }
+    function money(x) { return Number.isFinite(x) ? x.toLocaleString(undefined, { maximumFractionDigits: 2, minimumFractionDigits: 2 }) : ""; }
+
+    async function calculate() {
+        const S0 = val("rsSpot"), K = val("rsStrike"), daysToExpiry = val("rsDays"), r = val("rsRate"), q = val("rsDividend");
+        const t = Math.max(1e-11, daysToExpiry / 365);
+        const atmVol = val("rsVol"), units = val("rsUnits"), decayDays = val("rsDecay"), rho = val("rsRho");
+        const phi = document.getElementById("rsCallPut").value;
+        const buySell = document.getElementById("rsBuySell").value;
+        const useCurve = document.getElementById("rsCurve").value === "Curve";
+        const t1 = Math.max(1e-11, t - decayDays / 365);
+        const curve = useCurve ? buildHestonCurve(S0, t, r, q, atmVol, rho) : null;
+        const direction = buySell === "S" ? -1 : 1;
+        const baseOptionPrice = blackScholes("pr", phi, S0, K, t, r, q, atmVol);
+        const basePrice = direction * baseOptionPrice;
+        let origDelta = blackScholes("d", phi, S0, K, t, r, q, atmVol);
+        if ((phi === "P" && buySell === "B") || (phi === "C" && buySell === "S")) origDelta *= -1;
+        const moves = [-20, -15, -10, -7.5, -5, -2.5, -1, -0.5, 0, 0.5, 1, 2.5, 5, 7.5, 10, 15, 20];
+        const rows = moves.map(move => {
+            const spot = Math.round(Math.exp(move * 0.01) * S0 * 100) / 100;
+            const vol = useCurve ? getCurveVol(curve, K / spot) : atmVol;
+            let price = direction * blackScholes("pr", phi, spot, K, t1, r, q, vol);
+            let delta = Math.max(0, blackScholes("d", phi, spot, K, t1, r, q, vol));
+            if ((phi === "P" && buySell === "B") || (phi === "C" && buySell === "S")) delta *= -1;
+            return { move, spot, vol, premium: price * units, pnl: (price - basePrice) * units, delta: delta * units, gamma: 0 };
+        });
+        rows.forEach((row, idx) => {
+            if (idx < 8) row.gamma = row.delta - rows[idx + 1].delta;
+            else if (idx > 8) row.gamma = row.delta - rows[idx - 1].delta;
+            else row.gamma = row.delta - origDelta * units;
+        });
+        const tbody = document.querySelector("#rsGammaTable tbody");
+        tbody.innerHTML = rows.map(row => `<tr><td>${fmt(row.move, 2)}</td><td>${money(row.spot)}</td><td>${fmt(row.vol, 2)}</td><td>${money(row.premium)}</td><td>${money(row.pnl)}</td><td>${fmt(row.delta, 2)}</td><td>${fmt(row.gamma, 2)}</td></tr>`).join("");
+        document.getElementById("rsGammaSummary").textContent = `Starting premium: ${money(basePrice * units)} | Starting delta: ${fmt(origDelta * units, 2)} | ${useCurve ? "Heston-derived vol curve" : "Flat vol"}`;
+    }
+
+    return { calculate, blackScholes, impliedVol, normSInv, cnd };
+})();
+</script>
+
+
+</div><!-- text-section -->
