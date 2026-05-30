@@ -91,8 +91,8 @@ h2 {
 
 
 <span id="Gamma"/>
-
-<p>A Gamma  ladder illustrates the risk in an option as spot and time change, and also due to the volatility curve.  The ladder is used by option traders to manage the spot position caused by these shifts.
+<H2>Gamma Ladder</H2>
+<p>A Gamma ladder illustrates the risk in an option as spot and time change, and also due to the volatility curve.  The ladder is used by option traders to manage the spot position caused by these shifts.
 <H3>Gamma Ladder</H3>
 
 <p>Gamma can be positive or negative dependent on the position taken.  Option buyers experience positive gamma, ie. a change in spot benefits the value of the option and also increases the underlying position in a positive manner.  Option sellers experience negative gamma, a change in spot decreases the value of the option and also increases the underlying position but in a negative manner.  Option buyers lose value due to time decay and option sellers gain value due to time decay
@@ -116,7 +116,7 @@ A trader that has sold an option, gains the premium received but is subject to e
 Gamma helps the trader to manage the risk by providing expectations of the delta under various spot, time and volatility assumptions.
 <p>
 <p>  &#8226;	Heston Curve<p>
-The Heston Curve can be used to create the volatility smile or skew, a stochastic volatility model which considers the correlation between a stock's price and volatility.
+The Heston Curve can be used to create the volatility smile or skew, a stochastic volatilty model which considers the correlation between a stock's price and volatility.
 <p>
 
 Please click on User Agreement before using any calculators on RiskSnap. 
@@ -171,8 +171,6 @@ Please click on User Agreement before using any calculators on RiskSnap.
 
 <script>
 const RiskSnapGamma = (() => {
-    const PI = Math.PI;
-
        function cnd(x) {
         const y = Math.abs(x);
         let value;
@@ -207,28 +205,6 @@ const RiskSnapGamma = (() => {
         return x > 0 ? 1 - value : value;
     }
 
-    function normSInv(p) {
-        const a = [-39.6968302866538, 220.946098424521, -275.928510446969, 138.357751867269, -30.6647980661472, 2.50662827745924];
-        const b = [-54.4760987982241, 161.585836858041, -155.698979859887, 66.8013118877197, -13.2806815528857];
-        const cc = [-0.00778489400243029, -0.322396458041136, -2.40075827716184, -2.54973253934373, 4.37466414146497, 2.93816398269878];
-        const d = [0.00778469570904146, 0.32246712907004, 2.445134137143, 3.75440866190742];
-        const pLow = 0.02425, pHigh = 1 - pLow;
-        if (p <= 0 || p >= 1) throw new Error("Probability must be between 0 and 1.");
-        let q, r;
-        if (p < pLow) {
-            q = Math.sqrt(-2 * Math.log(p));
-            return (((((cc[0] * q + cc[1]) * q + cc[2]) * q + cc[3]) * q + cc[4]) * q + cc[5]) /
-                   ((((d[0] * q + d[1]) * q + d[2]) * q + d[3]) * q + 1);
-        }
-        if (p <= pHigh) {
-            q = p - 0.5; r = q * q;
-            return (((((a[0] * r + a[1]) * r + a[2]) * r + a[3]) * r + a[4]) * r + a[5]) * q /
-                   (((((b[0] * r + b[1]) * r + b[2]) * r + b[3]) * r + b[4]) * r + 1);
-        }
-        q = Math.sqrt(-2 * Math.log(1 - p));
-        return -(((((cc[0] * q + cc[1]) * q + cc[2]) * q + cc[3]) * q + cc[4]) * q + cc[5]) /
-                ((((d[0] * q + d[1]) * q + d[2]) * q + d[3]) * q + 1);
-    }
 
     function blackScholes(greek, phi, S, K, t, r, q, sig) {
         K = Math.max(K, 1e-11); t = Math.max(t, 1e-11); sig = Math.max(sig, 1e-10);
@@ -299,32 +275,6 @@ const RiskSnapGamma = (() => {
     return await response.json();
 }
     
-	async function getHestonCurve(S, t, r, q, atmVol, rho) {
-
-    const response = await fetch(
-        "https://hestoncurve-203178530029.northamerica-northeast2.run.app",
-        {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-                S,
-                t,
-                r,
-                q,
-                atmVol,
-                rho
-            })
-        }
-    );
-
-    if (!response.ok) {
-        throw new Error("Heston service failed");
-    }
-
-    return await response.json();
-}
 	async function calculate() {
         const S0 = val("rsSpot"), K = val("rsStrike"), daysToExpiry = val("rsDays"), r = val("rsRate"), q = val("rsDividend");
         const t = Math.max(1e-11, daysToExpiry / 365);
@@ -333,9 +283,9 @@ const RiskSnapGamma = (() => {
         const buySell = document.getElementById("rsBuySell").value;
         const useCurve = document.getElementById("rsCurve").value === "Curve";
         const t1 = Math.max(1e-11, t - decayDays / 365);
-       const curve = useCurve
-    ? await getHestonCurve(S0, t, r, q, atmVol, rho)
-    : null;
+        const curve = useCurve
+            ? await getHestonCurve(S0, t, r, q, atmVol, rho)
+            : null;
         const direction = buySell === "S" ? -1 : 1;
         const baseOptionPrice = blackScholes("pr", phi, S0, K, t, r, q, atmVol);
         const basePrice = direction * baseOptionPrice;
@@ -360,7 +310,7 @@ const RiskSnapGamma = (() => {
         document.getElementById("rsGammaSummary").textContent = `Starting premium: ${money(basePrice * units)} | Starting delta: ${fmt(origDelta * units, 2)} | ${useCurve ? "Heston-derived vol curve" : "Flat vol"}`;
     }
 
-    return { calculate, blackScholes, impliedVol, normSInv, cnd };
+    return { calculate };
 })();
 </script>
 
