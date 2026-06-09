@@ -1,0 +1,100 @@
+---
+layout: gamma-template
+---
+<div class="text-section">
+<style>
+h1 {
+    color: white;
+    text-align: center;
+    background-color: #3A5FCD;
+}
+h2 {
+    color: white;
+    text-align: center;
+    background-color: #59B300;
+}
+
+.rs-surface-panel {
+    max-width: 980px;
+    margin: 15px auto;
+    padding: 16px;
+    border: 1px solid #cccccc;
+    background-color: #f9f9f9;
+}
+
+.rs-surface-panel h4 {
+    margin-top: 0;
+    background-color: #00994d;
+    color: white;
+    text-align: center;
+    padding: 6px;
+}
+
+.rs-surface-figure {
+    display: block;
+    max-width: 100%;
+    height: auto;
+    margin: 12px auto;
+    border: 1px solid #dddddd;
+    background-color: white;
+}
+
+.rs-surface-note {
+    font-size: 14px;
+    line-height: 1.45;
+}
+
+.rs-surface-links {
+    margin-top: 12px;
+}
+
+.button {
+    background-color: #4CAF50;
+    border: none;
+    color: white;
+    padding: 15px 32px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 16px;
+    margin: 4px 2px;
+    cursor: pointer;
+    border-radius: 12px;
+}
+
+.button2 {background-color: #008CBA;}
+.button3 {background-color: #f44336;}
+</style>
+
+<h2>Volatility Surface</h2>
+
+<p>
+A volatility surface shows implied volatility across option expiry and moneyness.
+Moneyness is strike divided by spot.  The surface below is built from the option-chain
+input file <strong>NVDA_surface.csv</strong>, which is created by the Python data pull and then
+used by <strong>Volatility_Surface.xlsm</strong> for the Excel surface calculations.
+</p>
+
+<div class="rs-surface-panel">
+    <h4>NVDA Implied Volatility Surface</h4>
+    <img class="rs-surface-figure" alt="NVDA implied volatility surface by tenor and moneyness" src="./images/nvda_volatility_surface.png" />
+    <p class="rs-surface-note">
+        The chart plots implied volatility against tenor in years and moneyness, where
+        moneyness equals strike divided by spot.  For readability, the displayed image
+        uses call options and filters out very short-dated, very far out-of-the-money,
+        and obviously distorted implied-volatility points.  The CSV remains the source
+        data for the full surface calculation.
+    </p>
+    <div class="rs-surface-links">
+        <a class="button button2" href="./NVDA_surface.csv">Download NVDA Surface CSV</a>
+        <a class="button" href="./Volatility_Surface.xlsm">Download Excel Surface Workbook</a>
+        <a class="button button3" href="./NVDA.py">Download Python Data Pull</a>
+    </div>
+</div>
+
+<p>
+Please click on User Agreement before using any calculators on RiskSnap.
+<a href="https://www.risksnap.com/contact/#UserAgreement">User Agreement</a>
+</p>
+
+</div><!-- text-section -->
