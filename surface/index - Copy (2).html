@@ -165,7 +165,6 @@ Please click on User Agreement before using any calculators on RiskSnap.
         <button type="button" onclick="loadVolSurface()">Create Surface</button>
     </div>
 
-    <div id="surfaceInfo" style="margin-bottom:10px;font-weight:bold;"></div>
     <div id="surfaceStatus" class="rs-surface-message"></div>
     <div id="volSurface" style="width:100%; height:650px;"></div>
 </div>
@@ -198,11 +197,6 @@ async function loadVolSurface() {
         }
 
         const surface = await response.json();
-
-        document.getElementById("surfaceInfo").innerHTML =
-            `<b>Ticker:</b> ${surface.ticker || ticker}
-             &nbsp;&nbsp;&nbsp;
-             <b>Spot:</b> ${surface.underlying ? Number(surface.underlying).toFixed(2) : "N/A"}`;
 
         // Expected API response:
         // {
