@@ -155,7 +155,7 @@ Please click on User Agreement before using any calculators on RiskSnap.
     </h4>
 
     <p>
-        Enter a stock ticker.  The webpage calls the surface API, receives the calculated implied volatility grid,
+        Enter a stock ticker .  The webpage calls the surface API, receives the calculated implied volatility grid,
         and displays the result as a 3D Plotly surface.
     </p>
 
@@ -199,31 +199,24 @@ async function loadVolSurface() {
 
         const surface = await response.json();
 		
-        const spotText = surface.underlying !== null && surface.underlying !== undefined
-            ? Number(surface.underlying).toFixed(2)
-            : "N/A";
+		const changeSign = surface.change >= 0 ? "+" : "";
 
-        let changeText = "N/A";
-        if (surface.change !== null && surface.change !== undefined &&
-            surface.changePct !== null && surface.changePct !== undefined) {
-            const changeSign = surface.change >= 0 ? "+" : "";
-            changeText =
-                `${changeSign}${Number(surface.change).toFixed(2)} ` +
-                `(${changeSign}${Number(surface.changePct).toFixed(2)}%)`;
-        }
+		document.getElementById("surfaceInfo").innerHTML =
+		`
+		<b>Ticker:</b> ${surface.ticker}
+		&nbsp;&nbsp;&nbsp;
+		<b>Spot:</b> ${surface.underlying.toFixed(2)}
+		&nbsp;&nbsp;&nbsp;
+		<b>Change:</b> ${changeSign}${surface.change.toFixed(2)}
+		(${changeSign}${surface.changePct.toFixed(2)}%)
+		&nbsp;&nbsp;&nbsp;
+		<b>Retrieved:</b> ${surface.timestamp}
+		`;
 
-        const timestampText = surface.timestamp || "N/A";
-
-        document.getElementById("surfaceInfo").innerHTML =
+ <!--       document.getElementById("surfaceInfo").innerHTML =
             `<b>Ticker:</b> ${surface.ticker || ticker}
              &nbsp;&nbsp;&nbsp;
-             <b>Spot:</b> ${spotText}
-             &nbsp;&nbsp;&nbsp;
-             <b>Change from previous close:</b> ${changeText}
-             &nbsp;&nbsp;&nbsp;
-             <b>Retrieved:</b> ${timestampText}`;
-
-
+             <b>Spot:</b> ${surface.underlying ? Number(surface.underlying).toFixed(2) : "N/A"}`; -->
 
         // Expected API response:
         // {
