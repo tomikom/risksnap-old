@@ -198,6 +198,20 @@ async function loadVolSurface() {
         }
 
         const surface = await response.json();
+		
+		const changeSign = surface.change >= 0 ? "+" : "";
+
+		document.getElementById("surfaceInfo").innerHTML =
+		`
+		<b>Ticker:</b> ${surface.ticker}
+		&nbsp;&nbsp;&nbsp;
+		<b>Spot:</b> ${surface.underlying.toFixed(2)}
+		&nbsp;&nbsp;&nbsp;
+		<b>Change:</b> ${changeSign}${surface.change.toFixed(2)}
+		(${changeSign}${surface.changePct.toFixed(2)}%)
+		&nbsp;&nbsp;&nbsp;
+		<b>Retrieved:</b> ${surface.timestamp}
+		`;
 
         document.getElementById("surfaceInfo").innerHTML =
             `<b>Ticker:</b> ${surface.ticker || ticker}
