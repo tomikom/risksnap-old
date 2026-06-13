@@ -341,7 +341,12 @@ async function loadVolSurface() {
         };
 
         const layout = {
-            title: ticker + " Implied Volatility Surface",
+            title:
+				ticker +
+				" Implied Volatility Surface - " +
+				(surface.surfaceType === "smooth"
+					? "Smoothed"
+					: "Raw Surface"),
             autosize: true,
             scene: {
                 xaxis: { title: "Moneyness" },
