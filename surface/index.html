@@ -305,6 +305,7 @@ async function loadVolSurface() {
                 marker: {
                     size: 4,
                     opacity: 0.85
+					symbol: "circle"
                 },
                 hovertemplate:
                     "Moneyness: %{x}<br>Tenor: %{y:.3f} years<br>IV: %{z:.2%}<extra></extra>"
@@ -358,7 +359,7 @@ function renderSurfaceGrid(surface) {
     let html = `
         <div style="margin-bottom:8px; font-weight:bold;">
             Grid values are implied volatilities.
-			<span style="background:#35946e;color:green;padding:2px 6px;">Green</span> = quote supported.
+			<span style="background:#35946e;color:white;padding:2px 6px;">Green</span> = quote supported.
             <span style="background:#724219;color:white;padding:2px 6px;">Brown</span> = partly extrapolated.
             <span style="background:#bfbdc3;color:black;padding:2px 6px;">Grey</span> = fully/tenor extrapolated.
         </div>
