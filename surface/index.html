@@ -336,6 +336,7 @@ async function loadVolSurface() {
             y: y,
             z: z,
             type: "surface",
+			connectgaps: false,
             hovertemplate:
                 "Moneyness: %{x}<br>Tenor: %{y:.3f} years<br>IV: %{z:.2%}<extra></extra>"
         };
