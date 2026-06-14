@@ -184,28 +184,83 @@ Please click on User Agreement before using any calculators on RiskSnap .
     <div id="surfaceGridPanel" style="display:none; margin-top:15px; overflow-x:auto;"></div>
 </div>
 
-<script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
-<script>
-// Replace this with your deployed Google Cloud Run / Cloud Function URL.
-const SURFACE_API_URL =
-    "https://surface-203178530029.northamerica-northeast2.run.app";
-
-let lastLoadedSurface = null;
-
+<script src="https://cdn.plot.ly/plotly-2.35.2.min.js">
 function showSurfacePanel() {
     document.getElementById("volSurface").style.display = "block";
     document.getElementById("surfaceGridPanel").style.display = "none";
 }
 
 function showGridPanel() {
-    if (!lastLoadedSurface || lastLoadedSurface.surfaceType !== "smooth") {
-        alert("Grid is available only for Smoothed Surface.");
-        return;
-    }
-
     document.getElementById("volSurface").style.display = "none";
     document.getElementById("surfaceGridPanel").style.display = "block";
 }
+
+// function renderSurfaceGrid(surface) {
+
+    const panel = document.getElementById("surfaceGridPanel");
+    const moneyness = surface.moneyness || [];
+    const iv = surface.iv || [];
+    const flags = surface.flags || [];
+    const tenorLabels = surface.tenorLabels || surface.tenors || [];
+    const expiryDates = surface.expiryDates || [];
+    const strikeGrid = surface.strikeGrid || [];
+
+    if (!moneyness.length || !iv.length) {
+        panel.innerHTML = "";
+        return;
+    }
+
+    let html = `
+        <div style="margin-bottom:8px; font-weight:bold;">
+            Grid values are implied volatilities.
+            <span style="background:#724219;color:white;padding:2px 6px;">Brown</span> = partly extrapolated.
+            <span style="background:#bfbdc3;color:black;padding:2px 6px;">Grey</span> = fully/tenor extrapolated.
+        </div>
+        <table style="border-collapse:collapse; min-width:850px; font-size:13px;">
+            <thead>
+    `;
+
+    if (strikeGrid.length === moneyness.length) {
+        html += `<tr><th style="border:1px solid #aaa; padding:5px; background:#d8dce0;">Strike</th><th style="border:1px solid #aaa; padding:5px; background:#d8dce0;"></th>`;
+        strikeGrid.forEach(k => {
+            html += `<th style="border:1px solid #aaa; padding:5px; background:#d8dce0;">${Number(k).toFixed(2)}</th>`;
+        });
+        html += `</tr>`;
+    }
+
+    html += `<tr><th style="border:1px solid #aaa; padding:5px; background:#d8dce0;">Tenor</th><th style="border:1px solid #aaa; padding:5px; background:#d8dce0;">Expiry</th>`;
+    moneyness.forEach(m => {
+        html += `<th style="border:1px solid #aaa; padding:5px; background:#d8dce0;">${Number(m).toFixed(2)}</th>`;
+    });
+    html += `</tr></thead><tbody>`;
+
+    for (let r = 0; r < iv.length; r++) {
+        html += `<tr>`;
+        html += `<td style="border:1px solid #aaa; padding:5px; background:#d8dce0; font-weight:bold;">${tenorLabels[r] ?? ""}</td>`;
+        html += `<td style="border:1px solid #aaa; padding:5px; background:#d8dce0;">${expiryDates[r] ?? ""}</td>`;
+        for (let c = 0; c < moneyness.length; c++) {
+            const v = iv[r][c];
+            const flag = flags[r] ? flags[r][c] : 0;
+            let bg = "#35946e";
+            let color = "white";
+            if (flag === 1) { bg = "#724219"; color = "white"; }
+            if (flag === 2) { bg = "#bfbdc3"; color = "black"; }
+            const text = Number.isFinite(Number(v)) ? (Number(v) * 100).toFixed(2) + "%" : "";
+            html += `<td style="border:1px solid #aaa; padding:5px; text-align:right; background:${bg}; color:${color};">${text}</td>`;
+        }
+        html += `</tr>`;
+    }
+
+    html += `</tbody></table>`;
+    panel.innerHTML = html;
+}
+
+</script>
+<script>
+// Replace this with your deployed Google Cloud Run / Cloud Function URL.
+// Example: const SURFACE_API_URL = "https://hestoncurve-xxxxx.run.app/surface";
+const SURFACE_API_URL =
+    "https://surface-203178530029.northamerica-northeast2.run.app";
 
 async function loadVolSurface() {
     const tickerBox = document.getElementById("surfaceTicker");
@@ -232,8 +287,7 @@ async function loadVolSurface() {
         }
 
         const surface = await response.json();
-        lastLoadedSurface = surface;
-
+		
         const spotText = surface.underlying !== null && surface.underlying !== undefined
             ? Number(surface.underlying).toFixed(2)
             : "N/A";
@@ -258,64 +312,43 @@ async function loadVolSurface() {
              &nbsp;&nbsp;&nbsp;
              <b>Retrieved:</b> ${timestampText}`;
 
+
+
+        // Expected API response:
+        // {
+        //   "ticker": "NVDA",
+        //   "moneyness": [0.8, 0.85, ...],
+        //   "tenors": [0.05, 0.10, ...],
+        //   "iv": [[0.52, 0.50, ...], [0.48, 0.47, ...]]
+        // }
         const x = surface.moneyness;
         const y = surface.tenors;
         const z = surface.iv;
+        const tenorLabels = surface.tenorLabels || y;
+        const expiryDates = surface.expiryDates || [];
+        const flags = surface.flags || [];
 
         if (!Array.isArray(x) || !Array.isArray(y) || !Array.isArray(z)) {
             throw new Error("Surface API response is missing moneyness, tenors, or iv arrays.");
         }
 
-        const isSmooth = surface.surfaceType === "smooth";
-        let trace;
-
-        if (isSmooth) {
-            trace = {
-                x: x,
-                y: y,
-                z: z,
-                type: "surface",
-                connectgaps: false,
-                hovertemplate:
-                    "Moneyness: %{x}<br>Tenor: %{y:.3f} years<br>IV: %{z:.2%}<extra></extra>"
-            };
-        } else {
-            const xPts = [];
-            const yPts = [];
-            const zPts = [];
-
-            for (let r = 0; r < z.length; r++) {
-                if (!Array.isArray(z[r])) continue;
-                for (let c = 0; c < x.length; c++) {
-                    const v = z[r][c];
-                    if (v !== null && v !== undefined && Number.isFinite(Number(v))) {
-                        xPts.push(Number(x[c]));
-                        yPts.push(Number(y[r]));
-                        zPts.push(Number(v));
-                    }
-                }
-            }
-
-            trace = {
-                x: xPts,
-                y: yPts,
-                z: zPts,
-                type: "scatter3d",
-                mode: "markers",
-                marker: {
-                    size: 4,
-                    opacity: 0.85
-                },
-                hovertemplate:
-                    "Moneyness: %{x}<br>Tenor: %{y:.3f} years<br>IV: %{z:.2%}<extra></extra>"
-            };
-        }
+        const trace = {
+            x: x,
+            y: y,
+            z: z,
+            type: "surface",
+			connectgaps: false,
+            hovertemplate:
+                "Moneyness: %{x}<br>Tenor: %{y:.3f} years<br>IV: %{z:.2%}<extra></extra>"
+        };
 
         const layout = {
             title:
-                ticker +
-                " Implied Volatility Surface - " +
-                (isSmooth ? "Smoothed" : "Raw Surface"),
+				ticker +
+				" Implied Volatility Surface - " +
+				(surface.surfaceType === "smooth"
+					? "Smoothed"
+					: "Raw Surface"),
             autosize: true,
             scene: {
                 xaxis: { title: "Moneyness" },
@@ -326,19 +359,23 @@ async function loadVolSurface() {
         };
 
         Plotly.newPlot("volSurface", [trace], layout, {responsive: true});
-
-        if (isSmooth) {
-            renderSurfaceGrid(surface);
-        } else {
-            document.getElementById("surfaceGridPanel").innerHTML = "";
-        }
-
+        renderSurfaceGrid(surface);
         showSurfacePanel();
         statusBox.textContent = "Surface loaded for " + ticker + ".";
     } catch (err) {
         statusBox.textContent = "Could not create surface: " + err.message;
         console.error(err);
     }
+}
+
+function showSurfacePanel() {
+    document.getElementById("volSurface").style.display = "block";
+    document.getElementById("surfaceGridPanel").style.display = "none";
+}
+
+function showGridPanel() {
+    document.getElementById("volSurface").style.display = "none";
+    document.getElementById("surfaceGridPanel").style.display = "block";
 }
 
 function renderSurfaceGrid(surface) {
@@ -384,7 +421,7 @@ function renderSurfaceGrid(surface) {
         html += `<td style="border:1px solid #aaa; padding:5px; background:#d8dce0; font-weight:bold;">${tenorLabels[r] ?? ""}</td>`;
         html += `<td style="border:1px solid #aaa; padding:5px; background:#d8dce0;">${expiryDates[r] ?? ""}</td>`;
         for (let c = 0; c < moneyness.length; c++) {
-            const v = Array.isArray(iv[r]) ? iv[r][c] : null;
+            const v = iv[r][c];
             const flag = flags[r] ? flags[r][c] : 0;
             let bg = "#35946e";
             let color = "white";
@@ -399,6 +436,7 @@ function renderSurfaceGrid(surface) {
     html += `</tbody></table>`;
     panel.innerHTML = html;
 }
+
 </script>
 
 
