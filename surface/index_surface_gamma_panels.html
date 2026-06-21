@@ -207,6 +207,7 @@ const SURFACE_API_URL =
 let lastLoadedSurface = null;
 let lastGammaSnapshot = null;
 let lastBaseSurfaceTrace = null;
+let lastSurfaceLayout = null;
 
 function showSurfacePanel() {
     document.getElementById("volSurface").style.display = "block";
@@ -321,6 +322,7 @@ async function loadVolSurface() {
                 marker: {
                     size: 4,
                     opacity: 0.85,
+					
                 },
                 hovertemplate:
                     "Moneyness: %{x}<br>Tenor: %{y:.3f} years<br>IV: %{z:.2%}<extra></extra>"
@@ -342,6 +344,7 @@ async function loadVolSurface() {
         };
 
         lastBaseSurfaceTrace = trace;
+        lastSurfaceLayout = layout;
         Plotly.newPlot("volSurface", [trace], layout, {responsive: true});
         if (document.getElementById("showGammaPanels").checked) {
             await refreshGammaPanels();
@@ -481,7 +484,7 @@ async function refreshGammaPanels() {
         return;
     }
     if (!document.getElementById("showGammaPanels").checked) {
-        Plotly.react("volSurface", [lastBaseSurfaceTrace], document.getElementById("volSurface").layout, {responsive:true});
+        Plotly.react("volSurface", [lastBaseSurfaceTrace], lastSurfaceLayout, {responsive:true});
         return;
     }
 
@@ -531,7 +534,7 @@ async function refreshGammaPanels() {
     if (Number.isFinite(zero)) panels.push(makeGammaPanel("Zero Gamma", zero, spot, yMin, yMax, zMin, zMax, "#d62728"));
 
     lastGammaSnapshot = {spot, callWall, putWall, gammaWall, zero, totalGex: atSpot.total};
-    Plotly.react("volSurface", [lastBaseSurfaceTrace, ...panels], document.getElementById("volSurface").layout, {responsive:true});
+    Plotly.react("volSurface", [lastBaseSurfaceTrace, ...panels], lastSurfaceLayout, {responsive:true});
     statusBox.textContent = `Surface loaded for ${ticker}. Gamma panels: Put ${rsFmt(putWall.strike)}, Call ${rsFmt(callWall.strike)}, Gamma ${rsFmt(gammaWall.strike)}, Zero ${rsFmt(zero)}. Total GEX at spot ${Math.round(atSpot.total).toLocaleString()}.`;
 }
 

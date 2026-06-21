@@ -200,244 +200,68 @@ The Zero-Gamma Level is the price where the aggregate market gamma changes sign:
 
 
 <hr>
-<h3>Dynamic Gamma Exposure Calculator</h3>
+<h3>Current Gamma Structure Example: NVDA</h3>
 
 <p>
-Enter a ticker and click <b>Calculate Gamma</b>.  RiskSnap will retrieve the option-chain CSV from the surface service, calculate call wall, put wall, gamma wall, total GEX at spot, and the zero-gamma level.
+This example uses an NVDA option chain snapshot.  The numbers are shown to demonstrate how the gamma metrics fit together: the wall values are strike-level concentrations, while Total GEX is the aggregate value across the full chain at the current spot.
 </p>
 
-<div class="rs-gex-calculator">
-    <div class="rs-gex-controls">
-        <label>Ticker<br><input id="rsGexTicker" type="text" value="NVDA" style="text-transform:uppercase"></label>
-        <label>Spot step<br><input id="rsGexStep" type="number" value="0.25" step="0.05" min="0.01"></label>
-        <label>Sweep points<br><input id="rsGexPoints" type="number" value="161" step="2" min="21"></label>
-        <button type="button" onclick="RiskSnapGEX.calculate()">Calculate Gamma</button>
-    </div>
-    <div id="rsGexStatus" class="rs-gex-status"></div>
-    <div id="rsGexOutput" class="rs-gex-output" style="display:none;">
-        <div class="rs-gex-example">
-            <div class="rs-gex-card">
-                <h4 id="rsGexTitle">Gamma Snapshot</h4>
-                <table class="rs-gex-summary-table"><tbody id="rsGexSummaryBody"></tbody></table>
-            </div>
-            <div class="rs-gex-card">
-                <h4>How to Read This Snapshot</h4>
-                <div id="rsGexInterpretation"></div>
-            </div>
-        </div>
-
-        <div class="rs-gex-map-wrap">
-            <h4>Gamma Map</h4>
-            <div class="rs-gex-map" id="rsGexMap"></div>
-            <div class="rs-gex-axis"><span>Lower price</span><span>Higher price</span></div>
-        </div>
-
-        <h4>Total GEX vs Spot</h4>
-        <div id="rsGexChart" class="rs-gex-chart"></div>
-
-        <h4>Wall Detail</h4>
-        <table class="rs-gex-wall-table">
-            <thead><tr><th>Metric</th><th>Strike</th><th>Call GEX</th><th>Put GEX</th><th>Net / Gamma GEX</th></tr></thead>
-            <tbody id="rsGexWallBody"></tbody>
+<div class="rs-gex-example">
+    <div class="rs-gex-card">
+        <h4>NVDA Gamma Snapshot</h4>
+        <table class="rs-gex-summary-table">
+            <tbody>
+                <tr><th>Spot</th><td>210.69</td></tr>
+                <tr><th>Call Wall</th><td>220</td></tr>
+                <tr><th>Put Wall</th><td>200</td></tr>
+                <tr><th>Gamma Wall</th><td>220</td></tr>
+                <tr><th>Zero Gamma</th><td>195.04</td></tr>
+                <tr><th>Total GEX at Spot</th><td>+786,845,987</td></tr>
+                <tr><th>Distance Above Zero Gamma</th><td>+15.65 points / +8.02%</td></tr>
+            </tbody>
         </table>
+    </div>
 
-        <p class="rs-gex-note">
-        Total GEX at spot is the sum across the full option chain.  Gamma Wall GEX is the largest net value at one strike.
+    <div class="rs-gex-card">
+        <h4>How to Read This Snapshot</h4>
+        <p>
+        NVDA spot is above the zero-gamma level, so this snapshot indicates a positive gamma regime.  In a positive gamma regime, dealer hedging is generally expected to dampen volatility: dealers tend to sell as prices rise and buy as prices fall.
+        </p>
+        <p>
+        The Put Wall at 200 may act as a support area.  The Call Wall and Gamma Wall at 220 may act as resistance or a sticky area where hedging flows are concentrated.
+        </p>
+        <p>
+        A move below 195.04 would shift this snapshot toward a negative gamma regime, where hedging can amplify moves rather than dampen them.
         </p>
     </div>
 </div>
 
-<style>
-.rs-gex-calculator { margin-top: 14px; }
-.rs-gex-controls { display: flex; gap: 14px; flex-wrap: wrap; align-items: end; margin: 12px 0; }
-.rs-gex-controls label { font-weight: bold; }
-.rs-gex-controls input { width: 130px; padding: 6px; }
-.rs-gex-controls button { background-color: #008CBA; color: white; border: none; padding: 10px 18px; border-radius: 8px; cursor: pointer; }
-.rs-gex-status { margin: 10px 0; font-weight: bold; }
-.rs-gex-example { display: flex; gap: 18px; flex-wrap: wrap; margin-top: 14px; }
-.rs-gex-card { flex: 1 1 320px; border: 1px solid #cccccc; background: #f9f9f9; padding: 12px; }
-.rs-gex-card h4 { margin-top: 0; background: #00994d; color: white; text-align: center; padding: 6px; }
-.rs-gex-summary-table, .rs-gex-wall-table { border-collapse: collapse; width: 100%; margin-top: 10px; }
-.rs-gex-summary-table th, .rs-gex-summary-table td, .rs-gex-wall-table th, .rs-gex-wall-table td { border: 1px solid #cccccc; padding: 6px 8px; text-align: right; }
-.rs-gex-summary-table th { text-align: left; background: #eeeeee; }
-.rs-gex-wall-table th { background: #eeeeee; }
-.rs-gex-map-wrap { margin-top: 18px; }
-.rs-gex-map { position: relative; height: 88px; border: 1px solid #bbbbbb; background: linear-gradient(to right, #fff2f2, #eef8ff); margin-top: 8px; }
-.rs-gex-level { position: absolute; top: 0; height: 88px; border-left: 3px solid #333333; }
-.rs-gex-level span { position: absolute; top: 8px; left: 5px; white-space: nowrap; font-weight: bold; font-size: 12px; background: rgba(255,255,255,0.85); padding: 2px 4px; }
-.rs-gex-axis { display: flex; justify-content: space-between; font-size: 12px; margin-top: 4px; }
-.rs-gex-chart { width: 100%; overflow-x: auto; border: 1px solid #cccccc; background: white; margin-top: 8px; }
-.rs-gex-note { font-weight: bold; margin-top: 10px; }
-</style>
+<div class="rs-gex-map-wrap">
+    <h4>Gamma Map</h4>
+    <div class="rs-gex-map">
+        <div class="rs-gex-level rs-call-wall" style="left: 100%;"><span>220<br>Call / Gamma Wall</span></div>
+        <div class="rs-gex-level rs-spot" style="left: 63.01%;"><span>210.69<br>Spot</span></div>
+        <div class="rs-gex-level rs-put-wall" style="left: 20.05%;"><span>200<br>Put Wall</span></div>
+        <div class="rs-gex-level rs-zero" style="left: 0%;"><span>195.04<br>Zero Gamma</span></div>
+    </div>
+    <div class="rs-gex-axis"><span>Negative gamma risk below zero-gamma</span><span>Positive gamma regime above zero-gamma</span></div>
+</div>
 
-<script>
-const RiskSnapGEX = (() => {
-    function fmt(x, digits = 2) {
-        return Number.isFinite(x) ? x.toLocaleString(undefined, {maximumFractionDigits: digits, minimumFractionDigits: digits}) : "";
-    }
-    function fmt0(x) { return Number.isFinite(x) ? Math.round(x).toLocaleString() : ""; }
-    function num(x) { const v = Number(String(x ?? "").replace(/,/g, "")); return Number.isFinite(v) ? v : NaN; }
-    function normPdf(x) { return Math.exp(-0.5 * x * x) / Math.sqrt(2 * Math.PI); }
-    function bsGamma(S, K, t, r, q, vol) {
-        if (!(S > 0 && K > 0 && t > 0 && vol > 0)) return 0;
-        const d1 = (Math.log(S / K) + (r - q + 0.5 * vol * vol) * t) / (vol * Math.sqrt(t));
-        return Math.exp(-q * t) * normPdf(d1) / (S * vol * Math.sqrt(t));
-    }
-    function parseCSV(text) {
-        const rows = [], row = [];
-        let cell = "", inQuotes = false;
-        for (let i = 0; i < text.length; i++) {
-            const c = text[i], n = text[i + 1];
-            if (c === '"') {
-                if (inQuotes && n === '"') { cell += '"'; i++; }
-                else inQuotes = !inQuotes;
-            } else if (c === ',' && !inQuotes) { row.push(cell); cell = ""; }
-            else if ((c === '\n' || c === '\r') && !inQuotes) {
-                if (c === '\r' && n === '\n') i++;
-                row.push(cell); cell = "";
-                if (row.some(v => v !== "")) rows.push(row.splice(0));
-            } else cell += c;
-        }
-        if (cell !== "" || row.length) { row.push(cell); rows.push(row); }
-        const headers = rows.shift().map(h => h.trim());
-        return rows.map(r => Object.fromEntries(headers.map((h, i) => [h, r[i] ?? ""])));
-    }
-    function cleanContracts(rows) {
-        return rows.map(r => ({
-            type: String(r.optionType || "").toLowerCase().startsWith("p") ? "P" : "C",
-            K: num(r.strike),
-            oi: Math.max(0, num(r.openInterest)),
-            iv: num(r.impliedVolatility),
-            t: Math.max(1e-8, num(r.Tenor)),
-            q: Number.isFinite(num(r["Dividend Yield"])) ? num(r["Dividend Yield"]) : 0,
-            r: Number.isFinite(num(r.r)) ? num(r.r) : 0.04,
-            spot: num(r["Underlying MP"])
-        })).filter(o => o.K > 0 && o.oi > 0 && o.iv > 0 && o.t > 0);
-    }
-    function gexForContract(o, S) {
-        const gamma = bsGamma(S, o.K, o.t, o.r, o.q, o.iv);
-        const raw = gamma * o.oi * 100 * S * S * 0.01;
-        return o.type === "P" ? -raw : raw;
-    }
-    function aggregateAtSpot(contracts, S) {
-        const byStrike = new Map();
-        let total = 0;
-        for (const o of contracts) {
-            const signed = gexForContract(o, S);
-            total += signed;
-            const key = String(o.K);
-            if (!byStrike.has(key)) byStrike.set(key, {strike: o.K, call: 0, put: 0, net: 0});
-            const rec = byStrike.get(key);
-            if (o.type === "C") rec.call += signed;
-            else rec.put += -signed; // positive display value for puts
-            rec.net = rec.call - rec.put;
-        }
-        const strikes = Array.from(byStrike.values()).sort((a,b) => a.strike - b.strike);
-        return {total, strikes};
-    }
-    function findZero(sweep) {
-        const crosses = [];
-        for (let i = 1; i < sweep.length; i++) {
-            const a = sweep[i - 1], b = sweep[i];
-            if (a.gex === 0) crosses.push(a.spot);
-            if ((a.gex < 0 && b.gex > 0) || (a.gex > 0 && b.gex < 0)) {
-                crosses.push(a.spot + (0 - a.gex) * (b.spot - a.spot) / (b.gex - a.gex));
-            }
-        }
-        return crosses;
-    }
-    function pctPosition(x, min, max) { return Math.max(0, Math.min(100, (x - min) / (max - min) * 100)); }
-    function addLevel(html, label, x, min, max) {
-        return html + `<div class="rs-gex-level" style="left:${pctPosition(x,min,max)}%;"><span>${label}</span></div>`;
-    }
-    function drawChart(sweep, spot, zero) {
-        const w = 900, h = 310, pad = 45;
-        const xs = sweep.map(d => d.spot), ys = sweep.map(d => d.gex);
-        const minX = Math.min(...xs), maxX = Math.max(...xs), minY = Math.min(...ys), maxY = Math.max(...ys);
-        const xscale = x => pad + (x - minX) / (maxX - minX) * (w - 2 * pad);
-        const yscale = y => h - pad - (y - minY) / (maxY - minY || 1) * (h - 2 * pad);
-        const path = sweep.map((d,i) => `${i ? "L" : "M"}${xscale(d.spot).toFixed(1)},${yscale(d.gex).toFixed(1)}`).join(" ");
-        const y0 = yscale(0);
-        let svg = `<svg viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" role="img" aria-label="Total GEX versus spot">`;
-        svg += `<line x1="${pad}" y1="${y0}" x2="${w-pad}" y2="${y0}" stroke="#999" stroke-dasharray="4 4"/>`;
-        svg += `<path d="${path}" fill="none" stroke="#005a9c" stroke-width="3"/>`;
-        svg += `<line x1="${xscale(spot)}" y1="${pad}" x2="${xscale(spot)}" y2="${h-pad}" stroke="#333" stroke-width="2"/><text x="${xscale(spot)+4}" y="${pad+15}" font-size="12">Spot</text>`;
-        if (Number.isFinite(zero)) svg += `<line x1="${xscale(zero)}" y1="${pad}" x2="${xscale(zero)}" y2="${h-pad}" stroke="#b00020" stroke-width="2"/><text x="${xscale(zero)+4}" y="${pad+32}" font-size="12">Zero Gamma</text>`;
-        svg += `<text x="${pad}" y="${h-12}" font-size="12">${fmt(minX,2)}</text><text x="${w-pad-40}" y="${h-12}" font-size="12">${fmt(maxX,2)}</text>`;
-        svg += `<text x="${pad}" y="20" font-size="12">Total GEX</text></svg>`;
-        return svg;
-    }
-    async function calculate() {
-        const ticker = document.getElementById("rsGexTicker").value.trim().toUpperCase();
-        const step = num(document.getElementById("rsGexStep").value);
-        let points = Math.round(num(document.getElementById("rsGexPoints").value));
-        if (points % 2 === 0) points += 1;
-        const status = document.getElementById("rsGexStatus");
-        const output = document.getElementById("rsGexOutput");
-        output.style.display = "none";
-        if (!ticker || !(step > 0) || !(points > 2)) { status.textContent = "Please enter a ticker, positive step size, and sweep points."; return; }
-        status.textContent = `Loading ${ticker} option chain...`;
-        try {
-            const url = `https://surface-203178530029.northamerica-northeast2.run.app/surface_csv?ticker=${encodeURIComponent(ticker)}`;
-            const response = await fetch(url);
-            if (!response.ok) throw new Error(`CSV service returned ${response.status}`);
-            const csv = await response.text();
-            const contracts = cleanContracts(parseCSV(csv));
-            if (!contracts.length) throw new Error("No usable contracts found. Check open interest, IV, tenor, and strike columns.");
-            const spotVals = contracts.map(o => o.spot).filter(Number.isFinite);
-            const spot = spotVals.length ? spotVals[0] : contracts.reduce((s,o)=>s+o.K,0)/contracts.length;
-            const mid = Math.floor(points / 2);
-            const sweep = [];
-            for (let i = 0; i < points; i++) {
-                const S = spot + (i - mid) * step;
-                sweep.push({spot: S, gex: aggregateAtSpot(contracts, S).total});
-            }
-            const atSpot = aggregateAtSpot(contracts, spot);
-            const callWall = atSpot.strikes.reduce((a,b) => b.call > a.call ? b : a, atSpot.strikes[0]);
-            const putWall = atSpot.strikes.reduce((a,b) => b.put > a.put ? b : a, atSpot.strikes[0]);
-            const gammaWall = atSpot.strikes.reduce((a,b) => b.net > a.net ? b : a, atSpot.strikes[0]);
-            const zeroList = findZero(sweep);
-            const zero = zeroList.length ? zeroList.reduce((a,b) => Math.abs(b - spot) < Math.abs(a - spot) ? b : a) : NaN;
-            const regime = atSpot.total >= 0 ? "positive gamma" : "negative gamma";
-            const distance = Number.isFinite(zero) ? spot - zero : NaN;
-            const distancePct = Number.isFinite(zero) ? distance / zero * 100 : NaN;
+<table class="rs-gex-wall-table">
+    <thead>
+        <tr><th>Metric</th><th>Strike</th><th>Call GEX</th><th>Put GEX</th><th>Net / Gamma GEX</th></tr>
+    </thead>
+    <tbody>
+        <tr><td>Call Wall</td><td>220</td><td>199,968,944</td><td>37,681,323</td><td>162,287,622</td></tr>
+        <tr><td>Put Wall</td><td>200</td><td>130,147,937</td><td>179,565,810</td><td>-49,417,873</td></tr>
+        <tr><td>Gamma Wall</td><td>220</td><td>199,968,944</td><td>37,681,323</td><td>162,287,622</td></tr>
+    </tbody>
+</table>
 
-            document.getElementById("rsGexTitle").textContent = `${ticker} Gamma Snapshot`;
-            document.getElementById("rsGexSummaryBody").innerHTML = `
-                <tr><th>Spot</th><td>${fmt(spot,2)}</td></tr>
-                <tr><th>Call Wall</th><td>${fmt(callWall.strike,2)}</td></tr>
-                <tr><th>Put Wall</th><td>${fmt(putWall.strike,2)}</td></tr>
-                <tr><th>Gamma Wall</th><td>${fmt(gammaWall.strike,2)}</td></tr>
-                <tr><th>Zero Gamma</th><td>${Number.isFinite(zero) ? fmt(zero,2) : "No sign change in sweep"}</td></tr>
-                <tr><th>Total GEX at Spot</th><td>${atSpot.total >= 0 ? "+" : ""}${fmt0(atSpot.total)}</td></tr>
-                <tr><th>Regime</th><td>${regime}</td></tr>
-                <tr><th>Distance from Zero Gamma</th><td>${Number.isFinite(distance) ? `${distance >= 0 ? "+" : ""}${fmt(distance,2)} points / ${distancePct >= 0 ? "+" : ""}${fmt(distancePct,2)}%` : "n/a"}</td></tr>`;
-            document.getElementById("rsGexInterpretation").innerHTML = atSpot.total >= 0
-                ? `<p>${ticker} is in a positive gamma regime for this option-chain snapshot.  Dealer hedging is generally expected to dampen moves: selling into rallies and buying into declines.</p><p>The Put Wall may act as support.  The Call Wall and Gamma Wall may act as resistance or a sticky area where hedging flows are concentrated.</p>`
-                : `<p>${ticker} is in a negative gamma regime for this option-chain snapshot.  Dealer hedging can amplify moves: buying as the market rises and selling as the market falls.</p><p>This can produce larger intraday swings and trendier price action.</p>`;
-            let minLevel = Math.min(spot, callWall.strike, putWall.strike, gammaWall.strike, Number.isFinite(zero) ? zero : spot);
-            let maxLevel = Math.max(spot, callWall.strike, putWall.strike, gammaWall.strike, Number.isFinite(zero) ? zero : spot);
-            const margin = Math.max(1, (maxLevel - minLevel) * 0.08); minLevel -= margin; maxLevel += margin;
-            let map = "";
-            if (Number.isFinite(zero)) map = addLevel(map, `${fmt(zero,2)}<br>Zero Gamma`, zero, minLevel, maxLevel);
-            map = addLevel(map, `${fmt(putWall.strike,2)}<br>Put Wall`, putWall.strike, minLevel, maxLevel);
-            map = addLevel(map, `${fmt(spot,2)}<br>Spot`, spot, minLevel, maxLevel);
-            map = addLevel(map, `${fmt(callWall.strike,2)}<br>Call Wall`, callWall.strike, minLevel, maxLevel);
-            map = addLevel(map, `${fmt(gammaWall.strike,2)}<br>Gamma Wall`, gammaWall.strike, minLevel, maxLevel);
-            document.getElementById("rsGexMap").innerHTML = map;
-            document.getElementById("rsGexChart").innerHTML = drawChart(sweep, spot, zero);
-            document.getElementById("rsGexWallBody").innerHTML = [
-                ["Call Wall", callWall], ["Put Wall", putWall], ["Gamma Wall", gammaWall]
-            ].map(([name,r]) => `<tr><td>${name}</td><td>${fmt(r.strike,2)}</td><td>${fmt0(r.call)}</td><td>${fmt0(r.put)}</td><td>${r.net >= 0 ? "+" : ""}${fmt0(r.net)}</td></tr>`).join("");
-            status.textContent = `Calculated ${contracts.length.toLocaleString()} option contracts from ${ticker} CSV.`;
-            output.style.display = "block";
-        } catch (err) {
-            status.textContent = `Could not calculate gamma: ${err.message}`;
-        }
-    }
-    return { calculate };
-})();
-</script>
+<p class="rs-gex-note">
+The Total GEX at spot is not the Gamma Wall GEX.  Gamma Wall GEX is the largest net value at one strike.  Total GEX is the sum across the full option chain at the current spot.
+</p>
+
 
 <H3>Gamma Ladder</H3>
 

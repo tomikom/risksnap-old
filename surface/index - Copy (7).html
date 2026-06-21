@@ -148,11 +148,6 @@ Please click on User Agreement before using any calculators on RiskSnap .
     margin-top: 8px;
     font-weight: bold;
 }
-.rs-gamma-panel-controls {
-    border-top: 1px solid #dddddd;
-    padding-top: 10px;
-    margin-top: 4px;
-}
 </style>
 
 <div class="rs-surface-box">
@@ -178,15 +173,6 @@ Please click on User Agreement before using any calculators on RiskSnap .
         <button type="button" onclick="loadVolSurface()">Create Surface</button>
     </div>
 
-    <div class="rs-surface-controls rs-gamma-panel-controls">
-        <label><input id="showGammaPanels" type="checkbox" checked style="width:auto;" onchange="refreshGammaPanels()"> Show Gamma Panels</label>
-        <label for="gammaPanelStep"><strong>Step:</strong></label>
-        <input id="gammaPanelStep" type="number" value="0.25" step="0.05" min="0.01">
-        <label for="gammaPanelPoints"><strong>Points:</strong></label>
-        <input id="gammaPanelPoints" type="number" value="161" step="2" min="21">
-        <button type="button" onclick="refreshGammaPanels()">Calculate Gamma Panels</button>
-    </div>
-
     <div id="surfaceInfo" style="margin-bottom:10px;font-weight:bold;"></div>
     <div id="surfaceStatus" class="rs-surface-message"></div>
     <div style="margin-top:12px;">
@@ -205,8 +191,6 @@ const SURFACE_API_URL =
     "https://surface-203178530029.northamerica-northeast2.run.app";
 
 let lastLoadedSurface = null;
-let lastGammaSnapshot = null;
-let lastBaseSurfaceTrace = null;
 
 function showSurfacePanel() {
     document.getElementById("volSurface").style.display = "block";
@@ -321,6 +305,7 @@ async function loadVolSurface() {
                 marker: {
                     size: 4,
                     opacity: 0.85,
+					symbol: "circle"
                 },
                 hovertemplate:
                     "Moneyness: %{x}<br>Tenor: %{y:.3f} years<br>IV: %{z:.2%}<extra></extra>"
@@ -341,11 +326,7 @@ async function loadVolSurface() {
             margin: { l: 0, r: 0, b: 0, t: 50 }
         };
 
-        lastBaseSurfaceTrace = trace;
         Plotly.newPlot("volSurface", [trace], layout, {responsive: true});
-        if (document.getElementById("showGammaPanels").checked) {
-            await refreshGammaPanels();
-        }
 
         if (isSmooth) {
             renderSurfaceGrid(surface);
@@ -359,180 +340,6 @@ async function loadVolSurface() {
         statusBox.textContent = "Could not create surface: " + err.message;
         console.error(err);
     }
-}
-
-
-function rsNumber(x) {
-    const v = Number(String(x ?? "").replace(/,/g, ""));
-    return Number.isFinite(v) ? v : NaN;
-}
-
-function rsNormPdf(x) {
-    return Math.exp(-0.5 * x * x) / Math.sqrt(2 * Math.PI);
-}
-
-function rsBsGamma(S, K, t, r, q, vol) {
-    if (!(S > 0 && K > 0 && t > 0 && vol > 0)) return 0;
-    const d1 = (Math.log(S / K) + (r - q + 0.5 * vol * vol) * t) / (vol * Math.sqrt(t));
-    return Math.exp(-q * t) * rsNormPdf(d1) / (S * vol * Math.sqrt(t));
-}
-
-function rsParseCSV(text) {
-    const rows = [], row = [];
-    let cell = "", inQuotes = false;
-    for (let i = 0; i < text.length; i++) {
-        const c = text[i], n = text[i + 1];
-        if (c === '"') {
-            if (inQuotes && n === '"') { cell += '"'; i++; }
-            else inQuotes = !inQuotes;
-        } else if (c === ',' && !inQuotes) { row.push(cell); cell = ""; }
-        else if ((c === '\n' || c === '\r') && !inQuotes) {
-            if (c === '\r' && n === '\n') i++;
-            row.push(cell); cell = "";
-            if (row.some(v => v !== "")) rows.push(row.splice(0));
-        } else cell += c;
-    }
-    if (cell !== "" || row.length) { row.push(cell); rows.push(row); }
-    const headers = rows.shift().map(h => h.trim());
-    return rows.map(r => Object.fromEntries(headers.map((h, i) => [h, r[i] ?? ""])));
-}
-
-function rsCleanContracts(rows) {
-    return rows.map(r => ({
-        type: String(r.optionType || "").toLowerCase().startsWith("p") ? "P" : "C",
-        K: rsNumber(r.strike),
-        oi: Math.max(0, rsNumber(r.openInterest)),
-        iv: rsNumber(r.impliedVolatility),
-        t: Math.max(1e-8, rsNumber(r.Tenor)),
-        q: Number.isFinite(rsNumber(r["Dividend Yield"])) ? rsNumber(r["Dividend Yield"]) : 0,
-        r: Number.isFinite(rsNumber(r.r)) ? rsNumber(r.r) : 0.04,
-        spot: rsNumber(r["Underlying MP"])
-    })).filter(o => o.K > 0 && o.oi > 0 && o.iv > 0 && o.t > 0);
-}
-
-function rsGexForContract(o, S) {
-    const gamma = rsBsGamma(S, o.K, o.t, o.r, o.q, o.iv);
-    const raw = gamma * o.oi * 100 * S * S * 0.01;
-    return o.type === "P" ? -raw : raw;
-}
-
-function rsAggregateAtSpot(contracts, S) {
-    const byStrike = new Map();
-    let total = 0;
-    for (const o of contracts) {
-        const signed = rsGexForContract(o, S);
-        total += signed;
-        const key = String(o.K);
-        if (!byStrike.has(key)) byStrike.set(key, {strike: o.K, call: 0, put: 0, net: 0});
-        const rec = byStrike.get(key);
-        if (o.type === "C") rec.call += signed;
-        else rec.put += -signed;
-        rec.net = rec.call - rec.put;
-    }
-    return { total, strikes: Array.from(byStrike.values()).sort((a,b) => a.strike - b.strike) };
-}
-
-function rsFindZero(sweep) {
-    const crosses = [];
-    for (let i = 1; i < sweep.length; i++) {
-        const a = sweep[i - 1], b = sweep[i];
-        if (a.gex === 0) crosses.push(a.spot);
-        if ((a.gex < 0 && b.gex > 0) || (a.gex > 0 && b.gex < 0)) {
-            crosses.push(a.spot + (0 - a.gex) * (b.spot - a.spot) / (b.gex - a.gex));
-        }
-    }
-    return crosses;
-}
-
-function rsFmt(x, digits = 2) {
-    return Number.isFinite(x) ? x.toLocaleString(undefined, {maximumFractionDigits: digits, minimumFractionDigits: digits}) : "n/a";
-}
-
-function surfaceZRange(surface) {
-    const vals = [];
-    (surface.iv || []).forEach(row => {
-        if (!Array.isArray(row)) return;
-        row.forEach(v => { if (Number.isFinite(Number(v))) vals.push(Number(v)); });
-    });
-    if (!vals.length) return [0, 1];
-    return [Math.min(...vals), Math.max(...vals)];
-}
-
-function makeGammaPanel(name, priceLevel, spot, yMin, yMax, zMin, zMax, color) {
-    const x = priceLevel / spot;
-    return {
-        type: "mesh3d",
-        name: name,
-        x: [x, x, x, x],
-        y: [yMin, yMax, yMax, yMin],
-        z: [zMin, zMin, zMax, zMax],
-        i: [0, 0], j: [1, 2], k: [2, 3],
-        color: color,
-        opacity: 0.22,
-        showscale: false,
-        hovertemplate: `${name}<br>Price: ${rsFmt(priceLevel,2)}<br>Moneyness: ${rsFmt(x,4)}<extra></extra>`
-    };
-}
-
-async function refreshGammaPanels() {
-    const statusBox = document.getElementById("surfaceStatus");
-    if (!lastLoadedSurface || !lastBaseSurfaceTrace) {
-        statusBox.textContent = "Create the surface first, then calculate gamma panels.";
-        return;
-    }
-    if (!document.getElementById("showGammaPanels").checked) {
-        Plotly.react("volSurface", [lastBaseSurfaceTrace], document.getElementById("volSurface").layout, {responsive:true});
-        return;
-    }
-
-    const ticker = (lastLoadedSurface.ticker || document.getElementById("surfaceTicker").value || "").trim().toUpperCase();
-    const step = rsNumber(document.getElementById("gammaPanelStep").value);
-    let points = Math.round(rsNumber(document.getElementById("gammaPanelPoints").value));
-    if (points % 2 === 0) points += 1;
-    if (!ticker || !(step > 0) || !(points > 2)) {
-        statusBox.textContent = "Enter a ticker, positive gamma step, and sweep points.";
-        return;
-    }
-
-    statusBox.textContent = `Calculating gamma panels for ${ticker}...`;
-    const url = `${SURFACE_API_URL}/surface_csv?ticker=${encodeURIComponent(ticker)}`;
-    const response = await fetch(url);
-    if (!response.ok) throw new Error(`Gamma CSV service returned ${response.status}`);
-    const contracts = rsCleanContracts(rsParseCSV(await response.text()));
-    if (!contracts.length) throw new Error("No usable contracts found for gamma panels.");
-
-    const spotVals = contracts.map(o => o.spot).filter(Number.isFinite);
-    const spot = spotVals.length ? spotVals[0] : Number(lastLoadedSurface.underlying);
-    const mid = Math.floor(points / 2);
-    const sweep = [];
-    for (let i = 0; i < points; i++) {
-        const S = spot + (i - mid) * step;
-        sweep.push({spot: S, gex: rsAggregateAtSpot(contracts, S).total});
-    }
-    const atSpot = rsAggregateAtSpot(contracts, spot);
-    const callWall = atSpot.strikes.reduce((a,b) => b.call > a.call ? b : a, atSpot.strikes[0]);
-    const putWall = atSpot.strikes.reduce((a,b) => b.put > a.put ? b : a, atSpot.strikes[0]);
-    const gammaWall = atSpot.strikes.reduce((a,b) => b.net > a.net ? b : a, atSpot.strikes[0]);
-    const zeroList = rsFindZero(sweep);
-    const zero = zeroList.length ? zeroList.reduce((a,b) => Math.abs(b - spot) < Math.abs(a - spot) ? b : a) : NaN;
-
-    const yVals = (lastLoadedSurface.tenors || []).map(Number).filter(Number.isFinite);
-    const yMin = yVals.length ? Math.min(...yVals) : 0;
-    const yMax = yVals.length ? Math.max(...yVals) : 1;
-    const [zMinRaw, zMaxRaw] = surfaceZRange(lastLoadedSurface);
-    const zPad = Math.max(0.01, (zMaxRaw - zMinRaw) * 0.05);
-    const zMin = Math.max(0, zMinRaw - zPad), zMax = zMaxRaw + zPad;
-
-    const panels = [
-        makeGammaPanel("Put Wall", putWall.strike, spot, yMin, yMax, zMin, zMax, "#1f77b4"),
-        makeGammaPanel("Call Wall", callWall.strike, spot, yMin, yMax, zMin, zMax, "#ff7f0e"),
-        makeGammaPanel("Gamma Wall", gammaWall.strike, spot, yMin, yMax, zMin, zMax, "#2ca02c")
-    ];
-    if (Number.isFinite(zero)) panels.push(makeGammaPanel("Zero Gamma", zero, spot, yMin, yMax, zMin, zMax, "#d62728"));
-
-    lastGammaSnapshot = {spot, callWall, putWall, gammaWall, zero, totalGex: atSpot.total};
-    Plotly.react("volSurface", [lastBaseSurfaceTrace, ...panels], document.getElementById("volSurface").layout, {responsive:true});
-    statusBox.textContent = `Surface loaded for ${ticker}. Gamma panels: Put ${rsFmt(putWall.strike)}, Call ${rsFmt(callWall.strike)}, Gamma ${rsFmt(gammaWall.strike)}, Zero ${rsFmt(zero)}. Total GEX at spot ${Math.round(atSpot.total).toLocaleString()}.`;
 }
 
 function renderSurfaceGrid(surface) {

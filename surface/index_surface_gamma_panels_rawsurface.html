@@ -312,16 +312,15 @@ async function loadVolSurface() {
                 }
             }
 
+            // Raw surface is drawn as a sparse surface with gaps, not scatter3d markers.
+            // This avoids browser/encoding problems where marker glyphs can appear as mojibake text.
             trace = {
-                x: xPts,
-                y: yPts,
-                z: zPts,
-                type: "scatter3d",
-                mode: "markers",
-                marker: {
-                    size: 4,
-                    opacity: 0.85,
-                },
+                x: x,
+                y: y,
+                z: z,
+                type: "surface",
+                connectgaps: false,
+                showscale: true,
                 hovertemplate:
                     "Moneyness: %{x}<br>Tenor: %{y:.3f} years<br>IV: %{z:.2%}<extra></extra>"
             };
