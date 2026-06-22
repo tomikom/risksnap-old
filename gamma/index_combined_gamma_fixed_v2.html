@@ -212,9 +212,6 @@ Enter a ticker and click <b>Calculate Gamma</b>.  RiskSnap will retrieve the opt
         <label>Spot step<br><input id="rsGexStep" type="number" value="0.25" step="0.05" min="0.01"></label>
         <label>Sweep points<br><input id="rsGexPoints" type="number" value="161" step="2" min="21"></label>
         <button type="button" onclick="RiskSnapGEX.calculate()">Calculate Gamma</button>
-		<button type="button" onclick="RiskSnapGEX.downloadInput()">
-        Download Input CSV
-        </button>
     </div>
     <div id="rsGexStatus" class="rs-gex-status"></div>
     <div id="rsGexOutput" class="rs-gex-output" style="display:none;">
@@ -470,36 +467,6 @@ const RiskSnapGEX = (() => {
     }
     return { calculate };
 })();
-async function downloadInput() {
-    const ticker =
-        document.getElementById("rsGexTicker")
-        .value.trim()
-        .toUpperCase();
-
-    const url =
-      `https://surface-203178530029.northamerica-northeast2.run.app/surface_csv?ticker=${encodeURIComponent(ticker)}`;
-
-    const response = await fetch(url);
-
-    if (!response.ok) {
-        alert("Could not retrieve CSV");
-        return;
-    }
-
-    const csv = await response.text();
-
-    const blob = new Blob([csv], { type: "text/csv" });
-    const a = document.createElement("a");
-
-    a.href = URL.createObjectURL(blob);
-    a.download = `${ticker}_gamma_input.csv`;
-
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-
-    URL.revokeObjectURL(a.href);
-}
 </script>
 
 <H3>Gamma Ladder</H3>
