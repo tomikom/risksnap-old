@@ -184,13 +184,17 @@ h2 {
 <span id="Gamma"/>
 <H2>Gamma Exposure</H2> 
 <p>Gamma Exposure (GEX) = estimated change in an option dealer's hedge requirement for a 1% move in the underlying, calculated as:
-GEX=&Gamma;×OI×100×S^2×0.01. Gamma (&Gamma;) is the change in delta (1% spot move), OI is the Open Interest. Equity and index traders watch GEX for clues on how options dealers may hedge, which can affect stock or index price movements.
+GEX=&Gamma;×OI×100×S^2×0.01. Gamma (&Gamma;) is the change in delta (1% spot move for the GEX calculations). Equity and index traders watch gamma exposure (GEX) because it gives clues about how options dealers may have to hedge, and that hedging can influence stock or index price movements.
 
-Option sellers become short gamma, and as the market rises they must buy more shares/futures and as the market falls, must sell more.  This is negative, needing to buy in a rising market or sell in a falling market.  Volatility can accelerate causing breakouts and selloffs.
-<H4>Walls</H4>
-The Call Wall, (strike with the largest positive call GEX} considered a strong resistance level where Dealers may sell futures as price approaches, dampening the effect. The Put Wall, (strike with the largest put GEX) often a support, dealers may buy futures as prices decline with price stabilization. The Gamma Wall is the strike with the largest net positive gamma exposure:  Net GEX = Call GEX + Put GEX (put GEX is negative).  This strike is often where dealer hedging exerts the strongest stabilizing influence.
+Dealers who sell options become short gamma, as the market rises dealers must buy more and as the market falls, dealers must sell more.  This works against them ie. needing to buy in a rising market or sell in a falling market.  This can increase volatility and cause breakouts and selloffs to accelerate.
+<H4>Call Wall</H4>
+Traders look for the Call Wall, the strike with the largest positive call GEX.  This is considered a strong resistance level.  Dealers may sell futures as this price is approached.  
+<H4>Put Wall</H4>
+The Put Wall has the strike with the largest put GEX.  Often acts as a support and dealers may buy futures on declines above that level.
+<H4>Gamma Wall</H4>
+The Gamma Wall is the strike with the largest net positive gamma exposure:  Net GEX = Call GEX + Put GEX (where put GEX is negative).  This strike is often where dealer hedging exerts the strongest stabilizing influence.
 <H4>Zero-Gamma Level</H4>
-The Zero-Gamma Level is the price where the aggregate market gamma changes sign:  Above is a positive gamma regime, and below, a negative gamma regime.  Many institutional traders consider this the most important gamma metric because dealer hedging may dampen or amplify market moves.If Spot > Zero Gamma when dealers are long gamma, if the market rises they tend to sell stock/futures to hedge and if the market falls they tend to buy.  Their hedging activity tends to oppose the move. Volatility is dampened, intraday moves tend to be smaller, often pullbacks are bought and rallies sold. If Spot < Zero Gramma, dealers are estimated to be short gamma.  If the market is up then dealers buy, if market is down dealers sell.  Their hedging amplifies the move which can produce larger swings, trendier days, more frequent breakouts and higher realized volatility.<br><br>The Total GEX at spot shows whether the regime is positive gamma or negative gama. The amount is the dollar move per 1% spot move according the GEX formula.
+The Zero-Gamma Level is the price where the aggregate market gamma changes sign:  Above it is a positive gamma regime, and below it, a negative gamma regime.  Many institutional traders consider this the most important gamma metric because it indicates whether dealer hedging is likely to dampen or amplify market moves.<br><br>If Spot > Zero Gamma when dealers are long gamma, if the market rises they tend to sell stock/futures to hedge; if the market falls then tend to buy stock/futures to hedge.  Their hedging activity tends to oppose the move.  Volatility then tends to be dampened, intraday moves tend to be smaller, pullbacks are often bought and rallies often sold.<br><br>If Spot < Zero Gramma, dealers are estimated to be short gamma.  If the market is up then dealers buy, if market is down dealers sell.  Their hedging amplifies the move which can produce larger swings, trendier days, more frequent breakouts and higher realized volatility.<br><br>The Total GEX at spot shows whether the regime is positive gamma or negative gama. The amount is the dollar move per 1% spot move according the GEX formula.
 <H4>Distance from Zero Gamma</H4>
 The distance measures how far the underlying is from the market's estimated gamma transition point. Positive values generally indicate a more stable, mean-reverting environment, while negative values suggest a higher-volatility environment where dealer hedging may amplify price moves.Gamma measures how far the underlying is from the market's estimated gamma transition point. Positive values generally indicate a more stable, mean-reverting environment, while negative values suggest a higher-volatility environment where dealer hedging may amplify price moves.  The moves/percentage moves give an immediate view of whether the market is barely above Zero Gamma or comfortably above it.
 <br><br>Refer to the surface tab to view in 3D.
@@ -211,8 +215,8 @@ Enter a ticker and click <b>Calculate Gamma</b>.  RiskSnap will retrieve the opt
         <label>Spot step<br><input id="rsGexStep" type="number" value="0.25" step="0.05" min="0.01"></label>
         <label>Sweep points<br><input id="rsGexPoints" type="number" value="161" step="2" min="21"></label>
         <button type="button" onclick="RiskSnapGEX.calculate()">Calculate Gamma</button>
-      <!--  <button type="button" onclick="RiskSnapGEX.downloadRawInput()">Download Raw Input CSV</button>
-        <button type="button" onclick="RiskSnapGEX.downloadFilteredInput()">Download Filtered Input CSV</button> -->
+        <button type="button" onclick="RiskSnapGEX.downloadRawInput()">Download Raw Input CSV</button>
+        <button type="button" onclick="RiskSnapGEX.downloadFilteredInput()">Download Filtered Input CSV</button>
     </div>
     <div id="rsGexStatus" class="rs-gex-status"></div>
     <div id="rsGexOutput" class="rs-gex-output" style="display:none;">
