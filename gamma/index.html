@@ -178,23 +178,15 @@ h2 {
     .rs-gex-map { margin-left: 15px; margin-right: 15px; }
     .rs-gex-axis { margin-left: 15px; margin-right: 15px; font-size: 13px; }
     .rs-gex-level span { min-width: 72px; font-size: 12px; }
+ }
+h3 {
+   color: white;
+    text-align: center;
+	background-color: #3A5FCD;
 }
 </style>
 
 <span id="Gamma"/>
-<H2>Gamma Exposure</H2> 
-<p>Gamma Exposure (GEX) = estimated change in an option dealer's hedge requirement for a 1% move in the underlying, calculated as:
-GEX=&Gamma;×OI×100×S^2×0.01. Gamma (&Gamma;) is the change in delta (1% spot move), OI is the Open Interest. Equity and index traders watch GEX for clues on how options dealers may hedge, which can affect stock or index price movements.
-
-Option sellers become short gamma, and as the market rises they must buy more shares/futures and as the market falls, must sell more.  This is negative, needing to buy in a rising market or sell in a falling market.  Volatility can accelerate causing breakouts and selloffs.
-<H4>Walls</H4>
-The Call Wall, (strike with the largest positive call GEX} considered a strong resistance level where Dealers may sell futures as price approaches, dampening the effect. The Put Wall, (strike with the largest put GEX) often a support, dealers may buy futures as prices decline with price stabilization. The Gamma Wall is the strike with the largest net positive gamma exposure:  Net GEX = Call GEX + Put GEX (put GEX is negative).  This strike is often where dealer hedging exerts the strongest stabilizing influence.
-<H4>Zero-Gamma Level</H4>
-The Zero-Gamma Level is the price where the aggregate market gamma changes sign:  Above is a positive gamma regime, and below, a negative gamma regime.  Many institutional traders consider this the most important gamma metric because dealer hedging may dampen or amplify market moves.If Spot > Zero Gamma when dealers are long gamma, if the market rises they tend to sell stock/futures to hedge and if the market falls they tend to buy.  Their hedging activity tends to oppose the move. Volatility is dampened, intraday moves tend to be smaller, often pullbacks are bought and rallies sold. If Spot < Zero Gramma, dealers are estimated to be short gamma.  If the market is up then dealers buy, if market is down dealers sell.  Their hedging amplifies the move which can produce larger swings, trendier days, more frequent breakouts and higher realized volatility.<br><br>The Total GEX at spot shows whether the regime is positive gamma or negative gama. The amount is the dollar move per 1% spot move according the GEX formula.
-<H4>Distance from Zero Gamma</H4>
-The distance measures how far the underlying is from the market's estimated gamma transition point. Positive values generally indicate a more stable, mean-reverting environment, while negative values suggest a higher-volatility environment where dealer hedging may amplify price moves.Gamma measures how far the underlying is from the market's estimated gamma transition point. Positive values generally indicate a more stable, mean-reverting environment, while negative values suggest a higher-volatility environment where dealer hedging may amplify price moves.  The moves/percentage moves give an immediate view of whether the market is barely above Zero Gamma or comfortably above it.
-<br><br>Refer to the surface tab to view in 3D.
-
 
 
 
@@ -226,7 +218,7 @@ Enter a ticker and click <b>Calculate Gamma</b>.  RiskSnap will retrieve the opt
                 <div id="rsGexInterpretation"></div>
             </div>
         </div>
-
+		<br><br>Refer to the surface tab to view in 3D.
         <div class="rs-gex-map-wrap">
             <h4>Gamma Map</h4>
             <div class="rs-gex-map" id="rsGexMap"></div>
@@ -500,8 +492,25 @@ const RiskSnapGEX = (() => {
     return { calculate, downloadRawInput, downloadFilteredInput };
 })();
 </script>
+<H2>Gamma Exposure</H2> 
+<p>Gamma Exposure (GEX) = estimated change in an option dealer's hedge requirement for a 1% move in the underlying, calculated as:
+GEX=&Gamma;×OI×100×S^2×0.01. Gamma (&Gamma;) is the change in delta (1% spot move), OI is the Open Interest. Equity and index traders watch GEX for clues on how options dealers may hedge, which can affect stock or index price movements.
 
-<H3>Gamma Ladder</H3>
+Option sellers become short gamma, and as the market rises they must buy more shares/futures and as the market falls, must sell more.  This is negative, needing to buy in a rising market or sell in a falling market.  Volatility can accelerate causing breakouts and selloffs.<br><br>
+<H4>Walls</H4>
+The Call Wall, (strike with the largest positive call GEX} is considered a strong resistance level and the Put Wall, (strike with the largest put GEX) is often a support. The Gamma Wall is the strike with the largest net positive gamma exposure:  Net GEX = Call GEX - Put GEX and is often where dealer hedging exerts the strongest stabilizing influence.<br><bf>
+<H4>Zero-Gamma Level</H4>
+This Level is the price where the net gamma changes sign:  Above is a positive gamma regime, and below, a negative gamma regime.  Many institutional traders consider this the most important gamma metric If Spot > Zero Gamma when dealers are long gamma, their hedging activity tends to oppose the move. If Spot < Zero Gramma, dealers are estimated to be short gamma.  Dealers go with the flow which can produce larger swings, trendier days, more frequent breakouts and higher realized volatility.<br><br>
+<H4>Total GEX at spot</H4> Shows whether the regime is positive gamma or negative gama. The amount is the dollar move per 1% spot move according to the GEX formula.
+<H4>Distance from Zero Gamma</H4>
+This is the distance from the gamma transition point. Positive values indicate a more stable, mean-reverting environment, while negative values suggest a higher-volatility environment. The moves/percentage moves give an immediate view of whether the market is barely above Zero Gamma or comfortably above it.
+
+
+
+<h4 style="margin-top:0; background-color:#3A5FCD; color:white; text-align:center; padding:6px;">
+        Gamma Ladder
+    </h4>
+<!--<H3>Gamma Ladder</H3>-->
 
 <p>Gamma is the change in delta</p>
 
@@ -512,10 +521,11 @@ const RiskSnapGEX = (() => {
 </div> 
 
 <div class="text-section">
+
 <p>  &#8226;	Ladder<p>
-The ladder shows the impact at the various spot levels.<p>
+The ladder shows the hedge amount at the various spot levels and illustrates how the hedging would affect option buyers vs sellers.<p>
 <p>  &#8226;	Traders that have purchased options<p>
-As spot increases the delta increases and the trader needs to sell more of the underlying to stay delta neutral.  As spot decrease, the delta decreases and the trader needs to buy more of the underlying.  Both instances are done at favorable spot, ie. selling as asset as spot increases and buying an asset as spot decrease.
+As spot increases the delta increases and the trader needs to sell more of the underlying to stay delta neutral.  As spot decreases, the delta decreases and the trader needs to buy more of the underlying.  Both instances are done at favorable spot, ie. selling as asset as spot increases and buying an asset as spot decrease.
 <p>  &#8226;	Traders that have sold options<p>
 The option seller has the delimma of having to buy more of the underlying as spot is increasing, and selling more as the price decreases.  The seller's disadvantage is offset by time decay which works in the seller's favour.  The ladder helps to visualize the effect in order to put stops where required.
 
@@ -527,7 +537,6 @@ Please click on User Agreement before using any calculators on RiskSnap.
 </p>
 
 <hr>
-<h3>Gamma Ladder</h3>
 
 <div class="rs-pricer-box rs-gamma-box">
     <h4>Gamma Ladder Calculator</h4>
