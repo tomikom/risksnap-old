@@ -82,7 +82,18 @@ A spot price embeds expectations of future economic events and pricing models in
 <h2>Yields</h2>
 <div class="a">    
 	<p>Yield curves are graphed for central governments of Canada, Europe, U.K., Japan and the U.S.(10 years of history, for 1, 2, 3, 5, 7, 10, 20, 30 yr tenors). Yield curves are flattening. Short term rates, especially U.S. yields are starting to turn up.  Long term yields embed<sup>*</sup> future expectations of short term interest rates, suggesting that rates in the future will be low.  With short term rates rising currently, a straight-line projection should indicate that long term yields will rise also.  Since that is not happening, the counter-intuitive reasoning is possibly that current high rates will depress future economic growth. The yield curve for the Japanese Treasuries is starting to decline following an uptick in 2016.
-    
+    <p>Volatility is increasing in the S&P500 index, ^GSPC.
+	<p>
+	
+	<img src="./images/Yields_CAD.png" alt="Yields CAD" width="200" height="100">
+	<b><font color="red">Click and expand below to view and compare curves</font></b></p>
+	<table>
+		<td><a href="http://www.risksnap.com/marketriskfactors/RiskSnapPopUp_Yields_CAD.html" target="_blank">CAD Yields</a> </td>
+		<td><a href="http://www.risksnap.com/marketriskfactors/RiskSnapPopUp_Yields_EUR.html" target="_blank">EUR Yields</a></td> 
+		<td><a href="http://www.risksnap.com/marketriskfactors/RiskSnapPopUp_Yields_GBP.html" target="_blank">GBP Yields</a></td>
+		<td><a href="http://www.risksnap.com/marketriskfactors/RiskSnapPopUp_Yields_JPY.html" target="_blank">JPY Yields</a></td> 
+		<td><a href="http://www.risksnap.com/marketriskfactors/RiskSnapPopUp_Yields_USD.html" target="_blank">USD Yields</a></td> 
+	</table> 
 	<p>
 	
 	<small><sup>*</sup>Bootstrapping of interest rates is a method used to price fixed rate and floating rate instruments consistently.  In this methodology the discounted sum of bond coupon payments equals the discounted sum of the expected short tem interest rates.    In fixed income analytics, a discount factor, d(t) = (1 - r(t)*sum of the discount facters up to t)/(1+r(t)).  From this the expected short term rate can be derived as  d(t-1)/d(t)-1.</small>
@@ -136,10 +147,6 @@ levels, not logs.
 </div>
 
 <div id="fxStatus" class="fx-status">Loading FX charts...</div>
-
-<div class="fx-card fx-combined-card">
-    <div id="fx_COMBINED" class="fx-chart fx-chart-combined"></div>
-</div>
 
 <div class="fx-grid">
     <div class="fx-card"><div id="fx_EURUSD" class="fx-chart"></div></div>
@@ -210,12 +217,6 @@ EURUSD=X, JPY=X, GBPUSD=X, CHF=X and CAD=X.
     width: 100%;
     height: 390px;
 }
-.fx-combined-card {
-    margin-bottom: 18px;
-}
-.fx-chart-combined {
-    height: 460px;
-}
 .fx-note {
     margin-top: 12px;
     color: #555;
@@ -271,65 +272,6 @@ function normalizeFxPayload(payload) {
             rates: item.rates || item.close || item.values || []
         };
     }).filter(Boolean);
-}
-
-
-function drawFxCombinedChart(series) {
-    const traces = [];
-
-    fxPairs.forEach(pair => {
-        const item = series.find(s => s.pair === pair.key || s.label === pair.label || s.ticker === pair.ticker);
-        if (!item) return;
-
-        const x = item.dates || [];
-        const y = item.rates || item.close || [];
-        if (!x.length || !y.length) return;
-
-        const base = Number(y[0]);
-        if (!base || !isFinite(base)) return;
-
-        const normalized = y.map(v => Number(v) / base * 100.0);
-
-        traces.push({
-            x: x,
-            y: normalized,
-            type: "scatter",
-            mode: "lines",
-            line: { width: 2.2 },
-            hovertemplate: "%{x}<br>Index: %{y:.2f}<extra>" + pair.label + "</extra>",
-            name: pair.label
-        });
-    });
-
-    const layout = {
-        title: { text: "FX rates normalized to 100", x: 0.03, xanchor: "left", font: { size: 18 } },
-        margin: { l: 58, r: 24, t: 58, b: 50 },
-        paper_bgcolor: "white",
-        plot_bgcolor: "white",
-        hovermode: "x unified",
-        legend: { orientation: "h", x: 0.02, y: -0.18 },
-        xaxis: {
-            showgrid: true,
-            gridcolor: "#edf1f7",
-            zeroline: false,
-            rangeslider: { visible: false }
-        },
-        yaxis: {
-            title: "Index, first date = 100",
-            showgrid: true,
-            gridcolor: "#edf1f7",
-            zeroline: false,
-            tickformat: ".1f"
-        }
-    };
-
-    const config = {
-        responsive: true,
-        displaylogo: false,
-        modeBarButtonsToRemove: ["lasso2d", "select2d"]
-    };
-
-    Plotly.newPlot("fx_COMBINED", traces, layout, config);
 }
 
 function drawFxChart(item) {
@@ -389,20 +331,6 @@ async function loadFxCharts() {
 
     if (FX_API_URL.indexOf("YOUR-CLOUD-RUN-URL") >= 0) {
         status.innerHTML = "Enter your Cloud Run URL in <b>FX_API_URL</b> to load the Yahoo Finance FX charts.";
-        const placeholderLayout = {
-            title: { text: "FX rates normalized to 100", x: 0.03, xanchor: "left", font: { size: 17 } },
-            annotations: [{
-                text: "Cloud Run URL not configured",
-                showarrow: false,
-                xref: "paper", yref: "paper", x: 0.5, y: 0.5,
-                font: { size: 15, color: "#666" }
-            }],
-            margin: { l: 50, r: 20, t: 55, b: 40 },
-            xaxis: { visible: false },
-            yaxis: { visible: false }
-        };
-        Plotly.newPlot("fx_COMBINED", [], placeholderLayout, { responsive: true, displaylogo: false });
-
         fxPairs.forEach(p => {
             const layout = {
                 title: { text: `${p.label} (${p.ticker})`, x: 0.03, xanchor: "left", font: { size: 16 } },
@@ -429,8 +357,6 @@ async function loadFxCharts() {
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         const payload = await response.json();
         const series = normalizeFxPayload(payload);
-
-        drawFxCombinedChart(series);
 
         fxPairs.forEach(pair => {
             const item = series.find(s => s.pair === pair.key || s.label === pair.label || s.ticker === pair.ticker);
