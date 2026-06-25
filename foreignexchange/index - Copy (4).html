@@ -78,7 +78,6 @@ Foreign exchange is the largest and most liquid financial market in the world. A
     <button type="button" onclick="setFxRange('5y')">5Y</button>
     <button type="button" onclick="setFxRange('10y')">10Y</button>
     <button type="button" onclick="setFxRange('max')">Max</button>
-	<button type="button" onclick="toggleGoldInCombined()">Toggle Gold in combined chart</button>
     <button type="button" onclick="loadFxCharts()">Update charts</button>
 </div>
 
@@ -187,8 +186,7 @@ economic growth, inflation, monetary policy, capital flows and geopolitical deve
 */
 const FX_API_URL = "https://surface-203178530029.northamerica-northeast2.run.app/fx_history";
 let fxRange = "10y";
-let includeGoldInCombined = true;
-let latestFxSeries = [];
+
 const fxPairs = [
     { key: "EURUSD", label: "EUR/USD", ticker: "EURUSD=X", div: "fx_EURUSD", color: "#1f77b4" },
     { key: "USDJPY", label: "USD/JPY", ticker: "JPY=X",    div: "fx_USDJPY", color: "#ff7f0e" },
@@ -197,10 +195,7 @@ const fxPairs = [
     { key: "USDCAD", label: "USD/CAD", ticker: "CAD=X",    div: "fx_USDCAD", color: "#9467bd" },
     { key: "GOLD", label: "Gold", ticker: "GC=F",div: "GOLD",color: "#DAA520" }
 ];
-function toggleGoldInCombined() {
-    includeGoldInCombined = !includeGoldInCombined;
-    drawFxCombinedChart(latestFxSeries);
-}
+
 function setFxRange(range) {
     fxRange = range;
     loadFxCharts();
@@ -237,8 +232,7 @@ function drawFxCombinedChart(series) {
     const traces = [];
 
     fxPairs.forEach(pair => {
-        if (!includeGoldInCombined && pair.key === "GOLD") return;
-		const item = series.find(s => s.pair === pair.key || s.label === pair.label || s.ticker === pair.ticker);
+        const item = series.find(s => s.pair === pair.key || s.label === pair.label || s.ticker === pair.ticker);
         if (!item) return;
 
         const x = item.dates || [];
@@ -389,7 +383,6 @@ async function loadFxCharts() {
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         const payload = await response.json();
         const series = normalizeFxPayload(payload);
-		latestFxSeries = series;
 
         drawFxCombinedChart(series);
 
