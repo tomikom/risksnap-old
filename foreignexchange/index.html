@@ -97,22 +97,17 @@ Foreign exchange is the largest and most liquid financial market in the world. A
     <div class="fx-card"><div id="fx_USDJPY" class="fx-chart"></div></div>
     <div class="fx-card"><div id="fx_GBPUSD" class="fx-chart"></div></div>
     <div class="fx-card"><div id="fx_USDCHF" class="fx-chart"></div></div>
-    <div class="fx-card fx-card-wide"><div id="fx_USDCAD" class="fx-chart"></div></div>
+    <div class="fx-card"><div id="fx_USDCAD" class="fx-chart"></div></div>
+    <div class="fx-card"><div id="GOLD" class="fx-chart"></div></div>
 </div>
 
 <p class="fx-note">
 Data source: Yahoo Finance via the RiskSnap Cloud Run FX endpoint. Yahoo tickers:
-EURUSD=X, JPY=X, GBPUSD=X, CHF=X and CAD=X.
+EURUSD=X, JPY=X, GBPUSD=X, CHF=X, CAD=X and GC=F.
 </p>
 <p>
-A spot price embeds expectations of future economic events and pricing models include market risk factors for these events.  The price of a bond embeds expectations of future short term rates and each bond in the term structure becomes a market risk factor. In the case of interest rate swaps the term structure becomes complex with many instruments used including over-night interest, cash, futures, bonds and swap spreads.  Liquidity is also important in term structures with the most liquid instruments used to build a discount curve.  Similarly, liquidity in option pricing is reflected by tendency for sellers to charge more as an option moves away from at-the-money.  The following graphs show risk factors for interest rate yields and volatility risk factors for a number of assets.
-
-<p>
-
-The U.S. dollar remains the dominant reserve and transaction currency, appearing
-on one side of most foreign exchange trades. Exchange rates reflect relative
-economic growth, inflation, monetary policy, capital flows and geopolitical
-developments.
+A spot price embeds expectations of future economic events and pricing models include market risk factors for these events. Gold is included D because it often trades as a monetary asset alongside major currencies. The U.S. dollar remains the dominant reserve and transaction currency, appearing on one side of most foreign exchange trades. Exchange rates reflect relative
+economic growth, inflation, monetary policy, capital flows and geopolitical developments.
 </div>
 
 <style>
@@ -162,9 +157,6 @@ developments.
     box-shadow: 0 4px 16px rgba(20, 35, 75, 0.10);
     padding: 10px;
 }
-.fx-card-wide {
-    grid-column: 1 / -1;
-}
 .fx-chart {
     width: 100%;
     height: 390px;
@@ -184,9 +176,6 @@ developments.
     .fx-grid {
         grid-template-columns: 1fr;
     }
-    .fx-card-wide {
-        grid-column: auto;
-    }
     .fx-chart {
         height: 340px;
     }
@@ -204,11 +193,12 @@ const FX_API_URL = "https://surface-203178530029.northamerica-northeast2.run.app
 let fxRange = "10y";
 
 const fxPairs = [
-    { key: "EURUSD", label: "EUR/USD", ticker: "EURUSD=X", div: "fx_EURUSD" },
-    { key: "USDJPY", label: "USD/JPY", ticker: "JPY=X",    div: "fx_USDJPY" },
-    { key: "GBPUSD", label: "GBP/USD", ticker: "GBPUSD=X", div: "fx_GBPUSD" },
-    { key: "USDCHF", label: "USD/CHF", ticker: "CHF=X",    div: "fx_USDCHF" },
-    { key: "USDCAD", label: "USD/CAD", ticker: "CAD=X",    div: "fx_USDCAD" }
+    { key: "EURUSD", label: "EUR/USD", ticker: "EURUSD=X", div: "fx_EURUSD", color: "#1f77b4" },
+    { key: "USDJPY", label: "USD/JPY", ticker: "JPY=X",    div: "fx_USDJPY", color: "#ff7f0e" },
+    { key: "GBPUSD", label: "GBP/USD", ticker: "GBPUSD=X", div: "fx_GBPUSD", color: "#2ca02c" },
+    { key: "USDCHF", label: "USD/CHF", ticker: "CHF=X",    div: "fx_USDCHF", color: "#d62728" },
+    { key: "USDCAD", label: "USD/CAD", ticker: "CAD=X",    div: "fx_USDCAD", color: "#9467bd" },
+    { key: "GOLD", label: "Gold", ticker: "GC=F",div: "GOLD",color: "#DAA520" }
 ];
 
 function setFxRange(range) {
@@ -232,6 +222,16 @@ function normalizeFxPayload(payload) {
     }).filter(Boolean);
 }
 
+function fxDecimals(pairKey) {
+    if (pairKey === "USDJPY" || pairKey === "GOLD") return 2;
+    return 4;
+}
+
+function fxHoverDecimals(pairKey) {
+    if (pairKey === "GOLD") return ".2f";
+    if (pairKey === "USDJPY") return ".3f";
+    return ".5f";
+}
 
 function drawFxCombinedChart(series) {
     const traces = [];
@@ -254,7 +254,7 @@ function drawFxCombinedChart(series) {
             y: normalized,
             type: "scatter",
             mode: "lines",
-            line: { width: 2.2 },
+            line: { width: pair.key === "GOLD" ? 3.6 : 2.2, color: pair.color },
             hovertemplate: "%{x}<br>Index: %{y:.2f}<extra>" + pair.label + "</extra>",
             name: pair.label
         });
@@ -301,15 +301,15 @@ function drawFxChart(item) {
     const lastDate = x.length ? x[x.length - 1] : "";
     const titleText = lastRate === null
         ? `${pair.label} (${pair.ticker})`
-        : `${pair.label} (${pair.ticker}) — ${lastRate.toFixed(pair.key === "USDJPY" ? 2 : 4)} as of ${lastDate}`;
+        : `${pair.label} (${pair.ticker}) — ${lastRate.toFixed(fxDecimals(pair.key))} as of ${lastDate}`;
 
     const trace = {
         x: x,
         y: y,
         type: "scatter",
         mode: "lines",
-        line: { width: 2.5 },
-        hovertemplate: "%{x}<br>Rate: %{y:.5f}<extra></extra>",
+        line: { width: 2.5, color: pair.color },
+        hovertemplate: `%{x}<br>Rate: %{y:${fxHoverDecimals(pair.key)}}<extra></extra>`,
         name: pair.label
     };
 
@@ -330,7 +330,7 @@ function drawFxChart(item) {
             showgrid: true,
             gridcolor: "#edf1f7",
             zeroline: false,
-            tickformat: pair.key === "USDJPY" ? ".2f" : ".4f"
+            tickformat: pair.key === "GOLD" ? ".0f" : (pair.key === "USDJPY" ? ".2f" : ".4f")
         }
     };
 
@@ -406,28 +406,5 @@ async function loadFxCharts() {
 window.addEventListener("load", loadFxCharts);
 </script>
 
-<!--<div class ="image-section">
-    <img class="figure" alt="" src="./images/Tenor Codes.png"  style="width:100%" />
-</div>-->
-<p>
-<span id="Volatility Surface"/>
-<h2>Volatility Surface</h2>
-<div class="a">	
-	<p>A volatility surface is a 3D representation of implied volatility of asset prices with time and strike being the other 2 axes.  The data source for a volatility surface are option prices.  The volatilities are backed out of an option pricing model, in this case Black-Scholes, with spot, interest rates and dividend yields being held constant.  In this way, the volatilities reflect current supply and demand for the underlying assets.  In general volatilities increase with time, however based on market conditions, near term options may exhibit higher volatility. Absent preference for puts or for calls, the ATM (at-the-money) volatility is lowest with volatility increasing as the strike goes further OTM (out-of-the-money) due to market preference for lower priced options.  A preference for puts over calls, such as hedges of underlying long positions in the assets, will introduce a skew into the surface. 
-	<p>
-	RiskSnap provides alternative methods and factors.  The description below is the default.
-	<p>
-	<p> The components of a surface are sourced from option market prices.  In order to standardize strikes, “Moneyness” is used defined as strike divided by spot.  Tenors are standardized market expiry dates. 	In producing a surface from market data, many factors are taken into consideration:  bid-offer spreads, minimum number of options for an expiry, and also certain arbitrage free conditions. These include: •	risk-reversal arbitrages:  puts and calls of the same strike for the same maturity must have the same volatility; as call strikes increase, the prices should fall, conversely for puts;•	bull and bear spread arbitrages.  The following arbitrage (butterfly put) should not exist. The minimum profit is .02 and maximum 1.02.  This is a win-win situation (before commissions).
-	<p>
-	<img src="./images/ButterflyPut.png" alt="Butterfly Put" width="800" height="200">
-	<p>
-	The pricing model is Black-Scholes where the dividend yield is based on put-call parity. This accommodates certain unknown factors such as the repo rate or the borrowing rate of equities for short sales or collateral and the dividend yield can sometimes be negative.  Interpolation across strikes is through a monotonic spline of implied vols from market prices.  Interpolation across time is linear variance.  Extrapolation is always an estimation process and a linear method is used to indicate direction base on the last 2 points. In order to distinguish source of data the surface table uses green for interpolations only, beige for extrapolations only, and wine for a mixture.
-	</p>
-	
-	<b><font color="red">Refer to Tab "Surface" for real time examples.</font></b></p>
-	
-	</div>
-</div>
-<p>
 
 
