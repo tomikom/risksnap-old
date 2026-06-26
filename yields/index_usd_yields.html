@@ -1,0 +1,270 @@
+---
+layout: marketriskfactors-template
+---
+
+<style>
+* { box-sizing: border-box; }
+div.a { text-indent: 50px; line-height: 1.6; }
+h1 { color: white; text-align: center; background-color: #3A5FCD; }
+h2 { color: white; text-align: center; background-color: #59B300; }
+table { font-family: arial, sans-serif; border-collapse: collapse; width: 100%; }
+td, th { border: 1px solid #dddddd; text-align: left; padding: 8px; }
+tr:nth-child(even) { background-color: #dddddd; }
+.button { background-color: #4CAF50; border: none; color: white; padding: 15px 32px; text-align: center; text-decoration: none; display: inline-block; font-size: 16px; margin: 4px 2px; cursor: pointer; border-radius: 12px; }
+.button2 { background-color: #008CBA; border-radius: 12px; }
+.button3 { background-color: #f44336; border-radius: 12px; }
+.button4 { background-color: #3A5FCD; border-radius: 12px; }
+
+.yield-section { line-height: 1.6; text-indent: 0; margin: 0 auto; max-width: 1180px; }
+.yield-section p { text-indent: 0; }
+.yield-controls { display: flex; flex-wrap: wrap; gap: 8px; margin: 18px 0 12px 0; }
+.yield-controls button, .yield-controls select {
+    background: #3A5FCD; color: white; border: 0; border-radius: 999px;
+    padding: 9px 16px; cursor: pointer; font-size: 14px;
+}
+.yield-controls select { background: #ffffff; color: #222; border: 1px solid #bfc9df; cursor: pointer; }
+.yield-controls button:hover { opacity: 0.88; }
+.yield-status { background: #f6f8fc; border-left: 5px solid #3A5FCD; padding: 10px 12px; margin: 10px 0 16px 0; color: #333; }
+.yield-grid { display: grid; grid-template-columns: repeat(2, minmax(320px, 1fr)); gap: 18px; }
+.yield-card { background: white; border: 1px solid #d9e0ef; border-radius: 16px; box-shadow: 0 4px 16px rgba(20, 35, 75, 0.10); padding: 10px; }
+.yield-chart { width: 100%; height: 430px; }
+.yield-wide-card { margin-bottom: 18px; }
+.yield-chart-wide { height: 500px; }
+.yield-note { margin-top: 12px; color: #555; font-size: 14px; }
+@media (max-width: 850px) {
+    .yield-grid { grid-template-columns: 1fr; }
+    .yield-chart { height: 360px; }
+}
+</style>
+
+<div class="yield-section">
+
+<span id="Yields"></span>
+<h2>Yields</h2>
+
+<p>
+Yield curves are graphed for the U.S. Treasury market for 1, 2, 3, 5, 7, 10, 20 and 30 year tenors.
+The charts below are created directly from <b>BOND_YIELDS_USD.csv</b>, so you do not need to paste an Excel chart image into the page.
+</p>
+
+<p>
+<small><sup>*</sup>Bootstrapping of interest rates is a method used to price fixed rate and floating rate instruments consistently. In this methodology, the discounted sum of bond coupon payments equals the discounted sum of the expected short-term interest rates. In fixed income analytics, a discount factor can be derived from the observed yield curve, and expected short-term rates can then be inferred from ratios of adjacent discount factors.</small>
+</p>
+
+<div class="yield-controls">
+    <button type="button" onclick="setYieldRange('1y')">1Y</button>
+    <button type="button" onclick="setYieldRange('3y')">3Y</button>
+    <button type="button" onclick="setYieldRange('5y')">5Y</button>
+    <button type="button" onclick="setYieldRange('10y')">10Y</button>
+    <button type="button" onclick="setYieldRange('max')">Max</button>
+    <select id="yieldTenorSelect" onchange="drawYieldCharts()">
+        <option value="10Y" selected>10Y history</option>
+        <option value="1Y">1Y history</option>
+        <option value="2Y">2Y history</option>
+        <option value="3Y">3Y history</option>
+        <option value="5Y">5Y history</option>
+        <option value="7Y">7Y history</option>
+        <option value="20Y">20Y history</option>
+        <option value="30Y">30Y history</option>
+    </select>
+    <button type="button" onclick="loadYieldCharts()">Update charts</button>
+</div>
+
+<div id="yieldStatus" class="yield-status">Loading USD yield charts...</div>
+
+<div class="yield-card yield-wide-card">
+    <div id="yield_curve_latest" class="yield-chart yield-chart-wide"></div>
+</div>
+
+<div class="yield-grid">
+    <div class="yield-card"><div id="yield_history" class="yield-chart"></div></div>
+    <div class="yield-card"><div id="yield_spread" class="yield-chart"></div></div>
+</div>
+
+<p class="yield-note">
+Data file expected in the same folder as this page: BOND_YIELDS_USD.csv. Required columns: Date, 1Y, 2Y, 3Y, 5Y, 7Y, 10Y, 20Y, 30Y.
+</p>
+
+</div>
+
+<script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+<script>
+const USD_YIELDS_CSV = "BOND_YIELDS_USD.csv";
+const yieldTenors = ["1Y", "2Y", "3Y", "5Y", "7Y", "10Y", "20Y", "30Y"];
+const yieldMaturities = [1, 2, 3, 5, 7, 10, 20, 30];
+let yieldRange = "10y";
+let latestYieldRows = [];
+
+function setYieldRange(range) {
+    yieldRange = range;
+    drawYieldCharts();
+}
+
+function parseCsvLine(line) {
+    const out = [];
+    let cur = "";
+    let inQuotes = false;
+    for (let i = 0; i < line.length; i++) {
+        const ch = line[i];
+        if (ch === '"') {
+            if (inQuotes && line[i + 1] === '"') { cur += '"'; i++; }
+            else { inQuotes = !inQuotes; }
+        } else if (ch === ',' && !inQuotes) {
+            out.push(cur);
+            cur = "";
+        } else {
+            cur += ch;
+        }
+    }
+    out.push(cur);
+    return out;
+}
+
+function parseYieldCsv(text) {
+    const lines = text.trim().split(/\r?\n/).filter(line => line.trim().length > 0);
+    if (!lines.length) return [];
+    const headers = parseCsvLine(lines[0]).map(h => h.trim());
+    return lines.slice(1).map(line => {
+        const parts = parseCsvLine(line);
+        const row = {};
+        headers.forEach((h, i) => row[h] = parts[i]);
+        yieldTenors.forEach(t => row[t] = Number(row[t]));
+        row.Date = row.Date;
+        return row;
+    }).filter(row => row.Date && isFinite(row["10Y"]));
+}
+
+function filteredYieldRows() {
+    if (yieldRange === "max") return latestYieldRows;
+    const years = Number(yieldRange.replace("y", ""));
+    const last = latestYieldRows[latestYieldRows.length - 1];
+    if (!last) return [];
+    const cutoff = new Date(last.Date);
+    cutoff.setFullYear(cutoff.getFullYear() - years);
+    return latestYieldRows.filter(row => new Date(row.Date) >= cutoff);
+}
+
+function drawLatestCurve(rows) {
+    const last = rows[rows.length - 1];
+    if (!last) return;
+
+    const trace = {
+        x: yieldMaturities,
+        y: yieldTenors.map(t => last[t]),
+        text: yieldTenors,
+        type: "scatter",
+        mode: "lines+markers",
+        line: { width: 3 },
+        marker: { size: 8 },
+        hovertemplate: "%{text}<br>Yield: %{y:.2f}%<extra></extra>",
+        name: "Latest curve"
+    };
+
+    const layout = {
+        title: { text: `USD yield curve — ${last.Date}`, x: 0.03, xanchor: "left", font: { size: 18 } },
+        margin: { l: 60, r: 24, t: 58, b: 52 },
+        paper_bgcolor: "white",
+        plot_bgcolor: "white",
+        hovermode: "closest",
+        xaxis: { title: "Maturity in years", showgrid: true, gridcolor: "#edf1f7", zeroline: false, tickvals: yieldMaturities, ticktext: yieldTenors },
+        yaxis: { title: "Yield (%)", showgrid: true, gridcolor: "#edf1f7", zeroline: false, tickformat: ".2f" }
+    };
+
+    Plotly.newPlot("yield_curve_latest", [trace], layout, plotlyConfig());
+}
+
+function drawYieldHistory(rows) {
+    const tenor = document.getElementById("yieldTenorSelect").value || "10Y";
+    const x = rows.map(r => r.Date);
+    const y = rows.map(r => r[tenor]);
+    const last = rows[rows.length - 1];
+
+    const trace = {
+        x: x,
+        y: y,
+        type: "scatter",
+        mode: "lines",
+        line: { width: 2.5 },
+        hovertemplate: `%{x}<br>${tenor}: %{y:.2f}%<extra></extra>`,
+        name: tenor
+    };
+
+    const layout = {
+        title: { text: `${tenor} Treasury yield history${last ? " — " + yieldRange : ""}`, x: 0.03, xanchor: "left", font: { size: 16 } },
+        margin: { l: 58, r: 22, t: 56, b: 48 },
+        paper_bgcolor: "white",
+        plot_bgcolor: "white",
+        hovermode: "x unified",
+        xaxis: { showgrid: true, gridcolor: "#edf1f7", zeroline: false, rangeslider: { visible: false } },
+        yaxis: { title: "Yield (%)", showgrid: true, gridcolor: "#edf1f7", zeroline: false, tickformat: ".2f" }
+    };
+
+    Plotly.newPlot("yield_history", [trace], layout, plotlyConfig());
+}
+
+function drawYieldSpread(rows) {
+    const x = rows.map(r => r.Date);
+    const y = rows.map(r => r["10Y"] - r["2Y"]);
+
+    const trace = {
+        x: x,
+        y: y,
+        type: "scatter",
+        mode: "lines",
+        line: { width: 2.5 },
+        hovertemplate: "%{x}<br>10Y - 2Y: %{y:.2f}%<extra></extra>",
+        name: "10Y - 2Y"
+    };
+
+    const layout = {
+        title: { text: `USD 10Y - 2Y yield spread — ${yieldRange}`, x: 0.03, xanchor: "left", font: { size: 16 } },
+        margin: { l: 58, r: 22, t: 56, b: 48 },
+        paper_bgcolor: "white",
+        plot_bgcolor: "white",
+        hovermode: "x unified",
+        xaxis: { showgrid: true, gridcolor: "#edf1f7", zeroline: false, rangeslider: { visible: false } },
+        yaxis: { title: "Spread (%)", showgrid: true, gridcolor: "#edf1f7", zeroline: true, zerolinecolor: "#999", tickformat: ".2f" }
+    };
+
+    Plotly.newPlot("yield_spread", [trace], layout, plotlyConfig());
+}
+
+function plotlyConfig() {
+    return { responsive: true, displaylogo: false, modeBarButtonsToRemove: ["lasso2d", "select2d"] };
+}
+
+function drawYieldCharts() {
+    const status = document.getElementById("yieldStatus");
+    const rows = filteredYieldRows();
+    if (!rows.length) {
+        status.textContent = "No USD yield data available.";
+        return;
+    }
+
+    drawLatestCurve(rows);
+    drawYieldHistory(rows);
+    drawYieldSpread(rows);
+
+    const first = rows[0].Date;
+    const last = rows[rows.length - 1].Date;
+    status.textContent = `USD yield charts updated. Range: ${yieldRange}. Dates: ${first} to ${last}.`;
+}
+
+async function loadYieldCharts() {
+    const status = document.getElementById("yieldStatus");
+    status.textContent = "Updating USD yield charts...";
+
+    try {
+        const response = await fetch(USD_YIELDS_CSV, { cache: "no-store" });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const text = await response.text();
+        latestYieldRows = parseYieldCsv(text);
+        latestYieldRows.sort((a, b) => new Date(a.Date) - new Date(b.Date));
+        drawYieldCharts();
+    } catch (err) {
+        status.textContent = `Could not load ${USD_YIELDS_CSV}: ${err.message}`;
+    }
+}
+
+window.addEventListener("load", loadYieldCharts);
+</script>
