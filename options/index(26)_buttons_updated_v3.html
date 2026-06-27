@@ -119,25 +119,6 @@ a.strategy-link {
     font-weight: bold;
 }
 
-
-#backToTop{
-    position:fixed;
-    bottom:20px;
-    right:20px;
-    display:none;
-    background:#3A5FCD;
-    color:white;
-    border:none;
-    border-radius:50%;
-    width:48px;
-    height:48px;
-    font-size:22px;
-    cursor:pointer;
-    box-shadow:0 2px 6px rgba(0,0,0,.3);
-}
-.button.active{
-    outline:3px solid #222;
-}
 </style>
 <div class="a">
 
@@ -148,7 +129,7 @@ a.strategy-link {
     padding: 15px 30px;
     text-align: center;
     display: inline-block;
-    font-size: 17px;
+    font-size: 16px;
     margin: 4px;
     cursor: pointer;
     border-radius: 12px;
@@ -161,9 +142,6 @@ a.strategy-link {
 .btn-calculators {background:#8A2BE2;}
 
 .navbar{
-    position:sticky;
-    top:0;
-    z-index:1000;
     text-align:center;
     background:#f3f3f3;
     border:1px solid #d0d0d0;
@@ -179,10 +157,10 @@ a.strategy-link {
 }
 </style>
 <div class="navbar">
-<button class="button btn-options" onclick="location.href='#Options'">📈&nbsp; Equity Options</button>
-<button class="button btn-pricer" onclick="location.href='#OptionPricer'">💲&nbsp; Online Black-Scholes Option Pricer</button>
-<button class="button btn-strategies" onclick="location.href='#Strategies'">♟️&nbsp; Strategies</button>
-<button class="button btn-calculators" onclick="location.href='#Calculators'">🧮&nbsp; Strategies - Calculators</button>
+<button class="button btn-options" onclick="location.href='#Options'">Equity Options</button>
+<button class="button btn-pricer" onclick="location.href='#OptionPricer'">Online Black-Scholes Option Pricer</button>
+<button class="button btn-strategies" onclick="location.href='#Strategies'">Strategies</button>
+<button class="button btn-calculators" onclick="location.href='#Calculators'">Strategies - Calculators</button>
 </div>
 <p>The Black-Scholes generalized formula can be used to price european options on stocks without dividends (the original model by Black and Scholes, 1973), options on stocks with a continuous dividend yield (Merton, 1973), options on futures (Black 1976) and options on currencies (Garman and Kohlhagen - 1983).<br><br>Options can be bought to possibly capitalize on a view with the loss capped at the premium paid, or sold to earn income at the risk that the option is exercised with possibility of unlimited losses.  Options can be sold/bought back to lock in current gains/losses.Strategies can be used to combine options, to mitigate costs/risk or increase income.
 Calculators are tools for understanding risk characteristics of various market products .
@@ -192,7 +170,7 @@ Calculators are tools for understanding risk characteristics of various market p
 <a href="https://www.risksnap.com/contact/#UserAgreement"> User Agreement</a>
 </p>
 <span id="OptionPricer"></span>
-<h3 style="background-color:#1E90FF;color:white;">💲&nbsp; Online Black-Scholes Option Pricer</h3>
+<h3 style="background-color:#1E90FF;color:white;">Online Black-Scholes Option Pricer</h3>
 <!--<p class="rs-strategy-link-note">
   For strategy calculators refer to:
   <a href="https://www.risksnap.com/strategies/#Calculators">Strategies calculators</a>
@@ -266,7 +244,6 @@ Calculators are tools for understanding risk characteristics of various market p
 
 </div>
 
-<button id="backToTop" onclick="window.scrollTo({top:0,behavior:'smooth'})">↑</button>
 <script>
 async function priceOption(prefix) {
 
@@ -521,7 +498,7 @@ Please click on User Agreement before using any calculators on RiskSnap.
 
 <hr>
 <span id="Calculators"></span>
-<H2 style="background-color:#8A2BE2;color:white;">🧮&nbsp; Strategies - Calculators</H2>
+<H2 style="background-color:#8A2BE2;color:white;">Strategies - Calculators</H2>
 
 <!--<p><img class="pic" src="./images/BullBear.png" width="70" alt="BullBear" align="left"></p>
 <div class="a"> -->
@@ -564,7 +541,7 @@ Please click on User Agreement before using any calculators on RiskSnap.
 .rs-summary {
     margin-top: 18px;
     font-weight: bold;
-    font-size: 17px;
+    font-size: 16px;
 }
 .rs-note {
     font-size: 13px;
@@ -2486,32 +2463,4 @@ STRATEGY_DEFS["s18"] = {
 }
   ]
 };
-</script>
-
-<script>
-const topBtn=document.getElementById('backToTop');
-window.addEventListener('scroll',()=>{
-  topBtn.style.display=window.scrollY>300?'block':'none';
-});
-const sections=[
- ['Options','.btn-options'],
- ['OptionPricer','.btn-pricer'],
- ['Strategies','.btn-strategies'],
- ['Calculators','.btn-calculators']
-];
-const buttons=document.querySelectorAll('.button');
-function updateActive(){
- buttons.forEach(b=>b.classList.remove('active'));
- let y=window.scrollY+120;
- for(let i=sections.length-1;i>=0;i--){
-   const el=document.getElementById(sections[i][0]);
-   if(el && el.offsetTop<=y){
-      const b=document.querySelector(sections[i][1]);
-      if(b)b.classList.add('active');
-      break;
-   }
- }
-}
-window.addEventListener('scroll',updateActive);
-updateActive();
 </script>
