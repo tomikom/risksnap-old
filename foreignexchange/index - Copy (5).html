@@ -94,7 +94,7 @@ Foreign exchange is the largest and most liquid financial market in the world. A
     <div class="fx-card"><div id="fx_GBPUSD" class="fx-chart"></div></div>
     <div class="fx-card"><div id="fx_USDCHF" class="fx-chart"></div></div>
     <div class="fx-card"><div id="fx_USDCAD" class="fx-chart"></div></div>
-    <div class="fx-card"><div id="fx_GOLD" class="fx-chart"></div></div>
+    <div class="fx-card"><div id="GOLD" class="fx-chart"></div></div>
 </div>
 
 <p class="fx-note">
@@ -195,7 +195,7 @@ const fxPairs = [
     { key: "GBPUSD", label: "GBP/USD", ticker: "GBPUSD=X", div: "fx_GBPUSD", color: "#2ca02c" },
     { key: "USDCHF", label: "USD/CHF", ticker: "CHF=X",    div: "fx_USDCHF", color: "#d62728" },
     { key: "USDCAD", label: "USD/CAD", ticker: "CAD=X",    div: "fx_USDCAD", color: "#9467bd" },
-    { key: "GOLD", label: "Gold", ticker: "GC=F", div: "fx_GOLD", color: "#DAA520" }
+    { key: "GOLD", label: "Gold", ticker: "GC=F",div: "GOLD",color: "#DAA520" }
 ];
 function toggleGoldInCombined() {
     includeGoldInCombined = !includeGoldInCombined;
@@ -241,11 +241,8 @@ function drawFxCombinedChart(series) {
 		const item = series.find(s => s.pair === pair.key || s.label === pair.label || s.ticker === pair.ticker);
         if (!item) return;
 
-        if (item.error) return;
-
-        const points = cleanFxPoints(item);
-        const x = points.x;
-        const y = points.y;
+        const x = item.dates || [];
+        const y = item.rates || item.close || [];
         if (!x.length || !y.length) return;
 
         const base = Number(y[0]);
@@ -295,61 +292,17 @@ function drawFxCombinedChart(series) {
     Plotly.newPlot("fx_COMBINED", traces, layout, config);
 }
 
-function drawFxPlaceholder(pair, message) {
-    const layout = {
-        title: { text: `${pair.label} (${pair.ticker})`, x: 0.03, xanchor: "left", font: { size: 16 } },
-        annotations: [{
-            text: message,
-            showarrow: false,
-            xref: "paper", yref: "paper", x: 0.5, y: 0.5,
-            font: { size: 14, color: "#666" }
-        }],
-        margin: { l: 50, r: 20, t: 55, b: 40 },
-        paper_bgcolor: "white",
-        plot_bgcolor: "white",
-        xaxis: { visible: false },
-        yaxis: { visible: false }
-    };
-    Plotly.newPlot(pair.div, [], layout, { responsive: true, displaylogo: false });
-}
-
-function cleanFxPoints(item) {
-    const dates = item.dates || item.date || [];
-    const rates = item.rates || item.close || item.values || [];
-    const x = [];
-    const y = [];
-
-    for (let i = 0; i < Math.min(dates.length, rates.length); i++) {
-        const v = Number(rates[i]);
-        if (dates[i] && isFinite(v)) {
-            x.push(dates[i]);
-            y.push(v);
-        }
-    }
-    return { x, y };
-}
-
 function drawFxChart(item) {
     const pair = fxPairs.find(p => p.key === item.pair || p.label === item.label || p.ticker === item.ticker);
     if (!pair) return;
 
-    if (item.error) {
-        drawFxPlaceholder(pair, `No data: ${item.error}`);
-        return;
-    }
-
-    const points = cleanFxPoints(item);
-    const x = points.x;
-    const y = points.y;
-
-    if (!x.length || !y.length) {
-        drawFxPlaceholder(pair, "No usable data returned");
-        return;
-    }
-
-    const lastRate = Number(y[y.length - 1]);
-    const lastDate = x[x.length - 1] || "";
-    const titleText = `${pair.label} (${pair.ticker}) — ${lastRate.toFixed(fxDecimals(pair.key))} as of ${lastDate}`;
+    const x = item.dates || [];
+    const y = item.rates || item.close || [];
+    const lastRate = y.length ? Number(y[y.length - 1]) : null;
+    const lastDate = x.length ? x[x.length - 1] : "";
+    const titleText = lastRate === null
+        ? `${pair.label} (${pair.ticker})`
+        : `${pair.label} (${pair.ticker}) — ${lastRate.toFixed(fxDecimals(pair.key))} as of ${lastDate}`;
 
     const trace = {
         x: x,
@@ -440,25 +393,13 @@ async function loadFxCharts() {
 
         drawFxCombinedChart(series);
 
-        const missing = [];
-        const errors = [];
-
         fxPairs.forEach(pair => {
             const item = series.find(s => s.pair === pair.key || s.label === pair.label || s.ticker === pair.ticker);
-            if (item) {
-                drawFxChart(item);
-                if (item.error) errors.push(`${pair.label}: ${item.error}`);
-            } else {
-                missing.push(pair.label);
-                drawFxPlaceholder(pair, "Pair not returned by FX endpoint");
-            }
+            if (item) drawFxChart(item);
         });
 
         const stamp = payload.updated_at || payload.timestamp || new Date().toLocaleString();
-        let message = `FX charts updated. Range: ${fxRange}. ${stamp}`;
-        if (missing.length) message += ` Missing: ${missing.join(", ")}.`;
-        if (errors.length) message += ` Errors: ${errors.join("; ")}.`;
-        status.textContent = message;
+        status.textContent = `FX charts updated. Range: ${fxRange}. ${stamp}`;
     } catch (err) {
         status.textContent = `Could not load FX data: ${err.message}`;
     }
