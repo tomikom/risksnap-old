@@ -264,6 +264,7 @@ Enter a ticker and click <b>Calculate Gamma</b>.  RiskSnap will retrieve the opt
 </style>
 
 <script>
+const API_BASE = "https://surface-203178530029.northamerica-northeast2.run.app";
 const RiskSnapGEX = (() => {
     let lastTicker = "";
     let lastRawCSV = "";
@@ -286,7 +287,7 @@ const RiskSnapGEX = (() => {
         if (!ticker) { alert("Enter a ticker first."); return; }
         try {
             const url = `https://surface-203178530029.northamerica-northeast2.run.app/surface_csv?ticker=${encodeURIComponent(ticker)}`;
-            const response = await fetch(url);
+			const response = await fetch(url);
             if (!response.ok) throw new Error(`CSV service returned ${response.status}`);
             const csv = await response.text();
             lastTicker = ticker;
@@ -428,7 +429,7 @@ const RiskSnapGEX = (() => {
         if (!ticker || !(step > 0) || !(points > 2)) { status.textContent = "Please enter a ticker, positive step size, and sweep points."; return; }
         status.textContent = `Loading ${ticker} option chain...`;
         try {
-            const url = `https://surface-203178530029.northamerica-northeast2.run.app/surface_csv?ticker=${encodeURIComponent(ticker)}`;
+		    const url = `https://surface-203178530029.northamerica-northeast2.run.app/surface_csv?ticker=${encodeURIComponent(ticker)}`;
             const response = await fetch(url);
             if (!response.ok) throw new Error(`CSV service returned ${response.status}`);
             const csv = await response.text();
