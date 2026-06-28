@@ -44,7 +44,7 @@ tr:nth-child(even) { background-color: #dddddd; }
 <h2>Yields</h2>
 
 <p>
-Yield curves are graphed for central government bond markets. The USD chart is loaded from the RiskSnap Cloud Run yields endpoint, so you do not need to paste Excel chart images into the web page.
+Yield curves are graphed for central government bond markets. The USD chart is loaded from the RiskSnap Cloud Run yields endpoint. The GBP chart is loaded from BOND_YIELDS_GBP.csv generated from Bank of England yield curve data.
 </p>
 
 <p>
@@ -88,7 +88,7 @@ Yield curves are graphed for central government bond markets. The USD chart is l
 </div>
 
 <p class="yield-note">
-USD data source: RiskSnap Cloud Run yields endpoint using public Treasury/FRED daily constant-maturity data. Other countries can be added later using the same endpoint structure.
+USD data source: RiskSnap Cloud Run yields endpoint using public Treasury/FRED daily constant-maturity data. GBP data source: Bank of England nominal spot curve data, converted to BOND_YIELDS_GBP.csv. Other countries can be added later using the same endpoint structure.
 </p>
 
 </div>
@@ -154,6 +154,22 @@ function normalizeYieldRows(payload) {
     return rows.map(r => {
         const row = { Date: r.Date || r.date || r.record_date };
         yieldTenors.forEach(t => row[t] = Number(r[t]));
+        return row;
+    }).filter(row => row.Date && yieldTenors.some(t => isFinite(row[t])));
+}
+
+function parseYieldCSV(text) {
+    const lines = text.trim().split(/\r?\n/).filter(Boolean);
+    if (!lines.length) return [];
+    const headers = lines[0].split(",").map(h => h.trim());
+    const dateIndex = headers.indexOf("Date");
+    return lines.slice(1).map(line => {
+        const cols = line.split(",");
+        const row = { Date: cols[dateIndex] };
+        yieldTenors.forEach(t => {
+            const idx = headers.indexOf(t);
+            row[t] = idx >= 0 ? Number(cols[idx]) : NaN;
+        });
         return row;
     }).filter(row => row.Date && yieldTenors.some(t => isFinite(row[t])));
 }
@@ -357,12 +373,23 @@ function drawYieldCharts() {
 
 async function loadOneCountry(country) {
     if (country.disabled) throw new Error(country.code + " not enabled yet");
-    const url = YIELDS_API_URL + "?country=" + encodeURIComponent(country.code) + "&period=" + encodeURIComponent(yieldRange);
-    const response = await fetch(url, { cache: "no-store" });
-    if (!response.ok) throw new Error(country.code + " HTTP " + response.status);
-    const payload = await response.json();
-    if (payload.error) throw new Error(payload.error);
-    const rows = normalizeYieldRows(payload);
+
+    let rows = [];
+
+    if (country.code === "GBP") {
+        const response = await fetch("BOND_YIELDS_GBP.csv", { cache: "no-store" });
+        if (!response.ok) throw new Error(country.code + " CSV HTTP " + response.status);
+        const csvText = await response.text();
+        rows = parseYieldCSV(csvText);
+    } else {
+        const url = YIELDS_API_URL + "?country=" + encodeURIComponent(country.code) + "&period=" + encodeURIComponent(yieldRange);
+        const response = await fetch(url, { cache: "no-store" });
+        if (!response.ok) throw new Error(country.code + " HTTP " + response.status);
+        const payload = await response.json();
+        if (payload.error) throw new Error(payload.error);
+        rows = normalizeYieldRows(payload);
+    }
+
     rows.sort((a, b) => new Date(a.Date) - new Date(b.Date));
     allYieldRows[country.code] = rows;
     return country;

@@ -202,9 +202,8 @@ Enter a ticker and click <b>Calculate Gamma</b>.  RiskSnap will retrieve the opt
         <label>Ticker<br><input id="rsGexTicker" type="text" value="NVDA" style="text-transform:uppercase"></label>
         <label>Spot step<br><input id="rsGexStep" type="number" value="0.25" step="0.05" min="0.01"></label>
         <label>Sweep points<br><input id="rsGexPoints" type="number" value="161" step="2" min="21"></label>
-        <button type="button" onclick="RiskSnapGEX.calculate()">γ Calculate Gamma</button>
-      <!--  <button type="button" onclick="RiskSnapGEX.downloadRawInput()">Download Raw Input CSV</button>
-        <button type="button" onclick="RiskSnapGEX.downloadFilteredInput()">Download Filtered Input CSV</button> -->
+        <button type="button" onclick="RiskSnapGEX.calculate()">Calculate Gamma</button>
+		<button class="button btn-strategies" onclick="location.href='#Strategies'">	⚙️️&nbsp; Strategies</butt
     </div>
     <div id="rsGexStatus" class="rs-gex-status"></div>
     <div id="rsGexOutput" class="rs-gex-output" style="display:none;">
@@ -555,7 +554,7 @@ Please click on User Agreement before using any calculators on RiskSnap.
         <label>Vol curve<br><select id="rsCurve"><option value="Curve">Heston curve</option><option value="No Curve">Flat vol</option></select></label>
         <label>Heston rho<br><input id="rsRho" type="number" value="-0.85" step="0.01" min="-1" max="1"></label>
     </div>
-    <button type="button" onclick="RiskSnapGamma.calculate()">🛝 Calculate Gamma Ladder</button>
+    <button type="button" onclick="RiskSnapGamma.calculate()">Calculate Gamma Ladder</button>
     <div id="rsGammaSummary" class="rs-pricer-result"></div>
     <div class="rs-table-wrap">
         <table id="rsGammaTable" class="rs-gamma-table">
