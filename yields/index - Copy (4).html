@@ -117,7 +117,7 @@ const yieldCountries = [
     { code: "USD", name: "United States", color: "#1f77b4" },
     { code: "CAD", name: "Canada",        color: "#ff7f0e", disabled: true },
     { code: "GBP", name: "United Kingdom",color: "#2ca02c" },
-    { code: "EUR", name: "Eurozone",      color: "#d62728" },
+    { code: "EUR", name: "Eurozone",      color: "#d62728", disabled: true },
     { code: "JPY", name: "Japan",         color: "#9467bd" },
     { code: "CHF", name: "Switzerland",   color: "#8c564b", disabled: true }
 ];
@@ -255,7 +255,7 @@ function drawLatestCurve(country, rows) {
 }
 
 function drawYieldHistory(country, rows) {
-    const tenor = document.getElementById("yieldTenorSelect").value || "max";
+    const tenor = document.getElementById("yieldTenorSelect").value || "10Y";
     const trace = {
         x: rows.map(r => r.Date),
         y: rows.map(r => r[tenor]),
