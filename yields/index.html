@@ -44,11 +44,10 @@ tr:nth-child(even) { background-color: #dddddd; }
 <h2>Yields</h2>
 
 <p>
-Yield curves are graphed for central government bond markets. The USD chart is loaded from the RiskSnap Cloud Run yields endpoint, so you do not need to paste Excel chart images into the web page.
+Daily interest rate yields in the charts are derived from Central Bank data covering historical periods to date, starting in 1962 for the  Fed (USD), 1970  BOC (CAD),  2004 ECB (EUR),  1979 BOE (GBP), 1974  MOF (JPY), and 1988  SNB (CHF).  Use the MAX button to view.
 </p>
+<small>The maximum period covers periods of financial crisis:  The arab oil embargo of 1973-1974 resulted in high inflation,  capped  by Paul Volcker by 19% rates.  During the dot-com era, in early 2000, the U.S. Federal Reserve raised  rates modestly to curb investment.  in 2002, the Nasdaq fell from 5048 to 1139.  During 2007-08 (Financial Crisis, Lehman Brothers default, Sub-prime loans), the US housing market collapsed. Quantitative Easing addressed the crisis. Rates were starting to rise when Covid 19 led to near zero and negative rates in some countries.  Raising of the rates to 2023 led to topping of the housing markets.
 
-<p>
-<small><sup>*</sup>Bootstrapping of interest rates is a method used to price fixed rate and floating rate instruments consistently. In this methodology, the discounted sum of bond coupon payments equals the discounted sum of the expected short-term interest rates. In fixed income analytics, a discount factor can be derived from the observed yield curve, and expected short-term rates can then be inferred from ratios of adjacent discount factors .</small>
 </p>
 
 <div class="yield-controls">
@@ -115,7 +114,7 @@ const yieldTenorColors = {
 };
 const yieldCountries = [
     { code: "USD", name: "United States", color: "#1f77b4" },
-    { code: "CAD", name: "Canada",        color: "#ff7f0e", disabled: true },
+    { code: "CAD", name: "Canada",        color: "#ff7f0e" },
     { code: "GBP", name: "United Kingdom",color: "#2ca02c" },
     { code: "EUR", name: "Eurozone",      color: "#d62728" },
     { code: "JPY", name: "Japan",         color: "#9467bd" },
