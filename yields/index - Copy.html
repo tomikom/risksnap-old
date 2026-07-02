@@ -201,13 +201,7 @@ function drawCombined10Y() {
         plot_bgcolor: "white",
         hovermode: "x unified",
         legend: { orientation: "h", x: 0.02, y: -0.18 },
-        xaxis: {
-			showgrid: true,
-			gridcolor: "#edf1f7",
-			zeroline: false,
-			rangeslider: { visible: false } },
-			tickformat: "%b %d, %Y",
-			hoverformat: "%b %d, %Y"
+        xaxis: { showgrid: true, gridcolor: "#edf1f7", zeroline: false, rangeslider: { visible: false } },
         yaxis: { title: "Yield (%)", showgrid: true, gridcolor: "#edf1f7", zeroline: false, tickformat: ".2f" }
     };
 
@@ -237,13 +231,7 @@ function drawAllTenorsHistory(country, rows) {
         plot_bgcolor: "white",
         hovermode: "x unified",
         legend: { orientation: "h", x: 0.02, y: -0.18 },
-        xaxis:
-			{ showgrid: true,
-			gridcolor: "#edf1f7",
-			zeroline: false,
-			rangeslider: { visible: false } },
-			tickformat: "%b %d, %Y",
-			hoverformat: "%b %d, %Y"
+        xaxis: { showgrid: true, gridcolor: "#edf1f7", zeroline: false, rangeslider: { visible: false } },
         yaxis: { title: "Yield (%)", showgrid: true, gridcolor: "#edf1f7", zeroline: false, tickformat: ".2f" }
     };
 
@@ -270,12 +258,7 @@ function drawLatestCurve(country, rows) {
         paper_bgcolor: "white",
         plot_bgcolor: "white",
         hovermode: "closest",
-        xaxis: { title: "Maturity in years",
-			showgrid: true, 
-			gridcolor: "#edf1f7",
-			zeroline: false,
-			tickvals: yieldMaturities,
-			ticktext: yieldTenors },
+        xaxis: { title: "Maturity in years", showgrid: true, gridcolor: "#edf1f7", zeroline: false, tickvals: yieldMaturities, ticktext: yieldTenors },
         yaxis: { title: "Yield (%)", showgrid: true, gridcolor: "#edf1f7", zeroline: false, tickformat: ".2f" }
     };
     Plotly.newPlot("yield_curve_latest", [trace], layout, plotlyConfig());
@@ -298,13 +281,7 @@ function drawYieldHistory(country, rows) {
         paper_bgcolor: "white",
         plot_bgcolor: "white",
         hovermode: "x unified",
-        xaxis:
-			{ showgrid: true,
-			gridcolor: "#edf1f7",
-			zeroline: false,
-			rangeslider: { visible: false } },
-			tickformat: "%b %d, %Y",
-			hoverformat: "%b %d, %Y"
+        xaxis: { showgrid: true, gridcolor: "#edf1f7", zeroline: false, rangeslider: { visible: false } },
         yaxis: { title: "Yield (%)", showgrid: true, gridcolor: "#edf1f7", zeroline: false, tickformat: ".2f" }
     };
     Plotly.newPlot("yield_history", [trace], layout, plotlyConfig());
@@ -326,13 +303,7 @@ function drawYieldSpread(country, rows) {
         paper_bgcolor: "white",
         plot_bgcolor: "white",
         hovermode: "x unified",
-        xaxis:
-			{ showgrid: true,
-			gridcolor: "#edf1f7",
-			zeroline: false, 
-			rangeslider: { visible: false } },
-			tickformat: "%b %d, %Y",
-			hoverformat: "%b %d, %Y"
+        xaxis: { showgrid: true, gridcolor: "#edf1f7", zeroline: false, rangeslider: { visible: false } },
         yaxis: { title: "Spread (%)", showgrid: true, gridcolor: "#edf1f7", zeroline: true, zerolinecolor: "#999", tickformat: ".2f" }
     };
     Plotly.newPlot("yield_spread", [trace], layout, plotlyConfig());
@@ -354,12 +325,7 @@ function drawLatestTableChart(country, rows) {
         margin: { l: 58, r: 22, t: 56, b: 48 },
         paper_bgcolor: "white",
         plot_bgcolor: "white",
-        xaxis: { title: "Tenor",
-			showgrid: false,
-			zeroline: false },
-			rangeslider: { visible: false },
-			tickformat: "%b %d, %Y",
-			hoverformat: "%b %d, %Y"
+        xaxis: { title: "Tenor", showgrid: false, zeroline: false },
         yaxis: { title: "Yield (%)", showgrid: true, gridcolor: "#edf1f7", zeroline: false, tickformat: ".2f" }
     };
     Plotly.newPlot("yield_table_chart", [trace], layout, plotlyConfig());
