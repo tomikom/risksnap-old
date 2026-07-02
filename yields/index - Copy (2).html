@@ -3,472 +3,441 @@ layout: marketriskfactors-template
 ---
 
 <style>
-* {
-    box-sizing: border-box;
+* { box-sizing: border-box; }
+div.a { text-indent: 50px; line-height: 1.6; }
+h1 { color: white; text-align: center; background-color: #3A5FCD; }
+h2 { color: white; text-align: center; background-color: #59B300; }
+table { font-family: arial, sans-serif; border-collapse: collapse; width: 100%; }
+td, th { border: 1px solid #dddddd; text-align: left; padding: 8px; }
+tr:nth-child(even) { background-color: #dddddd; }
+.button { background-color: #4CAF50; border: none; color: white; padding: 15px 32px; text-align: center; text-decoration: none; display: inline-block; font-size: 16px; margin: 4px 2px; cursor: pointer; border-radius: 12px; }
+.button2 { background-color: #008CBA; border-radius: 12px; }
+.button3 { background-color: #f44336; border-radius: 12px; }
+.button4 { background-color: #3A5FCD; border-radius: 12px; }
+
+.yield-section { line-height: 1.6; text-indent: 0; margin: 0 auto; max-width: 1180px; }
+.yield-section p { text-indent: 0; }
+.yield-controls { display: flex; flex-wrap: wrap; gap: 8px; margin: 18px 0 12px 0; align-items: center; }
+.yield-control-label { font-weight: bold; color: #333; margin-left: 8px; }
+.yield-controls button, .yield-controls select {
+    background: #3A5FCD; color: white; border: 0; border-radius: 999px;
+    padding: 9px 16px; cursor: pointer; font-size: 14px;
 }
-div.a {
-    text-indent: 50px;
-	line-height:1.6;
-}
-h1 {
-    color: white;
-    text-align: center;
-	background-color: #3A5FCD;
-}
-h2 {
-    color: white;
-    text-align: center;
-	background-color: #59B300;
-}
-table {
-    font-family: arial, sans-serif;
-    border-collapse: collapse;
-    width: 100%;
-}
-
-td, th {
-    border: 1px solid #dddddd;
-    text-align: left;
-    padding: 8px;
-}
-
-tr:nth-child(even) {
-    background-color: #dddddd;
-}
-</style>
-
-<div class="a">
-<style>
-.button {
-    background-color: #4CAF50; /* Green */
-    border: none;
-    color: white;
-    padding: 15px 32px;
-    text-align: center;
-    text-decoration: none;
-    display: inline-block;
-    font-size: 16px;
-    margin: 4px 2px;
-    cursor: pointer;
-}
-
-.button2 {background-color: #008CBA;} /* Blue */
-.button3 {background-color: #f44336;} /* Red */ 
-.button4 {background-color: #3A5FCD;} /* Royal Blue */ 
-
-.button {border-radius: 12px;}
-.button2 {border-radius: 12px;}
-.button3 {border-radius: 12px;}
-.button4 {border-radius: 12px;}
-
-
-</style>
-
-<button class="button"  onclick="window.location.href='#Yields'">Yields</button>
-<button class="button button2"  onclick="window.location.href='#Volatility'">Volatility</button>
-<button class="button button3"  onclick="window.location.href='#SpotForeignExchange'">Spot 
-Foreign Exchange</button>
-<button class="button button4"  onclick="window.location.href='#Volatility Surface'">Volatility Surface</button> 
-
-<p>A market risk factor is an attribute of a financial instrument that contributes to the valuation of that instrument.  Pricing models use mathematical formulas to convert market risk factors into a price that can be used to buy or sell (trade) the instrument.  An instrument with high liquidity will allow traders to put higher reliance on the underlying market risk factors.
-<p>
-The most liquid market risk factors are foreign exchange rates with a daily trading volume of $5 trillion per day.  Other “spot” type of market risk factors, ie. Those with short days to settlement include treasury bonds, large cap equities, and futures with large trading volume
-<p>
-A spot price embeds expectations of future economic events and pricing models include market risk factors for these events.  The price of a bond embeds expectations of future short term rates and each bond in the term structure becomes a market risk factor. In the case of interest rate swaps the term structure becomes complex with many instruments used including over-night interest, cash, futures, bonds and swap spreads.  Liquidity is also important in term structures with the most liquid instruments used to build a discount curve.  Similarly, liquidity in option pricing is reflected by tendency for sellers to charge more as an option moves away from at-the-money.  The following graphs show risk factors for interest rate yields and volatility risk factors for a number of assets.
-
-
-<p>
-<span id="Yields"/>
-<h2>Yields</h2>
-<div class="a">    
-	<p>Yield curves are graphed for central governments of Canada, Europe, U.K., Japan and the U.S.(10 years of history, for 1, 2, 3, 5, 7, 10, 20, 30 yr tenors). Yield curves are flattening. Short term rates, especially U.S. yields are starting to turn up.  Long term yields embed<sup>*</sup> future expectations of short term interest rates, suggesting that rates in the future will be low.  With short term rates rising currently, a straight-line projection should indicate that long term yields will rise also.  Since that is not happening, the counter-intuitive reasoning is possibly that current high rates will depress future economic growth. The yield curve for the Japanese Treasuries is starting to decline following an uptick in 2016.
-    
-	<p>
-	
-	<small><sup>*</sup>Bootstrapping of interest rates is a method used to price fixed rate and floating rate instruments consistently.  In this methodology the discounted sum of bond coupon payments equals the discounted sum of the expected short tem interest rates.    In fixed income analytics, a discount factor, d(t) = (1 - r(t)*sum of the discount facters up to t)/(1+r(t)).  From this the expected short term rate can be derived as  d(t-1)/d(t)-1.</small>
-    </p>
-	
-	</div>
-
-<p>
-<span id="Volatility"/>
-<h2>Volatility</h2>
-<div class="a">	
-	<p>Volatility is the risk factor that distinguishes the pricing of options from pricing of their underlying assets.  The graphs above plot historical standard deviations for various time periods for the S&P Index (^GSPC), a cryptocurrency, bitcoin(BTC), gasoline futures (RB) and foreign exchange spot (GBPUSD).  Unlike many risk factors where highest risk was observed during the financial crisis of 2008, energy volatility is a function not only of economic/political factors, but of weather. At the end of August, wholesale gasoline jumped nearly 14% due to tropical storm Harvey. The pound sterling experienced high volatility following the Brexit vote in June 2016.
-	</p>
-	<img src="./images/Vols_Equity_^GSPC.png" alt="Volatility ^GSPC" width="200" height="100">
-	<b><font color="red">Click and expand below to view and compare curves</font></b></p>
-	<table>
-		<td><a href="http://www.risksnap.com/marketriskfactors/RiskSnapPopUp_Vols_Equity_^GSPC.html" target="_blank">Equity ^GSPC Vols</a> </td>
-		<td><a href="http://www.risksnap.com/marketriskfactors/RiskSnapPopUp_Vols_Futures_CL.html" target="_blank">Futures CL Vols</a></td> 
-		<td><a href="http://www.risksnap.com/marketriskfactors/RiskSnapPopUp_Vols_Futures_RB.html" target="_blank">Futures RB Vols</a></td>
-		<td><a href="http://www.risksnap.com/marketriskfactors/RiskSnapPopUp_Vols_FX_GBPUSD.html" target="_blank">FX GBPUSD Vols</a></td> 
-	</table> 
-	</div>
-</div>
-<p>
-<span id="SpotForeignExchange"/>
-<h2><a id="div_id">Spot Foreign Exchange</a></h2>
-
-<div class="fx-section">
-
-<p>
-Foreign exchange is the largest and most liquid financial market in the world.
-The U.S. dollar remains the dominant reserve and transaction currency, appearing
-on one side of most foreign exchange trades. Exchange rates reflect relative
-economic growth, inflation, monetary policy, capital flows and geopolitical
-developments.
-</p>
-
-<p>
-The charts below show daily historical spot rates from Yahoo Finance using market
-conventions: EUR/USD, USD/JPY, GBP/USD, USD/CHF and USD/CAD. Rates are shown as
-levels, not logs.
-</p>
-
-<div class="fx-controls">
-    <button type="button" onclick="setFxRange('1y')">1Y</button>
-    <button type="button" onclick="setFxRange('3y')">3Y</button>
-    <button type="button" onclick="setFxRange('5y')">5Y</button>
-    <button type="button" onclick="setFxRange('10y')">10Y</button>
-    <button type="button" onclick="setFxRange('max')">Max</button>
-    <button type="button" onclick="loadFxCharts()">Update charts</button>
-</div>
-
-<div id="fxStatus" class="fx-status">Loading FX charts...</div>
-
-<div class="fx-card fx-combined-card">
-    <div id="fx_COMBINED" class="fx-chart fx-chart-combined"></div>
-</div>
-
-<div class="fx-grid">
-    <div class="fx-card"><div id="fx_EURUSD" class="fx-chart"></div></div>
-    <div class="fx-card"><div id="fx_USDJPY" class="fx-chart"></div></div>
-    <div class="fx-card"><div id="fx_GBPUSD" class="fx-chart"></div></div>
-    <div class="fx-card"><div id="fx_USDCHF" class="fx-chart"></div></div>
-    <div class="fx-card fx-card-wide"><div id="fx_USDCAD" class="fx-chart"></div></div>
-</div>
-
-<p class="fx-note">
-Data source: Yahoo Finance via the RiskSnap Cloud Run FX endpoint. Yahoo tickers:
-EURUSD=X, JPY=X, GBPUSD=X, CHF=X and CAD=X.
-</p>
-
-</div>
-
-<style>
-.fx-section {
-    line-height: 1.6;
-    text-indent: 0;
-    margin: 0 auto;
-    max-width: 1180px;
-}
-.fx-section p {
-    text-indent: 0;
-}
-.fx-controls {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    margin: 18px 0 12px 0;
-}
-.fx-controls button {
-    background: #3A5FCD;
-    color: white;
-    border: 0;
-    border-radius: 999px;
-    padding: 9px 16px;
-    cursor: pointer;
-    font-size: 14px;
-}
-.fx-controls button:hover {
-    opacity: 0.88;
-}
-.fx-status {
-    background: #f6f8fc;
-    border-left: 5px solid #3A5FCD;
-    padding: 10px 12px;
-    margin: 10px 0 16px 0;
-    color: #333;
-}
-.fx-grid {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(320px, 1fr));
-    gap: 18px;
-}
-.fx-card {
-    background: white;
-    border: 1px solid #d9e0ef;
-    border-radius: 16px;
-    box-shadow: 0 4px 16px rgba(20, 35, 75, 0.10);
-    padding: 10px;
-}
-.fx-card-wide {
-    grid-column: 1 / -1;
-}
-.fx-chart {
-    width: 100%;
-    height: 390px;
-}
-.fx-combined-card {
-    margin-bottom: 18px;
-}
-.fx-chart-combined {
-    height: 460px;
-}
-.fx-note {
-    margin-top: 12px;
-    color: #555;
-    font-size: 14px;
-}
+.yield-controls select { background: #ffffff; color: #222; border: 1px solid #bfc9df; cursor: pointer; }
+.yield-controls button:hover { opacity: 0.88; }
+.yield-status { background: #f6f8fc; border-left: 5px solid #3A5FCD; padding: 10px 12px; margin: 10px 0 16px 0; color: #333; }
+.yield-grid { display: grid; grid-template-columns: repeat(2, minmax(320px, 1fr)); gap: 18px; }
+.yield-card { background: white; border: 1px solid #d9e0ef; border-radius: 16px; box-shadow: 0 4px 16px rgba(20, 35, 75, 0.10); padding: 10px; }
+.yield-chart { width: 100%; height: 430px; }
+.yield-wide-card { margin-bottom: 18px; }
+.yield-chart-wide { height: 500px; }
+.yield-note { margin-top: 12px; color: #555; font-size: 14px; }
 @media (max-width: 850px) {
-    .fx-grid {
-        grid-template-columns: 1fr;
-    }
-    .fx-card-wide {
-        grid-column: auto;
-    }
-    .fx-chart {
-        height: 340px;
-    }
+    .yield-grid { grid-template-columns: 1fr; }
+    .yield-chart { height: 360px; }
 }
 </style>
+
+<div class="yield-section">
+
+<span id="Yields"></span>
+<h2>Yields</h2>
+
+<p>
+Daily interest rate yields in the charts are derived from Central Bank data covering historical periods to date, starting in 1962 for the  Fed (USD), 1970  BOC (CAD),  2004 ECB (EUR),  1979 BOE (GBP), 1974  MOF (JPY), and 1988  SNB (CHF).  
+</p>
+<small>Explanation of some peaks and troughs: The oil embargo of 1973-1974 resulted in high inflation, capped  by Paul Volcker by 19% rates in 1979.  During the dot-com era, in early 2000, the U.S. Federal Reserve raised  rates modestly to curb investment.  In 2002, the Nasdaq fell from 5048 to 1139.  During 2007-08 (Financial Crisis, Lehman Brothers default, Sub-prime loans), the US housing market collapsed. Quantitative easing addressed the crisis. Rates were starting to rise when Covid 19 led to near zero and negative rates in some countries.  Raising of the rates to 2023 led to topping of the housing markets recently .</small>
+</p>
+
+<div class="yield-controls">
+    <span class="yield-control-label">History:</span>
+    <button type="button" onclick="setYieldRange('1y')">1Y</button>
+    <button type="button" onclick="setYieldRange('3y')">3Y</button>
+    <button type="button" onclick="setYieldRange('5y')">5Y</button>
+    <button type="button" onclick="setYieldRange('10y')">10Y</button>
+    <button type="button" onclick="setYieldRange('max')">Max</button>
+    <span class="yield-control-label">Country:</span>
+    <select id="yieldCountrySelect" onchange="drawYieldCharts()"></select>
+    <span class="yield-control-label">Tenor:</span>
+    <select id="yieldTenorSelect" onchange="drawYieldCharts()">
+        <option value="10Y" selected>10Y</option>
+        <option value="1Y">1Y</option>
+        <option value="2Y">2Y</option>
+        <option value="3Y">3Y</option>
+        <option value="5Y">5Y</option>
+        <option value="7Y">7Y</option>
+        <option value="20Y">20Y</option>
+        <option value="30Y">30Y</option>
+    </select>
+    <button type="button" onclick="loadYieldCharts()">Update charts</button>
+</div>
+
+<div id="yieldStatus" class="yield-status">Loading yield charts...</div>
+
+<div class="yield-card yield-wide-card">
+    <div id="yield_all_tenors" class="yield-chart yield-chart-wide"></div>
+</div>
+
+<div class="yield-grid">
+    <div class="yield-card"><div id="yield_curve_latest" class="yield-chart"></div></div>
+    <div class="yield-card"><div id="yield_history" class="yield-chart"></div></div>
+    <div class="yield-card"><div id="yield_spread" class="yield-chart"></div></div>
+    <div class="yield-card"><div id="yield_table_chart" class="yield-chart"></div></div>
+</div>
+
+<p class="yield-note">
+USD data source: RiskSnap Cloud Run yields endpoint using public Treasury/FRED daily constant-maturity data. Other countries can be added later using the same endpoint structure.
+</p>
+
+</div>
 
 <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
 <script>
 /*
-   Replace this with your deployed Cloud Run URL.
-   Expected endpoint example:
-   https://your-service-url.a.run.app/fx_history?period=10y
+   USD first version.
+   Add this endpoint to your existing Cloud Run app:
+   https://surface-203178530029.northamerica-northeast2.run.app/yield_history?country=USD&period=10y
 */
-const FX_API_URL = "https://surface-203178530029.northamerica-northeast2.run.app/fx_history";
-let fxRange = "10y";
-
-const fxPairs = [
-    { key: "EURUSD", label: "EUR/USD", ticker: "EURUSD=X", div: "fx_EURUSD" },
-    { key: "USDJPY", label: "USD/JPY", ticker: "JPY=X",    div: "fx_USDJPY" },
-    { key: "GBPUSD", label: "GBP/USD", ticker: "GBPUSD=X", div: "fx_GBPUSD" },
-    { key: "USDCHF", label: "USD/CHF", ticker: "CHF=X",    div: "fx_USDCHF" },
-    { key: "USDCAD", label: "USD/CAD", ticker: "CAD=X",    div: "fx_USDCAD" }
+const YIELDS_API_URL = "https://surface-203178530029.northamerica-northeast2.run.app/yield_history";
+const yieldTenors = ["1Y", "2Y", "3Y", "5Y", "7Y", "10Y", "20Y", "30Y"];
+const yieldMaturities = [1, 2, 3, 5, 7, 10, 20, 30];
+const yieldTenorColors = {
+    "1Y": "#1f77b4",
+    "2Y": "#ff7f0e",
+    "3Y": "#2ca02c",
+    "5Y": "#d62728",
+    "7Y": "#9467bd",
+    "10Y": "#8c564b",
+    "20Y": "#e377c2",
+    "30Y": "#17becf"
+};
+const yieldCountries = [
+    { code: "USD", name: "United States", color: "#1f77b4" },
+    { code: "CAD", name: "Canada",        color: "#ff7f0e" },
+    { code: "GBP", name: "United Kingdom",color: "#2ca02c" },
+    { code: "EUR", name: "Eurozone",      color: "#d62728" },
+    { code: "JPY", name: "Japan",         color: "#9467bd" },
+    { code: "CHF", name: "Switzerland",   color: "#8c564b" }
 ];
 
-function setFxRange(range) {
-    fxRange = range;
-    loadFxCharts();
+let yieldRange = "10y";
+let allYieldRows = {};
+let loadedYieldCountries = [];
+
+function setupCountrySelect() {
+    const sel = document.getElementById("yieldCountrySelect");
+    sel.innerHTML = "";
+    yieldCountries.forEach(c => {
+        const opt = document.createElement("option");
+        opt.value = c.code;
+        opt.textContent = c.name + " (" + c.code + ")" + (c.disabled ? " — later" : "");
+        opt.disabled = !!c.disabled;
+        sel.appendChild(opt);
+    });
+    sel.value = "USD";
 }
 
-function normalizeFxPayload(payload) {
-    if (payload.series && Array.isArray(payload.series)) return payload.series;
+function setYieldRange(range) {
+    yieldRange = range;
+    loadYieldCharts();
+}
 
-    return fxPairs.map(p => {
-        const item = payload[p.key] || payload[p.label] || payload[p.ticker];
-        if (!item) return null;
-        return {
-            pair: p.key,
-            label: p.label,
-            ticker: p.ticker,
-            dates: item.dates || item.date || [],
-            rates: item.rates || item.close || item.values || []
+function selectedCountry() {
+    const code = document.getElementById("yieldCountrySelect").value || "USD";
+    return yieldCountries.find(c => c.code === code) || yieldCountries[0];
+}
+function normalizeYieldRows(payload) {
+    const rows = payload.rows || payload.data || [];
+
+    return rows.map(r => {
+        const row = {
+            Date: r.Date || r.date || r.record_date
         };
-    }).filter(Boolean);
+
+        yieldTenors.forEach(t => {
+            const v = r[t];
+            row[t] = (v === null || v === "" || v === undefined)
+                ? null
+                : Number(v);
+        });
+
+        return row;
+    }).filter(row =>
+        row.Date &&
+        yieldTenors.some(t => row[t] !== null && isFinite(row[t]))
+    );
 }
 
+function filteredRows(rows) {
+    if (!rows || !rows.length) return [];
+    if (yieldRange === "max") return rows;
+    const years = Number(yieldRange.replace("y", ""));
+    const last = rows[rows.length - 1];
+    const cutoff = new Date(last.Date);
+    cutoff.setFullYear(cutoff.getFullYear() - years);
+    return rows.filter(row => new Date(row.Date) >= cutoff);
+}
 
-function drawFxCombinedChart(series) {
+function drawCombined10Y() {
     const traces = [];
-
-    fxPairs.forEach(pair => {
-        const item = series.find(s => s.pair === pair.key || s.label === pair.label || s.ticker === pair.ticker);
-        if (!item) return;
-
-        const x = item.dates || [];
-        const y = item.rates || item.close || [];
-        if (!x.length || !y.length) return;
-
-        const base = Number(y[0]);
-        if (!base || !isFinite(base)) return;
-
-        const normalized = y.map(v => Number(v) / base * 100.0);
-
+    loadedYieldCountries.forEach(c => {
+        const rows = filteredRows(allYieldRows[c.code]);
+        if (!rows.length) return;
         traces.push({
-            x: x,
-            y: normalized,
+            x: rows.map(r => r.Date),
+            y: rows.map(r => r["10Y"]),
             type: "scatter",
             mode: "lines",
-            line: { width: 2.2 },
-            hovertemplate: "%{x}<br>Index: %{y:.2f}<extra>" + pair.label + "</extra>",
-            name: pair.label
+            line: { width: 2.4, color: c.color },
+            hovertemplate: "%{x}<br>10Y: %{y:.2f}%<extra>" + c.name + "</extra>",
+            name: c.name
         });
     });
 
     const layout = {
-        title: { text: "FX rates normalized to 100", x: 0.03, xanchor: "left", font: { size: 18 } },
-        margin: { l: 58, r: 24, t: 58, b: 50 },
+        title: { text: "10-year government yields", x: 0.03, xanchor: "left", font: { size: 18 } },
+        margin: { l: 60, r: 24, t: 58, b: 52 },
         paper_bgcolor: "white",
         plot_bgcolor: "white",
         hovermode: "x unified",
         legend: { orientation: "h", x: 0.02, y: -0.18 },
         xaxis: {
-            showgrid: true,
-            gridcolor: "#edf1f7",
-            zeroline: false,
-            rangeslider: { visible: false }
-        },
-        yaxis: {
-            title: "Index, first date = 100",
-            showgrid: true,
-            gridcolor: "#edf1f7",
-            zeroline: false,
-            tickformat: ".1f"
-        }
+			showgrid: true,
+			gridcolor: "#edf1f7",
+			zeroline: false,
+			rangeslider: { visible: false } },
+			tickformat: "%b %d, %Y",
+			hoverformat: "%b %d, %Y"
+        yaxis: { title: "Yield (%)", showgrid: true, gridcolor: "#edf1f7", zeroline: false, tickformat: ".2f" }
     };
 
-    const config = {
-        responsive: true,
-        displaylogo: false,
-        modeBarButtonsToRemove: ["lasso2d", "select2d"]
-    };
-
-    Plotly.newPlot("fx_COMBINED", traces, layout, config);
+    Plotly.newPlot("yield_combined_10y", traces, layout, plotlyConfig());
 }
 
-function drawFxChart(item) {
-    const pair = fxPairs.find(p => p.key === item.pair || p.label === item.label || p.ticker === item.ticker);
-    if (!pair) return;
-
-    const x = item.dates || [];
-    const y = item.rates || item.close || [];
-    const lastRate = y.length ? Number(y[y.length - 1]) : null;
-    const lastDate = x.length ? x[x.length - 1] : "";
-    const titleText = lastRate === null
-        ? `${pair.label} (${pair.ticker})`
-        : `${pair.label} (${pair.ticker}) — ${lastRate.toFixed(pair.key === "USDJPY" ? 2 : 4)} as of ${lastDate}`;
-
-    const trace = {
-        x: x,
-        y: y,
-        type: "scatter",
-        mode: "lines",
-        line: { width: 2.5 },
-        hovertemplate: "%{x}<br>Rate: %{y:.5f}<extra></extra>",
-        name: pair.label
-    };
+function drawAllTenorsHistory(country, rows) {
+    const traces = [];
+    yieldTenors.forEach(t => {
+        const points = rows.filter(r => isFinite(r[t]));
+        if (!points.length) return;
+        traces.push({
+            x: points.map(r => r.Date),
+            y: points.map(r => r[t]),
+            type: "scatter",
+            mode: "lines",
+            line: { width: t === "10Y" ? 3.0 : 2.0, color: yieldTenorColors[t] },
+            hovertemplate: "%{x}<br>" + t + ": %{y:.2f}%<extra></extra>",
+            name: t
+        });
+    });
 
     const layout = {
-        title: { text: titleText, x: 0.03, xanchor: "left", font: { size: 16 } },
+        title: { text: country.name + " yield history by all tenors — " + yieldRange, x: 0.03, xanchor: "left", font: { size: 18 } },
+        margin: { l: 60, r: 24, t: 58, b: 52 },
+        paper_bgcolor: "white",
+        plot_bgcolor: "white",
+        hovermode: "x unified",
+        legend: { orientation: "h", x: 0.02, y: -0.18 },
+        xaxis:
+			{ showgrid: true,
+			gridcolor: "#edf1f7",
+			zeroline: false,
+			rangeslider: { visible: false } },
+			tickformat: "%b %d, %Y",
+			hoverformat: "%b %d, %Y"
+        yaxis: { title: "Yield (%)", showgrid: true, gridcolor: "#edf1f7", zeroline: false, tickformat: ".2f" }
+    };
+
+    Plotly.newPlot("yield_all_tenors", traces, layout, plotlyConfig());
+}
+
+function drawLatestCurve(country, rows) {
+    const last = rows[rows.length - 1];
+    if (!last) return;
+    const trace = {
+        x: yieldMaturities,
+        y: yieldTenors.map(t => last[t]),
+        text: yieldTenors,
+        type: "scatter",
+        mode: "lines+markers",
+        line: { width: 3, color: country.color },
+        marker: { size: 8, color: country.color },
+        hovertemplate: "%{text}<br>Yield: %{y:.2f}%<extra></extra>",
+        name: country.name
+    };
+    const layout = {
+        title: { text: country.name + " yield curve — " + last.Date, x: 0.03, xanchor: "left", font: { size: 16 } },
+        margin: { l: 58, r: 22, t: 56, b: 48 },
+        paper_bgcolor: "white",
+        plot_bgcolor: "white",
+        hovermode: "closest",
+        xaxis: { title: "Maturity in years",
+			showgrid: true, 
+			gridcolor: "#edf1f7",
+			zeroline: false,
+			tickvals: yieldMaturities,
+			ticktext: yieldTenors },
+        yaxis: { title: "Yield (%)", showgrid: true, gridcolor: "#edf1f7", zeroline: false, tickformat: ".2f" }
+    };
+    Plotly.newPlot("yield_curve_latest", [trace], layout, plotlyConfig());
+}
+
+function drawYieldHistory(country, rows) {
+    const tenor = document.getElementById("yieldTenorSelect").value || "max";
+    const trace = {
+        x: rows.map(r => r.Date),
+        y: rows.map(r => r[tenor]),
+        type: "scatter",
+        mode: "lines",
+        line: { width: 2.5, color: country.color },
+        hovertemplate: "%{x}<br>" + tenor + ": %{y:.2f}%<extra></extra>",
+        name: tenor
+    };
+    const layout = {
+        title: { text: country.name + " " + tenor + " yield history — " + yieldRange, x: 0.03, xanchor: "left", font: { size: 16 } },
         margin: { l: 58, r: 22, t: 56, b: 48 },
         paper_bgcolor: "white",
         plot_bgcolor: "white",
         hovermode: "x unified",
-        xaxis: {
-            showgrid: true,
-            gridcolor: "#edf1f7",
-            zeroline: false,
-            rangeslider: { visible: false }
-        },
-        yaxis: {
-            title: "Spot rate",
-            showgrid: true,
-            gridcolor: "#edf1f7",
-            zeroline: false,
-            tickformat: pair.key === "USDJPY" ? ".2f" : ".4f"
-        }
+        xaxis:
+			{ showgrid: true,
+			gridcolor: "#edf1f7",
+			zeroline: false,
+			rangeslider: { visible: false } },
+			tickformat: "%b %d, %Y",
+			hoverformat: "%b %d, %Y"
+        yaxis: { title: "Yield (%)", showgrid: true, gridcolor: "#edf1f7", zeroline: false, tickformat: ".2f" }
     };
-
-    const config = {
-        responsive: true,
-        displaylogo: false,
-        modeBarButtonsToRemove: ["lasso2d", "select2d"]
-    };
-
-    Plotly.newPlot(pair.div, [trace], layout, config);
+    Plotly.newPlot("yield_history", [trace], layout, plotlyConfig());
 }
 
-async function loadFxCharts() {
-    const status = document.getElementById("fxStatus");
+function drawYieldSpread(country, rows) {
+    const trace = {
+        x: rows.map(r => r.Date),
+        y: rows.map(r => r["10Y"] - r["2Y"]),
+        type: "scatter",
+        mode: "lines",
+        line: { width: 2.5, color: country.color },
+        hovertemplate: "%{x}<br>10Y - 2Y: %{y:.2f}%<extra></extra>",
+        name: "10Y - 2Y"
+    };
+    const layout = {
+        title: { text: country.name + " 10Y - 2Y yield spread — " + yieldRange, x: 0.03, xanchor: "left", font: { size: 16 } },
+        margin: { l: 58, r: 22, t: 56, b: 48 },
+        paper_bgcolor: "white",
+        plot_bgcolor: "white",
+        hovermode: "x unified",
+        xaxis:
+			{ showgrid: true,
+			gridcolor: "#edf1f7",
+			zeroline: false, 
+			rangeslider: { visible: false } },
+			tickformat: "%b %d, %Y",
+			hoverformat: "%b %d, %Y"
+        yaxis: { title: "Spread (%)", showgrid: true, gridcolor: "#edf1f7", zeroline: true, zerolinecolor: "#999", tickformat: ".2f" }
+    };
+    Plotly.newPlot("yield_spread", [trace], layout, plotlyConfig());
+}
 
-    if (FX_API_URL.indexOf("YOUR-CLOUD-RUN-URL") >= 0) {
-        status.innerHTML = "Enter your Cloud Run URL in <b>FX_API_URL</b> to load the Yahoo Finance FX charts.";
-        const placeholderLayout = {
-            title: { text: "FX rates normalized to 100", x: 0.03, xanchor: "left", font: { size: 17 } },
-            annotations: [{
-                text: "Cloud Run URL not configured",
-                showarrow: false,
-                xref: "paper", yref: "paper", x: 0.5, y: 0.5,
-                font: { size: 15, color: "#666" }
-            }],
-            margin: { l: 50, r: 20, t: 55, b: 40 },
-            xaxis: { visible: false },
-            yaxis: { visible: false }
-        };
-        Plotly.newPlot("fx_COMBINED", [], placeholderLayout, { responsive: true, displaylogo: false });
+function drawLatestTableChart(country, rows) {
+    const last = rows[rows.length - 1];
+    if (!last) return;
+    const trace = {
+        x: yieldTenors,
+        y: yieldTenors.map(t => Number(last[t])),
+        type: "bar",
+        marker: { color: country.color },
+        hovertemplate: "%{x}<br>Yield: %{y:.2f}%<extra></extra>",
+        name: country.name
+    };
+    const layout = {
+        title: { text: country.name + " latest yields by tenor", x: 0.03, xanchor: "left", font: { size: 16 } },
+        margin: { l: 58, r: 22, t: 56, b: 48 },
+        paper_bgcolor: "white",
+        plot_bgcolor: "white",
+        xaxis: { title: "Tenor",
+			showgrid: false,
+			zeroline: false },
+			rangeslider: { visible: false },
+			tickformat: "%b %d, %Y",
+			hoverformat: "%b %d, %Y"
+        yaxis: { title: "Yield (%)", showgrid: true, gridcolor: "#edf1f7", zeroline: false, tickformat: ".2f" }
+    };
+    Plotly.newPlot("yield_table_chart", [trace], layout, plotlyConfig());
+}
 
-        fxPairs.forEach(p => {
-            const layout = {
-                title: { text: `${p.label} (${p.ticker})`, x: 0.03, xanchor: "left", font: { size: 16 } },
-                annotations: [{
-                    text: "Cloud Run URL not configured",
-                    showarrow: false,
-                    xref: "paper", yref: "paper", x: 0.5, y: 0.5,
-                    font: { size: 15, color: "#666" }
-                }],
-                margin: { l: 50, r: 20, t: 55, b: 40 },
-                xaxis: { visible: false },
-                yaxis: { visible: false }
-            };
-            Plotly.newPlot(p.div, [], layout, { responsive: true, displaylogo: false });
-        });
+function emptySelectedCharts(message) {
+    const layout = {
+        annotations: [{
+            text: message,
+            showarrow: false,
+            xref: "paper", yref: "paper", x: 0.5, y: 0.5,
+            font: { size: 15, color: "#666" }
+        }],
+        margin: { l: 50, r: 20, t: 40, b: 40 },
+        xaxis: { visible: false },
+        yaxis: { visible: false },
+        paper_bgcolor: "white",
+        plot_bgcolor: "white"
+    };
+    ["yield_all_tenors", "yield_curve_latest", "yield_history", "yield_spread", "yield_table_chart"].forEach(id => Plotly.newPlot(id, [], layout, plotlyConfig()));
+}
+
+function drawYieldCharts() {
+    const status = document.getElementById("yieldStatus");
+    const country = selectedCountry();
+    const rows = filteredRows(allYieldRows[country.code]);
+    if (!rows.length) {
+        emptySelectedCharts("No data loaded for " + country.name + ".");
+        status.textContent = "Loaded: " + loadedYieldCountries.map(c => c.code).join(", ") + ".";
         return;
     }
-
-    status.textContent = "Updating FX charts...";
-
-    try {
-        const url = `${FX_API_URL}?period=${encodeURIComponent(fxRange)}`;
-        const response = await fetch(url, { cache: "no-store" });
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        const payload = await response.json();
-        const series = normalizeFxPayload(payload);
-
-        drawFxCombinedChart(series);
-
-        fxPairs.forEach(pair => {
-            const item = series.find(s => s.pair === pair.key || s.label === pair.label || s.ticker === pair.ticker);
-            if (item) drawFxChart(item);
-        });
-
-        const stamp = payload.updated_at || payload.timestamp || new Date().toLocaleString();
-        status.textContent = `FX charts updated. Range: ${fxRange}. ${stamp}`;
-    } catch (err) {
-        status.textContent = `Could not load FX data: ${err.message}`;
-    }
+    drawAllTenorsHistory(country, rows);
+    drawLatestCurve(country, rows);
+    drawYieldHistory(country, rows);
+    drawYieldSpread(country, rows);
+    drawLatestTableChart(country, rows);
+    status.textContent = country.name + " charts updated. Range: " + yieldRange + ". Dates: " + rows[0].Date + " to " + rows[rows.length - 1].Date + ".";
 }
 
-window.addEventListener("load", loadFxCharts);
+async function loadOneCountry(country) {
+    if (country.disabled) throw new Error(country.code + " not enabled yet");
+    const url = YIELDS_API_URL + "?country=" + encodeURIComponent(country.code) + "&period=" + encodeURIComponent(yieldRange);
+    const response = await fetch(url, { cache: "no-store" });
+    if (!response.ok) throw new Error(country.code + " HTTP " + response.status);
+    const payload = await response.json();
+    if (payload.error) throw new Error(payload.error);
+    const rows = normalizeYieldRows(payload);
+    rows.sort((a, b) => new Date(a.Date) - new Date(b.Date));
+    allYieldRows[country.code] = rows;
+    return country;
+}
+
+async function loadYieldCharts() {
+    const status = document.getElementById("yieldStatus");
+    status.textContent = "Updating yield charts...";
+    allYieldRows = {};
+    loadedYieldCountries = [];
+    const activeCountries = yieldCountries.filter(c => !c.disabled);
+    const results = await Promise.allSettled(activeCountries.map(loadOneCountry));
+    results.forEach((res, i) => {
+        if (res.status === "fulfilled") loadedYieldCountries.push(res.value);
+        else console.warn("Could not load", activeCountries[i].code, res.reason);
+    });
+    if (!loadedYieldCountries.length) {
+        status.textContent = "Could not load yield data from Cloud Run. Check that /yield_history is deployed.";
+        emptySelectedCharts("No yield data loaded.");
+        Plotly.newPlot("yield_all_tenors", [], {}, plotlyConfig());
+        return;
+    }
+    drawYieldCharts();
+}
+
+function plotlyConfig() {
+    return { responsive: true, displaylogo: false, modeBarButtonsToRemove: ["lasso2d", "select2d"] };
+}
+
+window.addEventListener("load", function() {
+    setupCountrySelect();
+    loadYieldCharts();
+});
 </script>
-
-<!--<div class ="image-section">
-    <img class="figure" alt="" src="./images/Tenor Codes.png"  style="width:100%" />
-</div>-->
-<p>
-<span id="Volatility Surface"/>
-<h2>Volatility Surface</h2>
-<div class="a">	
-	<p>A volatility surface is a 3D representation of implied volatility of asset prices with time and strike being the other 2 axes.  The data source for a volatility surface are option prices.  The volatilities are backed out of an option pricing model, in this case Black-Scholes, with spot, interest rates and dividend yields being held constant.  In this way, the volatilities reflect current supply and demand for the underlying assets.  In general volatilities increase with time, however based on market conditions, near term options may exhibit higher volatility. Absent preference for puts or for calls, the ATM (at-the-money) volatility is lowest with volatility increasing as the strike goes further OTM (out-of-the-money) due to market preference for lower priced options.  A preference for puts over calls, such as hedges of underlying long positions in the assets, will introduce a skew into the surface. 
-	<p>
-	RiskSnap provides alternative methods and factors.  The description below is the default.
-	<p>
-	<p> The components of a surface are sourced from option market prices.  In order to standardize strikes, “Moneyness” is used defined as strike divided by spot.  Tenors are standardized market expiry dates. 	In producing a surface from market data, many factors are taken into consideration:  bid-offer spreads, minimum number of options for an expiry, and also certain arbitrage free conditions. These include: •	risk-reversal arbitrages:  puts and calls of the same strike for the same maturity must have the same volatility; as call strikes increase, the prices should fall, conversely for puts;•	bull and bear spread arbitrages.  The following arbitrage (butterfly put) should not exist. The minimum profit is .02 and maximum 1.02.  This is a win-win situation (before commissions).
-	<p>
-	<img src="./images/ButterflyPut.png" alt="Butterfly Put" width="800" height="200">
-	<p>
-	The pricing model is Black-Scholes where the dividend yield is based on put-call parity. This accommodates certain unknown factors such as the repo rate or the borrowing rate of equities for short sales or collateral and the dividend yield can sometimes be negative.  Interpolation across strikes is through a monotonic spline of implied vols from market prices.  Interpolation across time is linear variance.  Extrapolation is always an estimation process and a linear method is used to indicate direction base on the last 2 points. In order to distinguish source of data the surface table uses green for interpolations only, beige for extrapolations only, and wine for a mixture.
-	</p>
-	
-	<b><font color="red">Refer to Tab "Surface" for real time examples.</font></b></p>
-	
-	</div>
-</div>
-<p>
-
-
