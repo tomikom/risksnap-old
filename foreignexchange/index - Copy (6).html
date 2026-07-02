@@ -97,16 +97,9 @@ Foreign exchange is the largest and most liquid financial market in the world. A
     <div class="fx-card"><div id="fx_GOLD" class="fx-chart"></div></div>
 </div>
 
-<div class="fx-card fx-oil-card">
-    <div id="fx_OIL" class="fx-chart fx-chart-oil"></div>
-</div>
-
 <p class="fx-note">
 Data source: Yahoo Finance via the RiskSnap Cloud Run FX endpoint. Yahoo tickers:
 EURUSD=X, JPY=X, GBPUSD=X, CHF=X, CAD=X and GC=F.
-</p>
-<p id="oilSourceNote" class="fx-note">
-Oil data source: Federal Reserve Bank of St. Louis (WTI Cushing, OK Spot Price, DCOILWTICO); Yahoo Finance (CL=F) thereafter.
 </p>
 <p>
 A spot price embeds expectations of future economic events and pricing models include market risk factors for these events. Gold is included because it often trades as a monetary asset alongside major currencies. The U.S. dollar remains the dominant reserve and transaction currency, appearing on one side of most foreign exchange trades. Exchange rates reflect relative
@@ -167,12 +160,6 @@ economic growth, inflation, monetary policy, capital flows and geopolitical deve
 .fx-combined-card {
     margin-bottom: 18px;
 }
-.fx-oil-card {
-    margin-top: 18px;
-}
-.fx-chart-oil {
-    height: 430px;
-}
 .fx-chart-combined {
     height: 460px;
 }
@@ -210,7 +197,6 @@ const fxPairs = [
     { key: "USDCAD", label: "USD/CAD", ticker: "CAD=X",    div: "fx_USDCAD", color: "#9467bd" },
     { key: "GOLD", label: "Gold", ticker: "GC=F", div: "fx_GOLD", color: "#DAA520" }
 ];
-const oilPair = { key: "OIL", label: "WTI Crude Oil", ticker: "CL=F", div: "fx_OIL", color: "#8B4513" };
 function toggleGoldInCombined() {
     includeGoldInCombined = !includeGoldInCombined;
     drawFxCombinedChart(latestFxSeries);
@@ -235,40 +221,14 @@ function normalizeFxPayload(payload) {
         };
     }).filter(Boolean);
 }
-function normalizeOilPayload(payload) {
-    const item = payload.OIL || payload.oil || payload[oilPair.label] || payload[oilPair.ticker];
-    if (!item) {
-        const series = payload.series && Array.isArray(payload.series) ? payload.series : [];
-        const found = series.find(s => s.pair === oilPair.key || s.key === oilPair.key || s.label === oilPair.label || s.ticker === oilPair.ticker);
-        if (!found) return null;
-        return {
-            pair: oilPair.key,
-            label: oilPair.label,
-            ticker: oilPair.ticker,
-            dates: found.dates || found.date || [],
-            rates: found.rates || found.close || found.values || [],
-            error: found.error
-        };
-    }
-
-    return {
-        pair: oilPair.key,
-        label: oilPair.label,
-        ticker: oilPair.ticker,
-        dates: item.dates || item.date || [],
-        rates: item.rates || item.close || item.values || [],
-        error: item.error
-    };
-}
-
 
 function fxDecimals(pairKey) {
-    if (pairKey === "USDJPY" || pairKey === "GOLD" || pairKey === "OIL") return 2;
+    if (pairKey === "USDJPY" || pairKey === "GOLD") return 2;
     return 4;
 }
 
 function fxHoverDecimals(pairKey) {
-    if (pairKey === "GOLD" || pairKey === "OIL") return ".2f";
+    if (pairKey === "GOLD") return ".2f";
     if (pairKey === "USDJPY") return ".3f";
     return ".5f";
 }
@@ -431,87 +391,6 @@ function drawFxChart(item) {
     Plotly.newPlot(pair.div, [trace], layout, config);
 }
 
-function drawOilChart(item) {
-    const pair = oilPair;
-
-    if (!item) {
-        drawFxPlaceholder(pair, "Oil not returned by FX endpoint");
-        return;
-    }
-
-    if (item.error) {
-        drawFxPlaceholder(pair, `No data: ${item.error}`);
-        return;
-    }
-
-    const points = cleanFxPoints(item);
-    const x = points.x;
-    const y = points.y;
-
-    if (!x.length || !y.length) {
-        drawFxPlaceholder(pair, "No usable oil data returned");
-        return;
-    }
-
-    const lastRate = Number(y[y.length - 1]);
-    const lastDate = x[x.length - 1] || "";
-    const titleText = `${pair.label} (${pair.ticker}) — ${lastRate.toFixed(2)} as of ${lastDate}`;
-
-    const trace = {
-        x: x,
-        y: y,
-        type: "scatter",
-        mode: "lines",
-        line: { width: 2.7, color: pair.color },
-        hovertemplate: "%{x}<br>Price: $%{y:.2f}<extra></extra>",
-        name: pair.label
-    };
-
-    const layout = {
-        title: { text: titleText, x: 0.03, xanchor: "left", font: { size: 16 } },
-        margin: { l: 58, r: 22, t: 56, b: 48 },
-        paper_bgcolor: "white",
-        plot_bgcolor: "white",
-        hovermode: "x unified",
-        xaxis: {
-            showgrid: true,
-            gridcolor: "#edf1f7",
-            zeroline: false,
-            rangeslider: { visible: false }
-			tickformat: "%b %d, %Y",
-			hoverformat: "%b %d, %Y"
-        },
-        yaxis: {
-            title: "US$/barrel",
-            showgrid: true,
-            gridcolor: "#edf1f7",
-            zeroline: false,
-            tickformat: ".2f"
-        }
-    };
-
-    const config = {
-        responsive: true,
-        displaylogo: false,
-        modeBarButtonsToRemove: ["lasso2d", "select2d"]
-    };
-
-    Plotly.newPlot(pair.div, [trace], layout, config);
-}
-
-function updateOilSourceNote(payload) {
-    const note = document.getElementById("oilSourceNote");
-    if (!note) return;
-
-    const fredThrough = payload.oil_fred_through || payload.oil_fred_last_date || payload.fred_oil_through || payload.fred_through;
-
-    if (fredThrough) {
-        note.textContent = `Oil data source: Federal Reserve Bank of St. Louis (WTI Cushing, OK Spot Price, DCOILWTICO) through ${fredThrough}; Yahoo Finance (CL=F) thereafter.`;
-    } else {
-        note.textContent = "Oil data source: Federal Reserve Bank of St. Louis (WTI Cushing, OK Spot Price, DCOILWTICO); Yahoo Finance (CL=F) thereafter.";
-    }
-}
-
 async function loadFxCharts() {
     const status = document.getElementById("fxStatus");
 
@@ -546,7 +425,6 @@ async function loadFxCharts() {
             };
             Plotly.newPlot(p.div, [], layout, { responsive: true, displaylogo: false });
         });
-        drawFxPlaceholder(oilPair, "Cloud Run URL not configured");
         return;
     }
 
@@ -558,12 +436,9 @@ async function loadFxCharts() {
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         const payload = await response.json();
         const series = normalizeFxPayload(payload);
-        const oilItem = normalizeOilPayload(payload);
 		latestFxSeries = series;
 
         drawFxCombinedChart(series);
-        drawOilChart(oilItem);
-        updateOilSourceNote(payload);
 
         const missing = [];
         const errors = [];
@@ -579,9 +454,6 @@ async function loadFxCharts() {
             }
         });
 
-        if (!oilItem) missing.push(oilPair.label);
-        if (oilItem && oilItem.error) errors.push(`${oilPair.label}: ${oilItem.error}`);
-
         const stamp = payload.updated_at || payload.timestamp || new Date().toLocaleString();
         let message = `FX charts updated. Range: ${fxRange}. ${stamp}`;
         if (missing.length) message += ` Missing: ${missing.join(", ")}.`;
@@ -589,7 +461,6 @@ async function loadFxCharts() {
         status.textContent = message;
     } catch (err) {
         status.textContent = `Could not load FX data: ${err.message}`;
-        drawFxPlaceholder(oilPair, "Could not load oil data");
     }
 }
 
