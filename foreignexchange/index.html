@@ -315,7 +315,9 @@ function drawFxCombinedChart(series) {
             showgrid: true,
             gridcolor: "#edf1f7",
             zeroline: false,
-            rangeslider: { visible: false }
+            rangeslider: { visible: false },
+			tickformat: "%b %d, %Y",
+			hoverformat: "%b %d, %Y"
         },
         yaxis: {
             title: "Index, first date = 100",
@@ -411,7 +413,9 @@ function drawFxChart(item) {
             showgrid: true,
             gridcolor: "#edf1f7",
             zeroline: false,
-            rangeslider: { visible: false }
+            rangeslider: { visible: false },
+			tickformat: "%b %d, %Y",
+			hoverformat: "%b %d, %Y"
         },
         yaxis: {
             title: "Spot rate",
