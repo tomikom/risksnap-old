@@ -146,14 +146,26 @@ function selectedCountry() {
     const code = document.getElementById("yieldCountrySelect").value || "USD";
     return yieldCountries.find(c => c.code === code) || yieldCountries[0];
 }
-
 function normalizeYieldRows(payload) {
     const rows = payload.rows || payload.data || [];
+
     return rows.map(r => {
-        const row = { Date: r.Date || r.date || r.record_date };
-        yieldTenors.forEach(t => row[t] = Number(r[t]));
+        const row = {
+            Date: r.Date || r.date || r.record_date
+        };
+
+        yieldTenors.forEach(t => {
+            const v = r[t];
+            row[t] = (v === null || v === "" || v === undefined)
+                ? null
+                : Number(v);
+        });
+
         return row;
-    }).filter(row => row.Date && yieldTenors.some(t => isFinite(row[t])));
+    }).filter(row =>
+        row.Date &&
+        yieldTenors.some(t => row[t] !== null && isFinite(row[t]))
+    );
 }
 
 function filteredRows(rows) {
