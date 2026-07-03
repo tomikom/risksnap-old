@@ -44,11 +44,9 @@ tr:nth-child(even) { background-color: #dddddd; }
 <h2>Yields</h2>
 
 <p>
-Yield curves are graphed for central government bond markets. The USD chart is loaded from the RiskSnap Cloud Run yields endpoint, so you do not need to paste Excel chart images into the web page.
+Daily interest rate yields in the charts are derived from Central Bank data covering historical periods to date, starting in 1962 for the  Fed (USD), 1970  BOC (CAD),  2004 ECB (EUR),  1979 BOE (GBP), 1974  MOF (JPY), and 1988  SNB (CHF).  
 </p>
-
-<p>
-<small><sup>*</sup>Bootstrapping of interest rates is a method used to price fixed rate and floating rate instruments consistently. In this methodology, the discounted sum of bond coupon payments equals the discounted sum of the expected short-term interest rates. In fixed income analytics, a discount factor can be derived from the observed yield curve, and expected short-term rates can then be inferred from ratios of adjacent discount factors .</small>
+<small>Explanation of some peaks and troughs: The oil embargo of 1973-1974 resulted in high inflation, capped  by Paul Volcker by 19% rates in 1979.  During the dot-com era, in early 2000, the U.S. Federal Reserve raised  rates modestly to curb investment.  In 2002, the Nasdaq fell from 5048 to 1139.  During 2007-08 (Financial Crisis, Lehman Brothers default, Sub-prime loans), the US housing market collapsed. Quantitative easing addressed the crisis. Rates were starting to rise when Covid 19 led to near zero and negative rates in some countries.  Raising of the rates to 2023 led to topping of the housing markets recently .</small>
 </p>
 
 <div class="yield-controls">
@@ -115,11 +113,11 @@ const yieldTenorColors = {
 };
 const yieldCountries = [
     { code: "USD", name: "United States", color: "#1f77b4" },
-    { code: "CAD", name: "Canada",        color: "#ff7f0e", disabled: true },
+    { code: "CAD", name: "Canada",        color: "#ff7f0e" },
     { code: "GBP", name: "United Kingdom",color: "#2ca02c" },
-    { code: "EUR", name: "Eurozone",      color: "#d62728", disabled: true },
+    { code: "EUR", name: "Eurozone",      color: "#d62728" },
     { code: "JPY", name: "Japan",         color: "#9467bd" },
-    { code: "CHF", name: "Switzerland",   color: "#8c564b", disabled: true }
+    { code: "CHF", name: "Switzerland",   color: "#8c564b" }
 ];
 
 let yieldRange = "10y";
@@ -148,14 +146,26 @@ function selectedCountry() {
     const code = document.getElementById("yieldCountrySelect").value || "USD";
     return yieldCountries.find(c => c.code === code) || yieldCountries[0];
 }
-
 function normalizeYieldRows(payload) {
     const rows = payload.rows || payload.data || [];
+
     return rows.map(r => {
-        const row = { Date: r.Date || r.date || r.record_date };
-        yieldTenors.forEach(t => row[t] = Number(r[t]));
+        const row = {
+            Date: r.Date || r.date || r.record_date
+        };
+
+        yieldTenors.forEach(t => {
+            const v = r[t];
+            row[t] = (v === null || v === "" || v === undefined)
+                ? null
+                : Number(v);
+        });
+
         return row;
-    }).filter(row => row.Date && yieldTenors.some(t => isFinite(row[t])));
+    }).filter(row =>
+        row.Date &&
+        yieldTenors.some(t => row[t] !== null && isFinite(row[t]))
+    );
 }
 
 function filteredRows(rows) {
@@ -192,7 +202,7 @@ function drawCombined10Y() {
         hovermode: "x unified",
         legend: { orientation: "h", x: 0.02, y: -0.18 },
         xaxis: { showgrid: true, gridcolor: "#edf1f7", zeroline: false, rangeslider: { visible: false } },
-        yaxis: { title: "Yield (%)", showgrid: true, gridcolor: "#edf1f7", zeroline: false, tickformat: ".2f" }
+        yaxis: { title: "Yield (%)", showgrid: true, gridcolor: "#edf1f7", zeroline: false, tickformat: ".2f" },tickformat: "%b %d, %Y",hoverformat: "%b %d, %Y"
     };
 
     Plotly.newPlot("yield_combined_10y", traces, layout, plotlyConfig());
@@ -255,7 +265,7 @@ function drawLatestCurve(country, rows) {
 }
 
 function drawYieldHistory(country, rows) {
-    const tenor = document.getElementById("yieldTenorSelect").value || "10Y";
+    const tenor = document.getElementById("yieldTenorSelect").value || "max";
     const trace = {
         x: rows.map(r => r.Date),
         y: rows.map(r => r[tenor]),

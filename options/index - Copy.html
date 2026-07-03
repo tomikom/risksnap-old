@@ -135,14 +135,14 @@ a.strategy-link {
     cursor:pointer;
     box-shadow:0 2px 6px rgba(0,0,0,.3);
 }
-.rs-nav-button.active{
+.button.active{
     outline:3px solid #222;
 }
 </style>
 <div class="a">
 
 <style>
-.rs-nav-button {
+.button {
     border: none;
     color: white;
     padding: 15px 30px;
@@ -160,7 +160,7 @@ a.strategy-link {
 .btn-strategies {background:#FF8C00;}
 .btn-calculators {background:#8A2BE2;}
 
-.rs-section-navbar{
+.navbar{
     position:sticky;
     top:0;
     z-index:1000;
@@ -172,21 +172,21 @@ a.strategy-link {
     margin:20px 0;
     box-shadow:0 2px 6px rgba(0,0,0,0.12);
 }
-.rs-nav-button:hover{
+.button:hover{
     transform:translateY(-2px);
     filter:brightness(1.08);
     transition:all .2s ease;
 }
 </style>
-<div class="rs-section-navbar">
-<button class="rs-nav-button btn-options" onclick="location.href='#Options'">📈&nbsp; Equity Options</button>
-<button class="rs-nav-button btn-pricer" onclick="location.href='#OptionPricer'">💲&nbsp; Online Black-Scholes Option Pricer</button>
-<button class="rs-nav-button btn-strategies" onclick="location.href='#Strategies'">♟️&nbsp; Strategies</button>
-<button class="rs-nav-button btn-calculators" onclick="location.href='#Calculators'">🧮&nbsp; Strategies - Calculators</button>
+<div class="navbar">
+<button class="button btn-options" onclick="location.href='#Options'">📈&nbsp; Equity Options</button>
+<button class="button btn-pricer" onclick="location.href='#OptionPricer'">💲&nbsp; Online Black-Scholes Option Pricer</button>
+<button class="button btn-strategies" onclick="location.href='#Strategies'">♟️&nbsp; Strategies</button>
+<button class="button btn-calculators" onclick="location.href='#Calculators'">🧮&nbsp; Strategies - Calculators</button>
 </div>
 <p>The Black-Scholes generalized formula can be used to price european options on stocks without dividends (the original model by Black and Scholes, 1973), options on stocks with a continuous dividend yield (Merton, 1973), options on futures (Black 1976) and options on currencies (Garman and Kohlhagen - 1983).<br><br>Options can be bought to possibly capitalize on a view with the loss capped at the premium paid, or sold to earn income at the risk that the option is exercised with possibility of unlimited losses.  Options can be sold/bought back to lock in current gains/losses.Strategies can be used to combine options, to mitigate costs/risk or increase income.
 Calculators are tools for understanding risk characteristics of various market products .
-<br><br>For current spot, yields, dividend yields refer to the Surface Tab.  The grid in Surface Tab provides current implied volatility .
+<br><br>For current spot, yields, dividend yields refer to the Surface Tab.  The grid in Surface Tab provides current implied volatility.
 
 <br><br>Please click on User Agreement before using any calculators on RiskSnap. 
 <a href="https://www.risksnap.com/contact/#UserAgreement"> User Agreement</a>
@@ -2499,7 +2499,7 @@ const sections=[
  ['Strategies','.btn-strategies'],
  ['Calculators','.btn-calculators']
 ];
-const buttons=document.querySelectorAll('.rs-nav-button');
+const buttons=document.querySelectorAll('.button');
 function updateActive(){
  buttons.forEach(b=>b.classList.remove('active'));
  let y=window.scrollY+120;
