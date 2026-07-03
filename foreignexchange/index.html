@@ -199,7 +199,7 @@ economic growth, inflation, monetary policy, capital flows and geopolitical deve
    https://your-service-url.a.run.app/fx_history?period=10y
 */
 const FX_API_URL = "https://surface-203178530029.northamerica-northeast2.run.app/fx_history";
-let fxRange = "10y";
+let fxRange = "1y";
 let includeGoldInCombined = true;
 let latestFxSeries = [];
 const fxPairs = [
@@ -236,31 +236,31 @@ function normalizeFxPayload(payload) {
     }).filter(Boolean);
 }
 function normalizeOilPayload(payload) {
-    const item = payload.OIL || payload.oil || payload[oilPair.label] || payload[oilPair.ticker];
-    if (!item) {
-        const series = payload.series && Array.isArray(payload.series) ? payload.series : [];
-        const found = series.find(s => s.pair === oilPair.key || s.key === oilPair.key || s.label === oilPair.label || s.ticker === oilPair.ticker);
-        if (!found) return null;
+
+    // Backend returns the oil object directly.
+    if (payload.pair === "OIL" && payload.dates && payload.rates) {
+        return payload;
+    }
+
+    const item =
+        payload.OIL ||
+        payload.oil ||
+        payload[oilPair.label] ||
+        payload[oilPair.ticker];
+
+    if (item) {
         return {
             pair: oilPair.key,
             label: oilPair.label,
             ticker: oilPair.ticker,
-            dates: found.dates || found.date || [],
-            rates: found.rates || found.close || found.values || [],
-            error: found.error
+            dates: item.dates || [],
+            rates: item.rates || [],
+            error: item.error
         };
     }
 
-    return {
-        pair: oilPair.key,
-        label: oilPair.label,
-        ticker: oilPair.ticker,
-        dates: item.dates || item.date || [],
-        rates: item.rates || item.close || item.values || [],
-        error: item.error
-    };
+    return null;
 }
-
 
 function fxDecimals(pairKey) {
     if (pairKey === "USDJPY" || pairKey === "GOLD" || pairKey === "OIL") return 2;
@@ -563,6 +563,7 @@ async function loadFxCharts() {
         const payload = await response.json();
         const series = normalizeFxPayload(payload);
         const oilItem = normalizeOilPayload(payload);
+		console.log(oilItem);
 		latestFxSeries = series;
 
         drawFxCombinedChart(series);
