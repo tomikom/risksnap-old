@@ -73,11 +73,11 @@ Foreign exchange is the largest and most liquid financial market in the world. A
 
 
 <div class="fx-controls">
-	<button type="button" data-range="1y" onclick="setFxRange('1y')">1Y</button>
-	<button type="button" data-range="3y" onclick="setFxRange('3y')">3Y</button>
-	<button type="button" data-range="5y" onclick="setFxRange('5y')">5Y</button>
-	<button type="button" data-range="10y" onclick="setFxRange('10y')">10Y</button>
-	<button type="button" data-range="max" onclick="setFxRange('max')">Max</button>
+    <button type="button" onclick="setFxRange('1y')">1Y</button>
+    <button type="button" onclick="setFxRange('3y')">3Y</button>
+    <button type="button" onclick="setFxRange('5y')">5Y</button>
+    <button type="button" onclick="setFxRange('10y')">10Y</button>
+    <button type="button" onclick="setFxRange('max')">Max</button>
 	<button type="button" onclick="toggleGoldInCombined()">Toggle Gold in combined chart</button>
     <button type="button" onclick="loadFxCharts()">Update charts</button>
 </div>
@@ -140,11 +140,6 @@ economic growth, inflation, monetary policy, capital flows and geopolitical deve
 }
 .fx-controls button:hover {
     opacity: 0.88;
-}
-.fx-controls button.active {
-    background: #f59e0b;
-    color: white;
-    font-weight: bold;
 }
 .fx-status {
     background: #f6f8fc;
@@ -220,15 +215,9 @@ function toggleGoldInCombined() {
     includeGoldInCombined = !includeGoldInCombined;
     drawFxCombinedChart(latestFxSeries);
 }
-function updateRangeButtons() {
-    document.querySelectorAll(".fx-controls button[data-range]").forEach(btn => {
-        btn.classList.toggle("active", btn.dataset.range === fxRange);
-    });
-}
 function setFxRange(range) {
     fxRange = range;
-	updateRangeButtons();
-	loadFxCharts();
+    loadFxCharts();
 }
 
 function normalizeFxPayload(payload) {
@@ -528,8 +517,7 @@ function updateOilSourceNote(payload) {
 }
 
 async function loadFxCharts() {
-    updateRangeButtons();
-	const status = document.getElementById("fxStatus");
+    const status = document.getElementById("fxStatus");
 
     if (FX_API_URL.indexOf("YOUR-CLOUD-RUN-URL") >= 0) {
         status.innerHTML = "Enter your Cloud Run URL in <b>FX_API_URL</b> to load the Yahoo Finance FX charts.";

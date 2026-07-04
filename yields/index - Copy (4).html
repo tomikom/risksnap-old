@@ -23,14 +23,8 @@ tr:nth-child(even) { background-color: #dddddd; }
     background: #3A5FCD; color: white; border: 0; border-radius: 999px;
     padding: 9px 16px; cursor: pointer; font-size: 14px;
 }
-.yield-controls button.active {
-    background: #f59e0b;
-    color: white;
-    font-weight: bold;
-}
 .yield-controls select { background: #ffffff; color: #222; border: 1px solid #bfc9df; cursor: pointer; }
 .yield-controls button:hover { opacity: 0.88; }
-
 .yield-status { background: #f6f8fc; border-left: 5px solid #3A5FCD; padding: 10px 12px; margin: 10px 0 16px 0; color: #333; }
 .yield-grid { display: grid; grid-template-columns: repeat(2, minmax(320px, 1fr)); gap: 18px; }
 .yield-card { background: white; border: 1px solid #d9e0ef; border-radius: 16px; box-shadow: 0 4px 16px rgba(20, 35, 75, 0.10); padding: 10px; }
@@ -57,11 +51,11 @@ Daily interest rate yields in the charts are derived from Central Bank data cove
 
 <div class="yield-controls">
     <span class="yield-control-label">History:</span>
-	<button data-range="1y" onclick="setYieldRange('1y')">1Y</button>
-	<button data-range="3y" onclick="setYieldRange('3y')">3Y</button>
-	<button data-range="5y" onclick="setYieldRange('5y')">5Y</button>
-	<button data-range="10y" onclick="setYieldRange('10y')">10Y</button>
-	<button data-range="max" onclick="setYieldRange('max')">Max</button>
+    <button type="button" onclick="setYieldRange('1y')">1Y</button>
+    <button type="button" onclick="setYieldRange('3y')">3Y</button>
+    <button type="button" onclick="setYieldRange('5y')">5Y</button>
+    <button type="button" onclick="setYieldRange('10y')">10Y</button>
+    <button type="button" onclick="setYieldRange('max')">Max</button>
     <span class="yield-control-label">Country:</span>
     <select id="yieldCountrySelect" onchange="drawYieldCharts()"></select>
     <span class="yield-control-label">Tenor:</span>
@@ -142,14 +136,9 @@ function setupCountrySelect() {
     });
     sel.value = "USD";
 }
-function updateYieldButtons() {
-    document.querySelectorAll(".yield-controls button[data-range]").forEach(btn => {
-        btn.classList.toggle("active", btn.dataset.range === yieldRange);
-    });
-}
+
 function setYieldRange(range) {
     yieldRange = range;
-	updateYieldButtons();
     loadYieldCharts();
 }
 
@@ -394,8 +383,7 @@ async function loadOneCountry(country) {
 }
 
 async function loadYieldCharts() {
-    updateYieldButtons();
-	const status = document.getElementById("yieldStatus");
+    const status = document.getElementById("yieldStatus");
     status.textContent = "Updating yield charts...";
     allYieldRows = {};
     loadedYieldCountries = [];
