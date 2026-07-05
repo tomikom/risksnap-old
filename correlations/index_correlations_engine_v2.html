@@ -51,7 +51,7 @@ layout: correlations-template
 
       <div class="selector-card equity-card">
         <div class="selector-title">Equities / Yahoo codes</div>
-        <textarea id="equitySymbols" rows="4" placeholder="AAPL, AMZN, NVDA, MSTR"></textarea>
+        <textarea id="equitySymbols" rows="4" placeholder="AAPL, AMZN, NVDA, MSTR">AAL, AAPL, AMZN, GOOG, NASDAQ, NVDA, S&amp;P500, ^VIX</textarea>
         <div class="input-note">Enter Yahoo symbols separated by commas or spaces. Invalid/new issues are ignored with a message.</div>
       </div>
     </div>
@@ -129,7 +129,7 @@ document.querySelectorAll(".fx-check,.yield-check").forEach(cb => cb.addEventLis
 document.getElementById("equitySymbols").addEventListener("input", debounce(refreshPreviewFromInputs, 250));
 
 refreshPreviewFromInputs();
-showMessages(["Preview shown from embedded sample data. Click Calculate correlations for live Cloud Run data."]);
+showMessages(["Preview shown from embedded sample data. Click Calculate correlations for live selected data after /correlations_data is connected."]);
 
 function refreshPreviewFromInputs() {
   activeIsLive = false;
@@ -179,12 +179,13 @@ async function fetchCorrelationData() {
   };
 
   setLoading(true);
-  showMessages(["Calculating correlations... calling Cloud Run"]);
+  showMessages(["Calculating correlations..."]);
   try {
     const response = await fetch("https://surface-203178530029.northamerica-northeast2.run.app/correlations_data", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(requestPayload)
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(requestPayload)
+})
     });
     const data = await response.json();
     if (!response.ok) throw new Error((data.messages || [response.statusText]).join(" "));
@@ -196,7 +197,7 @@ async function fetchCorrelationData() {
     activePayload = getFilteredFallbackPayload(period);
     activeIsLive = false;
     drawCorrelationChart(activePayload);
-    showMessages(["Live calculation unavailable: " + err.message, "This usually means the Cloud Run endpoint did not respond, or the browser blocked the cross-site request.", "Filtered preview can only show assets already embedded in the sample data.", ...(activePayload.messages || [])]);
+    showMessages(["Live calculation unavailable: " + err.message, "Filtered preview shown from embedded sample data.", ...(activePayload.messages || [])]);
   } finally {
     setLoading(false);
   }
@@ -218,7 +219,7 @@ function getFilteredFallbackPayload(period) {
   const messages = [];
   if (availablePeriod !== period) messages.push(`No embedded ${period} sample yet; showing filtered 90 Day preview.`);
   const missing = wanted.filter(a => !baseIndex.has(a));
-  if (missing.length) messages.push(`Not in embedded preview data: ${missing.join(", ")}. These need the live /correlations_data engine.`);
+  if (missing.length) messages.push(`Not in embedded preview data: ${missing.join(", ")}. Live calculation will use them if data is available.`);
   if (!chosen.length) messages.push("No selected assets are available in the embedded preview. Click Calculate correlations for live data.");
 
   const matrix = chosen.map((a, row) => {

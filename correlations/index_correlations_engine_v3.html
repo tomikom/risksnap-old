@@ -51,7 +51,7 @@ layout: correlations-template
 
       <div class="selector-card equity-card">
         <div class="selector-title">Equities / Yahoo codes</div>
-        <textarea id="equitySymbols" rows="4" placeholder="AAPL, AMZN, NVDA, MSTR"></textarea>
+        <textarea id="equitySymbols" rows="4" placeholder="AAPL, AMZN, NVDA, MSTR">AAL, AAPL, AMZN, GOOG, NASDAQ, NVDA, S&amp;P500, ^VIX</textarea>
         <div class="input-note">Enter Yahoo symbols separated by commas or spaces. Invalid/new issues are ignored with a message.</div>
       </div>
     </div>
@@ -129,7 +129,7 @@ document.querySelectorAll(".fx-check,.yield-check").forEach(cb => cb.addEventLis
 document.getElementById("equitySymbols").addEventListener("input", debounce(refreshPreviewFromInputs, 250));
 
 refreshPreviewFromInputs();
-showMessages(["Preview shown from embedded sample data. Click Calculate correlations for live Cloud Run data."]);
+showMessages(["Preview shown from embedded sample data. The Calculate button requires /correlations_data to be installed in main.py."]);
 
 function refreshPreviewFromInputs() {
   activeIsLive = false;
@@ -179,9 +179,9 @@ async function fetchCorrelationData() {
   };
 
   setLoading(true);
-  showMessages(["Calculating correlations... calling Cloud Run"]);
+  showMessages(["Calculating correlations... calling /correlations_data"]);
   try {
-    const response = await fetch("https://surface-203178530029.northamerica-northeast2.run.app/correlations_data", {
+    const response = await fetch("/correlations_data", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(requestPayload)
@@ -196,7 +196,7 @@ async function fetchCorrelationData() {
     activePayload = getFilteredFallbackPayload(period);
     activeIsLive = false;
     drawCorrelationChart(activePayload);
-    showMessages(["Live calculation unavailable: " + err.message, "This usually means the Cloud Run endpoint did not respond, or the browser blocked the cross-site request.", "Filtered preview can only show assets already embedded in the sample data.", ...(activePayload.messages || [])]);
+    showMessages(["Live calculation unavailable: " + err.message, "This usually means /correlations_data is not connected yet, or you are opening the HTML as a local file rather than through Cloud Run.", "Filtered preview can only show assets already embedded in the sample data.", ...(activePayload.messages || [])]);
   } finally {
     setLoading(false);
   }

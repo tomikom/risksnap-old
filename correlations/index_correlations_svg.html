@@ -1,0 +1,276 @@
+---
+layout: correlations-template
+---
+
+<h1>Correlations</h1>
+<div class="text-section correlations-page">
+  <p>Correlations are calculated for 90 days or 250 days for a variety of assets.</p>
+
+  <div class="corr-controls">
+    <label for="corrPeriod"><strong>Lookback period:</strong></label>
+    <select id="corrPeriod">
+      <option value="90 Day">90 Day</option>
+      <option value="250 Day">250 Day</option>
+    </select>
+    <span class="scale-note">Bubble diameter = |correlation| × <span id="scaleReadout"></span> px</span>
+  </div>
+
+  <div class="corr-wrap">
+    <div id="corrChart" class="corr-chart"></div>
+  </div>
+</div>
+
+<style>
+h1 {
+  color: white;
+  text-align: center;
+  background-color: #3A5FCD;
+}
+
+.correlations-page {
+  background: #ffffff;
+  color: #222;
+}
+
+.corr-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin: 18px 0 12px 0;
+}
+
+#corrPeriod {
+  padding: 5px 8px;
+  font-size: 14px;
+}
+
+.scale-note {
+  color: #555;
+  font-size: 13px;
+}
+
+.corr-wrap {
+  overflow: auto;
+  background: #fff;
+  border: 1px solid #ddd;
+  padding: 18px 18px 30px 18px;
+  max-width: 100%;
+}
+
+.corr-chart {
+  position: relative;
+  background: #fff;
+  min-height: 500px;
+}
+
+.corr-chart svg {
+  display: block;
+  overflow: visible;
+  background: #fff;
+}
+
+.asset-label {
+  font-size: 12px;
+  fill: #222;
+}
+
+.col-label {
+  text-anchor: middle;
+}
+
+.row-label {
+  text-anchor: end;
+  dominant-baseline: middle;
+}
+
+.grid-line {
+  stroke: #e2e2e2;
+  stroke-width: 1;
+}
+
+.diag-cell {
+  fill: #f7f7f7;
+  stroke: #d2d2d2;
+}
+
+.vol-text {
+  font-size: 11px;
+  font-weight: 600;
+  fill: #333;
+  text-anchor: middle;
+  dominant-baseline: middle;
+}
+
+.bubble-text {
+  font-size: 11px;
+  font-weight: 600;
+  fill: #111;
+  text-anchor: middle;
+  dominant-baseline: middle;
+  pointer-events: none;
+}
+
+.corr-title {
+  font-size: 18px;
+  font-weight: 700;
+  fill: #222;
+}
+
+.legend-text {
+  font-size: 12px;
+  fill: #444;
+}
+</style>
+
+<script>
+const corrData = {"90 Day":{"assets":["AAL","AAPL","AMZN","BTC-USD","GOOG","NASDAQ","NVDA","S&P500","^VIX","CADUSD","EURUSD","GOLD","USD"],"matrix":[[0.421942061112842,0.465860511545818,0.492723266420038,0.270887292532054,0.556626439967288,0.637387507501024,0.293843234778237,0.663387875625869,-0.580132484627876,-0.108751737400865,0.453380738336626,0.248721960090658,-0.211399871439844],[null,0.17281004541966,0.3496199558142,0.368386689717166,0.374638569244746,0.596120118234244,0.258389598251158,0.604462148015342,-0.479840087703149,-0.111963661724465,0.285516733929111,0.239426540633674,-0.110135254237038],[null,null,0.238252412516281,0.55262407342726,0.517169206396194,0.712582123086151,0.440909770202862,0.688170566678294,-0.599995790117147,-0.245308968219625,0.423522985535131,0.232458868250472,-0.157879707106974],[null,null,null,0.293858605106298,0.280519046216192,0.582450021804375,0.423403452935487,0.593682870770669,-0.544458109978922,-0.148785924051903,0.142153484882893,0.268004459088255,-0.0655719232623941],[null,null,null,null,0.276106158428674,0.683974165071143,0.318849564229131,0.69104329250967,-0.611152333357475,-0.479967762781687,0.456522222227738,0.37330375681833,-0.21805391185162],[null,null,null,null,null,0.161697904835585,0.724419132130626,0.975063731972191,-0.706045031865159,-0.331701613533666,0.504934793741734,0.418100810743871,-0.16592100842533],[null,null,null,null,null,null,0.296804733276659,0.665498001186357,-0.427260714944092,-0.077292498013856,0.237610707572354,0.32802674735847,-0.111173817230511],[null,null,null,null,null,null,null,0.121062823551374,-0.762355504272499,-0.348744841797008,0.536326463625647,0.425307242164215,-0.174335505652413],[null,null,null,null,null,null,null,null,0.969741444924061,0.166640248474352,-0.468138590846545,-0.212489284205322,0.192879249647923],[null,null,null,null,null,null,null,null,null,0.0353529230240621,-0.546028374917534,-0.306647287065707,0.0769783363288144],[null,null,null,null,null,null,null,null,null,null,0.0537444778449849,0.127848598626961,-0.142511023004006],[null,null,null,null,null,null,null,null,null,null,null,0.239514610511799,-0.144039295463312],[null,null,null,null,null,null,null,null,null,null,null,null,0.0612343351777795]]},"250 Day":{"assets":["AAL","AAPL","AMZN","BTC-USD","GOOG","NASDAQ","NVDA","S&P500","^VIX","CADUSD","EURUSD","GOLD","USD"],"matrix":[[0.446119871724187,0.287265487134966,0.226738920956013,0.296485532380826,0.286241417243587,0.440380418231849,0.147425103193263,0.492348564075477,-0.484893492621328,-0.0923636847116888,0.172443447869395,0.122471808655209,-0.211399871439844],[null,0.211571717885775,0.300895699161996,0.157496645000724,0.338550687519354,0.503946178927155,0.213003850572603,0.51392256022761,-0.462534391988709,-0.0459274174824721,0.112939087156632,0.0541192309911963,-0.110135254237038],[null,null,0.287424092223617,0.30373153200424,0.382068504779296,0.63110102243901,0.315031750708398,0.588162595508738,-0.464968472280737,-0.0799667378436974,0.0454353802306128,0.00269227001535014,-0.157879707106974],[null,null,null,0.404011680785381,0.177659367456711,0.54536764631126,0.383916848316278,0.536350877378433,-0.485413932343061,-0.192961956051891,0.134160286535484,0.133120876968197,-0.0655719232623941],[null,null,null,null,0.268587844099137,0.597103157930119,0.263412185680483,0.572128353304852,-0.455503617576793,-0.187161460197647,0.15505408840388,0.188551361444171,-0.21805391185162],[null,null,null,null,null,0.157653309183498,0.721713879419808,0.962975390194028,-0.75210551155557,-0.216476302067092,0.166317250490121,0.20501023308005,-0.16592100842533],[null,null,null,null,null,null,0.321518667558272,0.643786908307762,-0.456085966373417,-0.068962047441174,-0.0174761917243543,0.106182271984934,-0.111173817230511],[null,null,null,null,null,null,null,0.114712344639891,-0.812187333434186,-0.234658642139898,0.200264832066455,0.212903893422133,-0.174335505652413],[null,null,null,null,null,null,null,null,1.08332047276529,0.118920749884951,-0.0828596201323998,-0.101253127067649,0.192879249647923],[null,null,null,null,null,null,null,null,null,0.0418356162642543,-0.620247127261462,-0.326025414599304,0.0769783363288144],[null,null,null,null,null,null,null,null,null,null,0.0597362096504024,0.266918176224212,-0.142511023004006],[null,null,null,null,null,null,null,null,null,null,null,0.268324922900037,-0.144039295463312],[null,null,null,null,null,null,null,null,null,null,null,null,0.0612343351777795]]}};
+
+// Change these two values to tune the appearance.
+// Diameter is exactly Math.abs(correlation) * BUBBLE_SCALE.
+const BUBBLE_SCALE = 100;
+const CELL = 58;
+
+const LEFT = 90;
+const TOP = 86;
+const LABEL_TOP = 68;
+const LEGEND_TOP = 28;
+
+document.getElementById("scaleReadout").textContent = BUBBLE_SCALE;
+document.getElementById("corrPeriod").addEventListener("change", drawCorrelationChart);
+drawCorrelationChart();
+
+function drawCorrelationChart() {
+  const period = document.getElementById("corrPeriod").value;
+  const payload = corrData[period];
+  const assets = payload.assets.slice(0, 15);
+  const matrix = payload.matrix;
+  const n = assets.length;
+
+  const width = LEFT + n * CELL + 100;
+  const height = TOP + n * CELL + 70;
+
+  const chart = document.getElementById("corrChart");
+  chart.innerHTML = "";
+  chart.style.width = width + "px";
+  chart.style.height = height + "px";
+
+  const svg = makeSvg("svg", { width, height, viewBox: `0 0 ${width} ${height}` });
+  chart.appendChild(svg);
+
+  svg.appendChild(makeSvg("text", { x: LEFT, y: 20, class: "corr-title" }, `Correlation Matrix (${period})`));
+  drawLegend(svg, LEFT + 250, LEGEND_TOP);
+
+  // Column labels
+  for (let j = 0; j < n; j++) {
+    const x = LEFT + j * CELL + CELL / 2;
+    const txt = makeSvg("text", { x, y: LABEL_TOP, class: "asset-label col-label", transform: `rotate(-35 ${x} ${LABEL_TOP})` }, assets[j]);
+    svg.appendChild(txt);
+  }
+
+  // Row labels
+  for (let i = 0; i < n; i++) {
+    const y = TOP + i * CELL + CELL / 2;
+    svg.appendChild(makeSvg("text", { x: LEFT - 12, y, class: "asset-label row-label" }, assets[i]));
+  }
+
+  // Compact grid. Bubbles are allowed to overlap because SVG overflow is visible.
+  for (let i = 0; i <= n; i++) {
+    const y = TOP + i * CELL;
+    svg.appendChild(makeSvg("line", { x1: LEFT, y1: y, x2: LEFT + n * CELL, y2: y, class: "grid-line" }));
+    const x = LEFT + i * CELL;
+    svg.appendChild(makeSvg("line", { x1: x, y1: TOP, x2: x, y2: TOP + n * CELL, class: "grid-line" }));
+  }
+
+  // Diagonal cells show volatility / standard deviation values from the diagonal.
+  for (let i = 0; i < n; i++) {
+    const x = LEFT + i * CELL;
+    const y = TOP + i * CELL;
+    const v = matrix[i][i];
+    svg.appendChild(makeSvg("rect", { x, y, width: CELL, height: CELL, class: "diag-cell" }));
+    svg.appendChild(makeSvg("text", { x: x + CELL / 2, y: y + CELL / 2 - 6, class: "vol-text" }, "Vol"));
+    svg.appendChild(makeSvg("text", { x: x + CELL / 2, y: y + CELL / 2 + 9, class: "vol-text" }, fmt(v)));
+  }
+
+  // Build bubbles for upper triangle only. Sort largest first, so small values remain visible on top.
+  const bubbles = [];
+  for (let i = 0; i < n; i++) {
+    for (let j = i + 1; j < n; j++) {
+      const v = matrix[i][j];
+      if (v === null || Number.isNaN(v)) continue;
+      const diameter = Math.abs(v) * BUBBLE_SCALE;
+      bubbles.push({ i, j, v, diameter });
+    }
+  }
+  bubbles.sort((a, b) => b.diameter - a.diameter);
+
+  const bubbleLayer = makeSvg("g", {});
+  const textLayer = makeSvg("g", {});
+  svg.appendChild(bubbleLayer);
+  svg.appendChild(textLayer);
+
+  for (const b of bubbles) {
+    const cx = LEFT + b.j * CELL + CELL / 2;
+    const cy = TOP + b.i * CELL + CELL / 2;
+    const r = b.diameter / 2;
+    const fill = corrColor(b.v);
+    const circle = makeSvg("circle", {
+      cx, cy, r,
+      fill,
+      "fill-opacity": 0.82,
+      stroke: "#555",
+      "stroke-opacity": 0.45,
+      "stroke-width": 1
+    });
+    circle.appendChild(makeSvg("title", {}, `${assets[b.i]} / ${assets[b.j]}
+Correlation: ${fmt(b.v)}
+Diameter: ${b.diameter.toFixed(1)} px`));
+    bubbleLayer.appendChild(circle);
+
+    textLayer.appendChild(makeSvg("text", { x: cx, y: cy, class: "bubble-text" }, fmt(b.v)));
+  }
+}
+
+function drawLegend(svg, x, y) {
+  const defs = makeSvg("defs", {});
+  const grad = makeSvg("linearGradient", { id: "corrGradient", x1: "0%", y1: "0%", x2: "100%", y2: "0%" });
+  grad.appendChild(makeSvg("stop", { offset: "0%", "stop-color": "#c0392b" }));
+  grad.appendChild(makeSvg("stop", { offset: "50%", "stop-color": "#e0e0e0" }));
+  grad.appendChild(makeSvg("stop", { offset: "100%", "stop-color": "#1e8e3e" }));
+  defs.appendChild(grad);
+  svg.appendChild(defs);
+
+  svg.appendChild(makeSvg("rect", { x, y, width: 170, height: 12, fill: "url(#corrGradient)", stroke: "#aaa" }));
+  svg.appendChild(makeSvg("text", { x, y: y + 28, class: "legend-text" }, "-1"));
+  svg.appendChild(makeSvg("text", { x: x + 78, y: y + 28, class: "legend-text" }, "0"));
+  svg.appendChild(makeSvg("text", { x: x + 156, y: y + 28, class: "legend-text" }, "+1"));
+}
+
+function corrColor(v) {
+  // Red for negative, green for positive, grey near zero.
+  const a = Math.min(1, Math.abs(v));
+  if (v >= 0) {
+    const light = Math.round(225 - 100 * a);
+    const g = Math.round(225 - 90 * a);
+    return `rgb(${light}, ${g}, ${light})`;
+  } else {
+    const r = Math.round(225 - 45 * a);
+    const gb = Math.round(225 - 150 * a);
+    return `rgb(${r}, ${gb}, ${gb})`;
+  }
+}
+
+function fmt(v) {
+  if (v === null || Number.isNaN(v)) return "";
+  return Number(v).toFixed(2);
+}
+
+function makeSvg(tag, attrs, text) {
+  const el = document.createElementNS("http://www.w3.org/2000/svg", tag);
+  for (const [k, v] of Object.entries(attrs || {})) {
+    el.setAttribute(k, v);
+  }
+  if (text !== undefined) el.textContent = text;
+  return el;
+}
+</script>
