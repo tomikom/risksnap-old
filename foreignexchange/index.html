@@ -247,26 +247,15 @@ function normalizeFxPayload(payload) {
     }).filter(Boolean);
 }
 function normalizeOilPayload(payload) {
-    const series = payload.series || [];
-    return series.find(item => item.pair === "OIL") || null;
-}{
+    const series = payload.series || payload.data || [];
 
-    // Backend returns the oil object directly.
-    if (payload.pair === "OIL" && payload.dates && payload.rates) {
-        return payload;
-    }
-
-    const item =
-        payload.OIL ||
-        payload.oil ||
-        payload[oilPair.label] ||
-        payload[oilPair.ticker];
+    const item = series.find(item => item.pair === "OIL" || item.ticker === "CL=F");
 
     if (item) {
         return {
-            pair: oilPair.key,
-            label: oilPair.label,
-            ticker: oilPair.ticker,
+            pair: "OIL",
+            label: "WTI Crude Oil",
+            ticker: "CL=F",
             dates: item.dates || [],
             rates: item.rates || [],
             error: item.error
