@@ -247,6 +247,9 @@ function normalizeFxPayload(payload) {
     }).filter(Boolean);
 }
 function normalizeOilPayload(payload) {
+    const series = payload.series || [];
+    return series.find(item => item.pair === "OIL") || null;
+}{
 
     // Backend returns the oil object directly.
     if (payload.pair === "OIL" && payload.dates && payload.rates) {
