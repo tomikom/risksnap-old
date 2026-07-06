@@ -17,6 +17,7 @@ layout: correlations-template
       <span class="scale-note">Bubble diameter = |correlation| × <span id="scaleReadout"></span> px</span>
       <button id="corrRefresh" type="button"><span class="btn-label">Calculate correlations</span></button>
     </div>
+    <div id="corrStatus" class="corr-status">Ready.</div>
 
     <div class="selector-grid">
       <div class="selector-card">
@@ -72,6 +73,7 @@ h1 { color: white; text-align: center; background-color: #3A5FCD; }
 .correlations-page { background: #ffffff; color: #222; }
 .corr-input-panel { background: #fff; border: 1px solid #e5e5e5; border-radius: 8px; padding: 12px; margin: 14px 0; }
 .corr-controls { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin: 0 0 12px 0; }
+.corr-status { background: #f6f8fc; border-left: 5px solid #3A5FCD; padding: 8px 10px; margin: 8px 0 12px 0; color: #333; font-size: 13px; }
 #corrPeriod, #corrRefresh { padding: 5px 8px; font-size: 14px; }
 #corrRefresh { cursor: pointer; position: relative; border: 1px solid #aaa; border-radius: 4px; background: #fff; }
 #corrRefresh.is-loading { color: #333; padding-left: 28px; outline: 2px dotted #3A5FCD; outline-offset: 3px; }
@@ -120,6 +122,8 @@ const DEFAULT_EQUITIES = "AAPL, AMZN, NVDA, MSTR, GS, CAT, UNH, AMGN, V, HD, IBM
 let activePayload = null;
 let activeIsLive = false;
 
+const scheduleCorrelationRefresh = debounce(fetchCorrelationData, 450);
+
 document.getElementById("scaleReadout").textContent = BUBBLE_SCALE;
 document.getElementById("corrPeriod").addEventListener("change", scheduleCorrelationRefresh);
 document.getElementById("corrRefresh").addEventListener("click", fetchCorrelationData);
@@ -138,6 +142,7 @@ function refreshPreviewFromInputs() {
   activeIsLive = false;
   activePayload = getFilteredFallbackPayload(document.getElementById("corrPeriod").value);
   drawCorrelationChart(activePayload);
+  setStatus(`Preview updated: ${activePayload.assets.length} assets selected.`);
   showMessages(activePayload.messages || []);
 }
 
@@ -165,8 +170,6 @@ function normalizeDisplaySymbol(symbol) {
   if (s === "VIX") return "^VIX";
   return s;
 }
-
-const scheduleCorrelationRefresh = debounce(fetchCorrelationData, 450);
 
 function getSelectedInputs() {
   const fx = selectedValues(".fx-check");
@@ -211,6 +214,7 @@ async function fetchCorrelationData() {
   };
 
   setLoading(true);
+  setStatus("Calculating correlations... calling Cloud Run");
   showMessages(["Calculating correlations... calling Cloud Run"]);
   try {
     const response = await fetch("https://surface-203178530029.northamerica-northeast2.run.app/correlations_data", {
@@ -226,15 +230,22 @@ async function fetchCorrelationData() {
       activePayload.messages = [...(activePayload.messages || []), `Maximum ${MAX_ASSETS} assets shown. Omitted: ${inputs.omitted.join(", ")}.`];
     }
     drawCorrelationChart(activePayload);
+    setStatus(`Updated ${activePayload.assets.length} assets for ${period}.`);
     showMessages(activePayload.messages || []);
   } catch (err) {
     activePayload = getFilteredFallbackPayload(period);
     activeIsLive = false;
     drawCorrelationChart(activePayload);
+    setStatus("Live calculation unavailable; showing embedded preview.");
     showMessages(["Live calculation unavailable: " + err.message, "This usually means the Cloud Run endpoint did not respond, or the browser blocked the cross-site request.", "Filtered preview can only show assets already embedded in the sample data.", ...(activePayload.messages || [])]);
   } finally {
     setLoading(false);
   }
+}
+
+function setStatus(message) {
+  const box = document.getElementById("corrStatus");
+  if (box) box.textContent = message || "";
 }
 
 function setLoading(isLoading) {
@@ -242,7 +253,9 @@ function setLoading(isLoading) {
   btn.disabled = isLoading;
   btn.classList.toggle("is-loading", isLoading);
   btn.querySelector(".btn-label").textContent = isLoading ? "Calculating..." : "Calculate correlations";
+  if (isLoading) setStatus("Calculating correlations...");
 }
+
 
 function getFilteredFallbackPayload(period) {
   const availablePeriod = corrData[period] ? period : "90 Day";
