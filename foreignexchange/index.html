@@ -382,7 +382,7 @@ function drawFxChart(item) {
 
     const lastRate = Number(y[y.length - 1]);
     const lastDate = x[x.length - 1] || "";
-    const titleText = `${pair.label} (${pair.ticker}) — ${lastRate.toFixed(fxDecimals(pair.key))} as of ${lastDate}`;
+    const titleText = `${pair.label} (${pair.ticker}) — ${lastRate.toFixed(pair.key === "USDJPY" ? 2 : 4)} as of ${lastDate}`;
 
     const trace = {
         x: x,
@@ -391,7 +391,7 @@ function drawFxChart(item) {
         mode: "lines",
         line: { width: 2.5, color: pair.color },
         hovertemplate: `%{x}<br>Rate: %{y:${fxHoverDecimals(pair.key)}}<extra></extra>`,
-        name: pair.label
+		name: pair.label
     };
 
     const layout = {
