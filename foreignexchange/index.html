@@ -264,18 +264,6 @@ function normalizeOilPayload(payload) {
 
     return null;
 }
-
-function fxDecimals(pairKey) {
-    if (pairKey === "USDJPY" || pairKey === "GOLD" || pairKey === "OIL") return 2;
-    return 4;
-}
-
-function fxHoverDecimals(pairKey) {
-    if (pairKey === "GOLD" || pairKey === "OIL") return ".2f";
-    if (pairKey === "USDJPY") return ".3f";
-    return ".5f";
-}
-
 function drawFxCombinedChart(series) {
     const traces = [];
 
