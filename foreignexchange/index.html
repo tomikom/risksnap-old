@@ -362,6 +362,12 @@ function cleanFxPoints(item) {
     return { x, y };
 }
 
+function fxHoverDecimals(key) {
+    if (key === "GOLD") return ".2f";
+    if (key === "USDJPY") return ".2f";
+    return ".4f";
+}
+
 function drawFxChart(item) {
     const pair = fxPairs.find(p => p.key === item.pair || p.label === item.label || p.ticker === item.ticker);
     if (!pair) return;
@@ -552,11 +558,11 @@ async function loadFxCharts() {
         const url = `${FX_API_URL}?period=${encodeURIComponent(fxRange)}`;
         const response = await fetch(url, { cache: "no-store" });
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
         const payload = await response.json();
         const series = normalizeFxPayload(payload);
         const oilItem = normalizeOilPayload(payload);
-		console.log(oilItem);
-		latestFxSeries = series;
+        latestFxSeries = series;
 
         drawFxCombinedChart(series);
         drawOilChart(oilItem);
