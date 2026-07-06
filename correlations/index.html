@@ -31,8 +31,8 @@ layout: correlations-template
         <label><input type="checkbox" class="fx-check" value="USDJPY"> USDJPY</label>
         <label><input type="checkbox" class="fx-check" value="USDCHF"> USDCHF</label>
         <label><input type="checkbox" class="fx-check" value="GOLD" checked> GOLD</label>
-        <label><input type="checkbox" class="fx-check" value="OIL" checked> OIL</label>
-        <label><input type="checkbox" class="fx-check" value="BTC-USD"> BTC-USD</label>
+        <label><input type="checkbox" class="fx-check" value="OIL"> OIL</label>
+        <label><input type="checkbox" class="fx-check" value="BTC-USD" checked> BTC-USD</label>
       </div>
 
       <div class="selector-card">
@@ -51,8 +51,11 @@ layout: correlations-template
 
       <div class="selector-card equity-card">
         <div class="selector-title">Equities / Yahoo codes</div>
-        <textarea id="equitySymbols" rows="4" placeholder="AAPL, AMZN, NVDA, MSTR"></textarea>
-        <div class="input-note">Enter Yahoo symbols separated by commas or spaces. Invalid/new issues are ignored with a message.</div>
+        <div class="mini-buttons">
+          <button type="button" data-target="equity" data-action="none">Clear all</button>
+        </div>
+        <textarea id="equitySymbols" rows="4">AAPL, AMZN, NVDA, MSTR, GS, CAT, UNH, AMGN, V, HD, IBM</textarea>
+        <div class="input-note">Enter Yahoo symbols separated by commas or spaces. Maximum 15 total assets. Invalid/new issues are ignored with a message.</div>
       </div>
     </div>
   </div>
@@ -112,24 +115,24 @@ const LEGEND_TOP = 28;
 const ROW_LABEL_X = LEFT - 72;
 const VOL_X = LEFT - 26;
 const MAX_ASSETS = 15;
+const DEFAULT_EQUITIES = "AAPL, AMZN, NVDA, MSTR, GS, CAT, UNH, AMGN, V, HD, IBM";
 
 let activePayload = null;
 let activeIsLive = false;
 
 document.getElementById("scaleReadout").textContent = BUBBLE_SCALE;
-document.getElementById("corrPeriod").addEventListener("change", refreshPreviewFromInputs);
+document.getElementById("corrPeriod").addEventListener("change", scheduleCorrelationRefresh);
 document.getElementById("corrRefresh").addEventListener("click", fetchCorrelationData);
 document.querySelectorAll(".mini-buttons button").forEach(btn => {
   btn.addEventListener("click", () => {
     setChecks(btn.dataset.target, btn.dataset.action === "all");
-    refreshPreviewFromInputs();
+    scheduleCorrelationRefresh();
   });
 });
-document.querySelectorAll(".fx-check,.yield-check").forEach(cb => cb.addEventListener("change", refreshPreviewFromInputs));
-document.getElementById("equitySymbols").addEventListener("input", debounce(refreshPreviewFromInputs, 250));
+document.querySelectorAll(".fx-check,.yield-check").forEach(cb => cb.addEventListener("change", scheduleCorrelationRefresh));
+document.getElementById("equitySymbols").addEventListener("input", debounce(scheduleCorrelationRefresh, 350));
 
-refreshPreviewFromInputs();
-showMessages(["Preview shown from embedded sample data. Click Calculate correlations for live Cloud Run data."]);
+fetchCorrelationData();
 
 function refreshPreviewFromInputs() {
   activeIsLive = false;
@@ -139,6 +142,10 @@ function refreshPreviewFromInputs() {
 }
 
 function setChecks(group, checked) {
+  if (group === "equity") {
+    document.getElementById("equitySymbols").value = checked ? DEFAULT_EQUITIES : "";
+    return;
+  }
   const selector = group === "fx" ? ".fx-check" : ".yield-check";
   document.querySelectorAll(selector).forEach(cb => cb.checked = checked);
 }
@@ -159,23 +166,48 @@ function normalizeDisplaySymbol(symbol) {
   return s;
 }
 
+const scheduleCorrelationRefresh = debounce(fetchCorrelationData, 450);
+
+function getSelectedInputs() {
+  const fx = selectedValues(".fx-check");
+  const yields = selectedValues(".yield-check");
+  const equities = parseEquities(document.getElementById("equitySymbols").value);
+
+  const selected = [];
+  const add = (source, value, label) => {
+    const key = label || value;
+    if (value && !selected.some(item => item.key === key)) selected.push({ source, value, key });
+  };
+
+  fx.forEach(v => add("fx", v, v === "USDCAD" ? "CADUSD" : v));
+  yields.forEach(v => add("yield", v, v === "USD" ? "USD" : "YIELD_" + v));
+  equities.forEach(v => add("equity", v, v));
+
+  const limited = selected.slice(0, MAX_ASSETS);
+  const omitted = selected.slice(MAX_ASSETS).map(item => item.key);
+
+  return {
+    fx_gold_oil: limited.filter(item => item.source === "fx").map(item => item.value),
+    yields: limited.filter(item => item.source === "yield").map(item => item.value),
+    equities: limited.filter(item => item.source === "equity").map(item => item.value),
+    labels: limited.map(item => item.key),
+    omitted
+  };
+}
+
 function selectedPreviewLabels() {
-  const labels = [];
-  const add = (x) => { if (x && !labels.includes(x)) labels.push(x); };
-  parseEquities(document.getElementById("equitySymbols").value).forEach(add);
-  selectedValues(".fx-check").forEach(v => add(v === "USDCAD" ? "CADUSD" : v));
-  selectedValues(".yield-check").forEach(v => add(v === "USD" ? "USD" : "YIELD_" + v));
-  return labels.slice(0, MAX_ASSETS);
+  return getSelectedInputs().labels;
 }
 
 async function fetchCorrelationData() {
   const period = document.getElementById("corrPeriod").value;
   const lookback = parseInt(period, 10);
+  const inputs = getSelectedInputs();
   const requestPayload = {
     lookback,
-    fx_gold_oil: selectedValues(".fx-check"),
-    yields: selectedValues(".yield-check"),
-    equities: document.getElementById("equitySymbols").value
+    fx_gold_oil: inputs.fx_gold_oil,
+    yields: inputs.yields,
+    equities: inputs.equities.join(", ")
   };
 
   setLoading(true);
@@ -190,6 +222,9 @@ async function fetchCorrelationData() {
     if (!response.ok) throw new Error((data.messages || [response.statusText]).join(" "));
     activePayload = normalizePayload(data, period);
     activeIsLive = true;
+    if (inputs.omitted.length) {
+      activePayload.messages = [...(activePayload.messages || []), `Maximum ${MAX_ASSETS} assets shown. Omitted: ${inputs.omitted.join(", ")}.`];
+    }
     drawCorrelationChart(activePayload);
     showMessages(activePayload.messages || []);
   } catch (err) {
@@ -216,6 +251,8 @@ function getFilteredFallbackPayload(period) {
   const baseIndex = new Map(base.assets.map((a, i) => [a, i]));
   const chosen = wanted.filter(a => baseIndex.has(a)).slice(0, MAX_ASSETS);
   const messages = [];
+  const omitted = getSelectedInputs().omitted;
+  if (omitted.length) messages.push(`Maximum ${MAX_ASSETS} assets shown. Omitted: ${omitted.join(", ")}.`);
   if (availablePeriod !== period) messages.push(`No embedded ${period} sample yet; showing filtered 90 Day preview.`);
   const missing = wanted.filter(a => !baseIndex.has(a));
   if (missing.length) messages.push(`Not in embedded preview data: ${missing.join(", ")}. These need the live /correlations_data engine.`);
