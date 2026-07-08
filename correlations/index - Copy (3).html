@@ -19,8 +19,6 @@ layout: correlations-template
 		<span id="scaleReadout"></span>
 	  </span>
       <button id="corrRefresh" type="button"><span class="btn-label">Calculate correlations</span></button>
-      <button id="corrSaveDefaults" type="button">Save Defaults</button>
-      <button id="corrResetFactory" type="button">Reset to Factory Defaults</button>
     </div>
     <div id="corrStatus" class="corr-status">Ready.</div>
 
@@ -79,9 +77,8 @@ h1 { color: white; text-align: center; background-color: #3A5FCD; }
 .corr-input-panel { background: #fff; border: 1px solid #e5e5e5; border-radius: 8px; padding: 12px; margin: 14px 0; }
 .corr-controls { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin: 0 0 12px 0; }
 .corr-status { background: #f6f8fc; border-left: 5px solid #3A5FCD; padding: 8px 10px; margin: 8px 0 12px 0; color: #333; font-size: 13px; }
-#corrPeriod, #corrRefresh, #corrSaveDefaults, #corrResetFactory { padding: 5px 8px; font-size: 14px; }
-#corrRefresh, #corrSaveDefaults, #corrResetFactory { cursor: pointer; position: relative; border: 1px solid #aaa; border-radius: 4px; background: #fff; }
-#corrSaveDefaults:disabled { cursor: default; opacity: 0.55; }
+#corrPeriod, #corrRefresh { padding: 5px 8px; font-size: 14px; }
+#corrRefresh { cursor: pointer; position: relative; border: 1px solid #aaa; border-radius: 4px; background: #fff; }
 #corrRefresh.is-loading { color: #333; padding-left: 28px; outline: 2px dotted #3A5FCD; outline-offset: 3px; }
 #corrRefresh.is-loading::before { content: ""; position: absolute; left: 8px; top: 50%; width: 12px; height: 12px; margin-top: -6px; border: 2px solid #c8d6f6; border-top-color: #3A5FCD; border-radius: 50%; animation: corrSpin .8s linear infinite; }
 @keyframes corrSpin { to { transform: rotate(360deg); } }
@@ -137,15 +134,6 @@ const ROW_LABEL_X = LEFT - 72;
 const VOL_X = LEFT - 26;
 const MAX_ASSETS = 15;
 const DEFAULT_EQUITIES = "AAPL, AMZN, NVDA, MSTR, GS, CAT, UNH, AMGN, V, HD, IBM";
-const STORAGE_KEY = "RiskSnapCorrelationSettings";
-const DEFAULTS_KEY = "RiskSnapCorrelationDefaults";
-const FACTORY_DEFAULTS = {
-  period: "90 Day",
-  fx: ["EURUSD", "GOLD", "BTC-USD"],
-  yields: ["USD"],
-  equities: DEFAULT_EQUITIES
-};
-let lastSavedDefaultsText = "";
 
 let activePayload = null;
 let activeIsLive = false;
@@ -153,109 +141,18 @@ let activeIsLive = false;
 const scheduleCorrelationRefresh = debounce(fetchCorrelationData, 450);
 
 document.getElementById("scaleReadout").textContent = BUBBLE_SCALE;
-loadStartupSettings();
-updateSaveDefaultsState();
-
-document.getElementById("corrPeriod").addEventListener("change", () => {
-  saveCurrentSettings();
-  updateSaveDefaultsState();
-  scheduleCorrelationRefresh();
-});
+document.getElementById("corrPeriod").addEventListener("change", scheduleCorrelationRefresh);
 document.getElementById("corrRefresh").addEventListener("click", fetchCorrelationData);
-document.getElementById("corrSaveDefaults").addEventListener("click", saveUserDefaults);
-document.getElementById("corrResetFactory").addEventListener("click", resetToFactoryDefaults);
 document.querySelectorAll(".mini-buttons button").forEach(btn => {
   btn.addEventListener("click", () => {
     setChecks(btn.dataset.target, btn.dataset.action === "all");
-    saveCurrentSettings();
-    updateSaveDefaultsState();
     scheduleCorrelationRefresh();
   });
 });
-document.querySelectorAll(".fx-check,.yield-check").forEach(cb => cb.addEventListener("change", () => {
-  saveCurrentSettings();
-  updateSaveDefaultsState();
-  scheduleCorrelationRefresh();
-}));
-document.getElementById("equitySymbols").addEventListener("input", debounce(() => {
-  saveCurrentSettings();
-  updateSaveDefaultsState();
-  scheduleCorrelationRefresh();
-}, 350));
+document.querySelectorAll(".fx-check,.yield-check").forEach(cb => cb.addEventListener("change", scheduleCorrelationRefresh));
+document.getElementById("equitySymbols").addEventListener("input", debounce(scheduleCorrelationRefresh, 350));
 
 fetchCorrelationData();
-
-function getCurrentSettings() {
-  return {
-    period: document.getElementById("corrPeriod").value,
-    fx: selectedValues(".fx-check"),
-    yields: selectedValues(".yield-check"),
-    equities: document.getElementById("equitySymbols").value
-  };
-}
-
-function applySettings(settings) {
-  const s = settings || FACTORY_DEFAULTS;
-  document.getElementById("corrPeriod").value = s.period || FACTORY_DEFAULTS.period;
-
-  const fxSet = new Set(s.fx || []);
-  document.querySelectorAll(".fx-check").forEach(cb => cb.checked = fxSet.has(cb.value));
-
-  const yieldSet = new Set(s.yields || []);
-  document.querySelectorAll(".yield-check").forEach(cb => cb.checked = yieldSet.has(cb.value));
-
-  document.getElementById("equitySymbols").value =
-    s.equities !== undefined ? s.equities : FACTORY_DEFAULTS.equities;
-}
-
-function readStoredSettings(key) {
-  try {
-    const txt = localStorage.getItem(key);
-    return txt ? JSON.parse(txt) : null;
-  } catch (e) {
-    console.log("Unable to read saved correlation settings.");
-    return null;
-  }
-}
-
-function settingsText(settings) {
-  return JSON.stringify(settings || getCurrentSettings());
-}
-
-function saveCurrentSettings() {
-  localStorage.setItem(STORAGE_KEY, settingsText(getCurrentSettings()));
-}
-
-function loadStartupSettings() {
-  const savedSettings = readStoredSettings(STORAGE_KEY);
-  const savedDefaults = readStoredSettings(DEFAULTS_KEY);
-  applySettings(savedSettings || savedDefaults || FACTORY_DEFAULTS);
-  lastSavedDefaultsText = settingsText(savedDefaults || FACTORY_DEFAULTS);
-}
-
-function saveUserDefaults() {
-  const settings = getCurrentSettings();
-  localStorage.setItem(DEFAULTS_KEY, settingsText(settings));
-  localStorage.setItem(STORAGE_KEY, settingsText(settings));
-  lastSavedDefaultsText = settingsText(settings);
-  updateSaveDefaultsState();
-  setStatus("Defaults saved for this browser.");
-}
-
-function resetToFactoryDefaults() {
-  localStorage.removeItem(STORAGE_KEY);
-  localStorage.removeItem(DEFAULTS_KEY);
-  applySettings(FACTORY_DEFAULTS);
-  lastSavedDefaultsText = settingsText(FACTORY_DEFAULTS);
-  updateSaveDefaultsState();
-  fetchCorrelationData();
-}
-
-function updateSaveDefaultsState() {
-  const btn = document.getElementById("corrSaveDefaults");
-  if (!btn) return;
-  btn.disabled = settingsText(getCurrentSettings()) === lastSavedDefaultsText;
-}
 
 function refreshPreviewFromInputs() {
   activeIsLive = false;
@@ -333,8 +230,10 @@ async function fetchCorrelationData() {
   };
 
   setLoading(true);
-  setStatus("Calculating correlations...");
-  showMessages(["Calculating correlations..."]);
+  <!--setStatus("Calculating correlations... calling Cloud Run");
+  <!--showMessages(["Calculating correlations... calling Cloud Run"]);-->
+  setStatus("Calculating correlations... ");
+  showMessages(["Calculating correlations... "]);-->
   try {
     const response = await fetch("https://surface-203178530029.northamerica-northeast2.run.app/correlations_data", {
       method: "POST",
