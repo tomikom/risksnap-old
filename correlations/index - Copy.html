@@ -101,19 +101,7 @@ h1 { color: white; text-align: center; background-color: #3A5FCD; }
 .legend-text { font-size: 12px; fill: #444; }
 .corr-messages { margin-top: 10px; color: #555; font-size: 13px; }
 .corr-messages ul { margin-top: 5px; }
-.corr-tooltip {
-  display: none;
-  position: fixed;
-  z-index: 10000;
-  pointer-events: none;
-  background: white;
-  color: black;
-  border: 1px solid #999;
-  padding: 6px 8px;
-  border-radius: 4px;
-  font-size: 12px;
-  box-shadow: 0 2px 8px rgba(0,0,0,.25);
-}
+.corr-tooltip { display: none; position: fixed; z-index: 10000; pointer-events: none; background: #111; color: #fff; padding: 4px 7px; border-radius: 4px; font-size: 12px; box-shadow: 0 2px 8px rgba(0,0,0,.25); }
 @media (max-width: 800px) { .selector-grid { grid-template-columns: 1fr; } }
 </style>
 
@@ -122,11 +110,10 @@ const corrData = {"90 Day":{"assets":["AAL","AAPL","AMZN","BTC-USD","GOOG","NASD
 
 const BUBBLE_SCALE = 100;
 const CELL = 58;
-const LEFT = 175;
+const LEFT = 155;
 const TOP = 90;
 const LABEL_TOP = 70;
 const LEGEND_TOP = 28;
-const NUM_X = LEFT - 145;
 const ROW_LABEL_X = LEFT - 72;
 const VOL_X = LEFT - 26;
 const MAX_ASSETS = 15;
@@ -311,12 +298,6 @@ function normalizePayload(payload, periodLabel) {
   let volatility = payload.volatility;
   if (!volatility || !volatility.length) {
     volatility = matrix.map((row, i) => row && row[i] !== undefined ? row[i] : null);
-  } else {
-    volatility = assets.map((_, i) => {
-      const v = volatility[i];
-      if (v !== null && v !== undefined && !Number.isNaN(Number(v))) return v;
-      return matrix[i] && matrix[i][i] !== undefined ? matrix[i][i] : null;
-    });
   }
   return { assets, matrix, volatility: volatility.slice(0, assets.length), messages: payload.messages || [], periodLabel };
 }
@@ -336,7 +317,6 @@ function drawCorrelationChart(payload) {
   chart.appendChild(svg);
   svg.appendChild(makeSvg("text", { x: LEFT, y: 20, class: "corr-title" }, `Correlation Matrix (${payload.periodLabel})`));
   drawLegend(svg, LEFT + 250, LEGEND_TOP);
-  svg.appendChild(makeSvg("text", { x: NUM_X, y: LABEL_TOP, class: "vol-label" }, "#"));
   svg.appendChild(makeSvg("text", { x: VOL_X, y: LABEL_TOP, class: "vol-label" }, "Vol"));
 
   for (let j = 0; j < n; j++) {
@@ -345,14 +325,7 @@ function drawCorrelationChart(payload) {
   }
   for (let i = 0; i < n; i++) {
     const y = TOP + i * CELL + CELL / 2;
-    svg.appendChild(makeSvg("text", { x: NUM_X, y, class: "vol-text" }, String(i + 1)));
-	svg.appendChild(
-  makeSvg(
-    "text",
-    { x: ROW_LABEL_X, y, class: "asset-label row-label" },
-    displayAsset(assets[i])
-  )
-);
+    svg.appendChild(makeSvg("text", { x: ROW_LABEL_X, y, class: "asset-label row-label" }, assets[i]));
     svg.appendChild(makeSvg("text", { x: VOL_X, y, class: "vol-text" }, fmtVol(vol[i])));
   }
   for (let i = 0; i <= n; i++) {
@@ -380,15 +353,9 @@ function drawCorrelationChart(payload) {
       fill: corrColor(b.v), "fill-opacity": 0.62,
       stroke: corrColor(b.v), "stroke-opacity": 0.85, "stroke-width": 1
     });
-    circle.addEventListener("mousemove", e => {
-      showTooltip(e,
-		`${displayAsset(assets[b.i])} (V ${fmtVol(vol[b.i])})<br>` +
-		`${displayAsset(assets[b.j])} (V ${fmtVol(vol[b.j])})<br>` +
-        `Corr: ${corrFmt(b.v)}`
-      );
-    });
+    circle.addEventListener("mousemove", e => showTooltip(e, signedFmt(b.v)));
     circle.addEventListener("mouseleave", hideTooltip);
-    
+    circle.appendChild(makeSvg("title", {}, signedFmt(b.v)));
     bubbleLayer.appendChild(circle);
   }
 }
@@ -402,17 +369,11 @@ function drawLegend(svg, x, y) {
 
 function corrColor(v) { return v >= 0 ? "#2f80ed" : "#f28c28"; }
 function signedFmt(v) { if (v === null || Number.isNaN(v)) return ""; return (v >= 0 ? "+" : "") + Number(v).toFixed(2); }
-function corrFmt(v) { if (v === null || v === undefined || Number.isNaN(Number(v))) return ""; return Number(v).toFixed(2); }
-function fmtVol(v) { if (v === null || v === undefined || Number.isNaN(Number(v))) return ""; return Number(v).toFixed(2); }
-function displayAsset(a) {
-  return String(a).replace("YIELD_", "YLD_");
-}
-function displayAsset(a) {
-  return String(a).replace("YIELD_", "YLD_");
-}
-function showTooltip(evt, html) {
+function fmtVol(v) { if (v === null || v === undefined || Number.isNaN(v)) return ""; return (Number(v) * 100).toFixed(1) + "%"; }
+
+function showTooltip(evt, text) {
   const t = document.getElementById("corrTooltip");
-  t.innerHTML = html;
+  t.textContent = text;
   t.style.left = (evt.clientX + 12) + "px";
   t.style.top = (evt.clientY + 12) + "px";
   t.style.display = "block";
