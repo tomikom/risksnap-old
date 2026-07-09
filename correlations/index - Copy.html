@@ -481,11 +481,11 @@ function drawCorrelationChart(payload) {
   svg.appendChild(makeSvg("text", { x: LEFT, y: 42, class: "legend-text" }, "Click any bubble to view its 25-day rolling history."));
   drawLegend(svg, LEFT + 250, LEGEND_TOP);
   svg.appendChild(makeSvg("text", { x: NUM_X, y: LABEL_TOP, class: "vol-label" }, "#"));
+  svg.appendChild(makeSvg("text", { x: VOL_X, y: LABEL_TOP, class: "vol-label" }, "Vol"));
 
   for (let j = 0; j < n; j++) {
     const x = LEFT + j * CELL + CELL / 2;
-    svg.appendChild(makeSvg("text", { x, y: LABEL_TOP - 26, class: "vol-text" }, String(j + 1)));
-    svg.appendChild(makeSvg("text", { x, y: LABEL_TOP, class: "asset-label col-label", transform: `rotate(-35 ${x} ${LABEL_TOP})` }, displayAsset(assets[j])));
+    svg.appendChild(makeSvg("text", { x, y: LABEL_TOP, class: "asset-label col-label", transform: `rotate(-35 ${x} ${LABEL_TOP})` }, assets[j]));
   }
   for (let i = 0; i < n; i++) {
     const y = TOP + i * CELL + CELL / 2;
@@ -497,6 +497,7 @@ function drawCorrelationChart(payload) {
     displayAsset(assets[i])
   )
 );
+    svg.appendChild(makeSvg("text", { x: VOL_X, y, class: "vol-text" }, fmtVol(vol[i])));
   }
   for (let i = 0; i <= n; i++) {
     const y = TOP + i * CELL;
@@ -505,18 +506,11 @@ function drawCorrelationChart(payload) {
     svg.appendChild(makeSvg("line", { x1: x, y1: TOP, x2: x, y2: TOP + n * CELL, class: "grid-line" }));
   }
   const bubbles = [];
-
-  // Diagonal: volatility bubbles in green.
-  // Upper diagonal: correlations. Diameter = |correlation| × 100, same as before.
   for (let i = 0; i < n; i++) {
-    const vVol = vol[i];
-    if (vVol !== null && vVol !== undefined && !Number.isNaN(Number(vVol))) {
-      bubbles.push({ i, j: i, v: Number(vVol), diameter: Math.abs(Number(vVol)) * BUBBLE_SCALE, kind: "vol" });
-    }
     for (let j = i + 1; j < n; j++) {
       const v = matrix[i] ? matrix[i][j] : null;
       if (v === null || v === undefined || Number.isNaN(v)) continue;
-      bubbles.push({ i, j, v, diameter: Math.abs(v) * BUBBLE_SCALE, kind: "corr" });
+      bubbles.push({ i, j, v, diameter: Math.abs(v) * BUBBLE_SCALE });
     }
   }
   bubbles.sort((a, b) => b.diameter - a.diameter);
@@ -611,8 +605,7 @@ function renderRollingStrip(errorMessage) {
 
   const slider = document.getElementById("rollingSlider");
   const maxStart = Math.max(0, rollingRows.length - ROLLING_VISIBLE_POINTS);
-  const start = Math.min(maxStart, Math.max(0, Number(slider.value) || 0));
-  slider.value = start;
+  const start = Math.min(Number(slider.value || 0), maxStart);
   const visible = rollingRows.slice(start, start + ROLLING_VISIBLE_POINTS);
 
   const width = Math.max(700, strip.clientWidth ? strip.clientWidth - 4 : 860);
@@ -621,7 +614,7 @@ function renderRollingStrip(errorMessage) {
   const right = width - 42;
   const bubbleY = 42;
   const dateY = 86;
-  const maxRadius = BUBBLE_SCALE / 2;
+  const maxRadius = 22;
   const step = visible.length > 1 ? (right - left) / (visible.length - 1) : 0;
 
   const svg = makeSvg("svg", { width, height, viewBox: `0 0 ${width} ${height}` });
@@ -629,7 +622,7 @@ function renderRollingStrip(errorMessage) {
   visible.forEach((row, idx) => {
     const x = visible.length === 1 ? width / 2 : left + idx * step;
     const corr = Number(row.corr);
-    const r = Math.abs(corr) * maxRadius;
+    const r = Math.max(4, Math.abs(corr) * maxRadius);
     const circle = makeSvg("circle", {
       cx: x, cy: bubbleY, r,
       fill: corrColor(corr), "fill-opacity": 0.62,
@@ -650,7 +643,8 @@ function renderRollingStrip(errorMessage) {
     svg.appendChild(circle);
 
     svg.appendChild(makeSvg("text", {
-      x, y: dateY, class: "rolling-date-label"
+      x, y: dateY, class: "rolling-date-label",
+      transform: `rotate(-35 ${x} ${dateY})`
     }, formatCompactDate(row.date)));
   });
 
