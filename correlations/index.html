@@ -138,11 +138,19 @@ h1 { color: white; text-align: center; background-color: #3A5FCD; }
 .rho-title { font-size: 18px; font-weight: 700; color: #222; }
 #rollingClose { cursor: pointer; border: 1px solid #aaa; border-radius: 4px; background: #fff; padding: 4px 8px; }
 .rolling-slider-row { margin: 4px 14px 0 14px; }
-#rollingSlider { width: 100%; cursor: pointer; appearance: none; background: transparent; }
-#rollingSlider::-webkit-slider-runnable-track { height: 7px; background: #e6e6e6; border-radius: 999px; border: 1px solid #d2d2d2; }
+#rollingSlider {
+    width:100%;
+    height:24px;
+    cursor:pointer;
+    appearance:auto;
+    -webkit-appearance:auto;
+    background:initial;
+}
+
+<!--#rollingSlider::-webkit-slider-runnable-track { height: 7px; background: #e6e6e6; border-radius: 999px; border: 1px solid #d2d2d2; }
 #rollingSlider::-webkit-slider-thumb { appearance: none; width: 18px; height: 18px; margin-top: -6px; border-radius: 50%; background: #2f80ed; border: 2px solid #1d5fb8; box-shadow: 0 1px 4px rgba(0,0,0,.25); }
 #rollingSlider::-moz-range-track { height: 7px; background: #e6e6e6; border-radius: 999px; border: 1px solid #d2d2d2; }
-#rollingSlider::-moz-range-thumb { width: 18px; height: 18px; border-radius: 50%; background: #2f80ed; border: 2px solid #1d5fb8; box-shadow: 0 1px 4px rgba(0,0,0,.25); }
+#rollingSlider::-moz-range-thumb { width: 18px; height: 18px; border-radius: 50%; background: #2f80ed; border: 2px solid #1d5fb8; box-shadow: 0 1px 4px rgba(0,0,0,.25); }-->
 .rolling-strip { background: #fff; min-height: 116px; padding: 4px 0 0 0; overflow: hidden; }
 .rolling-strip svg { display: block; background: #fff; overflow: visible; }
 .rolling-bubble { cursor: pointer; transition: r .12s ease, fill-opacity .12s ease; }
