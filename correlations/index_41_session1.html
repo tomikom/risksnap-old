@@ -201,7 +201,7 @@ document.getElementById("corrRefresh").addEventListener("click", fetchCorrelatio
 document.getElementById("corrSaveDefaults").addEventListener("click", saveUserDefaults);
 document.getElementById("corrResetFactory").addEventListener("click", resetToFactoryDefaults);
 document.getElementById("rollingClose").addEventListener("click", closeRollingPanel);
-document.getElementById("rollingSlider").addEventListener("input", () => renderRollingStrip());
+document.getElementById("rollingSlider").addEventListener("input", renderRollingStrip);
 document.querySelectorAll(".mini-buttons button").forEach(btn => {
   btn.addEventListener("click", () => {
     setChecks(btn.dataset.target, btn.dataset.action === "all");
@@ -579,7 +579,6 @@ async function fetchRollingCorrelation(assetA, assetB) {
     const slider = document.getElementById("rollingSlider");
     slider.min = 0;
     slider.max = maxStart;
-    slider.step = 1;
     slider.value = maxStart;
     renderRollingStrip();
     setStatus(`Rolling correlation ready: ${displayAsset(rollingContext.assetA)} vs ${displayAsset(rollingContext.assetB)}.`);
@@ -601,7 +600,7 @@ function closeRollingPanel() {
 function renderRollingStrip(errorMessage) {
   const strip = document.getElementById("rollingStrip");
   strip.innerHTML = "";
-  if (typeof errorMessage === "string" && errorMessage) {
+  if (errorMessage) {
     const svg = makeSvg("svg", { width: 760, height: 82, viewBox: "0 0 760 82" });
     svg.appendChild(makeSvg("text", { x: 12, y: 42, class: "rolling-status-text" }, errorMessage));
     strip.appendChild(svg);
@@ -616,13 +615,8 @@ function renderRollingStrip(errorMessage) {
 
   const slider = document.getElementById("rollingSlider");
   const maxStart = Math.max(0, rollingRows.length - ROLLING_VISIBLE_POINTS);
-  slider.min = 0;
-  slider.max = maxStart;
-  slider.step = 1;
-  const rawStart = Number(slider.value);
-  const start = Math.max(0, Math.min(maxStart, Number.isFinite(rawStart) ? rawStart : maxStart));
-  slider.value = start;
-  const visible = rollingRows.slice(start, Math.min(rollingRows.length, start + ROLLING_VISIBLE_POINTS));
+  const start = Math.min(Number(slider.value || 0), maxStart);
+  const visible = rollingRows.slice(start, start + ROLLING_VISIBLE_POINTS);
 
   const width = Math.max(700, strip.clientWidth ? strip.clientWidth - 4 : 860);
   const height = 112;
@@ -630,6 +624,7 @@ function renderRollingStrip(errorMessage) {
   const right = width - 42;
   const bubbleY = 42;
   const dateY = 86;
+  const maxRadius = 22;
   const step = visible.length > 1 ? (right - left) / (visible.length - 1) : 0;
 
   const svg = makeSvg("svg", { width, height, viewBox: `0 0 ${width} ${height}` });
@@ -637,9 +632,7 @@ function renderRollingStrip(errorMessage) {
   visible.forEach((row, idx) => {
     const x = visible.length === 1 ? width / 2 : left + idx * step;
     const corr = Number(row.corr);
-    if (!Number.isFinite(corr)) return;
-    // Same sizing rule as the matrix: diameter = |correlation| × 100.
-    const r = Math.abs(corr) * BUBBLE_SCALE / 2;
+    const r = Math.max(4, Math.abs(corr) * maxRadius);
     const circle = makeSvg("circle", {
       cx: x, cy: bubbleY, r,
       fill: corrColor(corr), "fill-opacity": 0.62,
@@ -660,7 +653,8 @@ function renderRollingStrip(errorMessage) {
     svg.appendChild(circle);
 
     svg.appendChild(makeSvg("text", {
-      x, y: dateY, class: "rolling-date-label"
+      x, y: dateY, class: "rolling-date-label",
+      transform: `rotate(-35 ${x} ${dateY})`
     }, formatCompactDate(row.date)));
   });
 

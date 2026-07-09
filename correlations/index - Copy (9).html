@@ -114,7 +114,6 @@ h1 { color: white; text-align: center; background-color: #3A5FCD; }
 .vol-label { font-size: 12px; fill: #333; text-anchor: middle; dominant-baseline: middle; }
 .grid-line { stroke: #ededed; stroke-width: 1; }
 .vol-text { font-size: 11px; font-weight: 600; fill: #333; text-anchor: middle; dominant-baseline: middle; }
-.diag-vol-text { font-size: 12px; font-weight: 700; fill: #2e8b57; text-anchor: middle; dominant-baseline: middle; }
 .corr-title { font-size: 18px; font-weight: 700; fill: #222; }
 .legend-text { font-size: 12px; fill: #444; }
 .corr-messages { margin-top: 10px; color: #555; font-size: 13px; }
@@ -201,7 +200,7 @@ document.getElementById("corrRefresh").addEventListener("click", fetchCorrelatio
 document.getElementById("corrSaveDefaults").addEventListener("click", saveUserDefaults);
 document.getElementById("corrResetFactory").addEventListener("click", resetToFactoryDefaults);
 document.getElementById("rollingClose").addEventListener("click", closeRollingPanel);
-document.getElementById("rollingSlider").addEventListener("input", () => renderRollingStrip());
+document.getElementById("rollingSlider").addEventListener("input", renderRollingStrip);
 document.querySelectorAll(".mini-buttons button").forEach(btn => {
   btn.addEventListener("click", () => {
     setChecks(btn.dataset.target, btn.dataset.action === "all");
@@ -478,56 +477,51 @@ function drawCorrelationChart(payload) {
   chart.style.height = height + "px";
   const svg = makeSvg("svg", { width, height, viewBox: `0 0 ${width} ${height}` });
   chart.appendChild(svg);
-
   svg.appendChild(makeSvg("text", { x: LEFT, y: 20, class: "corr-title" }, `Correlation Matrix (${payload.periodLabel})`));
   svg.appendChild(makeSvg("text", { x: LEFT, y: 42, class: "legend-text" }, "Click any bubble to view its 25-day rolling history."));
   drawLegend(svg, LEFT + 250, LEGEND_TOP);
-
-  // Session 1 fix: use one asset array for BOTH column headers and row labels.
-  // Column numbers and row numbers should match exactly. Diagonal is volatility[i].
-  svg.appendChild(makeSvg("text", { x: NUM_X, y: LABEL_TOP - 20, class: "vol-label" }, "#"));
+  svg.appendChild(makeSvg("text", { x: NUM_X, y: LABEL_TOP, class: "vol-label" }, "#"));
 
   for (let j = 0; j < n; j++) {
     const x = LEFT + j * CELL + CELL / 2;
-    svg.appendChild(makeSvg("text", { x, y: LABEL_TOP - 20, class: "vol-text" }, String(j + 1)));
+    svg.appendChild(makeSvg("text", { x, y: LABEL_TOP - 26, class: "vol-text" }, String(j + 1)));
     svg.appendChild(makeSvg("text", { x, y: LABEL_TOP, class: "asset-label col-label", transform: `rotate(-35 ${x} ${LABEL_TOP})` }, displayAsset(assets[j])));
   }
-
   for (let i = 0; i < n; i++) {
     const y = TOP + i * CELL + CELL / 2;
     svg.appendChild(makeSvg("text", { x: NUM_X, y, class: "vol-text" }, String(i + 1)));
-    svg.appendChild(makeSvg("text", { x: ROW_LABEL_X, y, class: "asset-label row-label" }, displayAsset(assets[i])));
+	svg.appendChild(
+  makeSvg(
+    "text",
+    { x: ROW_LABEL_X, y, class: "asset-label row-label" },
+    displayAsset(assets[i])
+  )
+);
   }
-
   for (let i = 0; i <= n; i++) {
     const y = TOP + i * CELL;
     svg.appendChild(makeSvg("line", { x1: LEFT, y1: y, x2: LEFT + n * CELL, y2: y, class: "grid-line" }));
     const x = LEFT + i * CELL;
     svg.appendChild(makeSvg("line", { x1: x, y1: TOP, x2: x, y2: TOP + n * CELL, class: "grid-line" }));
   }
-
-  // Diagonal: volatility text only, no bubble.
-  for (let i = 0; i < n; i++) {
-    const x = LEFT + i * CELL + CELL / 2;
-    const y = TOP + i * CELL + CELL / 2;
-    svg.appendChild(makeSvg("text", {
-      x, y, class: "diag-vol-text"
-    }, fmtVol(vol[i])));
-  }
-
   const bubbles = [];
+
+  // Diagonal: volatility bubbles in green.
+  // Upper diagonal: correlations. Diameter = |correlation| × 100, same as before.
   for (let i = 0; i < n; i++) {
+    const vVol = vol[i];
+    if (vVol !== null && vVol !== undefined && !Number.isNaN(Number(vVol))) {
+      bubbles.push({ i, j: i, v: Number(vVol), diameter: Math.abs(Number(vVol)) * BUBBLE_SCALE, kind: "vol" });
+    }
     for (let j = i + 1; j < n; j++) {
       const v = matrix[i] ? matrix[i][j] : null;
-      if (v === null || v === undefined || Number.isNaN(Number(v))) continue;
-      bubbles.push({ i, j, v: Number(v), diameter: Math.abs(Number(v)) * BUBBLE_SCALE });
+      if (v === null || v === undefined || Number.isNaN(v)) continue;
+      bubbles.push({ i, j, v, diameter: Math.abs(v) * BUBBLE_SCALE, kind: "corr" });
     }
   }
-
   bubbles.sort((a, b) => b.diameter - a.diameter);
   const bubbleLayer = makeSvg("g", {});
   svg.appendChild(bubbleLayer);
-
   for (const b of bubbles) {
     const cx = LEFT + b.j * CELL + CELL / 2;
     const cy = TOP + b.i * CELL + CELL / 2;
@@ -540,8 +534,8 @@ function drawCorrelationChart(payload) {
     });
     circle.addEventListener("mousemove", e => {
       showTooltip(e,
-        `${displayAsset(assets[b.i])} (V ${fmtVol(vol[b.i])})<br>` +
-        `${displayAsset(assets[b.j])} (V ${fmtVol(vol[b.j])})<br>` +
+		`${displayAsset(assets[b.i])} (V ${fmtVol(vol[b.i])})<br>` +
+		`${displayAsset(assets[b.j])} (V ${fmtVol(vol[b.j])})<br>` +
         `Corr: ${corrFmt(b.v)}`
       );
     });
@@ -551,9 +545,11 @@ function drawCorrelationChart(payload) {
       fetchRollingCorrelation(assets[b.i], assets[b.j]);
       drawCorrelationChart(activePayload);
     });
+    
     bubbleLayer.appendChild(circle);
   }
 }
+
 
 async function fetchRollingCorrelation(assetA, assetB) {
   if (!assetA || !assetB) return;
@@ -579,7 +575,6 @@ async function fetchRollingCorrelation(assetA, assetB) {
     const slider = document.getElementById("rollingSlider");
     slider.min = 0;
     slider.max = maxStart;
-    slider.step = 1;
     slider.value = maxStart;
     renderRollingStrip();
     setStatus(`Rolling correlation ready: ${displayAsset(rollingContext.assetA)} vs ${displayAsset(rollingContext.assetB)}.`);
@@ -601,7 +596,7 @@ function closeRollingPanel() {
 function renderRollingStrip(errorMessage) {
   const strip = document.getElementById("rollingStrip");
   strip.innerHTML = "";
-  if (typeof errorMessage === "string" && errorMessage) {
+  if (errorMessage) {
     const svg = makeSvg("svg", { width: 760, height: 82, viewBox: "0 0 760 82" });
     svg.appendChild(makeSvg("text", { x: 12, y: 42, class: "rolling-status-text" }, errorMessage));
     strip.appendChild(svg);
@@ -616,13 +611,9 @@ function renderRollingStrip(errorMessage) {
 
   const slider = document.getElementById("rollingSlider");
   const maxStart = Math.max(0, rollingRows.length - ROLLING_VISIBLE_POINTS);
-  slider.min = 0;
-  slider.max = maxStart;
-  slider.step = 1;
-  const rawStart = Number(slider.value);
-  const start = Math.max(0, Math.min(maxStart, Number.isFinite(rawStart) ? rawStart : maxStart));
+  const start = Math.min(maxStart, Math.max(0, Number(slider.value) || 0));
   slider.value = start;
-  const visible = rollingRows.slice(start, Math.min(rollingRows.length, start + ROLLING_VISIBLE_POINTS));
+  const visible = rollingRows.slice(start, start + ROLLING_VISIBLE_POINTS);
 
   const width = Math.max(700, strip.clientWidth ? strip.clientWidth - 4 : 860);
   const height = 112;
@@ -630,6 +621,7 @@ function renderRollingStrip(errorMessage) {
   const right = width - 42;
   const bubbleY = 42;
   const dateY = 86;
+  const maxRadius = BUBBLE_SCALE / 2;
   const step = visible.length > 1 ? (right - left) / (visible.length - 1) : 0;
 
   const svg = makeSvg("svg", { width, height, viewBox: `0 0 ${width} ${height}` });
@@ -637,9 +629,7 @@ function renderRollingStrip(errorMessage) {
   visible.forEach((row, idx) => {
     const x = visible.length === 1 ? width / 2 : left + idx * step;
     const corr = Number(row.corr);
-    if (!Number.isFinite(corr)) return;
-    // Same sizing rule as the matrix: diameter = |correlation| × 100.
-    const r = Math.abs(corr) * BUBBLE_SCALE / 2;
+    const r = Math.abs(corr) * maxRadius;
     const circle = makeSvg("circle", {
       cx: x, cy: bubbleY, r,
       fill: corrColor(corr), "fill-opacity": 0.62,
