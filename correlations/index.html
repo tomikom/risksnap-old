@@ -69,9 +69,12 @@ layout: correlations-template
   <div class="corr-wrap">
     <div id="corrChart" class="corr-chart"></div>
   </div>
-  <div id="rollingPanel" class="rolling-panel" style="display:none;">
+  
+  <div id="rollingPanel" class="rolling-panel">
     <div class="rolling-header">
-      <div id="rollingPair" class="rolling-pair rho-title">ρ₂₅</div>
+      <div id="rollingPair" class="rolling-pair rho-title">
+		Click a bubble to view the selected rolling correlation
+	</div>
       <button id="rollingClose" type="button">Close</button>
     </div>
     <div id="rollingStrip" class="rolling-strip"></div>
@@ -230,7 +233,7 @@ document.getElementById("equitySymbols").addEventListener("input", debounce(() =
 }, 350));
 
 fetchCorrelationData();
-
+renderRollingStrip();
 function getCurrentSettings() {
   return {
     period: document.getElementById("corrPeriod").value,
@@ -488,7 +491,7 @@ function drawCorrelationChart(payload) {
   chart.appendChild(svg);
 
   svg.appendChild(makeSvg("text", { x: LEFT, y: 20, class: "corr-title" }, `Correlation Matrix (${payload.periodLabel})`));
-  svg.appendChild(makeSvg("text", { x: LEFT, y: 42, class: "legend-text" }, "Click any bubble to view its 25-day rolling history."));
+  svg.appendChild(makeSvg("text", { x: LEFT, y: 42, class: "legend-text" }, "Click any bubble to view its rolling history."));
   drawLegend(svg, LEFT + 250, LEGEND_TOP);
 
   // Session 1 fix: use one asset array for BOTH column headers and row labels.
@@ -565,24 +568,43 @@ function drawCorrelationChart(payload) {
 
 async function fetchRollingCorrelation(assetA, assetB) {
   if (!assetA || !assetB) return;
-  rollingContext = { assetA, assetB, lookback: 25 };
+
+  const rollingLookback = parseInt(
+    document.getElementById("corrPeriod").value,
+    10
+  );
+
+  rollingContext = {
+    assetA,
+    assetB,
+    lookback: rollingLookback
+  };
   const panel = document.getElementById("rollingPanel");
   panel.style.display = "block";
-  document.getElementById("rollingPair").textContent = `ρ₂₅(${displayAsset(assetA)}, ${displayAsset(assetB)})`;
+  document.getElementById("rollingPair").textContent =
+    `${rollingLookback} Day Correlation (${displayAsset(assetA)}, ${displayAsset(assetB)})`;
   document.getElementById("rollingStrip").innerHTML = "";
-  setStatus(`Calculating 25-day rolling correlation for ${displayAsset(assetA)} vs ${displayAsset(assetB)}...`);
-
+  setStatus(`Calculating ${rollingLookback}-day rolling correlation for ${displayAsset(assetA)} vs ${displayAsset(assetB)}...`);
   try {
     const response = await fetch(ROLLING_ENDPOINT, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ assetA, assetB, lookback: 25 })
+      body: JSON.stringify({
+		assetA,
+		assetB,
+		lookback: rollingLookback
+	})
     });
     const data = await response.json();
     if (!response.ok) throw new Error((data.messages || [response.statusText]).join(" "));
     rollingRows = data.rows || [];
-    rollingContext = { assetA: data.assetA || assetA, assetB: data.assetB || assetB, lookback: data.lookback || 25 };
-    document.getElementById("rollingPair").textContent = `ρ₂₅(${displayAsset(rollingContext.assetA)}, ${displayAsset(rollingContext.assetB)})`;
+    rollingContext = {
+		assetA: data.assetA || assetA,
+		assetB: data.assetB || assetB,
+		lookback: data.lookback || rollingLookback
+	};
+    document.getElementById("rollingPair").textContent =
+    `${rollingContext.lookback} Day Correlation (${displayAsset(rollingContext.assetA)}, ${displayAsset(rollingContext.assetB)})`;
     const maxStart = Math.max(0, rollingRows.length - ROLLING_VISIBLE_POINTS);
     const slider = document.getElementById("rollingSlider");
     slider.min = 0;
@@ -616,9 +638,6 @@ function renderRollingStrip(errorMessage) {
     return;
   }
   if (!rollingRows.length) {
-    const svg = makeSvg("svg", { width: 760, height: 82, viewBox: "0 0 760 82" });
-    svg.appendChild(makeSvg("text", { x: 12, y: 42, class: "rolling-status-text" }, "Click a correlation bubble to show its 25-day rolling history."));
-    strip.appendChild(svg);
     return;
   }
 
@@ -659,7 +678,7 @@ function renderRollingStrip(errorMessage) {
       const b = rollingContext ? rollingContext.assetB : "";
       showTooltip(e,
         `${formatLongDate(row.date)}<br>` +
-        `ρ₂₅ = ${corrFmt(corr)}<br>` +
+        `${rollingContext.lookback} Day Corr: ${corrFmt(corr)}<br>` +
         `${displayAsset(a)} Vol: ${fmtVol(row.volA)}<br>` +
         `${displayAsset(b)} Vol: ${fmtVol(row.volB)}`
       );
