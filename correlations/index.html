@@ -1,3 +1,14 @@
+<!--
+RiskSnap Correlations
+Version: index(45)
+Changes:
+- Added Matrix History panel
+- Added 20-frame rolling matrix slider
+- Added selected matrix date display
+- Added Latest button
+- Existing two-asset rolling correlation panel retained
+-->
+
 ---
 layout: correlations-template
 ---
@@ -69,6 +80,20 @@ layout: correlations-template
   <div class="corr-wrap">
     <div id="corrChart" class="corr-chart"></div>
   </div>
+
+  <div id="matrixHistoryPanel" class="matrix-history-panel">
+    <div class="matrix-history-header">
+      <div>
+        <div class="matrix-history-title">Matrix History</div>
+        <div id="matrixHistoryDate" class="matrix-history-date">Latest matrix</div>
+      </div>
+      <button id="matrixHistoryLatest" type="button">Latest</button>
+    </div>
+    <div id="matrixHistoryStatus" class="matrix-history-status">Loading matrix history...</div>
+    <div class="matrix-history-slider-row">
+      <input id="matrixHistorySlider" type="range" min="0" max="0" value="0" aria-label="Correlation matrix history slider">
+    </div>
+  </div>
   
   <div id="rollingPanel" class="rolling-panel">
     <div class="rolling-header">
@@ -136,6 +161,16 @@ h1 { color: white; text-align: center; background-color: #3A5FCD; }
   box-shadow: 0 2px 8px rgba(0,0,0,.25);
 }
 
+.matrix-history-panel { background: #fff; border: 1px solid #ddd; border-radius: 8px; margin: 14px 0; padding: 12px 14px 14px 14px; }
+.matrix-history-header { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 8px; }
+.matrix-history-title { font-size: 18px; font-weight: 700; color: #222; }
+.matrix-history-date { margin-top: 2px; color: #3A5FCD; font-size: 14px; font-weight: 600; }
+.matrix-history-status { color: #666; font-size: 12px; margin-bottom: 4px; }
+.matrix-history-slider-row { margin: 2px 14px 0 14px; }
+#matrixHistorySlider { width: 100%; height: 24px; cursor: pointer; appearance: auto; -webkit-appearance: auto; background: initial; }
+#matrixHistoryLatest { cursor: pointer; border: 1px solid #aaa; border-radius: 4px; background: #fff; padding: 4px 10px; }
+#matrixHistoryLatest:disabled { cursor: default; opacity: .55; }
+
 .rolling-panel { background: #fff; border: 1px solid #ddd; border-radius: 8px; margin: 14px 0; padding: 12px 14px 14px 14px; }
 .rolling-header { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 6px; }
 .rho-title { font-size: 18px; font-weight: 700; color: #222; }
@@ -182,7 +217,9 @@ const DEFAULT_EQUITIES = "AAPL, AMZN, NVDA, MSTR, GS, CAT, UNH, AMGN, V, HD, IBM
 const STORAGE_KEY = "RiskSnapCorrelationSettings";
 const DEFAULTS_KEY = "RiskSnapCorrelationDefaults";
 const ROLLING_ENDPOINT = "https://surface-203178530029.northamerica-northeast2.run.app/rolling_correlation";
+const ROLLING_MATRIX_ENDPOINT = "https://surface-203178530029.northamerica-northeast2.run.app/rolling_matrix";
 const ROLLING_VISIBLE_POINTS = 20;
+const MATRIX_HISTORY_FRAMES = 20;
 const FACTORY_DEFAULTS = {
   period: "90 Day",
   fx: ["EURUSD", "GOLD", "BTC-USD"],
@@ -196,6 +233,10 @@ let activeIsLive = false;
 let rollingRows = [];
 let rollingContext = null;
 let selectedRollingPair = null;
+let matrixHistoryFrames = [];
+let matrixHistoryAssets = [];
+let matrixHistoryIndex = 0;
+let matrixHistoryRequestId = 0;
 
 const scheduleCorrelationRefresh = debounce(fetchCorrelationData, 450);
 
@@ -213,6 +254,8 @@ document.getElementById("corrSaveDefaults").addEventListener("click", saveUserDe
 document.getElementById("corrResetFactory").addEventListener("click", resetToFactoryDefaults);
 document.getElementById("rollingClose").addEventListener("click", closeRollingPanel);
 document.getElementById("rollingSlider").addEventListener("input", () => renderRollingStrip());
+document.getElementById("matrixHistorySlider").addEventListener("input", renderSelectedMatrixFrame);
+document.getElementById("matrixHistoryLatest").addEventListener("click", showLatestMatrixFrame);
 document.querySelectorAll(".mini-buttons button").forEach(btn => {
   btn.addEventListener("click", () => {
     setChecks(btn.dataset.target, btn.dataset.action === "all");
@@ -234,6 +277,7 @@ document.getElementById("equitySymbols").addEventListener("input", debounce(() =
 
 fetchCorrelationData();
 renderRollingStrip();
+resetMatrixHistoryPanel();
 function getCurrentSettings() {
   return {
     period: document.getElementById("corrPeriod").value,
@@ -400,15 +444,109 @@ async function fetchCorrelationData() {
     drawCorrelationChart(activePayload);
     setStatus(`Updated ${activePayload.assets.length} assets for ${period}.`);
     showMessages(activePayload.messages || []);
+    fetchRollingMatrix(requestPayload, period);
   } catch (err) {
     activePayload = getFilteredFallbackPayload(period);
     activeIsLive = false;
     drawCorrelationChart(activePayload);
     setStatus("Live calculation unavailable; showing embedded preview.");
     showMessages(["Live calculation unavailable: " + err.message, "This usually means the Cloud Run endpoint did not respond, or the browser blocked the cross-site request.", "Filtered preview can only show assets already embedded in the sample data.", ...(activePayload.messages || [])]);
+    resetMatrixHistoryPanel("Matrix history requires the live rolling-matrix endpoint.");
   } finally {
     setLoading(false);
   }
+}
+
+async function fetchRollingMatrix(requestPayload, periodLabel) {
+  const requestId = ++matrixHistoryRequestId;
+  const slider = document.getElementById("matrixHistorySlider");
+  const latestBtn = document.getElementById("matrixHistoryLatest");
+  slider.disabled = true;
+  latestBtn.disabled = true;
+  setMatrixHistoryStatus("Calculating 20 historical matrices...");
+
+  try {
+    const response = await fetch(ROLLING_MATRIX_ENDPOINT, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ...requestPayload, frames: MATRIX_HISTORY_FRAMES })
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error((data.messages || [response.statusText]).join(" "));
+    if (requestId !== matrixHistoryRequestId) return;
+
+    matrixHistoryAssets = (data.assets || activePayload?.assets || []).slice(0, MAX_ASSETS);
+    matrixHistoryFrames = (data.frames || []).map(frame => normalizeMatrixFrame(frame, periodLabel));
+    if (!matrixHistoryFrames.length) throw new Error("No matrix-history frames were returned.");
+
+    slider.min = 0;
+    slider.max = matrixHistoryFrames.length - 1;
+    slider.step = 1;
+    slider.value = matrixHistoryFrames.length - 1;
+    slider.disabled = false;
+    latestBtn.disabled = false;
+    matrixHistoryIndex = matrixHistoryFrames.length - 1;
+    renderSelectedMatrixFrame();
+    setMatrixHistoryStatus(`${matrixHistoryFrames.length} trading-day matrices ready.`);
+  } catch (err) {
+    if (requestId !== matrixHistoryRequestId) return;
+    matrixHistoryFrames = [];
+    matrixHistoryAssets = [];
+    slider.min = 0;
+    slider.max = 0;
+    slider.value = 0;
+    slider.disabled = true;
+    latestBtn.disabled = true;
+    document.getElementById("matrixHistoryDate").textContent = "Latest matrix";
+    setMatrixHistoryStatus(`Matrix history unavailable: ${err.message}`);
+  }
+}
+
+function normalizeMatrixFrame(frame, periodLabel) {
+  const assets = (frame.assets || matrixHistoryAssets || activePayload?.assets || []).slice(0, MAX_ASSETS);
+  const payload = normalizePayload({
+    assets,
+    matrix: frame.matrix || frame.correlation || [],
+    volatility: frame.volatility || [],
+    messages: frame.messages || []
+  }, periodLabel);
+  payload.date = frame.date || "";
+  return payload;
+}
+
+function renderSelectedMatrixFrame() {
+  if (!matrixHistoryFrames.length) return;
+  const slider = document.getElementById("matrixHistorySlider");
+  const index = Math.max(0, Math.min(matrixHistoryFrames.length - 1, Number(slider.value) || 0));
+  matrixHistoryIndex = index;
+  const frame = matrixHistoryFrames[index];
+  document.getElementById("matrixHistoryDate").textContent = frame.date ? formatLongDate(frame.date) : `Frame ${index + 1}`;
+  drawCorrelationChart(frame);
+}
+
+function showLatestMatrixFrame() {
+  if (!matrixHistoryFrames.length) return;
+  const slider = document.getElementById("matrixHistorySlider");
+  slider.value = matrixHistoryFrames.length - 1;
+  renderSelectedMatrixFrame();
+}
+
+function setMatrixHistoryStatus(message) {
+  const box = document.getElementById("matrixHistoryStatus");
+  if (box) box.textContent = message || "";
+}
+
+function resetMatrixHistoryPanel(message = "Matrix history will load after correlations are calculated.") {
+  matrixHistoryFrames = [];
+  matrixHistoryAssets = [];
+  matrixHistoryIndex = 0;
+  const slider = document.getElementById("matrixHistorySlider");
+  const latestBtn = document.getElementById("matrixHistoryLatest");
+  if (slider) { slider.min = 0; slider.max = 0; slider.value = 0; slider.disabled = true; }
+  if (latestBtn) latestBtn.disabled = true;
+  const date = document.getElementById("matrixHistoryDate");
+  if (date) date.textContent = "Latest matrix";
+  setMatrixHistoryStatus(message);
 }
 
 function setStatus(message) {
@@ -490,7 +628,10 @@ function drawCorrelationChart(payload) {
   const svg = makeSvg("svg", { width, height, viewBox: `0 0 ${width} ${height}` });
   chart.appendChild(svg);
 
-  svg.appendChild(makeSvg("text", { x: LEFT, y: 20, class: "corr-title" }, `Correlation Matrix (${payload.periodLabel})`));
+  const matrixTitle = payload.date
+    ? `Correlation Matrix (${payload.periodLabel}) — ${formatLongDate(payload.date)}`
+    : `Correlation Matrix (${payload.periodLabel})`;
+  svg.appendChild(makeSvg("text", { x: LEFT, y: 20, class: "corr-title" }, matrixTitle));
   svg.appendChild(makeSvg("text", { x: LEFT, y: 42, class: "legend-text" }, "Click any bubble to view its rolling history."));
   drawLegend(svg, LEFT + 250, LEGEND_TOP);
 
@@ -551,6 +692,7 @@ function drawCorrelationChart(payload) {
     });
     circle.addEventListener("mousemove", e => {
       showTooltip(e,
+        `${payload.date ? formatLongDate(payload.date) + "<br>" : ""}` +
         `${displayAsset(assets[b.i])} (V ${fmtVol(vol[b.i])})<br>` +
         `${displayAsset(assets[b.j])} (V ${fmtVol(vol[b.j])})<br>` +
         `Corr: ${corrFmt(b.v)}`
