@@ -938,7 +938,8 @@ function drawCorrelationChart(payload) {
         assets[b.j],
         b.v,
         vol[b.i],
-        vol[b.j]
+        vol[b.j],
+        payload.date || ""
       );
       drawCorrelationChart(payload);
     });
@@ -1025,7 +1026,7 @@ function rollingPairTitle(context) {
   return title;
 }
 
-async function fetchRollingCorrelation(assetA, assetB, corr, volA, volB) {
+async function fetchRollingCorrelation(assetA, assetB, corr, volA, volB, asOfDate = "") {
   if (!assetA || !assetB) return;
 
   const rollingLookback = parseInt(
@@ -1040,7 +1041,7 @@ async function fetchRollingCorrelation(assetA, assetB, corr, volA, volB) {
     corr,
     volA,
     volB,
-    date: activePayload && activePayload.date ? activePayload.date : ""
+    date: asOfDate || (activePayload && activePayload.date ? activePayload.date : "")
   };
   const panel = document.getElementById("rollingPanel");
   panel.style.display = "block";
@@ -1067,7 +1068,7 @@ async function fetchRollingCorrelation(assetA, assetB, corr, volA, volB) {
         corr,
         volA,
         volB,
-        date: ""
+        date: asOfDate || ""
 	};
     document.getElementById("rollingPair").textContent = rollingPairTitle(rollingContext);
     const maxStart = Math.max(0, rollingRows.length - ROLLING_VISIBLE_POINTS);
@@ -1075,7 +1076,17 @@ async function fetchRollingCorrelation(assetA, assetB, corr, volA, volB) {
     slider.min = 0;
     slider.max = maxStart;
     slider.step = 1;
-    slider.value = maxStart;
+
+    // When a matrix bubble is clicked on a historical frame, position the
+    // rolling strip so that the selected matrix date is the right-most point.
+    let startAt = maxStart;
+    if (asOfDate) {
+      const targetIndex = rollingRows.findIndex(row => row.date === asOfDate);
+      if (targetIndex >= 0) {
+        startAt = Math.max(0, Math.min(maxStart, targetIndex - ROLLING_VISIBLE_POINTS + 1));
+      }
+    }
+    slider.value = startAt;
     renderRollingStrip();
     setStatus(`Rolling correlation ready: ${displayAsset(rollingContext.assetA)} vs ${displayAsset(rollingContext.assetB)}.`);
   } catch (err) {

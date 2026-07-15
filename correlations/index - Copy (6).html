@@ -21,8 +21,8 @@ Changes:
     <div class="corr-controls main-controls">
       <label for="corrPeriod"><strong>Lookback period:</strong></label>
       <select id="corrPeriod">
-        <option value="25 Day">25 Day</option>
-        <option value="90 Day" selected>90 Day</option>
+        <option value="25 Day" selected>25 Day</option>
+        <option value="90 Day">90 Day</option>
         <option value="250 Day">250 Day</option>
       </select>
       <!--<span class="scale-note">Bubble diameter = |correlation| × <span id="scaleReadout"></span> px</span>-->
@@ -102,14 +102,8 @@ Changes:
         </div>
       </div>
     </div>
-    <div class="matrix-history-range" role="radiogroup" aria-label="Matrix history range">
-      <span class="matrix-history-range-label">History:</span>
-      <label><input type="radio" name="matrixHistoryRange" value="3"> 3 Months</label>
-      <label><input type="radio" name="matrixHistoryRange" value="6"> 6 Months</label>
-      <label><input type="radio" name="matrixHistoryRange" value="12" checked> 1 Year</label>
-    </div>
     <div id="matrixHistoryStatus" class="matrix-history-status">Loading matrix history...</div>
-    <div class="matrix-history-note">Recent two months are shown daily. Following that, history is sampled every 2, 3 or 5 trading days for 25, 90 and 250 Day correlations.</div>
+    <div class="matrix-history-note">250 consecutive daily matrices are shown. Each matrix uses the selected lookback period.</div>
     <div class="matrix-history-slider-row">
       <div id="matrixHistorySliderDate" class="matrix-history-slider-date">Latest</div>
       <input id="matrixHistorySlider" type="range" min="0" max="0" value="0" aria-label="Correlation matrix history slider">
@@ -283,10 +277,9 @@ const DEFAULTS_KEY = "RiskSnapCorrelationDefaults";
 const ROLLING_ENDPOINT = "https://surface-203178530029.northamerica-northeast2.run.app/rolling_correlation";
 const ROLLING_MATRIX_ENDPOINT = "https://surface-203178530029.northamerica-northeast2.run.app/rolling_matrix";
 const ROLLING_VISIBLE_POINTS = 20;
-const MATRIX_HISTORY_REQUEST_FRAMES = { 25: 500, 90: 440, 250: 385 };
-const MATRIX_HISTORY_SAMPLE_STEP = { 25: 2, 90: 3, 250: 5 };
+const MATRIX_HISTORY_REQUEST_FRAMES = { 25: 250, 90: 250, 250: 250 };
 const FACTORY_DEFAULTS = {
-  period: "90 Day",
+  period: "25 Day",
   fx: ["EURUSD", "GOLD", "BTC-USD"],
   yields: ["USD"],
   equities: DEFAULT_EQUITIES
@@ -312,17 +305,25 @@ const scheduleCorrelationRefresh = debounce(fetchCorrelationData, 450);
 
 document.getElementById("scaleReadout").textContent = BUBBLE_SCALE;
 
-document.getElementById("matrixHistoryTitle").textContent =
-  `Matrix History (${document.getElementById("corrPeriod").value} Lookback)`;
+function updateMatrixHistoryTitle() {
+  const period = document.getElementById("corrPeriod").value;
+  const title = document.getElementById("matrixHistoryTitle");
+  if (title) title.textContent = `Matrix History (${period} Lookback)`;
+}
 
+updateMatrixHistoryTitle();
 loadStartupSettings();
 updateSaveDefaultsState();
 
 document.getElementById("corrPeriod").addEventListener("change", () => {
-  document.getElementById("matrixHistoryTitle").textContent =
-    `Matrix History (${document.getElementById("corrPeriod").value} Lookback)`;
+  updateMatrixHistoryTitle();
   saveCurrentSettings();
   updateSaveDefaultsState();
+  if (selectedRollingPair) {
+    const lookback = parseInt(document.getElementById("corrPeriod").value, 10);
+    rollingContext = { ...selectedRollingPair, lookback };
+    document.getElementById("rollingPair").textContent = rollingPairTitle(rollingContext);
+  }
   scheduleCorrelationRefresh();
 });
 document.getElementById("corrRefresh").addEventListener("click", fetchCorrelationData);
@@ -345,12 +346,6 @@ document.querySelectorAll('input[name="matrixHistorySpeed"]').forEach(radio => {
       pauseMatrixHistoryPlayback();
       playMatrixHistory();
     }
-  });
-});
-document.querySelectorAll('input[name="matrixHistoryRange"]').forEach(radio => {
-  radio.addEventListener("change", () => {
-    pauseMatrixHistoryPlayback();
-    applyMatrixHistoryRange(true);
   });
 });
 document.querySelectorAll(".mini-buttons button").forEach(btn => {
@@ -396,6 +391,7 @@ function applySettings(settings) {
 
   document.getElementById("equitySymbols").value =
     s.equities !== undefined ? s.equities : FACTORY_DEFAULTS.equities;
+  updateMatrixHistoryTitle();
 }
 
 function readStoredSettings(key) {
@@ -539,6 +535,7 @@ async function fetchCorrelationData() {
       activePayload.messages = [...(activePayload.messages || []), `Maximum ${MAX_ASSETS} assets shown. Omitted: ${inputs.omitted.join(", ")}.`];
     }
     drawCorrelationChart(activePayload);
+    refreshSelectedRollingPair(activePayload);
     setStatus(`Updated ${activePayload.assets.length} assets for ${period}.`);
     showMessages(activePayload.messages || []);
     fetchRollingMatrix(requestPayload, period);
@@ -615,79 +612,15 @@ async function fetchRollingMatrix(requestPayload, periodLabel) {
   }
 }
 
-function getSelectedMatrixHistoryMonths() {
-  const checked = document.querySelector('input[name="matrixHistoryRange"]:checked');
-  return checked ? Number(checked.value) : 12;
-}
-
-function parseIsoDateUtc(iso) {
-  const parts = String(iso || "").split("-").map(Number);
-  if (parts.length !== 3 || parts.some(v => !Number.isFinite(v))) return null;
-  return new Date(Date.UTC(parts[0], parts[1] - 1, parts[2]));
-}
-
-function subtractCalendarMonths(date, months) {
-  const d = new Date(date.getTime());
-  const originalDay = d.getUTCDate();
-  d.setUTCDate(1);
-  d.setUTCMonth(d.getUTCMonth() - months);
-  const lastDay = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 0)).getUTCDate();
-  d.setUTCDate(Math.min(originalDay, lastDay));
-  return d;
-}
-
-function rollWeekendForward(date) {
-  const d = new Date(date.getTime());
-  const day = d.getUTCDay();
-  if (day === 6) d.setUTCDate(d.getUTCDate() + 2);
-  if (day === 0) d.setUTCDate(d.getUTCDate() + 1);
-  return d;
-}
-
-function filterMatrixHistoryByRange(frames, months) {
-  if (!frames.length) return [];
-  const latest = parseIsoDateUtc(frames[frames.length - 1].date);
-  if (!latest) return frames.slice();
-  const start = rollWeekendForward(subtractCalendarMonths(latest, months));
-  return frames.filter(frame => {
-    const date = parseIsoDateUtc(frame.date);
-    return date && date >= start && date <= latest;
-  });
-}
-
-function sampleMatrixHistoryFrames(frames, lookback) {
-  if (!frames.length) return [];
-  const latest = parseIsoDateUtc(frames[frames.length - 1].date);
-  if (!latest) return frames.slice();
-
-  const dailyStart = subtractCalendarMonths(latest, 2);
-  const olderFrames = [];
-  const recentFrames = [];
-  for (const frame of frames) {
-    const date = parseIsoDateUtc(frame.date);
-    if (date && date >= dailyStart) recentFrames.push(frame);
-    else olderFrames.push(frame);
-  }
-
-  const step = MATRIX_HISTORY_SAMPLE_STEP[lookback] || 2;
-  const sampled = [];
-  for (let i = 0; i < olderFrames.length; i += step) sampled.push(olderFrames[i]);
-  if (olderFrames.length && sampled[sampled.length - 1] !== olderFrames[olderFrames.length - 1]) {
-    sampled.push(olderFrames[olderFrames.length - 1]);
-  }
-  sampled.push(...recentFrames);
-  return sampled;
-}
-
 function applyMatrixHistoryRange(keepNearestDate) {
   if (!rawMatrixHistoryFrames.length) return;
 
   const previousDate = keepNearestDate && matrixHistoryFrames[matrixHistoryIndex]
     ? matrixHistoryFrames[matrixHistoryIndex].date
     : null;
-  const months = getSelectedMatrixHistoryMonths();
-  const rangedFrames = filterMatrixHistoryByRange(rawMatrixHistoryFrames, months);
-  matrixHistoryFrames = sampleMatrixHistoryFrames(rangedFrames, matrixHistoryLookback);
+
+  // Use every returned business-day frame. No range filtering or sampling.
+  matrixHistoryFrames = rawMatrixHistoryFrames.slice(-250);
   if (!matrixHistoryFrames.length) return;
 
   const slider = document.getElementById("matrixHistorySlider");
@@ -697,15 +630,8 @@ function applyMatrixHistoryRange(keepNearestDate) {
 
   let index = matrixHistoryFrames.length - 1;
   if (previousDate) {
-    const target = parseIsoDateUtc(previousDate);
-    if (target) {
-      let bestDistance = Infinity;
-      matrixHistoryFrames.forEach((frame, i) => {
-        const d = parseIsoDateUtc(frame.date);
-        const distance = d ? Math.abs(d - target) : Infinity;
-        if (distance < bestDistance) { bestDistance = distance; index = i; }
-      });
-    }
+    const exactIndex = matrixHistoryFrames.findIndex(frame => frame.date === previousDate);
+    if (exactIndex >= 0) index = exactIndex;
   }
 
   slider.value = index;
@@ -735,6 +661,7 @@ function renderSelectedMatrixFrame() {
   document.getElementById("matrixHistoryDate").textContent = frame.date ? formatLongDate(frame.date) : `Frame ${index + 1}`;
   updateMatrixHistorySliderDate(frame, index);
   drawCorrelationChart(frame);
+  updateSelectedPairStatsFromMatrixFrame(frame);
 }
 
 function updateMatrixHistorySliderDate(frame, index) {
@@ -999,15 +926,106 @@ function drawCorrelationChart(payload) {
     });
     circle.addEventListener("mouseleave", hideTooltip);
     circle.addEventListener("click", () => {
-      selectedRollingPair = { assetA: assets[b.i], assetB: assets[b.j] };
-      fetchRollingCorrelation(assets[b.i], assets[b.j]);
-      drawCorrelationChart(activePayload);
+      selectedRollingPair = {
+        assetA: assets[b.i],
+        assetB: assets[b.j],
+        corr: b.v,
+        volA: vol[b.i],
+        volB: vol[b.j]
+      };
+      fetchRollingCorrelation(
+        assets[b.i],
+        assets[b.j],
+        b.v,
+        vol[b.i],
+        vol[b.j]
+      );
+      drawCorrelationChart(payload);
     });
     bubbleLayer.appendChild(circle);
   }
 }
 
-async function fetchRollingCorrelation(assetA, assetB) {
+function refreshSelectedRollingPair(payload) {
+  if (!selectedRollingPair || !payload) return;
+
+  const assets = payload.assets || [];
+  const i = assets.indexOf(selectedRollingPair.assetA);
+  const j = assets.indexOf(selectedRollingPair.assetB);
+  if (i < 0 || j < 0) return;
+
+  const a = Math.min(i, j);
+  const b = Math.max(i, j);
+  const corr = payload.matrix && payload.matrix[a] ? payload.matrix[a][b] : null;
+  const volA = payload.volatility ? payload.volatility[i] : null;
+  const volB = payload.volatility ? payload.volatility[j] : null;
+
+  selectedRollingPair = {
+    assetA: selectedRollingPair.assetA,
+    assetB: selectedRollingPair.assetB,
+    corr,
+    volA,
+    volB
+  };
+  fetchRollingCorrelation(
+    selectedRollingPair.assetA,
+    selectedRollingPair.assetB,
+    corr,
+    volA,
+    volB
+  );
+}
+
+function updateSelectedPairStatsFromMatrixFrame(frame) {
+  if (!selectedRollingPair || !frame) return;
+
+  const assets = frame.assets || [];
+  const i = assets.indexOf(selectedRollingPair.assetA);
+  const j = assets.indexOf(selectedRollingPair.assetB);
+  if (i < 0 || j < 0) return;
+
+  const a = Math.min(i, j);
+  const b = Math.max(i, j);
+  const corr = frame.matrix && frame.matrix[a] ? frame.matrix[a][b] : null;
+  const volA = frame.volatility ? frame.volatility[i] : null;
+  const volB = frame.volatility ? frame.volatility[j] : null;
+
+  selectedRollingPair = {
+    ...selectedRollingPair,
+    corr,
+    volA,
+    volB
+  };
+  rollingContext = {
+    ...(rollingContext || {}),
+    assetA: selectedRollingPair.assetA,
+    assetB: selectedRollingPair.assetB,
+    lookback: matrixHistoryLookback,
+    corr,
+    volA,
+    volB,
+    date: frame.date || ""
+  };
+  document.getElementById("rollingPair").textContent = rollingPairTitle(rollingContext);
+}
+
+function rollingPairTitle(context) {
+  if (!context) return "Click a bubble to view the selected rolling correlation";
+
+  let title = context.date ? `${formatLongDate(context.date)}   ` : "";
+  title += `${context.lookback} Day Correlation (${displayAsset(context.assetA)}, ${displayAsset(context.assetB)})`;
+  if (Number.isFinite(Number(context.corr))) {
+    title += `   Corr: ${corrFmt(context.corr)}`;
+  }
+  if (context.volA !== null && context.volA !== undefined &&
+      context.volB !== null && context.volB !== undefined) {
+    title += `   ${displayAsset(context.assetA)} Vol: ${fmtVol(context.volA)}`;
+    title += `   ${displayAsset(context.assetB)} Vol: ${fmtVol(context.volB)}`;
+  }
+  return title;
+}
+
+async function fetchRollingCorrelation(assetA, assetB, corr, volA, volB) {
   if (!assetA || !assetB) return;
 
   const rollingLookback = parseInt(
@@ -1018,12 +1036,15 @@ async function fetchRollingCorrelation(assetA, assetB) {
   rollingContext = {
     assetA,
     assetB,
-    lookback: rollingLookback
+    lookback: rollingLookback,
+    corr,
+    volA,
+    volB,
+    date: activePayload && activePayload.date ? activePayload.date : ""
   };
   const panel = document.getElementById("rollingPanel");
   panel.style.display = "block";
-  document.getElementById("rollingPair").textContent =
-    `${rollingLookback} Day Correlation (${displayAsset(assetA)}, ${displayAsset(assetB)})`;
+  document.getElementById("rollingPair").textContent = rollingPairTitle(rollingContext);
   document.getElementById("rollingStrip").innerHTML = "";
   setStatus(`Calculating ${rollingLookback}-day rolling correlation for ${displayAsset(assetA)} vs ${displayAsset(assetB)}...`);
   try {
@@ -1042,10 +1063,13 @@ async function fetchRollingCorrelation(assetA, assetB) {
     rollingContext = {
 		assetA: data.assetA || assetA,
 		assetB: data.assetB || assetB,
-		lookback: data.lookback || rollingLookback
+		lookback: data.lookback || rollingLookback,
+        corr,
+        volA,
+        volB,
+        date: ""
 	};
-    document.getElementById("rollingPair").textContent =
-    `${rollingContext.lookback} Day Correlation (${displayAsset(rollingContext.assetA)}, ${displayAsset(rollingContext.assetB)})`;
+    document.getElementById("rollingPair").textContent = rollingPairTitle(rollingContext);
     const maxStart = Math.max(0, rollingRows.length - ROLLING_VISIBLE_POINTS);
     const slider = document.getElementById("rollingSlider");
     slider.min = 0;
@@ -1091,6 +1115,20 @@ function renderRollingStrip(errorMessage) {
   const start = Math.max(0, Math.min(maxStart, Number.isFinite(rawStart) ? rawStart : maxStart));
   slider.value = start;
   const visible = rollingRows.slice(start, Math.min(rollingRows.length, start + ROLLING_VISIBLE_POINTS));
+
+  // The statistics in the heading follow the right-most (as-of) date
+  // currently visible on the rolling-history slider.
+  const asOfRow = visible.length ? visible[visible.length - 1] : null;
+  if (asOfRow && rollingContext) {
+    rollingContext = {
+      ...rollingContext,
+      corr: asOfRow.corr,
+      volA: asOfRow.volA,
+      volB: asOfRow.volB,
+      date: asOfRow.date || ""
+    };
+    document.getElementById("rollingPair").textContent = rollingPairTitle(rollingContext);
+  }
 
   const width = Math.max(700, strip.clientWidth ? strip.clientWidth - 4 : 860);
   const height = 112;
