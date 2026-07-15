@@ -1060,26 +1060,7 @@ async function fetchRollingCorrelation(assetA, assetB, corr, volA, volB, asOfDat
     });
     const data = await response.json();
     if (!response.ok) throw new Error((data.messages || [response.statusText]).join(" "));
-    const allRollingRows = data.rows || [];
-
-    // Keep the rolling-pair history within the same date range as Matrix History.
-    // When a historical matrix bubble is clicked, also stop at that selected date.
-    const matrixStartDate = matrixHistoryFrames.length
-      ? matrixHistoryFrames[0].date
-      : "";
-    const matrixEndDate = asOfDate || (
-      matrixHistoryFrames.length
-        ? matrixHistoryFrames[matrixHistoryFrames.length - 1].date
-        : ""
-    );
-
-    rollingRows = allRollingRows.filter(row => {
-      const rowDate = String(row.date || "");
-      if (matrixStartDate && rowDate < matrixStartDate) return false;
-      if (matrixEndDate && rowDate > matrixEndDate) return false;
-      return true;
-    });
-
+    rollingRows = data.rows || [];
     rollingContext = {
 		assetA: data.assetA || assetA,
 		assetB: data.assetB || assetB,
@@ -1087,7 +1068,7 @@ async function fetchRollingCorrelation(assetA, assetB, corr, volA, volB, asOfDat
         corr,
         volA,
         volB,
-        date: asOfDate || matrixEndDate || ""
+        date: asOfDate || ""
 	};
     document.getElementById("rollingPair").textContent = rollingPairTitle(rollingContext);
     const maxStart = Math.max(0, rollingRows.length - ROLLING_VISIBLE_POINTS);
@@ -1096,8 +1077,8 @@ async function fetchRollingCorrelation(assetA, assetB, corr, volA, volB, asOfDat
     slider.max = maxStart;
     slider.step = 1;
 
-    // The rows have already been limited to the Matrix History range.
-    // Put the selected/latest matrix date at the right edge of the strip.
+    // When a matrix bubble is clicked on a historical frame, position the
+    // rolling strip so that the selected matrix date is the right-most point.
     let startAt = maxStart;
     if (asOfDate) {
       const targetIndex = rollingRows.findIndex(row => row.date === asOfDate);
