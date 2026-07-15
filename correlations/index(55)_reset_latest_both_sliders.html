@@ -661,6 +661,7 @@ function renderSelectedMatrixFrame() {
   document.getElementById("matrixHistoryDate").textContent = frame.date ? formatLongDate(frame.date) : `Frame ${index + 1}`;
   updateMatrixHistorySliderDate(frame, index);
   drawCorrelationChart(frame);
+  updateSelectedPairStatsFromMatrixFrame(frame);
 }
 
 function updateMatrixHistorySliderDate(frame, index) {
@@ -690,18 +691,36 @@ window.addEventListener("resize", () => {
 
 function showLatestMatrixFrame() {
   pauseMatrixHistoryPlayback();
-  if (!matrixHistoryFrames.length) return;
-  const slider = document.getElementById("matrixHistorySlider");
-  slider.value = matrixHistoryFrames.length - 1;
-  renderSelectedMatrixFrame();
+
+  if (matrixHistoryFrames.length) {
+    const matrixSlider = document.getElementById("matrixHistorySlider");
+    matrixSlider.value = matrixHistoryFrames.length - 1;
+    renderSelectedMatrixFrame();
+  }
+
+  // Keep the lower rolling-history slider synchronized at its newest window.
+  const rollingSlider = document.getElementById("rollingSlider");
+  if (rollingSlider && rollingRows.length) {
+    rollingSlider.value = Number(rollingSlider.max) || 0;
+    renderRollingStrip();
+  }
 }
 
 function resetMatrixHistoryPlayback() {
   pauseMatrixHistoryPlayback();
-  if (!matrixHistoryFrames.length) return;
-  const slider = document.getElementById("matrixHistorySlider");
-  slider.value = 0;
-  renderSelectedMatrixFrame();
+
+  if (matrixHistoryFrames.length) {
+    const matrixSlider = document.getElementById("matrixHistorySlider");
+    matrixSlider.value = 0;
+    renderSelectedMatrixFrame();
+  }
+
+  // Keep the lower rolling-history slider synchronized at its oldest window.
+  const rollingSlider = document.getElementById("rollingSlider");
+  if (rollingSlider && rollingRows.length) {
+    rollingSlider.value = 0;
+    renderRollingStrip();
+  }
 }
 
 function playMatrixHistory() {
@@ -937,7 +956,8 @@ function drawCorrelationChart(payload) {
         assets[b.j],
         b.v,
         vol[b.i],
-        vol[b.j]
+        vol[b.j],
+        payload.date || ""
       );
       drawCorrelationChart(payload);
     });
@@ -975,10 +995,44 @@ function refreshSelectedRollingPair(payload) {
   );
 }
 
+function updateSelectedPairStatsFromMatrixFrame(frame) {
+  if (!selectedRollingPair || !frame) return;
+
+  const assets = frame.assets || [];
+  const i = assets.indexOf(selectedRollingPair.assetA);
+  const j = assets.indexOf(selectedRollingPair.assetB);
+  if (i < 0 || j < 0) return;
+
+  const a = Math.min(i, j);
+  const b = Math.max(i, j);
+  const corr = frame.matrix && frame.matrix[a] ? frame.matrix[a][b] : null;
+  const volA = frame.volatility ? frame.volatility[i] : null;
+  const volB = frame.volatility ? frame.volatility[j] : null;
+
+  selectedRollingPair = {
+    ...selectedRollingPair,
+    corr,
+    volA,
+    volB
+  };
+  rollingContext = {
+    ...(rollingContext || {}),
+    assetA: selectedRollingPair.assetA,
+    assetB: selectedRollingPair.assetB,
+    lookback: matrixHistoryLookback,
+    corr,
+    volA,
+    volB,
+    date: frame.date || ""
+  };
+  document.getElementById("rollingPair").textContent = rollingPairTitle(rollingContext);
+}
+
 function rollingPairTitle(context) {
   if (!context) return "Click a bubble to view the selected rolling correlation";
 
-  let title = `${context.lookback} Day Correlation (${displayAsset(context.assetA)}, ${displayAsset(context.assetB)})`;
+  let title = context.date ? `${formatLongDate(context.date)}   ` : "";
+  title += `${context.lookback} Day Correlation (${displayAsset(context.assetA)}, ${displayAsset(context.assetB)})`;
   if (Number.isFinite(Number(context.corr))) {
     title += `   Corr: ${corrFmt(context.corr)}`;
   }
@@ -990,7 +1044,7 @@ function rollingPairTitle(context) {
   return title;
 }
 
-async function fetchRollingCorrelation(assetA, assetB, corr, volA, volB) {
+async function fetchRollingCorrelation(assetA, assetB, corr, volA, volB, asOfDate = "") {
   if (!assetA || !assetB) return;
 
   const rollingLookback = parseInt(
@@ -1004,7 +1058,8 @@ async function fetchRollingCorrelation(assetA, assetB, corr, volA, volB) {
     lookback: rollingLookback,
     corr,
     volA,
-    volB
+    volB,
+    date: asOfDate || (activePayload && activePayload.date ? activePayload.date : "")
   };
   const panel = document.getElementById("rollingPanel");
   panel.style.display = "block";
@@ -1023,14 +1078,34 @@ async function fetchRollingCorrelation(assetA, assetB, corr, volA, volB) {
     });
     const data = await response.json();
     if (!response.ok) throw new Error((data.messages || [response.statusText]).join(" "));
-    rollingRows = data.rows || [];
+    const allRollingRows = data.rows || [];
+
+    // Keep the rolling-pair history within the same date range as Matrix History.
+    // When a historical matrix bubble is clicked, also stop at that selected date.
+    const matrixStartDate = matrixHistoryFrames.length
+      ? matrixHistoryFrames[0].date
+      : "";
+    const matrixEndDate = asOfDate || (
+      matrixHistoryFrames.length
+        ? matrixHistoryFrames[matrixHistoryFrames.length - 1].date
+        : ""
+    );
+
+    rollingRows = allRollingRows.filter(row => {
+      const rowDate = String(row.date || "");
+      if (matrixStartDate && rowDate < matrixStartDate) return false;
+      if (matrixEndDate && rowDate > matrixEndDate) return false;
+      return true;
+    });
+
     rollingContext = {
 		assetA: data.assetA || assetA,
 		assetB: data.assetB || assetB,
 		lookback: data.lookback || rollingLookback,
         corr,
         volA,
-        volB
+        volB,
+        date: asOfDate || matrixEndDate || ""
 	};
     document.getElementById("rollingPair").textContent = rollingPairTitle(rollingContext);
     const maxStart = Math.max(0, rollingRows.length - ROLLING_VISIBLE_POINTS);
@@ -1038,7 +1113,17 @@ async function fetchRollingCorrelation(assetA, assetB, corr, volA, volB) {
     slider.min = 0;
     slider.max = maxStart;
     slider.step = 1;
-    slider.value = maxStart;
+
+    // The rows have already been limited to the Matrix History range.
+    // Put the selected/latest matrix date at the right edge of the strip.
+    let startAt = maxStart;
+    if (asOfDate) {
+      const targetIndex = rollingRows.findIndex(row => row.date === asOfDate);
+      if (targetIndex >= 0) {
+        startAt = Math.max(0, Math.min(maxStart, targetIndex - ROLLING_VISIBLE_POINTS + 1));
+      }
+    }
+    slider.value = startAt;
     renderRollingStrip();
     setStatus(`Rolling correlation ready: ${displayAsset(rollingContext.assetA)} vs ${displayAsset(rollingContext.assetB)}.`);
   } catch (err) {
@@ -1079,6 +1164,20 @@ function renderRollingStrip(errorMessage) {
   slider.value = start;
   const visible = rollingRows.slice(start, Math.min(rollingRows.length, start + ROLLING_VISIBLE_POINTS));
 
+  // The statistics in the heading follow the right-most (as-of) date
+  // currently visible on the rolling-history slider.
+  const asOfRow = visible.length ? visible[visible.length - 1] : null;
+  if (asOfRow && rollingContext) {
+    rollingContext = {
+      ...rollingContext,
+      corr: asOfRow.corr,
+      volA: asOfRow.volA,
+      volB: asOfRow.volB,
+      date: asOfRow.date || ""
+    };
+    document.getElementById("rollingPair").textContent = rollingPairTitle(rollingContext);
+  }
+
   const width = Math.max(700, strip.clientWidth ? strip.clientWidth - 4 : 860);
   const height = 112;
   const left = 42;
@@ -1114,9 +1213,17 @@ function renderRollingStrip(errorMessage) {
     circle.addEventListener("mouseleave", hideTooltip);
     svg.appendChild(circle);
 
-    svg.appendChild(makeSvg("text", {
-      x, y: dateY, class: "rolling-date-label"
-    }, formatCompactDate(row.date)));
+    // Keep all daily bubbles, but label only the first, last, and every fifth point.
+    const showDateLabel =
+      idx === 0 ||
+      idx === visible.length - 1 ||
+      idx % 5 === 0;
+
+    if (showDateLabel) {
+      svg.appendChild(makeSvg("text", {
+        x, y: dateY, class: "rolling-date-label"
+      }, formatCompactDate(row.date)));
+    }
   });
 
   strip.appendChild(svg);

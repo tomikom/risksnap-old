@@ -691,18 +691,36 @@ window.addEventListener("resize", () => {
 
 function showLatestMatrixFrame() {
   pauseMatrixHistoryPlayback();
-  if (!matrixHistoryFrames.length) return;
-  const slider = document.getElementById("matrixHistorySlider");
-  slider.value = matrixHistoryFrames.length - 1;
-  renderSelectedMatrixFrame();
+
+  if (matrixHistoryFrames.length) {
+    const matrixSlider = document.getElementById("matrixHistorySlider");
+    matrixSlider.value = matrixHistoryFrames.length - 1;
+    renderSelectedMatrixFrame();
+  }
+
+  // Keep the lower rolling-history slider synchronized at its newest window.
+  const rollingSlider = document.getElementById("rollingSlider");
+  if (rollingSlider && rollingRows.length) {
+    rollingSlider.value = Number(rollingSlider.max) || 0;
+    renderRollingStrip();
+  }
 }
 
 function resetMatrixHistoryPlayback() {
   pauseMatrixHistoryPlayback();
-  if (!matrixHistoryFrames.length) return;
-  const slider = document.getElementById("matrixHistorySlider");
-  slider.value = 0;
-  renderSelectedMatrixFrame();
+
+  if (matrixHistoryFrames.length) {
+    const matrixSlider = document.getElementById("matrixHistorySlider");
+    matrixSlider.value = 0;
+    renderSelectedMatrixFrame();
+  }
+
+  // Keep the lower rolling-history slider synchronized at its oldest window.
+  const rollingSlider = document.getElementById("rollingSlider");
+  if (rollingSlider && rollingRows.length) {
+    rollingSlider.value = 0;
+    renderRollingStrip();
+  }
 }
 
 function playMatrixHistory() {
