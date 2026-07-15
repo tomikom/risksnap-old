@@ -102,14 +102,8 @@ Changes:
         </div>
       </div>
     </div>
-    <div class="matrix-history-range" role="radiogroup" aria-label="Matrix history range">
-      <span class="matrix-history-range-label">History:</span>
-      <label><input type="radio" name="matrixHistoryRange" value="3"> 3 Months</label>
-      <label><input type="radio" name="matrixHistoryRange" value="6"> 6 Months</label>
-      <label><input type="radio" name="matrixHistoryRange" value="12" checked> 1 Year</label>
-    </div>
     <div id="matrixHistoryStatus" class="matrix-history-status">Loading matrix history...</div>
-    <div class="matrix-history-note">Recent two months are shown daily. Following that, history is sampled every 2, 3 or 5 trading days for 25, 90 and 250 Day correlations.</div>
+    <div class="matrix-history-note">250 consecutive daily matrices are shown. Each matrix uses the selected lookback period.</div>
     <div class="matrix-history-slider-row">
       <div id="matrixHistorySliderDate" class="matrix-history-slider-date">Latest</div>
       <input id="matrixHistorySlider" type="range" min="0" max="0" value="0" aria-label="Correlation matrix history slider">
@@ -283,8 +277,7 @@ const DEFAULTS_KEY = "RiskSnapCorrelationDefaults";
 const ROLLING_ENDPOINT = "https://surface-203178530029.northamerica-northeast2.run.app/rolling_correlation";
 const ROLLING_MATRIX_ENDPOINT = "https://surface-203178530029.northamerica-northeast2.run.app/rolling_matrix";
 const ROLLING_VISIBLE_POINTS = 20;
-const MATRIX_HISTORY_REQUEST_FRAMES = { 25: 500, 90: 440, 250: 385 };
-const MATRIX_HISTORY_SAMPLE_STEP = { 25: 2, 90: 3, 250: 5 };
+const MATRIX_HISTORY_REQUEST_FRAMES = { 25: 250, 90: 250, 250: 250 };
 const FACTORY_DEFAULTS = {
   period: "25 Day",
   fx: ["EURUSD", "GOLD", "BTC-USD"],
@@ -353,12 +346,6 @@ document.querySelectorAll('input[name="matrixHistorySpeed"]').forEach(radio => {
       pauseMatrixHistoryPlayback();
       playMatrixHistory();
     }
-  });
-});
-document.querySelectorAll('input[name="matrixHistoryRange"]').forEach(radio => {
-  radio.addEventListener("change", () => {
-    pauseMatrixHistoryPlayback();
-    applyMatrixHistoryRange(true);
   });
 });
 document.querySelectorAll(".mini-buttons button").forEach(btn => {
@@ -625,79 +612,15 @@ async function fetchRollingMatrix(requestPayload, periodLabel) {
   }
 }
 
-function getSelectedMatrixHistoryMonths() {
-  const checked = document.querySelector('input[name="matrixHistoryRange"]:checked');
-  return checked ? Number(checked.value) : 12;
-}
-
-function parseIsoDateUtc(iso) {
-  const parts = String(iso || "").split("-").map(Number);
-  if (parts.length !== 3 || parts.some(v => !Number.isFinite(v))) return null;
-  return new Date(Date.UTC(parts[0], parts[1] - 1, parts[2]));
-}
-
-function subtractCalendarMonths(date, months) {
-  const d = new Date(date.getTime());
-  const originalDay = d.getUTCDate();
-  d.setUTCDate(1);
-  d.setUTCMonth(d.getUTCMonth() - months);
-  const lastDay = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 0)).getUTCDate();
-  d.setUTCDate(Math.min(originalDay, lastDay));
-  return d;
-}
-
-function rollWeekendForward(date) {
-  const d = new Date(date.getTime());
-  const day = d.getUTCDay();
-  if (day === 6) d.setUTCDate(d.getUTCDate() + 2);
-  if (day === 0) d.setUTCDate(d.getUTCDate() + 1);
-  return d;
-}
-
-function filterMatrixHistoryByRange(frames, months) {
-  if (!frames.length) return [];
-  const latest = parseIsoDateUtc(frames[frames.length - 1].date);
-  if (!latest) return frames.slice();
-  const start = rollWeekendForward(subtractCalendarMonths(latest, months));
-  return frames.filter(frame => {
-    const date = parseIsoDateUtc(frame.date);
-    return date && date >= start && date <= latest;
-  });
-}
-
-function sampleMatrixHistoryFrames(frames, lookback) {
-  if (!frames.length) return [];
-  const latest = parseIsoDateUtc(frames[frames.length - 1].date);
-  if (!latest) return frames.slice();
-
-  const dailyStart = subtractCalendarMonths(latest, 2);
-  const olderFrames = [];
-  const recentFrames = [];
-  for (const frame of frames) {
-    const date = parseIsoDateUtc(frame.date);
-    if (date && date >= dailyStart) recentFrames.push(frame);
-    else olderFrames.push(frame);
-  }
-
-  const step = MATRIX_HISTORY_SAMPLE_STEP[lookback] || 2;
-  const sampled = [];
-  for (let i = 0; i < olderFrames.length; i += step) sampled.push(olderFrames[i]);
-  if (olderFrames.length && sampled[sampled.length - 1] !== olderFrames[olderFrames.length - 1]) {
-    sampled.push(olderFrames[olderFrames.length - 1]);
-  }
-  sampled.push(...recentFrames);
-  return sampled;
-}
-
 function applyMatrixHistoryRange(keepNearestDate) {
   if (!rawMatrixHistoryFrames.length) return;
 
   const previousDate = keepNearestDate && matrixHistoryFrames[matrixHistoryIndex]
     ? matrixHistoryFrames[matrixHistoryIndex].date
     : null;
-  const months = getSelectedMatrixHistoryMonths();
-  const rangedFrames = filterMatrixHistoryByRange(rawMatrixHistoryFrames, months);
-  matrixHistoryFrames = sampleMatrixHistoryFrames(rangedFrames, matrixHistoryLookback);
+
+  // Use every returned business-day frame. No range filtering or sampling.
+  matrixHistoryFrames = rawMatrixHistoryFrames.slice(-250);
   if (!matrixHistoryFrames.length) return;
 
   const slider = document.getElementById("matrixHistorySlider");
@@ -707,15 +630,8 @@ function applyMatrixHistoryRange(keepNearestDate) {
 
   let index = matrixHistoryFrames.length - 1;
   if (previousDate) {
-    const target = parseIsoDateUtc(previousDate);
-    if (target) {
-      let bestDistance = Infinity;
-      matrixHistoryFrames.forEach((frame, i) => {
-        const d = parseIsoDateUtc(frame.date);
-        const distance = d ? Math.abs(d - target) : Infinity;
-        if (distance < bestDistance) { bestDistance = distance; index = i; }
-      });
-    }
+    const exactIndex = matrixHistoryFrames.findIndex(frame => frame.date === previousDate);
+    if (exactIndex >= 0) index = exactIndex;
   }
 
   slider.value = index;
