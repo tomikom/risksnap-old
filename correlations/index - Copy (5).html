@@ -661,7 +661,6 @@ function renderSelectedMatrixFrame() {
   document.getElementById("matrixHistoryDate").textContent = frame.date ? formatLongDate(frame.date) : `Frame ${index + 1}`;
   updateMatrixHistorySliderDate(frame, index);
   drawCorrelationChart(frame);
-  updateSelectedPairStatsFromMatrixFrame(frame);
 }
 
 function updateMatrixHistorySliderDate(frame, index) {
@@ -976,44 +975,10 @@ function refreshSelectedRollingPair(payload) {
   );
 }
 
-function updateSelectedPairStatsFromMatrixFrame(frame) {
-  if (!selectedRollingPair || !frame) return;
-
-  const assets = frame.assets || [];
-  const i = assets.indexOf(selectedRollingPair.assetA);
-  const j = assets.indexOf(selectedRollingPair.assetB);
-  if (i < 0 || j < 0) return;
-
-  const a = Math.min(i, j);
-  const b = Math.max(i, j);
-  const corr = frame.matrix && frame.matrix[a] ? frame.matrix[a][b] : null;
-  const volA = frame.volatility ? frame.volatility[i] : null;
-  const volB = frame.volatility ? frame.volatility[j] : null;
-
-  selectedRollingPair = {
-    ...selectedRollingPair,
-    corr,
-    volA,
-    volB
-  };
-  rollingContext = {
-    ...(rollingContext || {}),
-    assetA: selectedRollingPair.assetA,
-    assetB: selectedRollingPair.assetB,
-    lookback: matrixHistoryLookback,
-    corr,
-    volA,
-    volB,
-    date: frame.date || ""
-  };
-  document.getElementById("rollingPair").textContent = rollingPairTitle(rollingContext);
-}
-
 function rollingPairTitle(context) {
   if (!context) return "Click a bubble to view the selected rolling correlation";
 
-  let title = context.date ? `${formatLongDate(context.date)}   ` : "";
-  title += `${context.lookback} Day Correlation (${displayAsset(context.assetA)}, ${displayAsset(context.assetB)})`;
+  let title = `${context.lookback} Day Correlation (${displayAsset(context.assetA)}, ${displayAsset(context.assetB)})`;
   if (Number.isFinite(Number(context.corr))) {
     title += `   Corr: ${corrFmt(context.corr)}`;
   }
@@ -1039,8 +1004,7 @@ async function fetchRollingCorrelation(assetA, assetB, corr, volA, volB) {
     lookback: rollingLookback,
     corr,
     volA,
-    volB,
-    date: activePayload && activePayload.date ? activePayload.date : ""
+    volB
   };
   const panel = document.getElementById("rollingPanel");
   panel.style.display = "block";
@@ -1066,8 +1030,7 @@ async function fetchRollingCorrelation(assetA, assetB, corr, volA, volB) {
 		lookback: data.lookback || rollingLookback,
         corr,
         volA,
-        volB,
-        date: ""
+        volB
 	};
     document.getElementById("rollingPair").textContent = rollingPairTitle(rollingContext);
     const maxStart = Math.max(0, rollingRows.length - ROLLING_VISIBLE_POINTS);
@@ -1115,20 +1078,6 @@ function renderRollingStrip(errorMessage) {
   const start = Math.max(0, Math.min(maxStart, Number.isFinite(rawStart) ? rawStart : maxStart));
   slider.value = start;
   const visible = rollingRows.slice(start, Math.min(rollingRows.length, start + ROLLING_VISIBLE_POINTS));
-
-  // The statistics in the heading follow the right-most (as-of) date
-  // currently visible on the rolling-history slider.
-  const asOfRow = visible.length ? visible[visible.length - 1] : null;
-  if (asOfRow && rollingContext) {
-    rollingContext = {
-      ...rollingContext,
-      corr: asOfRow.corr,
-      volA: asOfRow.volA,
-      volB: asOfRow.volB,
-      date: asOfRow.date || ""
-    };
-    document.getElementById("rollingPair").textContent = rollingPairTitle(rollingContext);
-  }
 
   const width = Math.max(700, strip.clientWidth ? strip.clientWidth - 4 : 860);
   const height = 112;
