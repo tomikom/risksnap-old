@@ -30,6 +30,7 @@ Changes:
 		<span id="scaleReadout"></span>
 	  </span>
       <button id="corrRefresh" type="button"><span class="btn-label">Calculate correlations</span></button>
+      <button id="portfolioJump" type="button">Portfolio Holdings</button>
       <button id="corrSaveDefaults" type="button">Save Defaults</button>
       <button id="corrResetFactory" type="button">Reset to Original Defaults</button>
     </div>
@@ -81,6 +82,7 @@ Changes:
     <div id="corrChart" class="corr-chart"></div>
   </div>
 
+
   <div id="matrixHistoryPanel" class="matrix-history-panel">
     <div class="matrix-history-header">
       <div>
@@ -123,6 +125,43 @@ Changes:
     </div>
   </div>
 
+  <div id="portfolioPanel" class="portfolio-panel">
+    <div class="portfolio-band">Portfolio Holdings</div>
+    <div class="portfolio-header">
+      <div>
+        <div class="portfolio-note">Securities only. Default shares are set so each holding has an equal current market value.</div>
+      </div>
+      <div class="portfolio-controls">
+        <label>Portfolio value:
+          <input id="portfolioValue" type="number" min="0" step="1000" value="100000">
+        </label>
+        <button id="portfolioEqualWeight" type="button">Equal market value</button>
+      </div>
+    </div>
+    <div id="portfolioSummary" class="portfolio-summary"></div>
+    <div class="portfolio-table-wrap">
+      <table class="portfolio-table">
+        <thead>
+          <tr>
+            <th>Security</th>
+            <th>Current price</th>
+            <th>Shares</th>
+            <th>Market value</th>
+            <th>Weight</th>
+          </tr>
+        </thead>
+        <tbody id="portfolioBody"></tbody>
+        <tfoot>
+          <tr>
+            <td colspan="3">Total</td>
+            <td id="portfolioTotalMarketValue">—</td>
+            <td id="portfolioTotalWeight">100.00%</td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  </div>
+
   <div id="corrTooltip" class="corr-tooltip"></div>
   <div id="corrMessages" class="corr-messages"></div>
 </div>
@@ -133,8 +172,8 @@ h1 { color: white; text-align: center; background-color: #3A5FCD; }
 .corr-input-panel { background: #fff; border: 1px solid #e5e5e5; border-radius: 8px; padding: 12px; margin: 14px 0; }
 .corr-controls { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin: 0 0 12px 0; }
 .corr-status { background: #f6f8fc; border-left: 5px solid #3A5FCD; padding: 8px 10px; margin: 8px 0 12px 0; color: #333; font-size: 13px; }
-#corrPeriod, #corrRefresh, #corrSaveDefaults, #corrResetFactory { padding: 5px 8px; font-size: 14px; }
-#corrRefresh, #corrSaveDefaults, #corrResetFactory { cursor: pointer; position: relative; border: 1px solid #aaa; border-radius: 4px; background: #fff; }
+#corrPeriod, #corrRefresh, #portfolioJump, #corrSaveDefaults, #corrResetFactory { padding: 5px 8px; font-size: 14px; }
+#corrRefresh, #portfolioJump, #corrSaveDefaults, #corrResetFactory { cursor: pointer; position: relative; border: 1px solid #aaa; border-radius: 4px; background: #fff; }
 #corrSaveDefaults:disabled { cursor: default; opacity: 0.55; }
 #corrRefresh.is-loading { color: #333; padding-left: 28px; outline: 2px dotted #3A5FCD; outline-offset: 3px; }
 #corrRefresh.is-loading::before { content: ""; position: absolute; left: 8px; top: 50%; width: 12px; height: 12px; margin-top: -6px; border: 2px solid #c8d6f6; border-top-color: #3A5FCD; border-radius: 50%; animation: corrSpin .8s linear infinite; }
@@ -256,6 +295,24 @@ h1 { color: white; text-align: center; background-color: #3A5FCD; }
 .matrix-history-header { margin-bottom: 4px; }
 #matrixHistorySlider { width: 100%; }
 
+
+.portfolio-panel { background:#fff; border:1px solid #ddd; border-radius:8px; margin:14px 0; padding:0 14px 12px 14px; scroll-margin-top:12px; }
+.portfolio-band { margin:0 -14px 12px -14px; padding:3px 10px 4px; background:#5fbd00; color:#fff; text-align:center; font-size:24px; line-height:1.1; font-weight:700; font-family:Georgia, "Times New Roman", serif; }
+.portfolio-header { display:flex; justify-content:space-between; align-items:flex-start; gap:14px; flex-wrap:wrap; }
+.portfolio-title { font-size:18px; font-weight:700; color:#222; }
+.portfolio-note { margin-top:3px; color:#666; font-size:12px; }
+.portfolio-controls { display:flex; align-items:center; gap:10px; flex-wrap:wrap; font-size:13px; }
+#portfolioValue { width:120px; padding:4px 6px; }
+#portfolioEqualWeight { cursor:pointer; border:1px solid #aaa; border-radius:4px; background:#fff; padding:5px 9px; }
+.portfolio-summary { margin:10px 0 6px; font-weight:600; color:#333; }
+.portfolio-table-wrap { overflow-x:auto; }
+.portfolio-table { width:100%; border-collapse:collapse; font-size:13px; }
+.portfolio-table th, .portfolio-table td { border-bottom:1px solid #e6e6e6; padding:7px 9px; text-align:right; white-space:nowrap; }
+.portfolio-table th:first-child, .portfolio-table td:first-child { text-align:left; }
+.portfolio-table tfoot td { font-weight:700; border-top:2px solid #999; border-bottom:0; }
+.portfolio-table input.portfolio-shares { width:110px; padding:4px 6px; text-align:right; box-sizing:border-box; }
+.portfolio-empty { color:#666; padding:10px 0; }
+
 </style>
 
 <script>
@@ -300,6 +357,10 @@ let matrixHistoryPlayTimer = null;
 let matrixHistoryReadyStatus = "";
 let matrixHistoryLookback = 25;
 let matrixHistoryPlayDelayMs = 250;
+let portfolioShares = {};
+let portfolioSecurities = [];
+let portfolioPrices = {};
+
 
 const scheduleCorrelationRefresh = debounce(fetchCorrelationData, 450);
 
@@ -330,6 +391,19 @@ document.getElementById("corrRefresh").addEventListener("click", fetchCorrelatio
 document.getElementById("corrSaveDefaults").addEventListener("click", saveUserDefaults);
 document.getElementById("corrResetFactory").addEventListener("click", resetToFactoryDefaults);
 document.getElementById("rollingClose").addEventListener("click", closeRollingPanel);
+document.getElementById("portfolioJump").addEventListener("click", () => {
+  const panel = document.getElementById("portfolioPanel");
+  if (panel) panel.scrollIntoView({ behavior: "smooth", block: "start" });
+});
+document.getElementById("portfolioEqualWeight").addEventListener("click", () => {
+  setEqualMarketValueShares();
+  renderPortfolioTable();
+});
+document.getElementById("portfolioValue").addEventListener("input", () => {
+  setEqualMarketValueShares();
+  renderPortfolioTable();
+});
+
 document.getElementById("rollingSlider").addEventListener("input", () => renderRollingStrip());
 document.getElementById("matrixHistorySlider").addEventListener("input", () => {
   pauseMatrixHistoryPlayback();
@@ -535,6 +609,7 @@ async function fetchCorrelationData() {
       activePayload.messages = [...(activePayload.messages || []), `Maximum ${MAX_ASSETS} assets shown. Omitted: ${inputs.omitted.join(", ")}.`];
     }
     drawCorrelationChart(activePayload);
+    initializePortfolio(activePayload, inputs.equities);
     refreshSelectedRollingPair(activePayload);
     setStatus(`Updated ${activePayload.assets.length} assets for ${period}.`);
     showMessages(activePayload.messages || []);
@@ -691,18 +766,36 @@ window.addEventListener("resize", () => {
 
 function showLatestMatrixFrame() {
   pauseMatrixHistoryPlayback();
-  if (!matrixHistoryFrames.length) return;
-  const slider = document.getElementById("matrixHistorySlider");
-  slider.value = matrixHistoryFrames.length - 1;
-  renderSelectedMatrixFrame();
+
+  if (matrixHistoryFrames.length) {
+    const matrixSlider = document.getElementById("matrixHistorySlider");
+    matrixSlider.value = matrixHistoryFrames.length - 1;
+    renderSelectedMatrixFrame();
+  }
+
+  // Keep the lower rolling-history slider synchronized at its newest window.
+  const rollingSlider = document.getElementById("rollingSlider");
+  if (rollingSlider && rollingRows.length) {
+    rollingSlider.value = Number(rollingSlider.max) || 0;
+    renderRollingStrip();
+  }
 }
 
 function resetMatrixHistoryPlayback() {
   pauseMatrixHistoryPlayback();
-  if (!matrixHistoryFrames.length) return;
-  const slider = document.getElementById("matrixHistorySlider");
-  slider.value = 0;
-  renderSelectedMatrixFrame();
+
+  if (matrixHistoryFrames.length) {
+    const matrixSlider = document.getElementById("matrixHistorySlider");
+    matrixSlider.value = 0;
+    renderSelectedMatrixFrame();
+  }
+
+  // Keep the lower rolling-history slider synchronized at its oldest window.
+  const rollingSlider = document.getElementById("rollingSlider");
+  if (rollingSlider && rollingRows.length) {
+    rollingSlider.value = 0;
+    renderRollingStrip();
+  }
 }
 
 function playMatrixHistory() {
@@ -837,7 +930,135 @@ function normalizePayload(payload, periodLabel) {
       return matrix[i] && matrix[i][i] !== undefined ? matrix[i][i] : null;
     });
   }
-  return { assets, matrix, volatility: volatility.slice(0, assets.length), messages: payload.messages || [], periodLabel };
+  const prices = (payload.prices || []).slice(0, assets.length);
+  return {
+    assets,
+    matrix,
+    volatility: volatility.slice(0, assets.length),
+    prices,
+    messages: payload.messages || [],
+    periodLabel
+  };
+}
+
+
+function initializePortfolio(payload, selectedEquities) {
+  const assets = payload && payload.assets ? payload.assets : [];
+  const prices = payload && payload.prices ? payload.prices : [];
+  const equitySet = new Set((selectedEquities || []).map(normalizeDisplaySymbol));
+
+  portfolioSecurities = assets.filter(asset => equitySet.has(normalizeDisplaySymbol(asset)));
+  portfolioPrices = {};
+
+  assets.forEach((asset, i) => {
+    const price = Number(prices[i]);
+    if (Number.isFinite(price) && price > 0) portfolioPrices[asset] = price;
+  });
+
+  // Remove holdings that are no longer selected.
+  Object.keys(portfolioShares).forEach(asset => {
+    if (!portfolioSecurities.includes(asset)) delete portfolioShares[asset];
+  });
+
+  // On first load, or for newly added securities, establish equal market values.
+  const missingShares = portfolioSecurities.some(asset =>
+    !Number.isFinite(Number(portfolioShares[asset]))
+  );
+  if (missingShares || !Object.keys(portfolioShares).length) {
+    setEqualMarketValueShares();
+  }
+
+  renderPortfolioTable();
+}
+
+function setEqualMarketValueShares() {
+  const valid = portfolioSecurities.filter(asset =>
+    Number.isFinite(Number(portfolioPrices[asset])) && Number(portfolioPrices[asset]) > 0
+  );
+  const totalTarget = Math.max(0, Number(document.getElementById("portfolioValue").value) || 0);
+  const targetPerSecurity = valid.length ? totalTarget / valid.length : 0;
+
+  valid.forEach(asset => {
+    portfolioShares[asset] = Math.round(
+      targetPerSecurity / Number(portfolioPrices[asset])
+    );
+  });
+}
+
+function renderPortfolioTable() {
+  const body = document.getElementById("portfolioBody");
+  const summary = document.getElementById("portfolioSummary");
+  if (!body || !summary) return;
+
+  body.innerHTML = "";
+  const valid = portfolioSecurities.filter(asset =>
+    Number.isFinite(Number(portfolioPrices[asset])) && Number(portfolioPrices[asset]) > 0
+  );
+
+  if (!valid.length) {
+    summary.textContent = "";
+    body.innerHTML = '<tr><td colspan="5" class="portfolio-empty">No selected securities with current prices are available.</td></tr>';
+    const totalValueCell = document.getElementById("portfolioTotalMarketValue");
+    const totalWeightCell = document.getElementById("portfolioTotalWeight");
+    if (totalValueCell) totalValueCell.textContent = "—";
+    if (totalWeightCell) totalWeightCell.textContent = "0.00%";
+    return;
+  }
+
+  const rows = valid.map(asset => {
+    const price = Number(portfolioPrices[asset]);
+    const shares = Math.max(0, Number(portfolioShares[asset]) || 0);
+    return { asset, price, shares, marketValue: price * shares };
+  });
+  const totalMarketValue = rows.reduce((sum, row) => sum + row.marketValue, 0);
+
+  rows.forEach(row => {
+    const tr = document.createElement("tr");
+    const weight = totalMarketValue > 0 ? row.marketValue / totalMarketValue : 0;
+    tr.innerHTML = `
+      <td>${displayAsset(row.asset)}</td>
+      <td>${formatMoney(row.price)}</td>
+      <td><input class="portfolio-shares" data-asset="${row.asset}" type="number" min="0" step="1" value="${formatShares(row.shares)}"></td>
+      <td>${formatMoney(row.marketValue)}</td>
+      <td>${(weight * 100).toFixed(2)}%</td>
+    `;
+    body.appendChild(tr);
+  });
+
+  body.querySelectorAll(".portfolio-shares").forEach(input => {
+    input.addEventListener("change", () => {
+      portfolioShares[input.dataset.asset] = Math.max(0, Math.round(Number(input.value) || 0));
+      renderPortfolioTable();
+    });
+    input.addEventListener("blur", () => {
+      portfolioShares[input.dataset.asset] = Math.max(0, Math.round(Number(input.value) || 0));
+      renderPortfolioTable();
+    });
+  });
+
+  const totalValueCell = document.getElementById("portfolioTotalMarketValue");
+  const totalWeightCell = document.getElementById("portfolioTotalWeight");
+  if (totalValueCell) totalValueCell.textContent = formatMoney(totalMarketValue);
+  if (totalWeightCell) totalWeightCell.textContent = totalMarketValue > 0 ? "100.00%" : "0.00%";
+
+  summary.textContent = `${rows.length} securities`;
+}
+
+function formatMoney(value) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return "—";
+  return n.toLocaleString(undefined, {
+    style: "currency",
+    currency: "USD",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  });
+}
+
+function formatShares(value) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return "0";
+  return String(Math.max(0, Math.round(n)));
 }
 
 function drawCorrelationChart(payload) {
@@ -1060,7 +1281,26 @@ async function fetchRollingCorrelation(assetA, assetB, corr, volA, volB, asOfDat
     });
     const data = await response.json();
     if (!response.ok) throw new Error((data.messages || [response.statusText]).join(" "));
-    rollingRows = data.rows || [];
+    const allRollingRows = data.rows || [];
+
+    // Keep the rolling-pair history within the same date range as Matrix History.
+    // When a historical matrix bubble is clicked, also stop at that selected date.
+    const matrixStartDate = matrixHistoryFrames.length
+      ? matrixHistoryFrames[0].date
+      : "";
+    const matrixEndDate = asOfDate || (
+      matrixHistoryFrames.length
+        ? matrixHistoryFrames[matrixHistoryFrames.length - 1].date
+        : ""
+    );
+
+    rollingRows = allRollingRows.filter(row => {
+      const rowDate = String(row.date || "");
+      if (matrixStartDate && rowDate < matrixStartDate) return false;
+      if (matrixEndDate && rowDate > matrixEndDate) return false;
+      return true;
+    });
+
     rollingContext = {
 		assetA: data.assetA || assetA,
 		assetB: data.assetB || assetB,
@@ -1068,7 +1308,7 @@ async function fetchRollingCorrelation(assetA, assetB, corr, volA, volB, asOfDat
         corr,
         volA,
         volB,
-        date: asOfDate || ""
+        date: asOfDate || matrixEndDate || ""
 	};
     document.getElementById("rollingPair").textContent = rollingPairTitle(rollingContext);
     const maxStart = Math.max(0, rollingRows.length - ROLLING_VISIBLE_POINTS);
@@ -1077,8 +1317,8 @@ async function fetchRollingCorrelation(assetA, assetB, corr, volA, volB, asOfDat
     slider.max = maxStart;
     slider.step = 1;
 
-    // When a matrix bubble is clicked on a historical frame, position the
-    // rolling strip so that the selected matrix date is the right-most point.
+    // The rows have already been limited to the Matrix History range.
+    // Put the selected/latest matrix date at the right edge of the strip.
     let startAt = maxStart;
     if (asOfDate) {
       const targetIndex = rollingRows.findIndex(row => row.date === asOfDate);
@@ -1176,9 +1416,17 @@ function renderRollingStrip(errorMessage) {
     circle.addEventListener("mouseleave", hideTooltip);
     svg.appendChild(circle);
 
-    svg.appendChild(makeSvg("text", {
-      x, y: dateY, class: "rolling-date-label"
-    }, formatCompactDate(row.date)));
+    // Keep all daily bubbles, but label only the first, last, and every fifth point.
+    const showDateLabel =
+      idx === 0 ||
+      idx === visible.length - 1 ||
+      idx % 5 === 0;
+
+    if (showDateLabel) {
+      svg.appendChild(makeSvg("text", {
+        x, y: dateY, class: "rolling-date-label"
+      }, formatCompactDate(row.date)));
+    }
   });
 
   strip.appendChild(svg);

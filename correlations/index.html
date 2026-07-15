@@ -83,43 +83,6 @@ Changes:
   </div>
 
 
-  <div id="portfolioPanel" class="portfolio-panel">
-    <div class="portfolio-band">Portfolio Holdings</div>
-    <div class="portfolio-header">
-      <div>
-        <div class="portfolio-note">Securities only. Default shares are set so each holding has an equal current market value.</div>
-      </div>
-      <div class="portfolio-controls">
-        <label>Portfolio value:
-          <input id="portfolioValue" type="number" min="0" step="1000" value="100000">
-        </label>
-        <button id="portfolioEqualWeight" type="button">Equal market value</button>
-      </div>
-    </div>
-    <div id="portfolioSummary" class="portfolio-summary"></div>
-    <div class="portfolio-table-wrap">
-      <table class="portfolio-table">
-        <thead>
-          <tr>
-            <th>Security</th>
-            <th>Current price</th>
-            <th>Shares</th>
-            <th>Market value</th>
-            <th>Weight</th>
-          </tr>
-        </thead>
-        <tbody id="portfolioBody"></tbody>
-        <tfoot>
-          <tr>
-            <td colspan="3">Total</td>
-            <td id="portfolioTotalMarketValue">—</td>
-            <td id="portfolioTotalWeight">100.00%</td>
-          </tr>
-        </tfoot>
-      </table>
-    </div>
-  </div>
-
   <div id="matrixHistoryPanel" class="matrix-history-panel">
     <div class="matrix-history-header">
       <div>
@@ -159,6 +122,43 @@ Changes:
     <div id="rollingStrip" class="rolling-strip"></div>
     <div class="rolling-slider-row">
       <input id="rollingSlider" type="range" min="0" max="0" value="0" aria-label="Rolling correlation history slider">
+    </div>
+  </div>
+
+  <div id="portfolioPanel" class="portfolio-panel">
+    <div class="portfolio-band">Portfolio Holdings</div>
+    <div class="portfolio-header">
+      <div>
+        <div class="portfolio-note">Securities only. Default shares are set so each holding has an equal current market value.</div>
+      </div>
+      <div class="portfolio-controls">
+        <label>Portfolio value:
+          <input id="portfolioValue" type="number" min="0" step="1000" value="100000">
+        </label>
+        <button id="portfolioEqualWeight" type="button">Equal market value</button>
+      </div>
+    </div>
+    <div id="portfolioSummary" class="portfolio-summary"></div>
+    <div class="portfolio-table-wrap">
+      <table class="portfolio-table">
+        <thead>
+          <tr>
+            <th>Security</th>
+            <th>Current price</th>
+            <th>Shares</th>
+            <th>Market value</th>
+            <th>Weight</th>
+          </tr>
+        </thead>
+        <tbody id="portfolioBody"></tbody>
+        <tfoot>
+          <tr>
+            <td colspan="3">Total</td>
+            <td id="portfolioTotalMarketValue">—</td>
+            <td id="portfolioTotalWeight">100.00%</td>
+          </tr>
+        </tfoot>
+      </table>
     </div>
   </div>
 
@@ -979,7 +979,9 @@ function setEqualMarketValueShares() {
   const targetPerSecurity = valid.length ? totalTarget / valid.length : 0;
 
   valid.forEach(asset => {
-    portfolioShares[asset] = targetPerSecurity / Number(portfolioPrices[asset]);
+    portfolioShares[asset] = Math.round(
+      targetPerSecurity / Number(portfolioPrices[asset])
+    );
   });
 }
 
@@ -1016,7 +1018,7 @@ function renderPortfolioTable() {
     tr.innerHTML = `
       <td>${displayAsset(row.asset)}</td>
       <td>${formatMoney(row.price)}</td>
-      <td><input class="portfolio-shares" data-asset="${row.asset}" type="number" min="0" step="0.0001" value="${formatShares(row.shares)}"></td>
+      <td><input class="portfolio-shares" data-asset="${row.asset}" type="number" min="0" step="1" value="${formatShares(row.shares)}"></td>
       <td>${formatMoney(row.marketValue)}</td>
       <td>${(weight * 100).toFixed(2)}%</td>
     `;
@@ -1025,11 +1027,11 @@ function renderPortfolioTable() {
 
   body.querySelectorAll(".portfolio-shares").forEach(input => {
     input.addEventListener("change", () => {
-      portfolioShares[input.dataset.asset] = Math.max(0, Number(input.value) || 0);
+      portfolioShares[input.dataset.asset] = Math.max(0, Math.round(Number(input.value) || 0));
       renderPortfolioTable();
     });
     input.addEventListener("blur", () => {
-      portfolioShares[input.dataset.asset] = Math.max(0, Number(input.value) || 0);
+      portfolioShares[input.dataset.asset] = Math.max(0, Math.round(Number(input.value) || 0));
       renderPortfolioTable();
     });
   });
@@ -1056,7 +1058,7 @@ function formatMoney(value) {
 function formatShares(value) {
   const n = Number(value);
   if (!Number.isFinite(n)) return "0";
-  return n.toFixed(4).replace(/\.?0+$/, "");
+  return String(Math.max(0, Math.round(n)));
 }
 
 function drawCorrelationChart(payload) {
