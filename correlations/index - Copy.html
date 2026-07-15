@@ -21,8 +21,8 @@ Changes:
     <div class="corr-controls main-controls">
       <label for="corrPeriod"><strong>Lookback period:</strong></label>
       <select id="corrPeriod">
-        <option value="25 Day" selected>25 Day</option>
-        <option value="90 Day">90 Day</option>
+        <option value="25 Day">25 Day</option>
+        <option value="90 Day" selected>90 Day</option>
         <option value="250 Day">250 Day</option>
       </select>
       <!--<span class="scale-note">Bubble diameter = |correlation| × <span id="scaleReadout"></span> px</span>-->
@@ -286,7 +286,7 @@ const ROLLING_VISIBLE_POINTS = 20;
 const MATRIX_HISTORY_REQUEST_FRAMES = { 25: 500, 90: 440, 250: 385 };
 const MATRIX_HISTORY_SAMPLE_STEP = { 25: 2, 90: 3, 250: 5 };
 const FACTORY_DEFAULTS = {
-  period: "25 Day",
+  period: "90 Day",
   fx: ["EURUSD", "GOLD", "BTC-USD"],
   yields: ["USD"],
   equities: DEFAULT_EQUITIES
@@ -312,18 +312,15 @@ const scheduleCorrelationRefresh = debounce(fetchCorrelationData, 450);
 
 document.getElementById("scaleReadout").textContent = BUBBLE_SCALE;
 
-function updateMatrixHistoryTitle() {
-  const period = document.getElementById("corrPeriod").value;
-  const title = document.getElementById("matrixHistoryTitle");
-  if (title) title.textContent = `Matrix History (${period} Lookback)`;
-}
+document.getElementById("matrixHistoryTitle").textContent =
+  `Matrix History (${document.getElementById("corrPeriod").value} Lookback)`;
 
-updateMatrixHistoryTitle();
 loadStartupSettings();
 updateSaveDefaultsState();
 
 document.getElementById("corrPeriod").addEventListener("change", () => {
-  updateMatrixHistoryTitle();
+  document.getElementById("matrixHistoryTitle").textContent =
+    `Matrix History (${document.getElementById("corrPeriod").value} Lookback)`;
   saveCurrentSettings();
   updateSaveDefaultsState();
   scheduleCorrelationRefresh();
@@ -399,7 +396,6 @@ function applySettings(settings) {
 
   document.getElementById("equitySymbols").value =
     s.equities !== undefined ? s.equities : FACTORY_DEFAULTS.equities;
-  updateMatrixHistoryTitle();
 }
 
 function readStoredSettings(key) {
