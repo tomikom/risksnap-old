@@ -1,3 +1,6 @@
+---
+layout: correlations-template
+---
 <!--
 RiskSnap Correlations
 Version: index(47)
@@ -10,10 +13,6 @@ Changes:
 - Clarified that the same 20 matrix dates are shown for every lookback, while each matrix uses the selected lookback
 -->
 
----
-layout: correlations-template
----
-
 <!--<h1>Correlations</h1>-->
 <div class="text-section correlations-page">
   <p>Correlations are calculated for 25, 90, or 250 business days for a variety of assets.</p>
@@ -22,8 +21,8 @@ layout: correlations-template
     <div class="corr-controls main-controls">
       <label for="corrPeriod"><strong>Lookback period:</strong></label>
       <select id="corrPeriod">
-        <option value="25 Day">25 Day</option>
-        <option value="90 Day" selected>90 Day</option>
+        <option value="25 Day" selected>25 Day</option>
+        <option value="90 Day">90 Day</option>
         <option value="250 Day">250 Day</option>
       </select>
       <!--<span class="scale-note">Bubble diameter = |correlation| × <span id="scaleReadout"></span> px</span>-->
@@ -85,19 +84,34 @@ layout: correlations-template
   <div id="matrixHistoryPanel" class="matrix-history-panel">
     <div class="matrix-history-header">
       <div>
-        <div class="matrix-history-title">Matrix History</div>
+        <div id="matrixHistoryTitle" class="matrix-history-title">Matrix History</div>
         <div id="matrixHistoryDate" class="matrix-history-date">Latest matrix</div>
       </div>
-      <div class="matrix-history-buttons">
-        <button id="matrixHistoryReset" type="button">Reset</button>
-        <button id="matrixHistoryPlay" type="button">▶ Play</button>
-        <button id="matrixHistoryPause" type="button" disabled>❚❚ Pause</button>
-        <button id="matrixHistoryLatest" type="button">Latest</button>
+      <div class="matrix-history-actions">
+        <div class="matrix-history-buttons">
+          <button id="matrixHistoryReset" type="button">Reset</button>
+          <button id="matrixHistoryPlay" type="button">▶ Play</button>
+          <button id="matrixHistoryPause" type="button" disabled>❚❚ Pause</button>
+          <button id="matrixHistoryLatest" type="button">Latest</button>
+        </div>
+        <div class="matrix-history-speed" role="radiogroup" aria-label="Matrix history playback speed">
+          <span class="matrix-history-speed-label">Speed:</span>
+          <label><input type="radio" name="matrixHistorySpeed" value="500"> 1×</label>
+          <label><input type="radio" name="matrixHistorySpeed" value="250" checked> 2×</label>
+          <label><input type="radio" name="matrixHistorySpeed" value="125"> 4×</label>
+        </div>
       </div>
     </div>
+    <div class="matrix-history-range" role="radiogroup" aria-label="Matrix history range">
+      <span class="matrix-history-range-label">History:</span>
+      <label><input type="radio" name="matrixHistoryRange" value="3"> 3 Months</label>
+      <label><input type="radio" name="matrixHistoryRange" value="6"> 6 Months</label>
+      <label><input type="radio" name="matrixHistoryRange" value="12" checked> 1 Year</label>
+    </div>
     <div id="matrixHistoryStatus" class="matrix-history-status">Loading matrix history...</div>
-    <div class="matrix-history-note">Recent 60 trading days are shown daily.<br>Older history is sampled every 2, 3 or 5 trading days for 25, 90 and 250 Day correlations.</div>
+    <div class="matrix-history-note">Recent two months are shown daily. Following that, history is sampled every 2, 3 or 5 trading days for 25, 90 and 250 Day correlations.</div>
     <div class="matrix-history-slider-row">
+      <div id="matrixHistorySliderDate" class="matrix-history-slider-date">Latest</div>
       <input id="matrixHistorySlider" type="range" min="0" max="0" value="0" aria-label="Correlation matrix history slider">
     </div>
   </div>
@@ -172,10 +186,36 @@ h1 { color: white; text-align: center; background-color: #3A5FCD; }
 .matrix-history-header { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 8px; }
 .matrix-history-title { font-size: 18px; font-weight: 700; color: #222; }
 .matrix-history-date { margin-top: 2px; color: #3A5FCD; font-size: 14px; font-weight: 600; }
-.matrix-history-status { color: #666; font-size: 12px; margin-bottom: 3px; }
+.matrix-history-range { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin: 2px 0 4px 0; font-size: 12px; color: #333; }
+.matrix-history-range-label { font-weight: 700; }
+.matrix-history-range label { cursor: pointer; white-space: nowrap; }
+.matrix-history-range input { margin: 0 3px 0 0; vertical-align: middle; }
+.matrix-history-status { color: #666; font-size: 12px; margin-bottom: 3px; min-height: 0; }
+.matrix-history-status:empty { display: none; }
 .matrix-history-note { color: #666; font-size: 11px; line-height: 1.3; margin-bottom: 4px; }
-.matrix-history-slider-row { margin: 2px 14px 0 14px; }
+.matrix-history-slider-row { position: relative; margin: 24px 14px 0 14px; }
 #matrixHistorySlider { width: 100%; height: 24px; cursor: pointer; appearance: auto; -webkit-appearance: auto; background: initial; }
+.matrix-history-slider-date {
+  position: absolute;
+  top: -22px;
+  left: 0;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  color: #3A5FCD;
+  background: rgba(255,255,255,.96);
+  border: 1px solid #c8d2ea;
+  border-radius: 4px;
+  padding: 1px 5px;
+  font-size: 11px;
+  font-weight: 600;
+  pointer-events: none;
+  box-shadow: 0 1px 3px rgba(0,0,0,.08);
+}
+.matrix-history-actions { display: flex; align-items: center; justify-content: flex-end; gap: 12px; flex-wrap: wrap; }
+.matrix-history-speed { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; font-size: 12px; color: #333; }
+.matrix-history-speed-label { font-weight: 700; }
+.matrix-history-speed label { cursor: pointer; white-space: nowrap; }
+.matrix-history-speed input { margin: 0 2px 0 0; vertical-align: middle; }
 .matrix-history-buttons { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 .matrix-history-buttons button { cursor: pointer; border: 1px solid #aaa; border-radius: 4px; background: #fff; padding: 4px 10px; }
 .matrix-history-buttons button:disabled { cursor: default; opacity: .55; }
@@ -243,11 +283,10 @@ const DEFAULTS_KEY = "RiskSnapCorrelationDefaults";
 const ROLLING_ENDPOINT = "https://surface-203178530029.northamerica-northeast2.run.app/rolling_correlation";
 const ROLLING_MATRIX_ENDPOINT = "https://surface-203178530029.northamerica-northeast2.run.app/rolling_matrix";
 const ROLLING_VISIBLE_POINTS = 20;
-const MATRIX_HISTORY_RECENT_DAILY = 60;
 const MATRIX_HISTORY_REQUEST_FRAMES = { 25: 500, 90: 440, 250: 385 };
 const MATRIX_HISTORY_SAMPLE_STEP = { 25: 2, 90: 3, 250: 5 };
 const FACTORY_DEFAULTS = {
-  period: "90 Day",
+  period: "25 Day",
   fx: ["EURUSD", "GOLD", "BTC-USD"],
   yields: ["USD"],
   equities: DEFAULT_EQUITIES
@@ -259,21 +298,32 @@ let activeIsLive = false;
 let rollingRows = [];
 let rollingContext = null;
 let selectedRollingPair = null;
+let rawMatrixHistoryFrames = [];
 let matrixHistoryFrames = [];
 let matrixHistoryAssets = [];
 let matrixHistoryIndex = 0;
 let matrixHistoryRequestId = 0;
 let matrixHistoryPlayTimer = null;
 let matrixHistoryReadyStatus = "";
-const MATRIX_HISTORY_PLAY_DELAY_MS = 500;
+let matrixHistoryLookback = 25;
+let matrixHistoryPlayDelayMs = 250;
 
 const scheduleCorrelationRefresh = debounce(fetchCorrelationData, 450);
 
 document.getElementById("scaleReadout").textContent = BUBBLE_SCALE;
+
+function updateMatrixHistoryTitle() {
+  const period = document.getElementById("corrPeriod").value;
+  const title = document.getElementById("matrixHistoryTitle");
+  if (title) title.textContent = `Matrix History (${period} Lookback)`;
+}
+
+updateMatrixHistoryTitle();
 loadStartupSettings();
 updateSaveDefaultsState();
 
 document.getElementById("corrPeriod").addEventListener("change", () => {
+  updateMatrixHistoryTitle();
   saveCurrentSettings();
   updateSaveDefaultsState();
   scheduleCorrelationRefresh();
@@ -291,6 +341,21 @@ document.getElementById("matrixHistoryReset").addEventListener("click", resetMat
 document.getElementById("matrixHistoryPlay").addEventListener("click", playMatrixHistory);
 document.getElementById("matrixHistoryPause").addEventListener("click", pauseMatrixHistoryPlayback);
 document.getElementById("matrixHistoryLatest").addEventListener("click", showLatestMatrixFrame);
+document.querySelectorAll('input[name="matrixHistorySpeed"]').forEach(radio => {
+  radio.addEventListener("change", () => {
+    matrixHistoryPlayDelayMs = Number(radio.value) || 250;
+    if (matrixHistoryPlayTimer) {
+      pauseMatrixHistoryPlayback();
+      playMatrixHistory();
+    }
+  });
+});
+document.querySelectorAll('input[name="matrixHistoryRange"]').forEach(radio => {
+  radio.addEventListener("change", () => {
+    pauseMatrixHistoryPlayback();
+    applyMatrixHistoryRange(true);
+  });
+});
 document.querySelectorAll(".mini-buttons button").forEach(btn => {
   btn.addEventListener("click", () => {
     setChecks(btn.dataset.target, btn.dataset.action === "all");
@@ -334,6 +399,7 @@ function applySettings(settings) {
 
   document.getElementById("equitySymbols").value =
     s.equities !== undefined ? s.equities : FACTORY_DEFAULTS.equities;
+  updateMatrixHistoryTitle();
 }
 
 function readStoredSettings(key) {
@@ -520,30 +586,21 @@ async function fetchRollingMatrix(requestPayload, periodLabel) {
     if (requestId !== matrixHistoryRequestId) return;
 
     matrixHistoryAssets = (data.assets || activePayload?.assets || []).slice(0, MAX_ASSETS);
-    const rawFrames = (data.frames || []).map(frame => normalizeMatrixFrame(frame, periodLabel));
-    matrixHistoryFrames = sampleMatrixHistoryFrames(rawFrames, lookback);
-    if (!matrixHistoryFrames.length) throw new Error("No matrix-history frames were returned.");
+    rawMatrixHistoryFrames = (data.frames || []).map(frame => normalizeMatrixFrame(frame, periodLabel));
+    matrixHistoryLookback = lookback;
+    if (!rawMatrixHistoryFrames.length) throw new Error("No matrix-history frames were returned.");
 
-    slider.min = 0;
-    slider.max = matrixHistoryFrames.length - 1;
-    slider.step = 1;
-    slider.value = matrixHistoryFrames.length - 1;
+    applyMatrixHistoryRange(false);
     slider.disabled = false;
     latestBtn.disabled = false;
     resetBtn.disabled = false;
     playBtn.disabled = false;
     pauseBtn.disabled = true;
-    matrixHistoryIndex = matrixHistoryFrames.length - 1;
-    renderSelectedMatrixFrame();
-    const firstFrameDate = matrixHistoryFrames[0]?.date;
-    const lastFrameDate = matrixHistoryFrames[matrixHistoryFrames.length - 1]?.date;
-    const dateRange = firstFrameDate && lastFrameDate
-      ? `${formatLongDate(firstFrameDate)} to ${formatLongDate(lastFrameDate)}`
-      : "the available dates";
-    matrixHistoryReadyStatus = `${matrixHistoryFrames.length} matrix dates ready (${dateRange}). Each matrix uses the ${periodLabel} lookback.`;
-    setMatrixHistoryStatus(matrixHistoryReadyStatus);
+    matrixHistoryReadyStatus = "";
+    setMatrixHistoryStatus("");
   } catch (err) {
     if (requestId !== matrixHistoryRequestId) return;
+    rawMatrixHistoryFrames = [];
     matrixHistoryFrames = [];
     matrixHistoryAssets = [];
     matrixHistoryReadyStatus = "";
@@ -556,27 +613,109 @@ async function fetchRollingMatrix(requestPayload, periodLabel) {
     playBtn.disabled = true;
     pauseBtn.disabled = true;
     document.getElementById("matrixHistoryDate").textContent = "Latest matrix";
+    const sliderDate = document.getElementById("matrixHistorySliderDate");
+    if (sliderDate) { sliderDate.textContent = "Latest"; sliderDate.style.left = "0px"; }
     setMatrixHistoryStatus(`Matrix history unavailable: ${err.message}`);
   }
 }
 
+function getSelectedMatrixHistoryMonths() {
+  const checked = document.querySelector('input[name="matrixHistoryRange"]:checked');
+  return checked ? Number(checked.value) : 12;
+}
+
+function parseIsoDateUtc(iso) {
+  const parts = String(iso || "").split("-").map(Number);
+  if (parts.length !== 3 || parts.some(v => !Number.isFinite(v))) return null;
+  return new Date(Date.UTC(parts[0], parts[1] - 1, parts[2]));
+}
+
+function subtractCalendarMonths(date, months) {
+  const d = new Date(date.getTime());
+  const originalDay = d.getUTCDate();
+  d.setUTCDate(1);
+  d.setUTCMonth(d.getUTCMonth() - months);
+  const lastDay = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 0)).getUTCDate();
+  d.setUTCDate(Math.min(originalDay, lastDay));
+  return d;
+}
+
+function rollWeekendForward(date) {
+  const d = new Date(date.getTime());
+  const day = d.getUTCDay();
+  if (day === 6) d.setUTCDate(d.getUTCDate() + 2);
+  if (day === 0) d.setUTCDate(d.getUTCDate() + 1);
+  return d;
+}
+
+function filterMatrixHistoryByRange(frames, months) {
+  if (!frames.length) return [];
+  const latest = parseIsoDateUtc(frames[frames.length - 1].date);
+  if (!latest) return frames.slice();
+  const start = rollWeekendForward(subtractCalendarMonths(latest, months));
+  return frames.filter(frame => {
+    const date = parseIsoDateUtc(frame.date);
+    return date && date >= start && date <= latest;
+  });
+}
+
 function sampleMatrixHistoryFrames(frames, lookback) {
   if (!frames.length) return [];
+  const latest = parseIsoDateUtc(frames[frames.length - 1].date);
+  if (!latest) return frames.slice();
 
-  const recentCount = Math.min(MATRIX_HISTORY_RECENT_DAILY, frames.length);
-  const olderEnd = frames.length - recentCount;
-  const step = MATRIX_HISTORY_SAMPLE_STEP[lookback] || 2;
-  const sampled = [];
-
-  // Preserve the earliest available frame, then sample older history.
-  for (let i = 0; i < olderEnd; i += step) sampled.push(frames[i]);
-  if (olderEnd > 0 && sampled[sampled.length - 1] !== frames[olderEnd - 1]) {
-    sampled.push(frames[olderEnd - 1]);
+  const dailyStart = subtractCalendarMonths(latest, 2);
+  const olderFrames = [];
+  const recentFrames = [];
+  for (const frame of frames) {
+    const date = parseIsoDateUtc(frame.date);
+    if (date && date >= dailyStart) recentFrames.push(frame);
+    else olderFrames.push(frame);
   }
 
-  // Keep the most recent 60 trading dates daily.
-  sampled.push(...frames.slice(olderEnd));
+  const step = MATRIX_HISTORY_SAMPLE_STEP[lookback] || 2;
+  const sampled = [];
+  for (let i = 0; i < olderFrames.length; i += step) sampled.push(olderFrames[i]);
+  if (olderFrames.length && sampled[sampled.length - 1] !== olderFrames[olderFrames.length - 1]) {
+    sampled.push(olderFrames[olderFrames.length - 1]);
+  }
+  sampled.push(...recentFrames);
   return sampled;
+}
+
+function applyMatrixHistoryRange(keepNearestDate) {
+  if (!rawMatrixHistoryFrames.length) return;
+
+  const previousDate = keepNearestDate && matrixHistoryFrames[matrixHistoryIndex]
+    ? matrixHistoryFrames[matrixHistoryIndex].date
+    : null;
+  const months = getSelectedMatrixHistoryMonths();
+  const rangedFrames = filterMatrixHistoryByRange(rawMatrixHistoryFrames, months);
+  matrixHistoryFrames = sampleMatrixHistoryFrames(rangedFrames, matrixHistoryLookback);
+  if (!matrixHistoryFrames.length) return;
+
+  const slider = document.getElementById("matrixHistorySlider");
+  slider.min = 0;
+  slider.max = matrixHistoryFrames.length - 1;
+  slider.step = 1;
+
+  let index = matrixHistoryFrames.length - 1;
+  if (previousDate) {
+    const target = parseIsoDateUtc(previousDate);
+    if (target) {
+      let bestDistance = Infinity;
+      matrixHistoryFrames.forEach((frame, i) => {
+        const d = parseIsoDateUtc(frame.date);
+        const distance = d ? Math.abs(d - target) : Infinity;
+        if (distance < bestDistance) { bestDistance = distance; index = i; }
+      });
+    }
+  }
+
+  slider.value = index;
+  matrixHistoryIndex = index;
+  renderSelectedMatrixFrame();
+  setMatrixHistoryStatus("");
 }
 
 function normalizeMatrixFrame(frame, periodLabel) {
@@ -598,8 +737,34 @@ function renderSelectedMatrixFrame() {
   matrixHistoryIndex = index;
   const frame = matrixHistoryFrames[index];
   document.getElementById("matrixHistoryDate").textContent = frame.date ? formatLongDate(frame.date) : `Frame ${index + 1}`;
+  updateMatrixHistorySliderDate(frame, index);
   drawCorrelationChart(frame);
 }
+
+function updateMatrixHistorySliderDate(frame, index) {
+  const slider = document.getElementById("matrixHistorySlider");
+  const label = document.getElementById("matrixHistorySliderDate");
+  if (!slider || !label) return;
+
+  const min = Number(slider.min) || 0;
+  const max = Number(slider.max) || 0;
+  const value = Number(slider.value) || 0;
+  const pct = max > min ? (value - min) / (max - min) : 0;
+  const sliderWidth = slider.clientWidth || 1;
+  const labelHalf = (label.offsetWidth || 70) / 2;
+  const thumbInset = 9;
+  const rawX = thumbInset + pct * Math.max(0, sliderWidth - thumbInset * 2);
+  const x = Math.max(labelHalf, Math.min(sliderWidth - labelHalf, rawX));
+
+  label.style.left = `${x}px`;
+  label.textContent = frame && frame.date ? formatCompactDate(frame.date) : `Frame ${index + 1}`;
+}
+
+window.addEventListener("resize", () => {
+  if (matrixHistoryFrames.length) {
+    updateMatrixHistorySliderDate(matrixHistoryFrames[matrixHistoryIndex], matrixHistoryIndex);
+  }
+});
 
 function showLatestMatrixFrame() {
   pauseMatrixHistoryPlayback();
@@ -642,7 +807,7 @@ function playMatrixHistory() {
     }
     slider.value = next;
     renderSelectedMatrixFrame();
-  }, MATRIX_HISTORY_PLAY_DELAY_MS);
+  }, matrixHistoryPlayDelayMs);
 }
 
 function pauseMatrixHistoryPlayback() {
@@ -655,9 +820,7 @@ function pauseMatrixHistoryPlayback() {
   const pauseBtn = document.getElementById("matrixHistoryPause");
   if (playBtn) playBtn.disabled = !matrixHistoryFrames.length;
   if (pauseBtn) pauseBtn.disabled = true;
-  if (matrixHistoryReadyStatus && matrixHistoryFrames.length) {
-    setMatrixHistoryStatus(matrixHistoryReadyStatus);
-  }
+  if (matrixHistoryFrames.length) setMatrixHistoryStatus("");
 }
 
 function setMatrixHistoryStatus(message) {
@@ -667,6 +830,7 @@ function setMatrixHistoryStatus(message) {
 
 function resetMatrixHistoryPanel(message = "Matrix history will load after correlations are calculated.") {
   pauseMatrixHistoryPlayback();
+  rawMatrixHistoryFrames = [];
   matrixHistoryFrames = [];
   matrixHistoryAssets = [];
   matrixHistoryIndex = 0;
@@ -683,6 +847,8 @@ function resetMatrixHistoryPanel(message = "Matrix history will load after corre
   if (pauseBtn) pauseBtn.disabled = true;
   const date = document.getElementById("matrixHistoryDate");
   if (date) date.textContent = "Latest matrix";
+  const sliderDate = document.getElementById("matrixHistorySliderDate");
+  if (sliderDate) { sliderDate.textContent = "Latest"; sliderDate.style.left = "0px"; }
   setMatrixHistoryStatus(message);
 }
 
@@ -837,15 +1003,42 @@ function drawCorrelationChart(payload) {
     });
     circle.addEventListener("mouseleave", hideTooltip);
     circle.addEventListener("click", () => {
-      selectedRollingPair = { assetA: assets[b.i], assetB: assets[b.j] };
-      fetchRollingCorrelation(assets[b.i], assets[b.j]);
-      drawCorrelationChart(activePayload);
+      selectedRollingPair = {
+        assetA: assets[b.i],
+        assetB: assets[b.j],
+        corr: b.v,
+        volA: vol[b.i],
+        volB: vol[b.j]
+      };
+      fetchRollingCorrelation(
+        assets[b.i],
+        assets[b.j],
+        b.v,
+        vol[b.i],
+        vol[b.j]
+      );
+      drawCorrelationChart(payload);
     });
     bubbleLayer.appendChild(circle);
   }
 }
 
-async function fetchRollingCorrelation(assetA, assetB) {
+function rollingPairTitle(context) {
+  if (!context) return "Click a bubble to view the selected rolling correlation";
+
+  let title = `${context.lookback} Day Correlation (${displayAsset(context.assetA)}, ${displayAsset(context.assetB)})`;
+  if (Number.isFinite(Number(context.corr))) {
+    title += `   Corr: ${corrFmt(context.corr)}`;
+  }
+  if (context.volA !== null && context.volA !== undefined &&
+      context.volB !== null && context.volB !== undefined) {
+    title += `   ${displayAsset(context.assetA)} Vol: ${fmtVol(context.volA)}`;
+    title += `   ${displayAsset(context.assetB)} Vol: ${fmtVol(context.volB)}`;
+  }
+  return title;
+}
+
+async function fetchRollingCorrelation(assetA, assetB, corr, volA, volB) {
   if (!assetA || !assetB) return;
 
   const rollingLookback = parseInt(
@@ -856,12 +1049,14 @@ async function fetchRollingCorrelation(assetA, assetB) {
   rollingContext = {
     assetA,
     assetB,
-    lookback: rollingLookback
+    lookback: rollingLookback,
+    corr,
+    volA,
+    volB
   };
   const panel = document.getElementById("rollingPanel");
   panel.style.display = "block";
-  document.getElementById("rollingPair").textContent =
-    `${rollingLookback} Day Correlation (${displayAsset(assetA)}, ${displayAsset(assetB)})`;
+  document.getElementById("rollingPair").textContent = rollingPairTitle(rollingContext);
   document.getElementById("rollingStrip").innerHTML = "";
   setStatus(`Calculating ${rollingLookback}-day rolling correlation for ${displayAsset(assetA)} vs ${displayAsset(assetB)}...`);
   try {
@@ -880,10 +1075,12 @@ async function fetchRollingCorrelation(assetA, assetB) {
     rollingContext = {
 		assetA: data.assetA || assetA,
 		assetB: data.assetB || assetB,
-		lookback: data.lookback || rollingLookback
+		lookback: data.lookback || rollingLookback,
+        corr,
+        volA,
+        volB
 	};
-    document.getElementById("rollingPair").textContent =
-    `${rollingContext.lookback} Day Correlation (${displayAsset(rollingContext.assetA)}, ${displayAsset(rollingContext.assetB)})`;
+    document.getElementById("rollingPair").textContent = rollingPairTitle(rollingContext);
     const maxStart = Math.max(0, rollingRows.length - ROLLING_VISIBLE_POINTS);
     const slider = document.getElementById("rollingSlider");
     slider.min = 0;

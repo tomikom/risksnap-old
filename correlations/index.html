@@ -1003,15 +1003,42 @@ function drawCorrelationChart(payload) {
     });
     circle.addEventListener("mouseleave", hideTooltip);
     circle.addEventListener("click", () => {
-      selectedRollingPair = { assetA: assets[b.i], assetB: assets[b.j] };
-      fetchRollingCorrelation(assets[b.i], assets[b.j]);
-      drawCorrelationChart(activePayload);
+      selectedRollingPair = {
+        assetA: assets[b.i],
+        assetB: assets[b.j],
+        corr: b.v,
+        volA: vol[b.i],
+        volB: vol[b.j]
+      };
+      fetchRollingCorrelation(
+        assets[b.i],
+        assets[b.j],
+        b.v,
+        vol[b.i],
+        vol[b.j]
+      );
+      drawCorrelationChart(payload);
     });
     bubbleLayer.appendChild(circle);
   }
 }
 
-async function fetchRollingCorrelation(assetA, assetB) {
+function rollingPairTitle(context) {
+  if (!context) return "Click a bubble to view the selected rolling correlation";
+
+  let title = `${context.lookback} Day Correlation (${displayAsset(context.assetA)}, ${displayAsset(context.assetB)})`;
+  if (Number.isFinite(Number(context.corr))) {
+    title += `   Corr: ${corrFmt(context.corr)}`;
+  }
+  if (context.volA !== null && context.volA !== undefined &&
+      context.volB !== null && context.volB !== undefined) {
+    title += `   ${displayAsset(context.assetA)} Vol: ${fmtVol(context.volA)}`;
+    title += `   ${displayAsset(context.assetB)} Vol: ${fmtVol(context.volB)}`;
+  }
+  return title;
+}
+
+async function fetchRollingCorrelation(assetA, assetB, corr, volA, volB) {
   if (!assetA || !assetB) return;
 
   const rollingLookback = parseInt(
@@ -1022,12 +1049,14 @@ async function fetchRollingCorrelation(assetA, assetB) {
   rollingContext = {
     assetA,
     assetB,
-    lookback: rollingLookback
+    lookback: rollingLookback,
+    corr,
+    volA,
+    volB
   };
   const panel = document.getElementById("rollingPanel");
   panel.style.display = "block";
-  document.getElementById("rollingPair").textContent =
-    `${rollingLookback} Day Correlation (${displayAsset(assetA)}, ${displayAsset(assetB)})`;
+  document.getElementById("rollingPair").textContent = rollingPairTitle(rollingContext);
   document.getElementById("rollingStrip").innerHTML = "";
   setStatus(`Calculating ${rollingLookback}-day rolling correlation for ${displayAsset(assetA)} vs ${displayAsset(assetB)}...`);
   try {
@@ -1046,10 +1075,12 @@ async function fetchRollingCorrelation(assetA, assetB) {
     rollingContext = {
 		assetA: data.assetA || assetA,
 		assetB: data.assetB || assetB,
-		lookback: data.lookback || rollingLookback
+		lookback: data.lookback || rollingLookback,
+        corr,
+        volA,
+        volB
 	};
-    document.getElementById("rollingPair").textContent =
-    `${rollingContext.lookback} Day Correlation (${displayAsset(rollingContext.assetA)}, ${displayAsset(rollingContext.assetB)})`;
+    document.getElementById("rollingPair").textContent = rollingPairTitle(rollingContext);
     const maxStart = Math.max(0, rollingRows.length - ROLLING_VISIBLE_POINTS);
     const slider = document.getElementById("rollingSlider");
     slider.min = 0;
