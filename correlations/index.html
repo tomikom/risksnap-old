@@ -81,6 +81,37 @@ Changes:
     <div id="corrChart" class="corr-chart"></div>
   </div>
 
+
+  <div id="portfolioPanel" class="portfolio-panel">
+    <div class="portfolio-header">
+      <div>
+        <div class="portfolio-title">Portfolio Holdings</div>
+        <div class="portfolio-note">Securities only. Default shares are set so each holding has an equal current market value.</div>
+      </div>
+      <div class="portfolio-controls">
+        <label>Portfolio value:
+          <input id="portfolioValue" type="number" min="0" step="1000" value="100000">
+        </label>
+        <button id="portfolioEqualWeight" type="button">Equal market value</button>
+      </div>
+    </div>
+    <div id="portfolioSummary" class="portfolio-summary"></div>
+    <div class="portfolio-table-wrap">
+      <table class="portfolio-table">
+        <thead>
+          <tr>
+            <th>Security</th>
+            <th>Current price</th>
+            <th>Shares</th>
+            <th>Market value</th>
+            <th>Weight</th>
+          </tr>
+        </thead>
+        <tbody id="portfolioBody"></tbody>
+      </table>
+    </div>
+  </div>
+
   <div id="matrixHistoryPanel" class="matrix-history-panel">
     <div class="matrix-history-header">
       <div>
@@ -256,6 +287,22 @@ h1 { color: white; text-align: center; background-color: #3A5FCD; }
 .matrix-history-header { margin-bottom: 4px; }
 #matrixHistorySlider { width: 100%; }
 
+
+.portfolio-panel { background:#fff; border:1px solid #ddd; border-radius:8px; margin:14px 0; padding:12px 14px; }
+.portfolio-header { display:flex; justify-content:space-between; align-items:flex-start; gap:14px; flex-wrap:wrap; }
+.portfolio-title { font-size:18px; font-weight:700; color:#222; }
+.portfolio-note { margin-top:3px; color:#666; font-size:12px; }
+.portfolio-controls { display:flex; align-items:center; gap:10px; flex-wrap:wrap; font-size:13px; }
+#portfolioValue { width:120px; padding:4px 6px; }
+#portfolioEqualWeight { cursor:pointer; border:1px solid #aaa; border-radius:4px; background:#fff; padding:5px 9px; }
+.portfolio-summary { margin:10px 0 6px; font-weight:600; color:#333; }
+.portfolio-table-wrap { overflow-x:auto; }
+.portfolio-table { width:100%; border-collapse:collapse; font-size:13px; }
+.portfolio-table th, .portfolio-table td { border-bottom:1px solid #e6e6e6; padding:7px 9px; text-align:right; white-space:nowrap; }
+.portfolio-table th:first-child, .portfolio-table td:first-child { text-align:left; }
+.portfolio-table input.portfolio-shares { width:110px; padding:4px 6px; text-align:right; box-sizing:border-box; }
+.portfolio-empty { color:#666; padding:10px 0; }
+
 </style>
 
 <script>
@@ -300,6 +347,10 @@ let matrixHistoryPlayTimer = null;
 let matrixHistoryReadyStatus = "";
 let matrixHistoryLookback = 25;
 let matrixHistoryPlayDelayMs = 250;
+let portfolioShares = {};
+let portfolioSecurities = [];
+let portfolioPrices = {};
+
 
 const scheduleCorrelationRefresh = debounce(fetchCorrelationData, 450);
 
@@ -330,6 +381,15 @@ document.getElementById("corrRefresh").addEventListener("click", fetchCorrelatio
 document.getElementById("corrSaveDefaults").addEventListener("click", saveUserDefaults);
 document.getElementById("corrResetFactory").addEventListener("click", resetToFactoryDefaults);
 document.getElementById("rollingClose").addEventListener("click", closeRollingPanel);
+document.getElementById("portfolioEqualWeight").addEventListener("click", () => {
+  setEqualMarketValueShares();
+  renderPortfolioTable();
+});
+document.getElementById("portfolioValue").addEventListener("input", () => {
+  setEqualMarketValueShares();
+  renderPortfolioTable();
+});
+
 document.getElementById("rollingSlider").addEventListener("input", () => renderRollingStrip());
 document.getElementById("matrixHistorySlider").addEventListener("input", () => {
   pauseMatrixHistoryPlayback();
@@ -535,6 +595,7 @@ async function fetchCorrelationData() {
       activePayload.messages = [...(activePayload.messages || []), `Maximum ${MAX_ASSETS} assets shown. Omitted: ${inputs.omitted.join(", ")}.`];
     }
     drawCorrelationChart(activePayload);
+    initializePortfolio(activePayload, inputs.equities);
     refreshSelectedRollingPair(activePayload);
     setStatus(`Updated ${activePayload.assets.length} assets for ${period}.`);
     showMessages(activePayload.messages || []);
@@ -855,7 +916,120 @@ function normalizePayload(payload, periodLabel) {
       return matrix[i] && matrix[i][i] !== undefined ? matrix[i][i] : null;
     });
   }
-  return { assets, matrix, volatility: volatility.slice(0, assets.length), messages: payload.messages || [], periodLabel };
+  const prices = (payload.prices || []).slice(0, assets.length);
+  return {
+    assets,
+    matrix,
+    volatility: volatility.slice(0, assets.length),
+    prices,
+    messages: payload.messages || [],
+    periodLabel
+  };
+}
+
+
+function initializePortfolio(payload, selectedEquities) {
+  const assets = payload && payload.assets ? payload.assets : [];
+  const prices = payload && payload.prices ? payload.prices : [];
+  const equitySet = new Set((selectedEquities || []).map(normalizeDisplaySymbol));
+
+  portfolioSecurities = assets.filter(asset => equitySet.has(normalizeDisplaySymbol(asset)));
+  portfolioPrices = {};
+
+  assets.forEach((asset, i) => {
+    const price = Number(prices[i]);
+    if (Number.isFinite(price) && price > 0) portfolioPrices[asset] = price;
+  });
+
+  // Remove holdings that are no longer selected.
+  Object.keys(portfolioShares).forEach(asset => {
+    if (!portfolioSecurities.includes(asset)) delete portfolioShares[asset];
+  });
+
+  // On first load, or for newly added securities, establish equal market values.
+  const missingShares = portfolioSecurities.some(asset =>
+    !Number.isFinite(Number(portfolioShares[asset]))
+  );
+  if (missingShares || !Object.keys(portfolioShares).length) {
+    setEqualMarketValueShares();
+  }
+
+  renderPortfolioTable();
+}
+
+function setEqualMarketValueShares() {
+  const valid = portfolioSecurities.filter(asset =>
+    Number.isFinite(Number(portfolioPrices[asset])) && Number(portfolioPrices[asset]) > 0
+  );
+  const totalTarget = Math.max(0, Number(document.getElementById("portfolioValue").value) || 0);
+  const targetPerSecurity = valid.length ? totalTarget / valid.length : 0;
+
+  valid.forEach(asset => {
+    portfolioShares[asset] = targetPerSecurity / Number(portfolioPrices[asset]);
+  });
+}
+
+function renderPortfolioTable() {
+  const body = document.getElementById("portfolioBody");
+  const summary = document.getElementById("portfolioSummary");
+  if (!body || !summary) return;
+
+  body.innerHTML = "";
+  const valid = portfolioSecurities.filter(asset =>
+    Number.isFinite(Number(portfolioPrices[asset])) && Number(portfolioPrices[asset]) > 0
+  );
+
+  if (!valid.length) {
+    summary.textContent = "";
+    body.innerHTML = '<tr><td colspan="5" class="portfolio-empty">No selected securities with current prices are available.</td></tr>';
+    return;
+  }
+
+  const rows = valid.map(asset => {
+    const price = Number(portfolioPrices[asset]);
+    const shares = Math.max(0, Number(portfolioShares[asset]) || 0);
+    return { asset, price, shares, marketValue: price * shares };
+  });
+  const totalMarketValue = rows.reduce((sum, row) => sum + row.marketValue, 0);
+
+  rows.forEach(row => {
+    const tr = document.createElement("tr");
+    const weight = totalMarketValue > 0 ? row.marketValue / totalMarketValue : 0;
+    tr.innerHTML = `
+      <td>${displayAsset(row.asset)}</td>
+      <td>${formatMoney(row.price)}</td>
+      <td><input class="portfolio-shares" data-asset="${row.asset}" type="number" min="0" step="0.0001" value="${formatShares(row.shares)}"></td>
+      <td>${formatMoney(row.marketValue)}</td>
+      <td>${(weight * 100).toFixed(2)}%</td>
+    `;
+    body.appendChild(tr);
+  });
+
+  body.querySelectorAll(".portfolio-shares").forEach(input => {
+    input.addEventListener("input", () => {
+      portfolioShares[input.dataset.asset] = Math.max(0, Number(input.value) || 0);
+      renderPortfolioTable();
+    });
+  });
+
+  summary.textContent = `Current market value: ${formatMoney(totalMarketValue)} • ${rows.length} securities`;
+}
+
+function formatMoney(value) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return "—";
+  return n.toLocaleString(undefined, {
+    style: "currency",
+    currency: "USD",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  });
+}
+
+function formatShares(value) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return "0";
+  return n.toFixed(4).replace(/\.?0+$/, "");
 }
 
 function drawCorrelationChart(payload) {
