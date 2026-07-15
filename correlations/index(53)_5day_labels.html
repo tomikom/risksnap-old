@@ -1195,17 +1195,9 @@ function renderRollingStrip(errorMessage) {
     circle.addEventListener("mouseleave", hideTooltip);
     svg.appendChild(circle);
 
-    // Keep all daily bubbles, but label only the first, last, and every fifth point.
-    const showDateLabel =
-      idx === 0 ||
-      idx === visible.length - 1 ||
-      idx % 5 === 0;
-
-    if (showDateLabel) {
-      svg.appendChild(makeSvg("text", {
-        x, y: dateY, class: "rolling-date-label"
-      }, formatCompactDate(row.date)));
-    }
+    svg.appendChild(makeSvg("text", {
+      x, y: dateY, class: "rolling-date-label"
+    }, formatCompactDate(row.date)));
   });
 
   strip.appendChild(svg);
