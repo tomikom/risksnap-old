@@ -326,11 +326,6 @@ document.getElementById("corrPeriod").addEventListener("change", () => {
   updateMatrixHistoryTitle();
   saveCurrentSettings();
   updateSaveDefaultsState();
-  if (selectedRollingPair) {
-    const lookback = parseInt(document.getElementById("corrPeriod").value, 10);
-    rollingContext = { ...selectedRollingPair, lookback };
-    document.getElementById("rollingPair").textContent = rollingPairTitle(rollingContext);
-  }
   scheduleCorrelationRefresh();
 });
 document.getElementById("corrRefresh").addEventListener("click", fetchCorrelationData);
@@ -548,7 +543,6 @@ async function fetchCorrelationData() {
       activePayload.messages = [...(activePayload.messages || []), `Maximum ${MAX_ASSETS} assets shown. Omitted: ${inputs.omitted.join(", ")}.`];
     }
     drawCorrelationChart(activePayload);
-    refreshSelectedRollingPair(activePayload);
     setStatus(`Updated ${activePayload.assets.length} assets for ${period}.`);
     showMessages(activePayload.messages || []);
     fetchRollingMatrix(requestPayload, period);
@@ -1027,36 +1021,6 @@ function drawCorrelationChart(payload) {
     });
     bubbleLayer.appendChild(circle);
   }
-}
-
-function refreshSelectedRollingPair(payload) {
-  if (!selectedRollingPair || !payload) return;
-
-  const assets = payload.assets || [];
-  const i = assets.indexOf(selectedRollingPair.assetA);
-  const j = assets.indexOf(selectedRollingPair.assetB);
-  if (i < 0 || j < 0) return;
-
-  const a = Math.min(i, j);
-  const b = Math.max(i, j);
-  const corr = payload.matrix && payload.matrix[a] ? payload.matrix[a][b] : null;
-  const volA = payload.volatility ? payload.volatility[i] : null;
-  const volB = payload.volatility ? payload.volatility[j] : null;
-
-  selectedRollingPair = {
-    assetA: selectedRollingPair.assetA,
-    assetB: selectedRollingPair.assetB,
-    corr,
-    volA,
-    volB
-  };
-  fetchRollingCorrelation(
-    selectedRollingPair.assetA,
-    selectedRollingPair.assetB,
-    corr,
-    volA,
-    volB
-  );
 }
 
 function rollingPairTitle(context) {
