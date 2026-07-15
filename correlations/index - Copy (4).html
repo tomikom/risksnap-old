@@ -30,7 +30,6 @@ Changes:
 		<span id="scaleReadout"></span>
 	  </span>
       <button id="corrRefresh" type="button"><span class="btn-label">Calculate correlations</span></button>
-      <button id="portfolioJump" type="button">Portfolio Holdings</button>
       <button id="corrSaveDefaults" type="button">Save Defaults</button>
       <button id="corrResetFactory" type="button">Reset to Original Defaults</button>
     </div>
@@ -84,9 +83,9 @@ Changes:
 
 
   <div id="portfolioPanel" class="portfolio-panel">
-    <div class="portfolio-band">Portfolio Holdings</div>
     <div class="portfolio-header">
       <div>
+        <div class="portfolio-title">Portfolio Holdings</div>
         <div class="portfolio-note">Securities only. Default shares are set so each holding has an equal current market value.</div>
       </div>
       <div class="portfolio-controls">
@@ -109,13 +108,6 @@ Changes:
           </tr>
         </thead>
         <tbody id="portfolioBody"></tbody>
-        <tfoot>
-          <tr>
-            <td colspan="3">Total</td>
-            <td id="portfolioTotalMarketValue">—</td>
-            <td id="portfolioTotalWeight">100.00%</td>
-          </tr>
-        </tfoot>
       </table>
     </div>
   </div>
@@ -172,8 +164,8 @@ h1 { color: white; text-align: center; background-color: #3A5FCD; }
 .corr-input-panel { background: #fff; border: 1px solid #e5e5e5; border-radius: 8px; padding: 12px; margin: 14px 0; }
 .corr-controls { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin: 0 0 12px 0; }
 .corr-status { background: #f6f8fc; border-left: 5px solid #3A5FCD; padding: 8px 10px; margin: 8px 0 12px 0; color: #333; font-size: 13px; }
-#corrPeriod, #corrRefresh, #portfolioJump, #corrSaveDefaults, #corrResetFactory { padding: 5px 8px; font-size: 14px; }
-#corrRefresh, #portfolioJump, #corrSaveDefaults, #corrResetFactory { cursor: pointer; position: relative; border: 1px solid #aaa; border-radius: 4px; background: #fff; }
+#corrPeriod, #corrRefresh, #corrSaveDefaults, #corrResetFactory { padding: 5px 8px; font-size: 14px; }
+#corrRefresh, #corrSaveDefaults, #corrResetFactory { cursor: pointer; position: relative; border: 1px solid #aaa; border-radius: 4px; background: #fff; }
 #corrSaveDefaults:disabled { cursor: default; opacity: 0.55; }
 #corrRefresh.is-loading { color: #333; padding-left: 28px; outline: 2px dotted #3A5FCD; outline-offset: 3px; }
 #corrRefresh.is-loading::before { content: ""; position: absolute; left: 8px; top: 50%; width: 12px; height: 12px; margin-top: -6px; border: 2px solid #c8d6f6; border-top-color: #3A5FCD; border-radius: 50%; animation: corrSpin .8s linear infinite; }
@@ -296,8 +288,7 @@ h1 { color: white; text-align: center; background-color: #3A5FCD; }
 #matrixHistorySlider { width: 100%; }
 
 
-.portfolio-panel { background:#fff; border:1px solid #ddd; border-radius:8px; margin:14px 0; padding:0 14px 12px 14px; scroll-margin-top:12px; }
-.portfolio-band { margin:0 -14px 12px -14px; padding:3px 10px 4px; background:#5fbd00; color:#fff; text-align:center; font-size:24px; line-height:1.1; font-weight:700; font-family:Georgia, "Times New Roman", serif; }
+.portfolio-panel { background:#fff; border:1px solid #ddd; border-radius:8px; margin:14px 0; padding:12px 14px; }
 .portfolio-header { display:flex; justify-content:space-between; align-items:flex-start; gap:14px; flex-wrap:wrap; }
 .portfolio-title { font-size:18px; font-weight:700; color:#222; }
 .portfolio-note { margin-top:3px; color:#666; font-size:12px; }
@@ -309,7 +300,6 @@ h1 { color: white; text-align: center; background-color: #3A5FCD; }
 .portfolio-table { width:100%; border-collapse:collapse; font-size:13px; }
 .portfolio-table th, .portfolio-table td { border-bottom:1px solid #e6e6e6; padding:7px 9px; text-align:right; white-space:nowrap; }
 .portfolio-table th:first-child, .portfolio-table td:first-child { text-align:left; }
-.portfolio-table tfoot td { font-weight:700; border-top:2px solid #999; border-bottom:0; }
 .portfolio-table input.portfolio-shares { width:110px; padding:4px 6px; text-align:right; box-sizing:border-box; }
 .portfolio-empty { color:#666; padding:10px 0; }
 
@@ -391,10 +381,6 @@ document.getElementById("corrRefresh").addEventListener("click", fetchCorrelatio
 document.getElementById("corrSaveDefaults").addEventListener("click", saveUserDefaults);
 document.getElementById("corrResetFactory").addEventListener("click", resetToFactoryDefaults);
 document.getElementById("rollingClose").addEventListener("click", closeRollingPanel);
-document.getElementById("portfolioJump").addEventListener("click", () => {
-  const panel = document.getElementById("portfolioPanel");
-  if (panel) panel.scrollIntoView({ behavior: "smooth", block: "start" });
-});
 document.getElementById("portfolioEqualWeight").addEventListener("click", () => {
   setEqualMarketValueShares();
   renderPortfolioTable();
@@ -996,10 +982,6 @@ function renderPortfolioTable() {
   if (!valid.length) {
     summary.textContent = "";
     body.innerHTML = '<tr><td colspan="5" class="portfolio-empty">No selected securities with current prices are available.</td></tr>';
-    const totalValueCell = document.getElementById("portfolioTotalMarketValue");
-    const totalWeightCell = document.getElementById("portfolioTotalWeight");
-    if (totalValueCell) totalValueCell.textContent = "—";
-    if (totalWeightCell) totalWeightCell.textContent = "0.00%";
     return;
   }
 
@@ -1024,22 +1006,13 @@ function renderPortfolioTable() {
   });
 
   body.querySelectorAll(".portfolio-shares").forEach(input => {
-    input.addEventListener("change", () => {
-      portfolioShares[input.dataset.asset] = Math.max(0, Number(input.value) || 0);
-      renderPortfolioTable();
-    });
-    input.addEventListener("blur", () => {
+    input.addEventListener("input", () => {
       portfolioShares[input.dataset.asset] = Math.max(0, Number(input.value) || 0);
       renderPortfolioTable();
     });
   });
 
-  const totalValueCell = document.getElementById("portfolioTotalMarketValue");
-  const totalWeightCell = document.getElementById("portfolioTotalWeight");
-  if (totalValueCell) totalValueCell.textContent = formatMoney(totalMarketValue);
-  if (totalWeightCell) totalWeightCell.textContent = totalMarketValue > 0 ? "100.00%" : "0.00%";
-
-  summary.textContent = `${rows.length} securities`;
+  summary.textContent = `Current market value: ${formatMoney(totalMarketValue)} • ${rows.length} securities`;
 }
 
 function formatMoney(value) {
