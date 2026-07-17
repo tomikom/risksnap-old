@@ -15,7 +15,7 @@ Changes:
 
 <!--<h1>Correlations</h1>-->
 <div class="text-section correlations-page">
-  <p>Correlations are calculated for 25, 90, or 250 business days for a variety of assets.</p>
+  <p>Correlations are calculated for 25, 90, or 250 business days for a variety of assets.  Historical volatilities are on the Matrix diagonal.</p>
 
   <div class="corr-input-panel">
     <div class="corr-controls main-controls">
@@ -60,7 +60,8 @@ Changes:
           <button type="button" data-target="yield" data-action="none">Clear all</button>
         </div>
         <label><input type="checkbox" class="yield-check" value="CAD"> CAD</label>
-        <label><input type="checkbox" class="yield-check" value="USD" checked> USD</label>
+        <label><input type="checkbox" class="yield-check" value="USD" checked> USD 5Y</label>
+        <label><input type="checkbox" class="yield-check" value="USD_INF"> 10Y Inflation Exp.</label>
         <label><input type="checkbox" class="yield-check" value="EUR"> EUR</label>
         <label><input type="checkbox" class="yield-check" value="CHF"> CHF</label>
         <label><input type="checkbox" class="yield-check" value="GBP"> GBP</label>
@@ -68,12 +69,24 @@ Changes:
       </div>
 
       <div class="selector-card equity-card">
-        <div class="selector-title">Equities / Yahoo codes</div>
+        <div class="selector-title">Equities / indices / Yahoo codes</div>
         <div class="mini-buttons">
           <button type="button" data-target="equity" data-action="none">Clear all</button>
         </div>
-        <textarea id="equitySymbols" rows="4">AAPL, AMZN, NVDA, MSTR, GS, CAT, UNH, AMGN, V, HD, IBM</textarea>
-        <div class="input-note">Enter Yahoo symbols separated by commas or spaces. Maximum 15 total assets. Invalid/new issues are ignored with a message.</div>
+        <div class="preset-label">Presets</div>
+        <div id="presetButtons" class="preset-buttons">
+          <button type="button" class="preset-button" data-preset="original">⭐ Original</button>
+          <button type="button" class="preset-button" data-preset="world">🌍 World Indices</button>
+          <button type="button" class="preset-button" data-preset="macro">📊 Macro</button>
+          <button type="button" class="preset-button" data-preset="ai">🤖 AI Ecosystem</button>
+          <button type="button" class="preset-button" data-preset="healthcare">⚕️ Healthcare</button>
+          <button type="button" class="preset-button" data-preset="energy">⚡ Energy</button>
+          <button type="button" class="preset-button" data-preset="financials">🏦 Financials</button>
+          <button type="button" class="preset-button" data-preset="defensive">🛡️ Defensive</button>
+          <button type="button" class="preset-button" data-preset="crypto">₿ Crypto</button>
+        </div>
+        <textarea id="equitySymbols"></textarea>
+        <div class="input-note">Enter Yahoo symbols separated by commas or spaces. Maximum 15 total assets. Indices and other non-equity Yahoo codes remain in the risk matrix but are excluded from Portfolio Holdings.</div>
       </div>
     </div>
   </div>
@@ -82,6 +95,43 @@ Changes:
     <div id="corrChart" class="corr-chart"></div>
   </div>
 
+
+  <div id="portfolioPanel" class="portfolio-panel">
+    <div class="portfolio-band">Portfolio Holdings</div>
+    <div class="portfolio-header">
+      <div>
+        <div class="portfolio-note">Tradable equities only. Indices, currencies, futures and cryptocurrencies remain in the risk matrix but are not assigned shares.</div>
+      </div>
+      <div class="portfolio-controls">
+        <label>Portfolio value:
+          <input id="portfolioValue" type="number" min="0" step="1000" value="100000">
+        </label>
+        <button id="portfolioEqualWeight" type="button">Equal market value</button>
+      </div>
+    </div>
+    <div id="portfolioSummary" class="portfolio-summary"></div>
+    <div class="portfolio-table-wrap">
+      <table class="portfolio-table">
+        <thead>
+          <tr>
+            <th>Security</th>
+            <th>Current price</th>
+            <th>Shares</th>
+            <th>Market value</th>
+            <th>Weight</th>
+          </tr>
+        </thead>
+        <tbody id="portfolioBody"></tbody>
+        <tfoot>
+          <tr>
+            <td colspan="3">Total</td>
+            <td id="portfolioTotalMarketValue">—</td>
+            <td id="portfolioTotalWeight">100.00%</td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  </div>
 
   <div id="matrixHistoryPanel" class="matrix-history-panel">
     <div class="matrix-history-header">
@@ -125,43 +175,6 @@ Changes:
     </div>
   </div>
 
-  <div id="portfolioPanel" class="portfolio-panel">
-    <div class="portfolio-band">Portfolio Holdings</div>
-    <div class="portfolio-header">
-      <div>
-        <div class="portfolio-note">Securities only. Default shares are set so each holding has an equal current market value.</div>
-      </div>
-      <div class="portfolio-controls">
-        <label>Portfolio value:
-          <input id="portfolioValue" type="number" min="0" step="1000" value="100000">
-        </label>
-        <button id="portfolioEqualWeight" type="button">Equal market value</button>
-      </div>
-    </div>
-    <div id="portfolioSummary" class="portfolio-summary"></div>
-    <div class="portfolio-table-wrap">
-      <table class="portfolio-table">
-        <thead>
-          <tr>
-            <th>Security</th>
-            <th>Current price</th>
-            <th>Shares</th>
-            <th>Market value</th>
-            <th>Weight</th>
-          </tr>
-        </thead>
-        <tbody id="portfolioBody"></tbody>
-        <tfoot>
-          <tr>
-            <td colspan="3">Total</td>
-            <td id="portfolioTotalMarketValue">—</td>
-            <td id="portfolioTotalWeight">100.00%</td>
-          </tr>
-        </tfoot>
-      </table>
-    </div>
-  </div>
-
   <div id="corrTooltip" class="corr-tooltip"></div>
   <div id="corrMessages" class="corr-messages"></div>
 </div>
@@ -186,6 +199,11 @@ h1 { color: white; text-align: center; background-color: #3A5FCD; }
 .mini-buttons { margin-bottom: 6px; }
 .mini-buttons button { font-size: 12px; padding: 2px 6px; margin-right: 4px; }
 #equitySymbols { width: 100%; box-sizing: border-box; font-family: inherit; font-size: 14px; }
+.preset-label { margin: 7px 0 5px; font-size: 12px; font-weight: 700; color: #444; }
+.preset-buttons { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 7px; }
+.preset-button { cursor: pointer; border: 1px solid #aaa; border-radius: 999px; background: #fff; padding: 4px 8px; font-size: 12px; }
+.preset-button:hover { background: #f0f4ff; border-color: #7188c7; }
+.preset-button.is-active { background: #dce7ff; border-color: #3A5FCD; box-shadow: inset 0 0 0 1px #3A5FCD; }
 .input-note { margin-top: 5px; font-size: 12px; color: #666; }
 .corr-wrap { overflow: auto; background: #fff; border: 1px solid #ddd; padding: 12px 12px 18px 12px; max-width: 100%; }
 .corr-chart { position: relative; background: #fff; min-height: 420px; }
@@ -329,6 +347,24 @@ const ROW_LABEL_X = LEFT - 64;
 const VOL_X = LEFT - 22;
 const MAX_ASSETS = 15;
 const DEFAULT_EQUITIES = "AAPL, AMZN, NVDA, MSTR, GS, CAT, UNH, AMGN, V, HD, IBM";
+
+const YAHOO_PRESETS = {
+  original: DEFAULT_EQUITIES,
+  world: "^GSPC, ^NDX, ^DJI, ^RUT, ^GSPTSE, ^FTSE, ^GDAXI, ^FCHI, ^N225, ^HSI, 000001.SS",
+  macro: "DX-Y.NYB, EURUSD=X, GC=F, CL=F, BTC-USD, ^VIX, ^GSPC, ^NDX",
+  ai: "NVDA, MSFT, GOOGL, AMZN, META, AMD, AVGO, TSM, ORCL, PLTR",
+  healthcare: "UNH, LLY, JNJ, ABBV, AMGN, MRK, ISRG, ABT, TMO, PFE",
+  energy: "XOM, CVX, COP, SLB, EOG, OXY, CNQ, SU, ENB, TRP",
+  financials: "JPM, BAC, WFC, C, GS, MS, BLK, SCHW, RY, TD",
+  defensive: "PG, KO, PEP, WMT, COST, MCD, CL, GIS, KMB, MDLZ",
+  crypto: "BTC-USD, ETH-USD, MSTR, COIN, MARA, RIOT, CLSK, HUT, CIFR"
+};
+
+const NON_HOLDING_SYMBOLS = new Set([
+  "^VIX", "^GSPC", "S&P500", "^NDX", "NASDAQ", "^IXIC", "^DJI", "^RUT",
+  "^GSPTSE", "^FTSE", "^GDAXI", "^FCHI", "^N225", "^HSI", "000001.SS",
+  "DX-Y.NYB", "EURUSD=X", "GC=F", "CL=F", "BTC-USD", "ETH-USD"
+]);
 const STORAGE_KEY = "RiskSnapCorrelationSettings";
 const DEFAULTS_KEY = "RiskSnapCorrelationDefaults";
 const ROLLING_ENDPOINT = "https://surface-203178530029.northamerica-northeast2.run.app/rolling_correlation";
@@ -360,6 +396,7 @@ let matrixHistoryPlayDelayMs = 250;
 let portfolioShares = {};
 let portfolioSecurities = [];
 let portfolioPrices = {};
+let activeYahooPreset = null;
 
 
 const scheduleCorrelationRefresh = debounce(fetchCorrelationData, 450);
@@ -435,7 +472,23 @@ document.querySelectorAll(".fx-check,.yield-check").forEach(cb => cb.addEventLis
   updateSaveDefaultsState();
   scheduleCorrelationRefresh();
 }));
+document.querySelectorAll(".preset-button").forEach(button => {
+  button.addEventListener("click", () => {
+    const key = button.dataset.preset;
+    if (!YAHOO_PRESETS[key]) return;
+    activeYahooPreset = key;
+    document.getElementById("equitySymbols").value = YAHOO_PRESETS[key];
+    updatePresetHighlight();
+    saveCurrentSettings();
+    updateSaveDefaultsState();
+    setStatus(`Loaded preset: ${button.textContent.trim()}.`);
+    scheduleCorrelationRefresh();
+  });
+});
+
 document.getElementById("equitySymbols").addEventListener("input", debounce(() => {
+  activeYahooPreset = matchingPresetKey(document.getElementById("equitySymbols").value);
+  updatePresetHighlight();
   saveCurrentSettings();
   updateSaveDefaultsState();
   scheduleCorrelationRefresh();
@@ -465,7 +518,26 @@ function applySettings(settings) {
 
   document.getElementById("equitySymbols").value =
     s.equities !== undefined ? s.equities : FACTORY_DEFAULTS.equities;
+  activeYahooPreset = matchingPresetKey(document.getElementById("equitySymbols").value);
+  updatePresetHighlight();
   updateMatrixHistoryTitle();
+}
+
+function normalizedSymbolText(value) {
+  return parseEquities(value).join(",");
+}
+
+function matchingPresetKey(value) {
+  const normalized = normalizedSymbolText(value);
+  return Object.keys(YAHOO_PRESETS).find(
+    key => normalizedSymbolText(YAHOO_PRESETS[key]) === normalized
+  ) || null;
+}
+
+function updatePresetHighlight() {
+  document.querySelectorAll(".preset-button").forEach(button => {
+    button.classList.toggle("is-active", button.dataset.preset === activeYahooPreset);
+  });
 }
 
 function readStoredSettings(key) {
@@ -528,6 +600,8 @@ function refreshPreviewFromInputs() {
 function setChecks(group, checked) {
   if (group === "equity") {
     document.getElementById("equitySymbols").value = checked ? DEFAULT_EQUITIES : "";
+    activeYahooPreset = checked ? "original" : null;
+    updatePresetHighlight();
     return;
   }
   const selector = group === "fx" ? ".fx-check" : ".yield-check";
@@ -562,7 +636,11 @@ function getSelectedInputs() {
   };
 
   fx.forEach(v => add("fx", v, v === "USDCAD" ? "CADUSD" : v));
-  yields.forEach(v => add("yield", v, v === "USD" ? "USD" : "YIELD_" + v));
+  yields.forEach(v => add(
+    "yield",
+    v,
+    v === "USD" ? "USD" : (v === "USD_INF" ? "INFL_EXP" : "YIELD_" + v)
+  ));
   equities.forEach(v => add("equity", v, v));
 
   const limited = selected.slice(0, MAX_ASSETS);
@@ -947,7 +1025,10 @@ function initializePortfolio(payload, selectedEquities) {
   const prices = payload && payload.prices ? payload.prices : [];
   const equitySet = new Set((selectedEquities || []).map(normalizeDisplaySymbol));
 
-  portfolioSecurities = assets.filter(asset => equitySet.has(normalizeDisplaySymbol(asset)));
+  portfolioSecurities = assets.filter(asset => {
+    const normalized = normalizeDisplaySymbol(asset);
+    return equitySet.has(normalized) && !NON_HOLDING_SYMBOLS.has(normalized);
+  });
   portfolioPrices = {};
 
   assets.forEach((asset, i) => {
@@ -979,9 +1060,7 @@ function setEqualMarketValueShares() {
   const targetPerSecurity = valid.length ? totalTarget / valid.length : 0;
 
   valid.forEach(asset => {
-    portfolioShares[asset] = Math.round(
-      targetPerSecurity / Number(portfolioPrices[asset])
-    );
+    portfolioShares[asset] = targetPerSecurity / Number(portfolioPrices[asset]);
   });
 }
 
@@ -1018,7 +1097,7 @@ function renderPortfolioTable() {
     tr.innerHTML = `
       <td>${displayAsset(row.asset)}</td>
       <td>${formatMoney(row.price)}</td>
-      <td><input class="portfolio-shares" data-asset="${row.asset}" type="number" min="0" step="1" value="${formatShares(row.shares)}"></td>
+      <td><input class="portfolio-shares" data-asset="${row.asset}" type="number" min="0" step="0.0001" value="${formatShares(row.shares)}"></td>
       <td>${formatMoney(row.marketValue)}</td>
       <td>${(weight * 100).toFixed(2)}%</td>
     `;
@@ -1027,11 +1106,11 @@ function renderPortfolioTable() {
 
   body.querySelectorAll(".portfolio-shares").forEach(input => {
     input.addEventListener("change", () => {
-      portfolioShares[input.dataset.asset] = Math.max(0, Math.round(Number(input.value) || 0));
+      portfolioShares[input.dataset.asset] = Math.max(0, Number(input.value) || 0);
       renderPortfolioTable();
     });
     input.addEventListener("blur", () => {
-      portfolioShares[input.dataset.asset] = Math.max(0, Math.round(Number(input.value) || 0));
+      portfolioShares[input.dataset.asset] = Math.max(0, Number(input.value) || 0);
       renderPortfolioTable();
     });
   });
@@ -1058,7 +1137,7 @@ function formatMoney(value) {
 function formatShares(value) {
   const n = Number(value);
   if (!Number.isFinite(n)) return "0";
-  return String(Math.max(0, Math.round(n)));
+  return n.toFixed(4).replace(/\.?0+$/, "");
 }
 
 function drawCorrelationChart(payload) {

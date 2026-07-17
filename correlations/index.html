@@ -60,7 +60,8 @@ Changes:
           <button type="button" data-target="yield" data-action="none">Clear all</button>
         </div>
         <label><input type="checkbox" class="yield-check" value="CAD"> CAD</label>
-        <label><input type="checkbox" class="yield-check" value="USD" checked> USD</label>
+        <label><input type="checkbox" class="yield-check" value="USD" checked> USD 5Y</label>
+        <label><input type="checkbox" class="yield-check" value="USD_INF"> 10Y Inflation Exp.</label>
         <label><input type="checkbox" class="yield-check" value="EUR"> EUR</label>
         <label><input type="checkbox" class="yield-check" value="CHF"> CHF</label>
         <label><input type="checkbox" class="yield-check" value="GBP"> GBP</label>
@@ -635,7 +636,11 @@ function getSelectedInputs() {
   };
 
   fx.forEach(v => add("fx", v, v === "USDCAD" ? "CADUSD" : v));
-  yields.forEach(v => add("yield", v, v === "USD" ? "USD" : "YIELD_" + v));
+  yields.forEach(v => add(
+    "yield",
+    v,
+    v === "USD" ? "USD" : (v === "USD_INF" ? "INFL_EXP" : "YIELD_" + v)
+  ));
   equities.forEach(v => add("equity", v, v));
 
   const limited = selected.slice(0, MAX_ASSETS);
