@@ -47,10 +47,10 @@ tr:nth-child(even) { background-color: #dddddd; }
 <div class="yield-section">
 
 <span id="Yields"></span>
-<h2>Rates &amp; Inflation</h2>
+<h2>Yields</h2>
 
 <p>
-Daily interest-rate yields in the charts are derived from central-bank and public market data covering historical periods to date, starting in 1962 for the Fed (USD), 1970 for the BOC (CAD), 2004 for the ECB (EUR), 1979 for the BOE (GBP), 1974 for the MOF (JPY), and 1988 for the SNB (CHF). For the United States, the page also shows the market-implied average inflation rate expected over the next 10 years.
+Daily interest rate yields in the charts are derived from Central Bank data covering historical periods to date, starting in 1962 for the  Fed (USD), 1970  BOC (CAD),  2004 ECB (EUR),  1979 BOE (GBP), 1974  MOF (JPY), and 1988  SNB (CHF).  
 </p>
 <small>Explanation of some peaks and troughs: The oil embargo of 1973-1974 resulted in high inflation, capped  by Paul Volcker by 19% rates in 1979. A 16 month US Recession lasted from July 1981 to Nov 1982. During the dot-com era, in early 2000, the U.S. Federal Reserve raised  rates modestly to curb investment.  In 2002, Nasdaq fell -77% from 5048 to 1139.  During 2007-08 (Financial Crisis, Lehman Brothers default, Sub-prime loans) the US housing market collapsed and an 18 month US Great recession ensued from Dec 2007 to June 2009.  Quantitative easing followed between 2008 and 2014 after which Fed Rates started to rise however Covid 19 led to near zero and negative rates in some countries.  Raising of the rates to 2023 led to topping of the housing markets recently .</small>
 </p>
@@ -92,7 +92,7 @@ Daily interest-rate yields in the charts are derived from central-bank and publi
 </div>
 
 <p class="yield-note">
-USD data source: RiskSnap Cloud Run yields endpoint using public Treasury/FRED daily constant-maturity data. The 10Y Inflation Expectations series is the market-implied average inflation rate expected over the next 10 years.
+USD data source: RiskSnap Cloud Run yields endpoint using public Treasury/FRED daily constant-maturity data. Other countries can be added later using the same endpoint structure.
 </p>
 
 </div>
@@ -107,7 +107,6 @@ USD data source: RiskSnap Cloud Run yields endpoint using public Treasury/FRED d
 const YIELDS_API_URL = "https://surface-203178530029.northamerica-northeast2.run.app/yield_history";
 const yieldTenors = ["1Y", "2Y", "3Y", "5Y", "7Y", "10Y", "20Y", "30Y"];
 const yieldMaturities = [1, 2, 3, 5, 7, 10, 20, 30];
-const inflationField = "InflationExp";
 const yieldTenorColors = {
     "1Y": "#1f77b4",
     "2Y": "#ff7f0e",
@@ -173,11 +172,6 @@ function normalizeYieldRows(payload) {
                 : Number(v);
         });
 
-        const inflationValue = r[inflationField];
-        row[inflationField] = (inflationValue === null || inflationValue === "" || inflationValue === undefined)
-            ? null
-            : Number(inflationValue);
-
         return row;
     }).filter(row =>
         row.Date &&
@@ -242,23 +236,8 @@ function drawAllTenorsHistory(country, rows) {
         });
     });
 
-    if (country.code === "USD") {
-        const inflationPoints = rows.filter(r => isFinite(r[inflationField]));
-        if (inflationPoints.length) {
-            traces.push({
-                x: inflationPoints.map(r => r.Date),
-                y: inflationPoints.map(r => r[inflationField]),
-                type: "scatter",
-                mode: "lines",
-                line: { width: 3.2, color: "#cc0000", dash: "dash" },
-                hovertemplate: "%{x}<br>10Y Inflation Expectations: %{y:.2f}%<extra></extra>",
-                name: "10Y Inflation Expectations"
-            });
-        }
-    }
-
     const layout = {
-        title: { text: country.name + (country.code === "USD" ? " rates & inflation — " : " yield history by all tenors — ") + yieldRange, x: 0.03, xanchor: "left", font: { size: 18 } },
+        title: { text: country.name + " yield history by all tenors — " + yieldRange, x: 0.03, xanchor: "left", font: { size: 18 } },
         margin: { l: 60, r: 24, t: 58, b: 52 },
         paper_bgcolor: "white",
         plot_bgcolor: "white",
@@ -266,7 +245,7 @@ function drawAllTenorsHistory(country, rows) {
         legend: { orientation: "h", x: 0.02, y: -0.18 },
         xaxis: { showgrid: true, gridcolor: "#edf1f7", zeroline: false, rangeslider: { visible: false },tickformat: "%b %d, %Y",hoverformat: "%b %d, %Y"
 	},
-        yaxis: { title: country.code === "USD" ? "Rate (%)" : "Yield (%)", showgrid: true, gridcolor: "#edf1f7", zeroline: false, tickformat: ".2f" }
+        yaxis: { title: "Yield (%)", showgrid: true, gridcolor: "#edf1f7", zeroline: false, tickformat: ".2f" }
     };
 
     Plotly.newPlot("yield_all_tenors", traces, layout, plotlyConfig());
