@@ -19,7 +19,7 @@ Changes:
 
   <div class="corr-input-panel">
     <div class="corr-controls main-controls">
-      <label for="corrPeriod"><strong>Correlation period:</strong></label>
+      <label for="corrPeriod"><strong>Lookback period:</strong></label>
       <select id="corrPeriod">
         <option value="25 Day" selected>25 Day</option>
         <option value="90 Day">90 Day</option>
@@ -107,19 +107,7 @@ Changes:
         <label>Total book value:
           <input id="portfolioBookValue" type="number" min="0" step="1000" value="100000">
         </label>
-        <button id="portfolioEqualWeight" type="button">Equal Investment</button>
-      </div>
-      <div class="portfolio-storage">
-        <label>Portfolio name:
-          <input id="portfolioName" type="text" maxlength="60" placeholder="e.g. Energy">
-        </label>
-        <select id="portfolioSavedList" aria-label="Saved portfolios">
-          <option value="">Saved portfolios</option>
-        </select>
-        <button id="portfolioSave" type="button">Save</button>
-        <button id="portfolioLoad" type="button">Load</button>
-        <button id="portfolioDelete" type="button">Delete</button>
-        <span id="portfolioStorageStatus" class="portfolio-storage-status"></span>
+        <button id="portfolioEqualWeight" type="button">Equal market value</button>
       </div>
     </div>
     <div id="portfolioSummary" class="portfolio-summary"></div>
@@ -168,7 +156,7 @@ Changes:
       </div>
     </div>
     <div id="matrixHistoryStatus" class="matrix-history-status">Loading matrix history...</div>
-    <div class="matrix-history-note">250 consecutive daily matrices are shown. Each matrix uses the selected correlation period.</div>
+    <div class="matrix-history-note">250 consecutive daily matrices are shown. Each matrix uses the selected lookback period.</div>
     <div class="matrix-history-slider-row">
       <div id="matrixHistorySliderDate" class="matrix-history-slider-date">Latest</div>
       <input id="matrixHistorySlider" type="range" min="0" max="0" value="0" aria-label="Correlation matrix history slider">
@@ -333,14 +321,12 @@ h1 { color: white; text-align: center; background-color: #3A5FCD; }
 .portfolio-title { font-size:18px; font-weight:700; color:#222; }
 .portfolio-note { margin-top:3px; color:#666; font-size:12px; }
 .portfolio-controls { display:flex; align-items:center; gap:10px; flex-wrap:wrap; font-size:13px; }
-.portfolio-storage { display:flex; align-items:center; gap:8px; flex-wrap:wrap; width:100%; margin-top:7px; font-size:13px; }
-#portfolioName { width:150px; padding:4px 6px; }
-#portfolioSavedList { min-width:155px; padding:4px 6px; }
-.portfolio-storage-status { color:#555; font-size:12px; min-height:1em; }
 #portfolioBookValue { width:130px; padding:4px 6px; }
-#portfolioEqualWeight, #portfolioSave, #portfolioLoad, #portfolioDelete { cursor:pointer; border:1px solid #aaa; border-radius:4px; background:#fff; padding:5px 9px; }
+#portfolioEqualWeight { cursor:pointer; border:1px solid #aaa; border-radius:4px; background:#fff; padding:5px 9px; }
 .portfolio-summary { margin:10px 0 6px; font-weight:600; color:#333; }
 .portfolio-summary span { display:inline-block; margin-right:18px; }
+.portfolio-summary .portfolio-gain.positive { color:#2e8b57; }
+.portfolio-summary .portfolio-gain.negative { color:#b22222; }
 .portfolio-summary .portfolio-index { color:#3A5FCD; }
 .portfolio-summary .portfolio-volatility { color:#222; }
 .portfolio-table-wrap { overflow-x:auto; }
@@ -378,7 +364,7 @@ const YAHOO_PRESETS = {
   financials: "JPM, BAC, WFC, C, GS, MS, BLK, SCHW, RY, TD",
   defensive: "PG, KO, PEP, WMT, COST, MCD, CL, GIS, KMB, MDLZ",
   crypto: "BTC-USD, ETH-USD, MSTR, COIN, MARA, RIOT, CLSK, HUT, CIFR",
-  worldtop10: "NVDA,AAPL,GOOG,MSFT,AMZN,TSMC,AVGO,2222.SR,META,SPCX"
+  worldtop10: "NVDA,AAPL,GOOG,MSFT,AMZN,TSM,AVGO,2222.SR,META,SPCX"
 };
 
 const NON_HOLDING_SYMBOLS = new Set([
@@ -388,7 +374,6 @@ const NON_HOLDING_SYMBOLS = new Set([
 ]);
 const STORAGE_KEY = "RiskSnapCorrelationSettings";
 const DEFAULTS_KEY = "RiskSnapCorrelationDefaults";
-const PORTFOLIOS_KEY = "RiskSnapSavedPortfolios";
 const ROLLING_ENDPOINT = "https://surface-203178530029.northamerica-northeast2.run.app/rolling_correlation";
 const ROLLING_MATRIX_ENDPOINT = "https://surface-203178530029.northamerica-northeast2.run.app/rolling_matrix";
 const ROLLING_VISIBLE_POINTS = 20;
@@ -429,7 +414,7 @@ document.getElementById("scaleReadout").textContent = BUBBLE_SCALE;
 function updateMatrixHistoryTitle() {
   const period = document.getElementById("corrPeriod").value;
   const title = document.getElementById("matrixHistoryTitle");
-  if (title) title.textContent = "Matrix History";
+  if (title) title.textContent = `Matrix History (${period} Lookback)`;
 }
 
 updateMatrixHistoryTitle();
@@ -461,13 +446,6 @@ document.getElementById("portfolioEqualWeight").addEventListener("click", () => 
 });
 document.getElementById("portfolioBookValue").addEventListener("input", () => {
   renderPortfolioTable();
-});
-document.getElementById("portfolioSave").addEventListener("click", savePortfolio);
-document.getElementById("portfolioLoad").addEventListener("click", loadPortfolio);
-document.getElementById("portfolioDelete").addEventListener("click", deletePortfolio);
-document.getElementById("portfolioSavedList").addEventListener("change", () => {
-  const selected = document.getElementById("portfolioSavedList").value;
-  if (selected) document.getElementById("portfolioName").value = selected;
 });
 
 document.getElementById("rollingSlider").addEventListener("input", () => renderRollingStrip());
@@ -523,7 +501,6 @@ document.getElementById("equitySymbols").addEventListener("input", debounce(() =
   scheduleCorrelationRefresh();
 }, 350));
 
-refreshSavedPortfolioList();
 fetchCorrelationData();
 renderRollingStrip();
 resetMatrixHistoryPanel();
@@ -1157,25 +1134,22 @@ function updatePortfolioSummary(totalMarketValue) {
   const summary = document.getElementById("portfolioSummary");
   if (!summary) return;
 
-  if (!Number.isFinite(Number(totalMarketValue))) {
-    totalMarketValue = currentPortfolioRows()
-      .reduce((sum, row) => sum + row.marketValue, 0);
-  }
-  totalMarketValue = Number(totalMarketValue);
-
   const totalBookValue = Math.max(
     0,
     Number(document.getElementById("portfolioBookValue").value) || 0
   );
+  const gainLoss = totalMarketValue - totalBookValue;
   const indexLevel = totalBookValue > 0
     ? 100 * totalMarketValue / totalBookValue
     : null;
   const volatility = calculatePortfolioVolatility(portfolioRiskPayload);
+  const gainClass = gainLoss >= 0 ? "positive" : "negative";
 
   summary.innerHTML =
-    `<span>Total book value: ${formatMoney(totalBookValue)}</span>` +
+    `<span>Book value: ${formatMoney(totalBookValue)}</span>` +
     `<span>Current value: ${formatMoney(totalMarketValue)}</span>` +
-    `<span class="portfolio-index">Portfolio index: ${indexLevel === null ? "—" : indexLevel.toFixed(2)}</span>` +
+    `<span class="portfolio-gain ${gainClass}">Gain/loss: ${formatSignedMoney(gainLoss)}</span>` +
+    `<span class="portfolio-index">Index: ${indexLevel === null ? "—" : indexLevel.toFixed(2)}</span>` +
     `<span class="portfolio-volatility">Portfolio volatility: ${volatility === null ? "—" : (volatility * 100).toFixed(2) + "%"}</span>`;
 }
 
@@ -1228,6 +1202,18 @@ function renderPortfolioTable() {
   if (totalValueCell) totalValueCell.textContent = formatMoney(totalMarketValue);
   if (totalWeightCell) totalWeightCell.textContent = totalMarketValue > 0 ? "100.00%" : "0.00%";
   updatePortfolioSummary(totalMarketValue);
+}
+
+function formatSignedMoney(value) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return "—";
+  const sign = n > 0 ? "+" : "";
+  return sign + n.toLocaleString(undefined, {
+    style: "currency",
+    currency: "USD",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  });
 }
 
 function formatMoney(value) {
