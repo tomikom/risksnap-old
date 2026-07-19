@@ -107,8 +107,7 @@ Changes:
         <label>Portfolio value:
           <input id="portfolioValue" type="number" min="0" step="1000" value="100000">
         </label>
-        <button id="portfolioEqualWeight" type="button">Equal weights</button>
-        <button id="portfolioNormalize" type="button">Normalize to 100%</button>
+        <button id="portfolioEqualWeight" type="button">Equal market value</button>
       </div>
     </div>
     <div id="portfolioSummary" class="portfolio-summary"></div>
@@ -323,20 +322,14 @@ h1 { color: white; text-align: center; background-color: #3A5FCD; }
 .portfolio-note { margin-top:3px; color:#666; font-size:12px; }
 .portfolio-controls { display:flex; align-items:center; gap:10px; flex-wrap:wrap; font-size:13px; }
 #portfolioValue { width:120px; padding:4px 6px; }
-#portfolioEqualWeight, #portfolioNormalize { cursor:pointer; border:1px solid #aaa; border-radius:4px; background:#fff; padding:5px 9px; }
+#portfolioEqualWeight { cursor:pointer; border:1px solid #aaa; border-radius:4px; background:#fff; padding:5px 9px; }
 .portfolio-summary { margin:10px 0 6px; font-weight:600; color:#333; }
-.portfolio-summary .weight-ok { color:#2e8b57; }
-.portfolio-summary .weight-warning { color:#b22222; }
-.portfolio-summary .portfolio-volatility { margin-left:16px; color:#222; }
 .portfolio-table-wrap { overflow-x:auto; }
 .portfolio-table { width:100%; border-collapse:collapse; font-size:13px; }
 .portfolio-table th, .portfolio-table td { border-bottom:1px solid #e6e6e6; padding:7px 9px; text-align:right; white-space:nowrap; }
 .portfolio-table th:first-child, .portfolio-table td:first-child { text-align:left; }
 .portfolio-table tfoot td { font-weight:700; border-top:2px solid #999; border-bottom:0; }
 .portfolio-table input.portfolio-shares { width:110px; padding:4px 6px; text-align:right; box-sizing:border-box; }
-.portfolio-table input.portfolio-weight { width:82px; padding:4px 6px; text-align:right; box-sizing:border-box; }
-#portfolioTotalWeight.weight-ok { color:#2e8b57; }
-#portfolioTotalWeight.weight-warning { color:#b22222; }
 .portfolio-empty { color:#666; padding:10px 0; }
 
 </style>
@@ -403,10 +396,8 @@ let matrixHistoryReadyStatus = "";
 let matrixHistoryLookback = 25;
 let matrixHistoryPlayDelayMs = 250;
 let portfolioShares = {};
-let portfolioWeights = {};
 let portfolioSecurities = [];
 let portfolioPrices = {};
-let portfolioRiskPayload = null;
 let activeYahooPreset = null;
 
 
@@ -444,15 +435,11 @@ document.getElementById("portfolioJump").addEventListener("click", () => {
   if (panel) panel.scrollIntoView({ behavior: "smooth", block: "start" });
 });
 document.getElementById("portfolioEqualWeight").addEventListener("click", () => {
-  setEqualPortfolioWeights();
-  renderPortfolioTable();
-});
-document.getElementById("portfolioNormalize").addEventListener("click", () => {
-  normalizePortfolioWeights();
+  setEqualMarketValueShares();
   renderPortfolioTable();
 });
 document.getElementById("portfolioValue").addEventListener("input", () => {
-  updateSharesFromWeights();
+  setEqualMarketValueShares();
   renderPortfolioTable();
 });
 
@@ -829,8 +816,6 @@ function renderSelectedMatrixFrame() {
   document.getElementById("matrixHistoryDate").textContent = frame.date ? formatLongDate(frame.date) : `Frame ${index + 1}`;
   updateMatrixHistorySliderDate(frame, index);
   drawCorrelationChart(frame);
-  portfolioRiskPayload = frame;
-  updatePortfolioSummary();
   updateSelectedPairStatsFromMatrixFrame(frame);
 }
 
@@ -1042,7 +1027,6 @@ function initializePortfolio(payload, selectedEquities) {
   const prices = payload && payload.prices ? payload.prices : [];
   const equitySet = new Set((selectedEquities || []).map(normalizeDisplaySymbol));
 
-  portfolioRiskPayload = payload;
   portfolioSecurities = assets.filter(asset => {
     const normalized = normalizeDisplaySymbol(asset);
     return equitySet.has(normalized) && !NON_HOLDING_SYMBOLS.has(normalized);
@@ -1054,133 +1038,32 @@ function initializePortfolio(payload, selectedEquities) {
     if (Number.isFinite(price) && price > 0) portfolioPrices[asset] = price;
   });
 
+  // Remove holdings that are no longer selected.
   Object.keys(portfolioShares).forEach(asset => {
     if (!portfolioSecurities.includes(asset)) delete portfolioShares[asset];
   });
-  Object.keys(portfolioWeights).forEach(asset => {
-    if (!portfolioSecurities.includes(asset)) delete portfolioWeights[asset];
-  });
 
-  const missingWeight = portfolioSecurities.some(asset =>
-    !Number.isFinite(Number(portfolioWeights[asset]))
+  // On first load, or for newly added securities, establish equal market values.
+  const missingShares = portfolioSecurities.some(asset =>
+    !Number.isFinite(Number(portfolioShares[asset]))
   );
-  if (missingWeight || !Object.keys(portfolioWeights).length) {
-    setEqualPortfolioWeights();
-  } else {
-    updateSharesFromWeights();
+  if (missingShares || !Object.keys(portfolioShares).length) {
+    setEqualMarketValueShares();
   }
 
   renderPortfolioTable();
 }
 
-function setEqualPortfolioWeights() {
+function setEqualMarketValueShares() {
   const valid = portfolioSecurities.filter(asset =>
     Number.isFinite(Number(portfolioPrices[asset])) && Number(portfolioPrices[asset]) > 0
   );
-  const equalWeight = valid.length ? 100 / valid.length : 0;
-  valid.forEach(asset => {
-    portfolioWeights[asset] = equalWeight;
-  });
-  updateSharesFromWeights();
-}
-
-function normalizePortfolioWeights() {
-  const valid = portfolioSecurities.filter(asset =>
-    Number.isFinite(Number(portfolioPrices[asset])) && Number(portfolioPrices[asset]) > 0
-  );
-  const total = valid.reduce((sum, asset) => sum + Math.max(0, Number(portfolioWeights[asset]) || 0), 0);
-  if (total <= 0) {
-    setEqualPortfolioWeights();
-    return;
-  }
-  valid.forEach(asset => {
-    portfolioWeights[asset] = Math.max(0, Number(portfolioWeights[asset]) || 0) * 100 / total;
-  });
-  updateSharesFromWeights();
-}
-
-function updateSharesFromWeights() {
   const totalTarget = Math.max(0, Number(document.getElementById("portfolioValue").value) || 0);
-  portfolioSecurities.forEach(asset => {
-    const price = Number(portfolioPrices[asset]);
-    const weightPct = Math.max(0, Number(portfolioWeights[asset]) || 0);
-    if (Number.isFinite(price) && price > 0) {
-      portfolioShares[asset] = totalTarget * (weightPct / 100) / price;
-    }
+  const targetPerSecurity = valid.length ? totalTarget / valid.length : 0;
+
+  valid.forEach(asset => {
+    portfolioShares[asset] = targetPerSecurity / Number(portfolioPrices[asset]);
   });
-}
-
-function updateWeightFromShares(asset) {
-  const totalTarget = Math.max(0, Number(document.getElementById("portfolioValue").value) || 0);
-  const price = Number(portfolioPrices[asset]);
-  const shares = Math.max(0, Number(portfolioShares[asset]) || 0);
-  portfolioWeights[asset] = totalTarget > 0 && Number.isFinite(price)
-    ? (price * shares / totalTarget) * 100
-    : 0;
-}
-
-function portfolioCorrelation(payload, i, j) {
-  if (i === j) return 1;
-  const a = Math.min(i, j);
-  const b = Math.max(i, j);
-  const value = payload && payload.matrix && payload.matrix[a]
-    ? Number(payload.matrix[a][b])
-    : NaN;
-  return Number.isFinite(value) ? value : null;
-}
-
-function calculatePortfolioVolatility(payload) {
-  if (!payload || !payload.assets || !payload.volatility) return null;
-  const totalWeight = portfolioSecurities.reduce(
-    (sum, asset) => sum + Math.max(0, Number(portfolioWeights[asset]) || 0), 0
-  );
-  if (Math.abs(totalWeight - 100) > 0.01) return null;
-
-  const positions = portfolioSecurities.map(asset => {
-    const index = payload.assets.indexOf(asset);
-    const volatility = index >= 0 ? Number(payload.volatility[index]) : NaN;
-    const weight = Math.max(0, Number(portfolioWeights[asset]) || 0) / 100;
-    return { asset, index, volatility, weight };
-  });
-
-  if (positions.some(p => p.index < 0 || !Number.isFinite(p.volatility))) return null;
-
-  let variance = 0;
-  for (let i = 0; i < positions.length; i++) {
-    for (let j = 0; j < positions.length; j++) {
-      const corr = portfolioCorrelation(payload, positions[i].index, positions[j].index);
-      if (corr === null) return null;
-      variance += positions[i].weight * positions[j].weight
-        * positions[i].volatility * positions[j].volatility * corr;
-    }
-  }
-  return variance >= 0 ? Math.sqrt(variance) : null;
-}
-
-function updatePortfolioSummary() {
-  const summary = document.getElementById("portfolioSummary");
-  const totalWeightCell = document.getElementById("portfolioTotalWeight");
-  if (!summary) return;
-
-  const totalWeight = portfolioSecurities.reduce(
-    (sum, asset) => sum + Math.max(0, Number(portfolioWeights[asset]) || 0), 0
-  );
-  const isBalanced = Math.abs(totalWeight - 100) <= 0.01;
-  const volatility = calculatePortfolioVolatility(portfolioRiskPayload);
-  const weightClass = isBalanced ? "weight-ok" : "weight-warning";
-  const weightMark = isBalanced ? " ✓" : "";
-  const volatilityText = volatility === null
-    ? "Portfolio volatility: —"
-    : `Portfolio volatility: ${(volatility * 100).toFixed(2)}%`;
-
-  summary.innerHTML = `<span class="${weightClass}">Total weight: ${totalWeight.toFixed(2)}%${weightMark}</span>`
-    + `<span class="portfolio-volatility">${volatilityText}</span>`;
-
-  if (totalWeightCell) {
-    totalWeightCell.textContent = `${totalWeight.toFixed(2)}%`;
-    totalWeightCell.classList.toggle("weight-ok", isBalanced);
-    totalWeightCell.classList.toggle("weight-warning", !isBalanced);
-  }
 }
 
 function renderPortfolioTable() {
@@ -1203,50 +1086,43 @@ function renderPortfolioTable() {
     return;
   }
 
-  const totalTarget = Math.max(0, Number(document.getElementById("portfolioValue").value) || 0);
   const rows = valid.map(asset => {
     const price = Number(portfolioPrices[asset]);
-    const weightPct = Math.max(0, Number(portfolioWeights[asset]) || 0);
     const shares = Math.max(0, Number(portfolioShares[asset]) || 0);
-    return { asset, price, weightPct, shares, marketValue: price * shares };
+    return { asset, price, shares, marketValue: price * shares };
   });
   const totalMarketValue = rows.reduce((sum, row) => sum + row.marketValue, 0);
 
   rows.forEach(row => {
     const tr = document.createElement("tr");
+    const weight = totalMarketValue > 0 ? row.marketValue / totalMarketValue : 0;
     tr.innerHTML = `
       <td>${displayAsset(row.asset)}</td>
       <td>${formatMoney(row.price)}</td>
       <td><input class="portfolio-shares" data-asset="${row.asset}" type="number" min="0" step="0.0001" value="${formatShares(row.shares)}"></td>
       <td>${formatMoney(row.marketValue)}</td>
-      <td><input class="portfolio-weight" data-asset="${row.asset}" type="number" min="0" step="0.01" value="${row.weightPct.toFixed(2)}">%</td>
+      <td>${(weight * 100).toFixed(2)}%</td>
     `;
     body.appendChild(tr);
   });
 
   body.querySelectorAll(".portfolio-shares").forEach(input => {
-    const commit = () => {
+    input.addEventListener("change", () => {
       portfolioShares[input.dataset.asset] = Math.max(0, Number(input.value) || 0);
-      updateWeightFromShares(input.dataset.asset);
       renderPortfolioTable();
-    };
-    input.addEventListener("change", commit);
-    input.addEventListener("blur", commit);
-  });
-
-  body.querySelectorAll(".portfolio-weight").forEach(input => {
-    const commit = () => {
-      portfolioWeights[input.dataset.asset] = Math.max(0, Number(input.value) || 0);
-      updateSharesFromWeights();
+    });
+    input.addEventListener("blur", () => {
+      portfolioShares[input.dataset.asset] = Math.max(0, Number(input.value) || 0);
       renderPortfolioTable();
-    };
-    input.addEventListener("change", commit);
-    input.addEventListener("blur", commit);
+    });
   });
 
   const totalValueCell = document.getElementById("portfolioTotalMarketValue");
+  const totalWeightCell = document.getElementById("portfolioTotalWeight");
   if (totalValueCell) totalValueCell.textContent = formatMoney(totalMarketValue);
-  updatePortfolioSummary();
+  if (totalWeightCell) totalWeightCell.textContent = totalMarketValue > 0 ? "100.00%" : "0.00%";
+
+  summary.textContent = `${rows.length} securities`;
 }
 
 function formatMoney(value) {
