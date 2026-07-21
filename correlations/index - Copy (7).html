@@ -19,7 +19,7 @@ Changes:
 
   <div class="corr-input-panel">
     <div class="corr-controls main-controls">
-      <label for="corrPeriod"><strong>Lookback period:</strong></label>
+      <label for="corrPeriod"><strong>Correlation period:</strong></label>
       <select id="corrPeriod">
         <option value="25 Day" selected>25 Day</option>
         <option value="90 Day">90 Day</option>
@@ -101,13 +101,25 @@ Changes:
     <div class="portfolio-band">Portfolio Holdings</div>
     <div class="portfolio-header">
       <div>
-        <div class="portfolio-note">Tradable equities only. Indices, currencies, futures and cryptocurrencies remain in the risk matrix but are not assigned shares.</div>
+        <div class="portfolio-note">Enter the number of shares held and the portfolio’s total book value. Current weights are calculated from market values.</div>
       </div>
       <div class="portfolio-controls">
-        <label>Portfolio value:
-          <input id="portfolioValue" type="number" min="0" step="1000" value="100000">
+        <label>Total book value:
+          <input id="portfolioBookValue" type="number" min="0" step="1000" value="100000">
         </label>
-        <button id="portfolioEqualWeight" type="button">Equal market value</button>
+        <button id="portfolioEqualWeight" type="button">Equal Investment</button>
+      </div>
+      <div class="portfolio-storage">
+        <label>Portfolio name:
+          <input id="portfolioName" type="text" maxlength="60" placeholder="e.g. Energy">
+        </label>
+        <select id="portfolioSavedList" aria-label="Saved portfolios">
+          <option value="">Saved portfolios</option>
+        </select>
+        <button id="portfolioSave" type="button">Save</button>
+        <button id="portfolioLoad" type="button">Load</button>
+        <button id="portfolioDelete" type="button">Delete</button>
+        <span id="portfolioStorageStatus" class="portfolio-storage-status"></span>
       </div>
     </div>
     <div id="portfolioSummary" class="portfolio-summary"></div>
@@ -119,7 +131,7 @@ Changes:
             <th>Current price</th>
             <th>Shares</th>
             <th>Market value</th>
-            <th>Weight</th>
+            <th>Current weight</th>
           </tr>
         </thead>
         <tbody id="portfolioBody"></tbody>
@@ -156,7 +168,7 @@ Changes:
       </div>
     </div>
     <div id="matrixHistoryStatus" class="matrix-history-status">Loading matrix history...</div>
-    <div class="matrix-history-note">250 consecutive daily matrices are shown. Each matrix uses the selected lookback period.</div>
+    <div class="matrix-history-note">250 consecutive daily matrices are shown. Each matrix uses the selected correlation period.</div>
     <div class="matrix-history-slider-row">
       <div id="matrixHistorySliderDate" class="matrix-history-slider-date">Latest</div>
       <input id="matrixHistorySlider" type="range" min="0" max="0" value="0" aria-label="Correlation matrix history slider">
@@ -321,9 +333,16 @@ h1 { color: white; text-align: center; background-color: #3A5FCD; }
 .portfolio-title { font-size:18px; font-weight:700; color:#222; }
 .portfolio-note { margin-top:3px; color:#666; font-size:12px; }
 .portfolio-controls { display:flex; align-items:center; gap:10px; flex-wrap:wrap; font-size:13px; }
-#portfolioValue { width:120px; padding:4px 6px; }
-#portfolioEqualWeight { cursor:pointer; border:1px solid #aaa; border-radius:4px; background:#fff; padding:5px 9px; }
+.portfolio-storage { display:flex; align-items:center; gap:8px; flex-wrap:wrap; width:100%; margin-top:7px; font-size:13px; }
+#portfolioName { width:150px; padding:4px 6px; }
+#portfolioSavedList { min-width:155px; padding:4px 6px; }
+.portfolio-storage-status { color:#555; font-size:12px; min-height:1em; }
+#portfolioBookValue { width:130px; padding:4px 6px; }
+#portfolioEqualWeight, #portfolioSave, #portfolioLoad, #portfolioDelete { cursor:pointer; border:1px solid #aaa; border-radius:4px; background:#fff; padding:5px 9px; }
 .portfolio-summary { margin:10px 0 6px; font-weight:600; color:#333; }
+.portfolio-summary span { display:inline-block; margin-right:18px; }
+.portfolio-summary .portfolio-index { color:#3A5FCD; }
+.portfolio-summary .portfolio-volatility { color:#222; }
 .portfolio-table-wrap { overflow-x:auto; }
 .portfolio-table { width:100%; border-collapse:collapse; font-size:13px; }
 .portfolio-table th, .portfolio-table td { border-bottom:1px solid #e6e6e6; padding:7px 9px; text-align:right; white-space:nowrap; }
@@ -369,6 +388,7 @@ const NON_HOLDING_SYMBOLS = new Set([
 ]);
 const STORAGE_KEY = "RiskSnapCorrelationSettings";
 const DEFAULTS_KEY = "RiskSnapCorrelationDefaults";
+const PORTFOLIOS_KEY = "RiskSnapSavedPortfolios";
 const ROLLING_ENDPOINT = "https://surface-203178530029.northamerica-northeast2.run.app/rolling_correlation";
 const ROLLING_MATRIX_ENDPOINT = "https://surface-203178530029.northamerica-northeast2.run.app/rolling_matrix";
 const ROLLING_VISIBLE_POINTS = 20;
@@ -398,6 +418,7 @@ let matrixHistoryPlayDelayMs = 250;
 let portfolioShares = {};
 let portfolioSecurities = [];
 let portfolioPrices = {};
+let portfolioRiskPayload = null;
 let activeYahooPreset = null;
 
 
@@ -408,7 +429,7 @@ document.getElementById("scaleReadout").textContent = BUBBLE_SCALE;
 function updateMatrixHistoryTitle() {
   const period = document.getElementById("corrPeriod").value;
   const title = document.getElementById("matrixHistoryTitle");
-  if (title) title.textContent = `Matrix History (${period} Lookback)`;
+  if (title) title.textContent = "Matrix History";
 }
 
 updateMatrixHistoryTitle();
@@ -438,9 +459,15 @@ document.getElementById("portfolioEqualWeight").addEventListener("click", () => 
   setEqualMarketValueShares();
   renderPortfolioTable();
 });
-document.getElementById("portfolioValue").addEventListener("input", () => {
-  setEqualMarketValueShares();
+document.getElementById("portfolioBookValue").addEventListener("input", () => {
   renderPortfolioTable();
+});
+document.getElementById("portfolioSave").addEventListener("click", savePortfolio);
+document.getElementById("portfolioLoad").addEventListener("click", loadPortfolio);
+document.getElementById("portfolioDelete").addEventListener("click", deletePortfolio);
+document.getElementById("portfolioSavedList").addEventListener("change", () => {
+  const selected = document.getElementById("portfolioSavedList").value;
+  if (selected) document.getElementById("portfolioName").value = selected;
 });
 
 document.getElementById("rollingSlider").addEventListener("input", () => renderRollingStrip());
@@ -496,6 +523,7 @@ document.getElementById("equitySymbols").addEventListener("input", debounce(() =
   scheduleCorrelationRefresh();
 }, 350));
 
+refreshSavedPortfolioList();
 fetchCorrelationData();
 renderRollingStrip();
 resetMatrixHistoryPanel();
@@ -816,6 +844,8 @@ function renderSelectedMatrixFrame() {
   document.getElementById("matrixHistoryDate").textContent = frame.date ? formatLongDate(frame.date) : `Frame ${index + 1}`;
   updateMatrixHistorySliderDate(frame, index);
   drawCorrelationChart(frame);
+  portfolioRiskPayload = frame;
+  updatePortfolioSummary();
   updateSelectedPairStatsFromMatrixFrame(frame);
 }
 
@@ -1027,6 +1057,7 @@ function initializePortfolio(payload, selectedEquities) {
   const prices = payload && payload.prices ? payload.prices : [];
   const equitySet = new Set((selectedEquities || []).map(normalizeDisplaySymbol));
 
+  portfolioRiskPayload = payload;
   portfolioSecurities = assets.filter(asset => {
     const normalized = normalizeDisplaySymbol(asset);
     return equitySet.has(normalized) && !NON_HOLDING_SYMBOLS.has(normalized);
@@ -1038,12 +1069,10 @@ function initializePortfolio(payload, selectedEquities) {
     if (Number.isFinite(price) && price > 0) portfolioPrices[asset] = price;
   });
 
-  // Remove holdings that are no longer selected.
   Object.keys(portfolioShares).forEach(asset => {
     if (!portfolioSecurities.includes(asset)) delete portfolioShares[asset];
   });
 
-  // On first load, or for newly added securities, establish equal market values.
   const missingShares = portfolioSecurities.some(asset =>
     !Number.isFinite(Number(portfolioShares[asset]))
   );
@@ -1058,12 +1087,96 @@ function setEqualMarketValueShares() {
   const valid = portfolioSecurities.filter(asset =>
     Number.isFinite(Number(portfolioPrices[asset])) && Number(portfolioPrices[asset]) > 0
   );
-  const totalTarget = Math.max(0, Number(document.getElementById("portfolioValue").value) || 0);
-  const targetPerSecurity = valid.length ? totalTarget / valid.length : 0;
+  const totalBookValue = Math.max(
+    0,
+    Number(document.getElementById("portfolioBookValue").value) || 0
+  );
+  const targetPerSecurity = valid.length ? totalBookValue / valid.length : 0;
 
   valid.forEach(asset => {
     portfolioShares[asset] = targetPerSecurity / Number(portfolioPrices[asset]);
   });
+}
+
+function currentPortfolioRows() {
+  return portfolioSecurities
+    .filter(asset =>
+      Number.isFinite(Number(portfolioPrices[asset])) &&
+      Number(portfolioPrices[asset]) > 0
+    )
+    .map(asset => {
+      const price = Number(portfolioPrices[asset]);
+      const shares = Math.max(0, Number(portfolioShares[asset]) || 0);
+      return { asset, price, shares, marketValue: price * shares };
+    });
+}
+
+function portfolioCorrelation(payload, i, j) {
+  if (i === j) return 1;
+  const a = Math.min(i, j);
+  const b = Math.max(i, j);
+  const value = payload && payload.matrix && payload.matrix[a]
+    ? Number(payload.matrix[a][b])
+    : NaN;
+  return Number.isFinite(value) ? value : null;
+}
+
+function calculatePortfolioVolatility(payload) {
+  if (!payload || !payload.assets || !payload.volatility) return null;
+
+  const rows = currentPortfolioRows();
+  const totalMarketValue = rows.reduce((sum, row) => sum + row.marketValue, 0);
+  if (totalMarketValue <= 0) return null;
+
+  const positions = rows.map(row => {
+    const index = payload.assets.indexOf(row.asset);
+    const volatility = index >= 0 ? Number(payload.volatility[index]) : NaN;
+    return {
+      asset: row.asset,
+      index,
+      volatility,
+      weight: row.marketValue / totalMarketValue
+    };
+  });
+
+  if (positions.some(p => p.index < 0 || !Number.isFinite(p.volatility))) return null;
+
+  let variance = 0;
+  for (let i = 0; i < positions.length; i++) {
+    for (let j = 0; j < positions.length; j++) {
+      const corr = portfolioCorrelation(payload, positions[i].index, positions[j].index);
+      if (corr === null) return null;
+      variance += positions[i].weight * positions[j].weight
+        * positions[i].volatility * positions[j].volatility * corr;
+    }
+  }
+  return variance >= 0 ? Math.sqrt(variance) : null;
+}
+
+function updatePortfolioSummary(totalMarketValue) {
+  const summary = document.getElementById("portfolioSummary");
+  if (!summary) return;
+
+  if (!Number.isFinite(Number(totalMarketValue))) {
+    totalMarketValue = currentPortfolioRows()
+      .reduce((sum, row) => sum + row.marketValue, 0);
+  }
+  totalMarketValue = Number(totalMarketValue);
+
+  const totalBookValue = Math.max(
+    0,
+    Number(document.getElementById("portfolioBookValue").value) || 0
+  );
+  const indexLevel = totalBookValue > 0
+    ? 100 * totalMarketValue / totalBookValue
+    : null;
+  const volatility = calculatePortfolioVolatility(portfolioRiskPayload);
+
+  summary.innerHTML =
+    `<span>Total book value: ${formatMoney(totalBookValue)}</span>` +
+    `<span>Current value: ${formatMoney(totalMarketValue)}</span>` +
+    `<span class="portfolio-index">Portfolio index: ${indexLevel === null ? "—" : indexLevel.toFixed(2)}</span>` +
+    `<span class="portfolio-volatility">Portfolio volatility: ${volatility === null ? "—" : (volatility * 100).toFixed(2) + "%"}</span>`;
 }
 
 function renderPortfolioTable() {
@@ -1072,11 +1185,9 @@ function renderPortfolioTable() {
   if (!body || !summary) return;
 
   body.innerHTML = "";
-  const valid = portfolioSecurities.filter(asset =>
-    Number.isFinite(Number(portfolioPrices[asset])) && Number(portfolioPrices[asset]) > 0
-  );
+  const rows = currentPortfolioRows();
 
-  if (!valid.length) {
+  if (!rows.length) {
     summary.textContent = "";
     body.innerHTML = '<tr><td colspan="5" class="portfolio-empty">No selected securities with current prices are available.</td></tr>';
     const totalValueCell = document.getElementById("portfolioTotalMarketValue");
@@ -1086,43 +1197,37 @@ function renderPortfolioTable() {
     return;
   }
 
-  const rows = valid.map(asset => {
-    const price = Number(portfolioPrices[asset]);
-    const shares = Math.max(0, Number(portfolioShares[asset]) || 0);
-    return { asset, price, shares, marketValue: price * shares };
-  });
   const totalMarketValue = rows.reduce((sum, row) => sum + row.marketValue, 0);
 
   rows.forEach(row => {
+    const weightPct = totalMarketValue > 0
+      ? row.marketValue / totalMarketValue * 100
+      : 0;
     const tr = document.createElement("tr");
-    const weight = totalMarketValue > 0 ? row.marketValue / totalMarketValue : 0;
     tr.innerHTML = `
       <td>${displayAsset(row.asset)}</td>
       <td>${formatMoney(row.price)}</td>
       <td><input class="portfolio-shares" data-asset="${row.asset}" type="number" min="0" step="0.0001" value="${formatShares(row.shares)}"></td>
       <td>${formatMoney(row.marketValue)}</td>
-      <td>${(weight * 100).toFixed(2)}%</td>
+      <td>${weightPct.toFixed(2)}%</td>
     `;
     body.appendChild(tr);
   });
 
   body.querySelectorAll(".portfolio-shares").forEach(input => {
-    input.addEventListener("change", () => {
+    const commit = () => {
       portfolioShares[input.dataset.asset] = Math.max(0, Number(input.value) || 0);
       renderPortfolioTable();
-    });
-    input.addEventListener("blur", () => {
-      portfolioShares[input.dataset.asset] = Math.max(0, Number(input.value) || 0);
-      renderPortfolioTable();
-    });
+    };
+    input.addEventListener("change", commit);
+    input.addEventListener("blur", commit);
   });
 
   const totalValueCell = document.getElementById("portfolioTotalMarketValue");
   const totalWeightCell = document.getElementById("portfolioTotalWeight");
   if (totalValueCell) totalValueCell.textContent = formatMoney(totalMarketValue);
   if (totalWeightCell) totalWeightCell.textContent = totalMarketValue > 0 ? "100.00%" : "0.00%";
-
-  summary.textContent = `${rows.length} securities`;
+  updatePortfolioSummary(totalMarketValue);
 }
 
 function formatMoney(value) {
@@ -1533,10 +1638,33 @@ function formatLongDate(iso) {
 
 
 function drawLegend(svg, x, y) {
-  svg.appendChild(makeSvg("circle", { cx: x + 8, cy: y + 7, r: 7, fill: "#2f80ed", "fill-opacity": 0.62 }));
-  svg.appendChild(makeSvg("text", { x: x + 22, y: y + 11, class: "legend-text" }, "Positive correlation"));
-  svg.appendChild(makeSvg("circle", { cx: x + 8, cy: y + 31, r: 7, fill: "#f28c28", "fill-opacity": 0.62 }));
-  svg.appendChild(makeSvg("text", { x: x + 22, y: y + 35, class: "legend-text" }, "Negative correlation"));
+    svg.appendChild(makeSvg("circle", {
+        cx: x + 8,
+        cy: y + 7,
+        r: 7,
+        fill: "#2f80ed",
+        "fill-opacity": 0.62
+    }));
+
+    svg.appendChild(makeSvg("text", {
+        x: x + 22,
+        y: y + 11,
+        class: "legend-text"
+    }, "Positive correlation"));
+
+    svg.appendChild(makeSvg("circle", {
+        cx: x + 165,
+        cy: y + 7,
+        r: 7,
+        fill: "#f28c28",
+        "fill-opacity": 0.62
+    }));
+
+    svg.appendChild(makeSvg("text", {
+        x: x + 179,
+        y: y + 11,
+        class: "legend-text"
+    }, "Negative correlation"));
 }
 
 function corrColor(v) { return v >= 0 ? "#2f80ed" : "#f28c28"; }
@@ -1568,5 +1696,118 @@ function makeSvg(tag, attrs, text) {
   if (text !== undefined) el.textContent = text;
   return el;
 }
+
+
+// Saved portfolio browser storage
+function readSavedPortfolios() {
+  try {
+    const raw = localStorage.getItem(PORTFOLIOS_KEY);
+    const parsed = raw ? JSON.parse(raw) : {};
+    return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : {};
+  } catch (err) {
+    console.log("Unable to read saved portfolios.", err);
+    return {};
+  }
+}
+
+function writeSavedPortfolios(portfolios) {
+  try {
+    localStorage.setItem(PORTFOLIOS_KEY, JSON.stringify(portfolios || {}));
+    return true;
+  } catch (err) {
+    console.log("Unable to save portfolios.", err);
+    setPortfolioStorageStatus("Unable to save in this browser.");
+    return false;
+  }
+}
+
+function setPortfolioStorageStatus(message) {
+  const box = document.getElementById("portfolioStorageStatus");
+  if (box) box.textContent = message || "";
+}
+
+function refreshSavedPortfolioList(selectedName = "") {
+  const list = document.getElementById("portfolioSavedList");
+  if (!list) return;
+  const portfolios = readSavedPortfolios();
+  const names = Object.keys(portfolios).sort((a, b) => a.localeCompare(b));
+  list.innerHTML = '<option value="">Saved portfolios</option>';
+  names.forEach(name => {
+    const option = document.createElement("option");
+    option.value = name;
+    option.textContent = name;
+    list.appendChild(option);
+  });
+  if (selectedName && portfolios[selectedName]) list.value = selectedName;
+}
+
+function savePortfolio() {
+  const nameInput = document.getElementById("portfolioName");
+  const name = String(nameInput ? nameInput.value : "").trim();
+  if (!name) {
+    setPortfolioStorageStatus("Enter a portfolio name first.");
+    if (nameInput) nameInput.focus();
+    return;
+  }
+
+  const holdings = {};
+  portfolioSecurities.forEach(asset => {
+    const shares = Math.max(0, Number(portfolioShares[asset]) || 0);
+    holdings[asset] = shares;
+  });
+
+  const portfolios = readSavedPortfolios();
+  portfolios[name] = {
+    name,
+    securities: portfolioSecurities.slice(),
+    shares: holdings,
+    bookValue: Math.max(0, Number(document.getElementById("portfolioBookValue").value) || 0)
+  };
+
+  if (!writeSavedPortfolios(portfolios)) return;
+  refreshSavedPortfolioList(name);
+  setPortfolioStorageStatus(`Saved “${name}”.`);
+}
+
+function loadPortfolio() {
+  const list = document.getElementById("portfolioSavedList");
+  const nameInput = document.getElementById("portfolioName");
+  const name = String((list && list.value) || (nameInput && nameInput.value) || "").trim();
+  const portfolios = readSavedPortfolios();
+  const saved = portfolios[name];
+  if (!saved) {
+    setPortfolioStorageStatus("Select a saved portfolio first.");
+    return;
+  }
+
+  const securities = Array.isArray(saved.securities) ? saved.securities.map(normalizeDisplaySymbol) : Object.keys(saved.shares || {});
+  document.getElementById("equitySymbols").value = securities.join(", ");
+  activeYahooPreset = matchingPresetKey(document.getElementById("equitySymbols").value);
+  updatePresetHighlight();
+  document.getElementById("portfolioBookValue").value = Number(saved.bookValue) || 0;
+  portfolioShares = { ...(saved.shares || {}) };
+  if (nameInput) nameInput.value = name;
+  saveCurrentSettings();
+  updateSaveDefaultsState();
+  setPortfolioStorageStatus(`Loading “${name}”...`);
+  fetchCorrelationData().then(() => setPortfolioStorageStatus(`Loaded “${name}”.`));
+}
+
+function deletePortfolio() {
+  const list = document.getElementById("portfolioSavedList");
+  const nameInput = document.getElementById("portfolioName");
+  const name = String((list && list.value) || (nameInput && nameInput.value) || "").trim();
+  const portfolios = readSavedPortfolios();
+  if (!name || !portfolios[name]) {
+    setPortfolioStorageStatus("Select a saved portfolio first.");
+    return;
+  }
+  delete portfolios[name];
+  if (!writeSavedPortfolios(portfolios)) return;
+  if (nameInput) nameInput.value = "";
+  refreshSavedPortfolioList();
+  setPortfolioStorageStatus(`Deleted “${name}”.`);
+}
+
 function debounce(fn, ms) { let t; return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), ms); }; }
 </script>
