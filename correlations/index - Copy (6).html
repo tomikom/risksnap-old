@@ -434,7 +434,6 @@ let portfolioCurrentPrices = {};
 let portfolioRiskPayload = null;
 let portfolioViewMode = "current"; // "current" or "historical"
 let portfolioPriceTimestamp = null;
-let portfolioPriceLastAttempt = null;
 let portfolioPriceRefreshSignature = "";
 let portfolioPriceRefreshInProgress = false;
 let activeYahooPreset = null;
@@ -1205,29 +1204,15 @@ function parseLatestPriceResponse(data) {
   return result;
 }
 
-function latestPriceTimestampFromResponse(data) {
-  const candidate = data && (data.timestamp || data.as_of || data.asOf || data.updated_at || data.updatedAt);
-  if (!candidate) return new Date();
-  const parsed = new Date(candidate);
-  return Number.isNaN(parsed.getTime()) ? new Date() : parsed;
-}
-
 async function refreshPortfolioPrices() {
   if (portfolioPriceRefreshInProgress || !portfolioSecurities.length) return;
   const button = document.getElementById("portfolioRefreshPrices");
   const label = button ? button.querySelector(".portfolio-refresh-label") : null;
   const status = document.getElementById("portfolioPriceStatus");
-
-  // Refresh always returns the portfolio to current MTM mode. The button is
-  // disabled only while the download itself is running.
-  portfolioViewMode = "current";
-  portfolioPrices = { ...portfolioCurrentPrices };
-  portfolioPriceLastAttempt = new Date();
   portfolioPriceRefreshInProgress = true;
   if (button) { button.disabled = true; button.classList.add("is-loading"); }
   if (label) label.textContent = "Refreshing...";
-  if (status) status.textContent = `Downloading latest prices at ${formatPriceTimestamp(portfolioPriceLastAttempt)}...`;
-  updatePortfolioDataLabels();
+  if (status) status.textContent = "Downloading latest prices...";
 
   try {
     const response = await fetch(LATEST_PRICES_ENDPOINT, {
@@ -1247,28 +1232,22 @@ async function refreshPortfolioPrices() {
         failed.push(asset);
       }
     });
-    if (failed.length === portfolioSecurities.length) {
-      throw new Error("No current prices were returned.");
-    }
     portfolioCurrentPrices = nextPrices;
-    portfolioPrices = { ...portfolioCurrentPrices };
-    portfolioPriceTimestamp = latestPriceTimestampFromResponse(data);
+    portfolioPriceTimestamp = new Date();
+    if (portfolioViewMode === "current") portfolioPrices = { ...portfolioCurrentPrices };
     renderPortfolioTable();
     updatePortfolioDataLabels();
     if (status) status.textContent = failed.length
-      ? `Updated ${portfolioSecurities.length - failed.length} of ${portfolioSecurities.length} at ${formatPriceTimestamp(portfolioPriceTimestamp)}; using the previous price for ${failed.join(", ")}.`
-      : `Updated ${portfolioSecurities.length} prices at ${formatPriceTimestamp(portfolioPriceTimestamp)}.`;
+      ? `Updated ${portfolioSecurities.length - failed.length} of ${portfolioSecurities.length}; using previous price for ${failed.join(", ")}.`
+      : `Updated ${portfolioSecurities.length} prices.`;
   } catch (err) {
-    portfolioPrices = { ...portfolioCurrentPrices };
-    renderPortfolioTable();
+    if (status) status.textContent = `Latest prices unavailable; using previous EOD prices. ${err.message}`;
     updatePortfolioDataLabels();
-    if (status) status.textContent = `Refresh failed at ${formatPriceTimestamp(portfolioPriceLastAttempt)}; using the latest available EOD prices. ${err.message}`;
   } finally {
     portfolioPriceRefreshInProgress = false;
     if (button) {
-      button.disabled = false;
+      button.disabled = portfolioViewMode === "historical";
       button.classList.remove("is-loading");
-      button.title = "Download the latest available prices.";
     }
     if (label) label.textContent = "Refresh Prices";
   }
@@ -1292,24 +1271,18 @@ function updatePortfolioDataLabels() {
   const historical = portfolioViewMode === "historical";
 
   if (priceTime) {
-    if (historical && portfolioRiskPayload && portfolioRiskPayload.date) {
-      priceTime.textContent = `${formatLongDate(portfolioRiskPayload.date)} Close`;
-    } else if (portfolioPriceTimestamp) {
-      priceTime.textContent = formatPriceTimestamp(portfolioPriceTimestamp);
-    } else if (portfolioRiskPayload && portfolioRiskPayload.date) {
-      priceTime.textContent = `${formatLongDate(portfolioRiskPayload.date)} Close (EOD fallback)`;
-    } else {
-      priceTime.textContent = "Not refreshed";
-    }
+    priceTime.textContent = historical && portfolioRiskPayload && portfolioRiskPayload.date
+      ? `${formatLongDate(portfolioRiskPayload.date)} Close`
+      : formatPriceTimestamp(portfolioPriceTimestamp);
   }
   if (riskDate) riskDate.textContent = portfolioRiskPayload && portfolioRiskPayload.date
     ? `${formatLongDate(portfolioRiskPayload.date)} Close`
     : "Latest completed EOD";
   if (priceHeading) priceHeading.textContent = historical ? "EOD price" : "Latest price";
-  if (refreshButton) {
-    refreshButton.disabled = portfolioPriceRefreshInProgress;
-    refreshButton.title = portfolioPriceRefreshInProgress
-      ? "Price refresh is in progress."
+  if (refreshButton && !portfolioPriceRefreshInProgress) {
+    refreshButton.disabled = historical;
+    refreshButton.title = historical
+      ? "Press Latest to return to current prices before refreshing."
       : "Download the latest available prices.";
   }
 }
