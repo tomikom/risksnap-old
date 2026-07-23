@@ -1262,7 +1262,7 @@ async function refreshPortfolioPrices() {
     portfolioPrices = { ...portfolioCurrentPrices };
     renderPortfolioTable();
     updatePortfolioDataLabels();
-    if (status) status.textContent = `Refresh failed at ${formatPriceTimestamp(portfolioPriceLastAttempt)}; live quotes unavailable, using the latest available EOD prices.`;
+    if (status) status.textContent = `Refresh failed at ${formatPriceTimestamp(portfolioPriceLastAttempt)}; using the latest available EOD prices. ${err.message}`;
   } finally {
     portfolioPriceRefreshInProgress = false;
     if (button) {
