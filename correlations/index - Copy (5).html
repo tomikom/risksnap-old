@@ -1984,32 +1984,16 @@ function savePortfolio() {
   }
 
   const portfolios = readSavedPortfolios();
-  const existingName = Object.keys(portfolios).find(
-    savedName => savedName.toLowerCase() === name.toLowerCase()
-  );
-  const saveName = existingName || name;
-
-  if (existingName) {
-    const confirmed = window.confirm(
-      `A portfolio named “${existingName}” already exists. Replace it with the current holdings?`
-    );
-    if (!confirmed) {
-      setPortfolioStorageStatus("Save cancelled; the existing portfolio was not changed.");
-      return;
-    }
-  }
-
-  portfolios[saveName] = {
-    name: saveName,
+  portfolios[name] = {
+    name,
     securities: heldSecurities,
     shares: holdings,
     bookValue: Math.max(0, Number(document.getElementById("portfolioBookValue").value) || 0)
   };
 
   if (!writeSavedPortfolios(portfolios)) return;
-  if (nameInput) nameInput.value = saveName;
-  refreshSavedPortfolioList(saveName);
-  setPortfolioStorageStatus(existingName ? `Replaced “${saveName}”.` : `Saved “${saveName}”.`);
+  refreshSavedPortfolioList(name);
+  setPortfolioStorageStatus(`Saved “${name}”.`);
 }
 
 function loadPortfolio() {
