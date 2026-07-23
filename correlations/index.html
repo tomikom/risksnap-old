@@ -101,16 +101,13 @@ Changes:
     <div class="portfolio-band">Portfolio Holdings</div>
     <div class="portfolio-header">
       <div>
-        <div class="portfolio-note">Enter the number of shares held and the portfolio’s total book value. Weights are recalculated from EOD market values for the selected date.</div>
+        <div class="portfolio-note">Enter the actual number of shares held and the portfolio’s total book value. Current weights are recalculated from EOD market values. Use Equal Investment only when you want RiskSnap to calculate equal-value share quantities.</div>
       </div>
       <div class="portfolio-controls">
-        <label>Creation date:
-          <input id="portfolioCreationDate" type="date">
-        </label>
         <label>Total book value:
           <input id="portfolioBookValue" type="number" min="0" step="1000" value="100000">
         </label>
-        <button id="portfolioEqualWeight" type="button">Equal Investment</button>
+        <button id="portfolioEqualWeight" type="button">Set Equal Investment</button>
       </div>
       <div class="portfolio-storage">
         <label>Portfolio name:
@@ -341,7 +338,6 @@ h1 { color: white; text-align: center; background-color: #3A5FCD; }
 #portfolioSavedList { min-width:155px; padding:4px 6px; }
 .portfolio-storage-status { color:#555; font-size:12px; min-height:1em; }
 #portfolioBookValue { width:130px; padding:4px 6px; }
-#portfolioCreationDate { width:145px; padding:4px 6px; }
 #portfolioEqualWeight, #portfolioSave, #portfolioLoad, #portfolioDelete { cursor:pointer; border:1px solid #aaa; border-radius:4px; background:#fff; padding:5px 9px; }
 .portfolio-summary { margin:10px 0 6px; font-weight:600; color:#333; }
 .portfolio-summary span { display:inline-block; margin-right:18px; }
@@ -465,9 +461,6 @@ document.getElementById("portfolioEqualWeight").addEventListener("click", () => 
 });
 document.getElementById("portfolioBookValue").addEventListener("input", () => {
   renderPortfolioTable();
-});
-document.getElementById("portfolioCreationDate").addEventListener("change", () => {
-  setPortfolioStorageStatus("");
 });
 document.getElementById("portfolioSave").addEventListener("click", savePortfolio);
 document.getElementById("portfolioLoad").addEventListener("click", loadPortfolio);
@@ -1087,12 +1080,11 @@ function initializePortfolio(payload, selectedEquities) {
     if (!portfolioSecurities.includes(asset)) delete portfolioShares[asset];
   });
 
-  const missingShares = portfolioSecurities.some(asset =>
-    !Number.isFinite(Number(portfolioShares[asset]))
-  );
-  if (missingShares || !Object.keys(portfolioShares).length) {
-    setEqualMarketValueShares();
-  }
+  // Preserve user-entered or loaded share quantities. New securities start at zero
+  // and are equal-weighted only when the user clicks Set Equal Investment.
+  portfolioSecurities.forEach(asset => {
+    if (!Number.isFinite(Number(portfolioShares[asset]))) portfolioShares[asset] = 0;
+  });
 
   renderPortfolioTable();
 }
@@ -1809,7 +1801,6 @@ function savePortfolio() {
     name,
     securities: portfolioSecurities.slice(),
     shares: holdings,
-    creationDate: document.getElementById("portfolioCreationDate").value || "",
     bookValue: Math.max(0, Number(document.getElementById("portfolioBookValue").value) || 0)
   };
 
@@ -1833,7 +1824,6 @@ function loadPortfolio() {
   document.getElementById("equitySymbols").value = securities.join(", ");
   activeYahooPreset = matchingPresetKey(document.getElementById("equitySymbols").value);
   updatePresetHighlight();
-  document.getElementById("portfolioCreationDate").value = saved.creationDate || "";
   document.getElementById("portfolioBookValue").value = Number(saved.bookValue) || 0;
   portfolioShares = { ...(saved.shares || {}) };
   if (nameInput) nameInput.value = name;
