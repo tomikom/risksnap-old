@@ -9,7 +9,7 @@ Changes:
 - Kept bubble scale unchanged, creating more overlap
 - Made Matrix History controls sticky at the bottom of the viewport
 - Existing rolling-pair panel retained
-- Added Reset, Play, Pause, and Latest controls for automatic Matrix History playback
+- Added Reset, Play, Pause,  and Latest controls for automatic Matrix History playback
 - Clarified that the same 20 matrix dates are shown for every lookback, while each matrix uses the selected lookback
 -->
 
@@ -1418,13 +1418,13 @@ function renderPortfolioTable() {
 
   const totalMarketValue = rows.reduce((sum, row) => sum + row.marketValue, 0);
 
-  rows.forEach((row, rowIndex) => {
+  rows.forEach(row => {
     const weightPct = totalMarketValue > 0
       ? row.marketValue / totalMarketValue * 100
       : 0;
     const tr = document.createElement("tr");
     tr.innerHTML = `
-      <td>${rowIndex + 1}. ${displayAsset(row.asset)}</td>
+      <td>${displayAsset(row.asset)}</td>
       <td>${formatMoney(row.price)}</td>
       <td><input class="portfolio-shares" data-asset="${row.asset}" type="number" min="0" step="0.0001" value="${formatShares(row.shares)}"></td>
       <td>${formatMoney(row.marketValue)}</td>
@@ -1971,22 +1971,15 @@ function savePortfolio() {
   }
 
   const holdings = {};
-  const heldSecurities = portfolioSecurities.filter(asset => {
+  portfolioSecurities.forEach(asset => {
     const shares = Math.max(0, Number(portfolioShares[asset]) || 0);
-    if (shares <= 0) return false;
     holdings[asset] = shares;
-    return true;
   });
-
-  if (!heldSecurities.length) {
-    setPortfolioStorageStatus("Enter shares for at least one security before saving.");
-    return;
-  }
 
   const portfolios = readSavedPortfolios();
   portfolios[name] = {
     name,
-    securities: heldSecurities,
+    securities: portfolioSecurities.slice(),
     shares: holdings,
     bookValue: Math.max(0, Number(document.getElementById("portfolioBookValue").value) || 0)
   };
@@ -2007,15 +2000,7 @@ function loadPortfolio() {
     return;
   }
 
-  const savedShares = saved.shares || {};
-  const listedSecurities = Array.isArray(saved.securities)
-    ? saved.securities.map(normalizeDisplaySymbol)
-    : Object.keys(savedShares).map(normalizeDisplaySymbol);
-  // Older saved portfolios may contain every selected equity, including zero-share rows.
-  // Load only actual holdings so a five-security portfolio remains five securities.
-  const securities = listedSecurities.filter(asset =>
-    Math.max(0, Number(savedShares[asset]) || 0) > 0
-  );
+  const securities = Array.isArray(saved.securities) ? saved.securities.map(normalizeDisplaySymbol) : Object.keys(saved.shares || {});
   document.getElementById("equitySymbols").value = securities.join(", ");
   activeYahooPreset = matchingPresetKey(document.getElementById("equitySymbols").value);
   updatePresetHighlight();
