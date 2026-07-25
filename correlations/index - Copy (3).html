@@ -101,7 +101,7 @@ Changes:
     <div class="portfolio-band">Portfolio Holdings</div>
     <div class="portfolio-header">
       <div>
-        <div class="portfolio-note">Enter the actual number of shares held and the portfolio’s total book value. Holdings valuation and displayed weights use the latest downloaded prices. Portfolio volatility and Sharpe are calculated by the Python server using EOD risk data, EWMA returns, and current portfolio weights. Use Equal Investment only when you want RiskSnap to calculate equal-value share quantities.</div>
+        <div class="portfolio-note">Enter the actual number of shares held and the portfolio’s total book value. Holdings valuation and displayed weights use the latest downloaded prices. Portfolio volatility and Sharpe are calculated securely by the Python server using EOD risk data and current portfolio weights. Use Equal Investment only when you want RiskSnap to calculate equal-value share quantities.</div>
       </div>
       <div class="portfolio-controls">
         <label>Total book value:
@@ -1372,18 +1372,8 @@ function portfolioAnalyticsRequest(totalMarketValue) {
     risk: portfolioRiskPayload ? {
       assets: portfolioRiskPayload.assets || [],
       volatility: portfolioRiskPayload.volatility || [],
-      matrix: portfolioRiskPayload.matrix || [],
-      ewma_returns: portfolioRiskPayload.ewma_returns || {},
-      missing_ewma: portfolioRiskPayload.missing_ewma || [],
-      ewma_as_of: portfolioRiskPayload.ewma_as_of || null
-    } : {
-      assets: [],
-      volatility: [],
-      matrix: [],
-      ewma_returns: {},
-      missing_ewma: [],
-      ewma_as_of: null
-    }
+      matrix: portfolioRiskPayload.matrix || []
+    } : { assets: [], volatility: [], matrix: [] }
   };
 }
 
@@ -1517,7 +1507,7 @@ function updatePortfolioSummary(totalMarketValue, fromServer = false) {
     `<span>Daily change: ${dailyText}</span>` +
     `<span class="portfolio-index">Portfolio index: ${indexLevel === null ? "—" : indexLevel.toFixed(2)}</span>` +
     `<span class="portfolio-volatility">Portfolio volatility: ${volatility === null ? "—" : (volatility * 100).toFixed(2) + "%"}</span>` +
-    `<span>Sharpe: ${sharpe === null ? "—" + missingText : sharpe.toFixed(2)}</span>`;
+    `<span>Sharpe: ${sharpe === null ? "— (to be added after portfolio validation)" + missingText : sharpe.toFixed(2)}</span>`;
 }
 
 function renderPortfolioTable() {
