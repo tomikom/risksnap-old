@@ -101,7 +101,7 @@ Changes:
     <div class="portfolio-band">Portfolio Holdings</div>
     <div class="portfolio-header">
       <div>
-        <div class="portfolio-note">Enter the actual number of shares held and the portfolio’s total book value. Holdings valuation and displayed weights use the latest downloaded prices. Portfolio volatility is recalculated instantly from the loaded EOD risk matrix and displayed portfolio weights. Sharpe uses the latest EOD EWMA returns. Use Equal Investment only when you want RiskSnap to calculate equal-value share quantities.</div>
+        <div class="portfolio-note">Enter the actual number of shares held and the portfolio’s total book value. Holdings valuation and displayed weights use the latest downloaded prices. Portfolio volatility and Sharpe are calculated by the Python server using EOD risk data, EWMA returns, and current portfolio weights. Use Equal Investment only when you want RiskSnap to calculate equal-value share quantities.</div>
       </div>
       <div class="portfolio-controls">
         <label>Total book value:
@@ -405,6 +405,7 @@ const ROLLING_MATRIX_ENDPOINT = "https://surface-203178530029.northamerica-north
 const LATEST_PRICES_ENDPOINT = "https://surface-203178530029.northamerica-northeast2.run.app/latest_prices";
 const ROLLING_VISIBLE_POINTS = 20;
 const MATRIX_HISTORY_REQUEST_FRAMES = { 25: 250, 90: 250, 250: 250 };
+const PORTFOLIO_ANALYTICS_ENDPOINT = "https://surface-203178530029.northamerica-northeast2.run.app/portfolio_analytics";
 const SHARPE_RISK_FREE_RATE = 0.0411;
 const FACTORY_DEFAULTS = {
   period: "25 Day",
@@ -439,6 +440,10 @@ let portfolioPriceLastAttempt = null;
 let portfolioPriceRefreshSignature = "";
 let portfolioPriceRefreshInProgress = false;
 let activeYahooPreset = null;
+let portfolioAnalyticsResult = null;
+let portfolioAnalyticsSignature = "";
+let portfolioAnalyticsLoading = false;
+let portfolioAnalyticsError = "";
 
 
 const scheduleCorrelationRefresh = debounce(fetchCorrelationData, 450);
@@ -850,9 +855,6 @@ function normalizeMatrixFrame(frame, periodLabel) {
     matrix: frame.matrix || frame.correlation || [],
     volatility: frame.volatility || [],
     prices: frame.prices || [],
-    ewma_returns: frame.ewma_returns || {},
-    missing_ewma: frame.missing_ewma || [],
-    ewma_as_of: frame.ewma_as_of || null,
     messages: frame.messages || []
   }, periodLabel);
   payload.date = frame.date || "";
@@ -1088,13 +1090,6 @@ function normalizePayload(payload, periodLabel) {
     matrix,
     volatility: volatility.slice(0, assets.length),
     prices,
-    ewma_returns: payload.ewma_returns && typeof payload.ewma_returns === "object"
-      ? { ...payload.ewma_returns }
-      : {},
-    missing_ewma: Array.isArray(payload.missing_ewma)
-      ? payload.missing_ewma.slice()
-      : [],
-    ewma_as_of: payload.ewma_as_of || null,
     messages: payload.messages || [],
     periodLabel
   };
@@ -1338,15 +1333,12 @@ function portfolioCorrelation(payload, i, j) {
 function calculatePortfolioVolatility(payload) {
   if (!payload || !payload.assets || !payload.volatility) return null;
 
-  // currentPortfolioRows() uses whichever prices are displayed:
-  // live/current prices in current mode and the selected EOD prices in
-  // historical mode. This makes slider changes instantaneous.
-  const rows = currentPortfolioRows().filter(row => row.marketValue > 0);
+  const rows = riskPortfolioRows(payload);
   const totalMarketValue = rows.reduce((sum, row) => sum + row.marketValue, 0);
   if (totalMarketValue <= 0) return null;
 
   const positions = rows.map(row => {
-    const index = payload.assets.indexOf(row.asset);
+    const index = row.index;
     const volatility = index >= 0 ? Number(payload.volatility[index]) : NaN;
     return {
       asset: row.asset,
@@ -1367,63 +1359,78 @@ function calculatePortfolioVolatility(payload) {
         * positions[i].volatility * positions[j].volatility * corr;
     }
   }
-  return variance >= -1e-12 ? Math.sqrt(Math.max(variance, 0)) : null;
+  return variance >= 0 ? Math.sqrt(variance) : null;
 }
 
-function calculatePortfolioAnalyticsLocally(totalMarketValue) {
+function portfolioAnalyticsRequest(totalMarketValue) {
   const rows = currentPortfolioRows().filter(row => row.marketValue > 0);
-  const bookValue = Math.max(
-    0,
-    Number(document.getElementById("portfolioBookValue").value) || 0
-  );
-  const marketValue = Number(totalMarketValue) || 0;
-  const volatility = calculatePortfolioVolatility(portfolioRiskPayload);
+  const bookValue = Math.max(0, Number(document.getElementById("portfolioBookValue").value) || 0);
+  return {
+    holdings: rows.map(row => ({ symbol: row.asset, shares: row.shares, price: row.price })),
+    book_value: bookValue,
+    risk_free_rate: SHARPE_RISK_FREE_RATE,
+    risk: portfolioRiskPayload ? {
+      assets: portfolioRiskPayload.assets || [],
+      volatility: portfolioRiskPayload.volatility || [],
+      matrix: portfolioRiskPayload.matrix || [],
+      ewma_returns: portfolioRiskPayload.ewma_returns || {},
+      missing_ewma: portfolioRiskPayload.missing_ewma || [],
+      ewma_as_of: portfolioRiskPayload.ewma_as_of || null
+    } : {
+      assets: [],
+      volatility: [],
+      matrix: [],
+      ewma_returns: {},
+      missing_ewma: [],
+      ewma_as_of: null
+    }
+  };
+}
 
-  let portfolioEwmaReturn = null;
-  let sharpe = null;
-  let missingEwma = [];
+function analyticsSignature(payload) {
+  return JSON.stringify(payload);
+}
 
-  // EWMA belongs to the latest EOD risk snapshot. Historical slider frames
-  // intentionally show volatility but not a historical Sharpe.
-  if (portfolioViewMode === "current" && portfolioRiskPayload) {
-    const ewma = portfolioRiskPayload.ewma_returns || {};
-    missingEwma = Array.isArray(portfolioRiskPayload.missing_ewma)
-      ? portfolioRiskPayload.missing_ewma.slice()
-      : [];
+async function refreshPortfolioAnalytics(totalMarketValue) {
+  const payload = portfolioAnalyticsRequest(totalMarketValue);
+  if (!payload.holdings.length) return;
+  const signature = analyticsSignature(payload);
+  if (portfolioAnalyticsLoading && signature === portfolioAnalyticsSignature) return;
+  portfolioAnalyticsSignature = signature;
+  portfolioAnalyticsLoading = true;
+  portfolioAnalyticsError = "";
 
-    let weightedReturn = 0;
-    let complete = rows.length > 0 && marketValue > 0;
-    rows.forEach(row => {
-      const value = Number(ewma[row.asset]);
-      if (!Number.isFinite(value)) {
-        complete = false;
-        if (!missingEwma.includes(row.asset)) missingEwma.push(row.asset);
-        return;
-      }
-      weightedReturn += (row.marketValue / marketValue) * value;
-    });
-
-    if (complete) {
-      portfolioEwmaReturn = weightedReturn;
-      if (Number.isFinite(volatility) && volatility > 0) {
-        sharpe = (weightedReturn - SHARPE_RISK_FREE_RATE) / volatility;
-      }
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000);
+    let response;
+    try {
+      response = await fetch(PORTFOLIO_ANALYTICS_ENDPOINT, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+        signal: controller.signal
+      });
+    } finally {
+      clearTimeout(timeoutId);
+    }
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || data.detail || response.statusText);
+    if (signature !== portfolioAnalyticsSignature) return;
+    portfolioAnalyticsResult = data;
+  } catch (err) {
+    if (signature !== portfolioAnalyticsSignature) return;
+    console.error("Portfolio analytics unavailable:", err);
+    portfolioAnalyticsResult = null;
+    portfolioAnalyticsError = err.name === "AbortError"
+      ? "Portfolio analytics timed out."
+      : (err.message || "Portfolio analytics unavailable");
+  } finally {
+    if (signature === portfolioAnalyticsSignature) {
+      portfolioAnalyticsLoading = false;
+      updatePortfolioSummary(totalMarketValue, true);
     }
   }
-
-  return {
-    market_value: marketValue,
-    book_value: bookValue,
-    gain_loss: marketValue - bookValue,
-    gain_loss_pct: bookValue > 0 ? (marketValue - bookValue) / bookValue : null,
-    portfolio_index: bookValue > 0 ? 100 * marketValue / bookValue : null,
-    volatility,
-    portfolio_ewma_return: portfolioEwmaReturn,
-    sharpe,
-    risk_free_rate: SHARPE_RISK_FREE_RATE,
-    ewma_as_of: portfolioRiskPayload ? portfolioRiskPayload.ewma_as_of : null,
-    missing_ewma: missingEwma
-  };
 }
 
 function portfolioMarketValueForFrame(frame) {
@@ -1460,57 +1467,57 @@ function selectedPortfolioDailyChange(totalMarketValue) {
   return { change, pct: change / previousValue };
 }
 
-function updatePortfolioSummary(totalMarketValue) {
+function updatePortfolioSummary(totalMarketValue, fromServer = false) {
   const summary = document.getElementById("portfolioSummary");
   if (!summary) return;
 
   if (!Number.isFinite(Number(totalMarketValue))) {
-    totalMarketValue = currentPortfolioRows().reduce(
-      (sum, row) => sum + row.marketValue,
-      0
-    );
+    totalMarketValue = currentPortfolioRows().reduce((sum, row) => sum + row.marketValue, 0);
   }
   totalMarketValue = Number(totalMarketValue);
+  const requestPayload = portfolioAnalyticsRequest(totalMarketValue);
+  const signature = analyticsSignature(requestPayload);
+
+  if (!fromServer && requestPayload.holdings.length && signature !== portfolioAnalyticsSignature) {
+    portfolioAnalyticsResult = null;
+    refreshPortfolioAnalytics(totalMarketValue);
+  }
 
   const daily = selectedPortfolioDailyChange(totalMarketValue);
-  const valueDate = portfolioViewMode === "historical" &&
-    portfolioRiskPayload && portfolioRiskPayload.date
-      ? formatLongDate(portfolioRiskPayload.date)
-      : (portfolioPriceTimestamp
-          ? formatPriceTimestamp(portfolioPriceTimestamp)
-          : "Latest available prices");
-
+  const valueDate = portfolioViewMode === "historical" && portfolioRiskPayload && portfolioRiskPayload.date
+    ? formatLongDate(portfolioRiskPayload.date)
+    : (portfolioPriceTimestamp ? formatPriceTimestamp(portfolioPriceTimestamp) : "Latest available prices");
   const dailyText = daily === null
     ? "—"
-    : `${daily.change >= 0 ? "+" : ""}${formatMoney(daily.change)} ` +
-      `(${daily.pct >= 0 ? "+" : ""}${(daily.pct * 100).toFixed(2)}%)`;
+    : `${daily.change >= 0 ? "+" : ""}${formatMoney(daily.change)} (${daily.pct >= 0 ? "+" : ""}${(daily.pct * 100).toFixed(2)}%)`;
 
-  const a = calculatePortfolioAnalyticsLocally(totalMarketValue);
+  if (!portfolioAnalyticsResult || signature !== portfolioAnalyticsSignature) {
+    summary.innerHTML =
+      `<span>Value date: ${valueDate}</span>` +
+      `<span>Daily change: ${dailyText}</span>` +
+      `<span>${portfolioAnalyticsError ? portfolioAnalyticsError : "Calculating portfolio analytics…"}</span>`;
+    return;
+  }
+
+  const a = portfolioAnalyticsResult;
   const gainLoss = Number(a.gain_loss);
   const gainLossPct = a.gain_loss_pct === null ? null : Number(a.gain_loss_pct);
   const indexLevel = a.portfolio_index === null ? null : Number(a.portfolio_index);
   const volatility = a.volatility === null ? null : Number(a.volatility);
   const sharpe = a.sharpe === null ? null : Number(a.sharpe);
-
-  let sharpeText = "—";
-  if (portfolioViewMode === "historical") {
-    sharpeText = "— (latest date only)";
-  } else if (Number.isFinite(sharpe)) {
-    sharpeText = sharpe.toFixed(2);
-  } else if (Array.isArray(a.missing_ewma) && a.missing_ewma.length) {
-    sharpeText = `— (insufficient EWMA history: ${a.missing_ewma.join(", ")})`;
-  }
+  const missingText = Array.isArray(a.missing_ewma) && a.missing_ewma.length
+    ? ` (insufficient EWMA history: ${a.missing_ewma.join(", ")})`
+    : "";
 
   summary.innerHTML =
     `<span>Value date: ${valueDate}</span>` +
     `<span>Total book value: ${formatMoney(Number(a.book_value))}</span>` +
     `<span>Market value: ${formatMoney(Number(a.market_value))}</span>` +
-    `<span>Gain/Loss: ${gainLoss >= 0 ? "+" : ""}${formatMoney(gainLoss)}` +
-      `${gainLossPct === null ? "" : ` (${gainLossPct >= 0 ? "+" : ""}${(gainLossPct * 100).toFixed(2)}%)`}</span>` +
+    `<span>Gain/Loss: ${gainLoss >= 0 ? "+" : ""}${formatMoney(gainLoss)}${gainLossPct === null ? "" : ` (${gainLossPct >= 0 ? "+" : ""}${(gainLossPct * 100).toFixed(2)}%)`}</span>` +
     `<span>Daily change: ${dailyText}</span>` +
     `<span class="portfolio-index">Portfolio index: ${indexLevel === null ? "—" : indexLevel.toFixed(2)}</span>` +
     `<span class="portfolio-volatility">Portfolio volatility: ${volatility === null ? "—" : (volatility * 100).toFixed(2) + "%"}</span>` +
-    `<span>Sharpe: ${sharpeText}</span>`;
+    `<span>Sharpe: ${sharpe === null ? "—" + missingText : sharpe.toFixed(2)}</span>`;
 }
 
 function renderPortfolioTable() {
