@@ -101,13 +101,13 @@ Changes:
     <div class="portfolio-band">Portfolio Holdings</div>
     <div class="portfolio-header">
       <div>
-        <div class="portfolio-note">Enter the number of shares held and the portfolio’s total book value. Current weights are calculated from market values.</div>
+        <div class="portfolio-note">Enter the actual number of shares held and the portfolio’s total book value. Holdings valuation and displayed weights use the latest downloaded prices. Portfolio volatility continues to use EOD prices and EOD weights. Use Equal Investment only when you want RiskSnap to calculate equal-value share quantities.</div>
       </div>
       <div class="portfolio-controls">
         <label>Total book value:
           <input id="portfolioBookValue" type="number" min="0" step="1000" value="100000">
         </label>
-        <button id="portfolioEqualWeight" type="button">Equal Investment</button>
+        <button id="portfolioEqualWeight" type="button">Set Equal Investment</button>
       </div>
       <div class="portfolio-storage">
         <label>Portfolio name:
@@ -123,15 +123,21 @@ Changes:
       </div>
     </div>
     <div id="portfolioSummary" class="portfolio-summary"></div>
+    <div class="portfolio-data-status">
+      <span><strong>Market Prices:</strong> <span id="portfolioPriceTimestamp">Not refreshed</span></span>
+      <button id="portfolioRefreshPrices" type="button"><span class="portfolio-refresh-label">Refresh Prices</span></button>
+      <span><strong>Risk Data:</strong> <span id="portfolioRiskDate">Latest completed EOD</span></span>
+      <span id="portfolioPriceStatus" class="portfolio-price-status"></span>
+    </div>
     <div class="portfolio-table-wrap">
       <table class="portfolio-table">
         <thead>
           <tr>
             <th>Security</th>
-            <th>Current price</th>
+            <th id="portfolioPriceHeading">Latest price</th>
             <th>Shares</th>
             <th>Market value</th>
-            <th>Current weight</th>
+            <th>Weight</th>
           </tr>
         </thead>
         <tbody id="portfolioBody"></tbody>
@@ -338,7 +344,12 @@ h1 { color: white; text-align: center; background-color: #3A5FCD; }
 #portfolioSavedList { min-width:155px; padding:4px 6px; }
 .portfolio-storage-status { color:#555; font-size:12px; min-height:1em; }
 #portfolioBookValue { width:130px; padding:4px 6px; }
-#portfolioEqualWeight, #portfolioSave, #portfolioLoad, #portfolioDelete { cursor:pointer; border:1px solid #aaa; border-radius:4px; background:#fff; padding:5px 9px; }
+#portfolioEqualWeight, #portfolioSave, #portfolioLoad, #portfolioDelete, #portfolioRefreshPrices { cursor:pointer; border:1px solid #aaa; border-radius:4px; background:#fff; padding:5px 9px; }
+#portfolioRefreshPrices:disabled { cursor:default; opacity:.6; }
+#portfolioRefreshPrices.is-loading { position:relative; padding-left:27px; }
+#portfolioRefreshPrices.is-loading::before { content:""; position:absolute; left:8px; top:50%; width:11px; height:11px; margin-top:-7px; border:2px solid #c8d6f6; border-top-color:#3A5FCD; border-radius:50%; animation:corrSpin .8s linear infinite; }
+.portfolio-data-status { display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin:2px 0 8px; color:#666; font-size:12px; }
+.portfolio-price-status { color:#555; }
 .portfolio-summary { margin:10px 0 6px; font-weight:600; color:#333; }
 .portfolio-summary span { display:inline-block; margin-right:18px; }
 .portfolio-summary .portfolio-index { color:#3A5FCD; }
@@ -391,6 +402,7 @@ const DEFAULTS_KEY = "RiskSnapCorrelationDefaults";
 const PORTFOLIOS_KEY = "RiskSnapSavedPortfolios";
 const ROLLING_ENDPOINT = "https://surface-203178530029.northamerica-northeast2.run.app/rolling_correlation";
 const ROLLING_MATRIX_ENDPOINT = "https://surface-203178530029.northamerica-northeast2.run.app/rolling_matrix";
+const LATEST_PRICES_ENDPOINT = "https://surface-203178530029.northamerica-northeast2.run.app/latest_prices";
 const ROLLING_VISIBLE_POINTS = 20;
 const MATRIX_HISTORY_REQUEST_FRAMES = { 25: 250, 90: 250, 250: 250 };
 const FACTORY_DEFAULTS = {
@@ -418,7 +430,13 @@ let matrixHistoryPlayDelayMs = 250;
 let portfolioShares = {};
 let portfolioSecurities = [];
 let portfolioPrices = {};
+let portfolioCurrentPrices = {};
 let portfolioRiskPayload = null;
+let portfolioViewMode = "current"; // "current" or "historical"
+let portfolioPriceTimestamp = null;
+let portfolioPriceLastAttempt = null;
+let portfolioPriceRefreshSignature = "";
+let portfolioPriceRefreshInProgress = false;
 let activeYahooPreset = null;
 
 
@@ -455,6 +473,7 @@ document.getElementById("portfolioJump").addEventListener("click", () => {
   const panel = document.getElementById("portfolioPanel");
   if (panel) panel.scrollIntoView({ behavior: "smooth", block: "start" });
 });
+document.getElementById("portfolioRefreshPrices").addEventListener("click", refreshPortfolioPrices);
 document.getElementById("portfolioEqualWeight").addEventListener("click", () => {
   setEqualMarketValueShares();
   renderPortfolioTable();
@@ -829,6 +848,7 @@ function normalizeMatrixFrame(frame, periodLabel) {
     assets,
     matrix: frame.matrix || frame.correlation || [],
     volatility: frame.volatility || [],
+    prices: frame.prices || [],
     messages: frame.messages || []
   }, periodLabel);
   payload.date = frame.date || "";
@@ -844,8 +864,13 @@ function renderSelectedMatrixFrame() {
   document.getElementById("matrixHistoryDate").textContent = frame.date ? formatLongDate(frame.date) : `Frame ${index + 1}`;
   updateMatrixHistorySliderDate(frame, index);
   drawCorrelationChart(frame);
+
+  // A slider selection is a complete historical portfolio snapshot:
+  // historical EOD prices, market values, weights and risk data all use this frame.
+  portfolioViewMode = "historical";
   portfolioRiskPayload = frame;
-  updatePortfolioSummary();
+  setDisplayedPortfolioPricesFromPayload(frame);
+  renderPortfolioTable();
   updateSelectedPairStatsFromMatrixFrame(frame);
 }
 
@@ -880,8 +905,21 @@ function showLatestMatrixFrame() {
   if (matrixHistoryFrames.length) {
     const matrixSlider = document.getElementById("matrixHistorySlider");
     matrixSlider.value = matrixHistoryFrames.length - 1;
-    renderSelectedMatrixFrame();
+    matrixHistoryIndex = matrixHistoryFrames.length - 1;
+    const latestFrame = matrixHistoryFrames[matrixHistoryIndex];
+    document.getElementById("matrixHistoryDate").textContent = latestFrame.date
+      ? formatLongDate(latestFrame.date)
+      : "Latest matrix";
+    updateMatrixHistorySliderDate(latestFrame, matrixHistoryIndex);
+    drawCorrelationChart(latestFrame);
+    portfolioRiskPayload = latestFrame;
+    updateSelectedPairStatsFromMatrixFrame(latestFrame);
   }
+
+  // Latest means current valuation prices plus the latest completed EOD risk data.
+  portfolioViewMode = "current";
+  portfolioPrices = { ...portfolioCurrentPrices };
+  renderPortfolioTable();
 
   // Keep the lower rolling-history slider synchronized at its newest window.
   const rollingSlider = document.getElementById("rollingSlider");
@@ -1052,9 +1090,23 @@ function normalizePayload(payload, periodLabel) {
 }
 
 
-function initializePortfolio(payload, selectedEquities) {
+function pricesFromPayload(payload) {
+  const result = {};
   const assets = payload && payload.assets ? payload.assets : [];
   const prices = payload && payload.prices ? payload.prices : [];
+  assets.forEach((asset, i) => {
+    const price = Number(prices[i]);
+    if (Number.isFinite(price) && price > 0) result[asset] = price;
+  });
+  return result;
+}
+
+function setDisplayedPortfolioPricesFromPayload(payload) {
+  portfolioPrices = pricesFromPayload(payload);
+}
+
+function initializePortfolio(payload, selectedEquities) {
+  const assets = payload && payload.assets ? payload.assets : [];
   const equitySet = new Set((selectedEquities || []).map(normalizeDisplaySymbol));
 
   portfolioRiskPayload = payload;
@@ -1062,25 +1114,33 @@ function initializePortfolio(payload, selectedEquities) {
     const normalized = normalizeDisplaySymbol(asset);
     return equitySet.has(normalized) && !NON_HOLDING_SYMBOLS.has(normalized);
   });
-  portfolioPrices = {};
 
-  assets.forEach((asset, i) => {
-    const price = Number(prices[i]);
-    if (Number.isFinite(price) && price > 0) portfolioPrices[asset] = price;
+  // EOD prices provide the initial current-price fallback until a quote refresh completes.
+  const eodPrices = pricesFromPayload(payload);
+  const priorCurrentPrices = { ...portfolioCurrentPrices };
+  portfolioCurrentPrices = { ...eodPrices };
+  Object.keys(priorCurrentPrices).forEach(asset => {
+    if (portfolioSecurities.includes(asset) && Number.isFinite(Number(priorCurrentPrices[asset]))) {
+      portfolioCurrentPrices[asset] = Number(priorCurrentPrices[asset]);
+    }
   });
+  portfolioViewMode = "current";
+  portfolioPrices = { ...portfolioCurrentPrices };
 
   Object.keys(portfolioShares).forEach(asset => {
     if (!portfolioSecurities.includes(asset)) delete portfolioShares[asset];
   });
 
-  const missingShares = portfolioSecurities.some(asset =>
-    !Number.isFinite(Number(portfolioShares[asset]))
-  );
-  if (missingShares || !Object.keys(portfolioShares).length) {
-    setEqualMarketValueShares();
-  }
+  portfolioSecurities.forEach(asset => {
+    if (!Number.isFinite(Number(portfolioShares[asset]))) portfolioShares[asset] = 0;
+  });
 
   renderPortfolioTable();
+  const signature = portfolioSecurities.join("|");
+  if (signature && signature !== portfolioPriceRefreshSignature) {
+    portfolioPriceRefreshSignature = signature;
+    refreshPortfolioPrices();
+  }
 }
 
 function setEqualMarketValueShares() {
@@ -1111,6 +1171,149 @@ function currentPortfolioRows() {
     });
 }
 
+function riskPortfolioRows(payload) {
+  if (!payload || !payload.assets || !payload.prices) return [];
+  return portfolioSecurities.map(asset => {
+    const index = payload.assets.indexOf(asset);
+    const price = index >= 0 ? Number(payload.prices[index]) : NaN;
+    const shares = Math.max(0, Number(portfolioShares[asset]) || 0);
+    return { asset, index, price, shares, marketValue: price * shares };
+  }).filter(row => row.index >= 0 && Number.isFinite(row.price) && row.price > 0);
+}
+
+function parseLatestPriceResponse(data) {
+  const result = {};
+  if (data && data.prices && !Array.isArray(data.prices) && typeof data.prices === "object") {
+    Object.entries(data.prices).forEach(([asset, value]) => {
+      const price = Number(value && typeof value === "object" ? (value.price ?? value.regularMarketPrice) : value);
+      if (Number.isFinite(price) && price > 0) result[normalizeDisplaySymbol(asset)] = price;
+    });
+  }
+  const assets = data && Array.isArray(data.assets) ? data.assets : [];
+  const prices = data && Array.isArray(data.prices) ? data.prices : [];
+  assets.forEach((asset, i) => {
+    const price = Number(prices[i]);
+    if (Number.isFinite(price) && price > 0) result[normalizeDisplaySymbol(asset)] = price;
+  });
+  if (data && Array.isArray(data.quotes)) {
+    data.quotes.forEach(quote => {
+      const asset = normalizeDisplaySymbol(quote.symbol || quote.asset || "");
+      const price = Number(quote.price ?? quote.regularMarketPrice ?? quote.currentPrice);
+      if (asset && Number.isFinite(price) && price > 0) result[asset] = price;
+    });
+  }
+  return result;
+}
+
+function latestPriceTimestampFromResponse(data) {
+  const candidate = data && (data.timestamp || data.as_of || data.asOf || data.updated_at || data.updatedAt);
+  if (!candidate) return new Date();
+  const parsed = new Date(candidate);
+  return Number.isNaN(parsed.getTime()) ? new Date() : parsed;
+}
+
+async function refreshPortfolioPrices() {
+  if (portfolioPriceRefreshInProgress || !portfolioSecurities.length) return;
+  const button = document.getElementById("portfolioRefreshPrices");
+  const label = button ? button.querySelector(".portfolio-refresh-label") : null;
+  const status = document.getElementById("portfolioPriceStatus");
+
+  // Refresh always returns the portfolio to current MTM mode. The button is
+  // disabled only while the download itself is running.
+  portfolioViewMode = "current";
+  portfolioPrices = { ...portfolioCurrentPrices };
+  portfolioPriceLastAttempt = new Date();
+  portfolioPriceRefreshInProgress = true;
+  if (button) { button.disabled = true; button.classList.add("is-loading"); }
+  if (label) label.textContent = "Refreshing...";
+  if (status) status.textContent = `Downloading latest prices at ${formatPriceTimestamp(portfolioPriceLastAttempt)}...`;
+  updatePortfolioDataLabels();
+
+  try {
+    const response = await fetch(LATEST_PRICES_ENDPOINT, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ symbols: portfolioSecurities })
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.message || data.error || response.statusText);
+    const downloaded = parseLatestPriceResponse(data);
+    const nextPrices = { ...portfolioCurrentPrices };
+    const failed = [];
+    portfolioSecurities.forEach(asset => {
+      if (Number.isFinite(Number(downloaded[asset])) && Number(downloaded[asset]) > 0) {
+        nextPrices[asset] = Number(downloaded[asset]);
+      } else {
+        failed.push(asset);
+      }
+    });
+    if (failed.length === portfolioSecurities.length) {
+      throw new Error("No current prices were returned.");
+    }
+    portfolioCurrentPrices = nextPrices;
+    portfolioPrices = { ...portfolioCurrentPrices };
+    portfolioPriceTimestamp = latestPriceTimestampFromResponse(data);
+    renderPortfolioTable();
+    updatePortfolioDataLabels();
+    if (status) status.textContent = failed.length
+      ? `Updated ${portfolioSecurities.length - failed.length} of ${portfolioSecurities.length} at ${formatPriceTimestamp(portfolioPriceTimestamp)}; using the previous price for ${failed.join(", ")}.`
+      : `Updated ${portfolioSecurities.length} prices at ${formatPriceTimestamp(portfolioPriceTimestamp)}.`;
+  } catch (err) {
+    portfolioPrices = { ...portfolioCurrentPrices };
+    renderPortfolioTable();
+    updatePortfolioDataLabels();
+    if (status) status.textContent = `Refresh failed at ${formatPriceTimestamp(portfolioPriceLastAttempt)}; live quotes unavailable, using the latest available EOD prices.`;
+  } finally {
+    portfolioPriceRefreshInProgress = false;
+    if (button) {
+      button.disabled = false;
+      button.classList.remove("is-loading");
+      button.title = "Download the latest available prices.";
+    }
+    if (label) label.textContent = "Refresh Prices";
+  }
+}
+
+function formatPriceTimestamp(date) {
+  if (!(date instanceof Date) || Number.isNaN(date.getTime())) return "Not refreshed";
+  return date.toLocaleString("en-CA", {
+    timeZone: "America/Toronto",
+    day: "2-digit", month: "short", year: "numeric",
+    hour: "numeric", minute: "2-digit", second: "2-digit",
+    timeZoneName: "short"
+  });
+}
+
+function updatePortfolioDataLabels() {
+  const priceTime = document.getElementById("portfolioPriceTimestamp");
+  const riskDate = document.getElementById("portfolioRiskDate");
+  const refreshButton = document.getElementById("portfolioRefreshPrices");
+  const priceHeading = document.getElementById("portfolioPriceHeading");
+  const historical = portfolioViewMode === "historical";
+
+  if (priceTime) {
+    if (historical && portfolioRiskPayload && portfolioRiskPayload.date) {
+      priceTime.textContent = `${formatLongDate(portfolioRiskPayload.date)} Close`;
+    } else if (portfolioPriceTimestamp) {
+      priceTime.textContent = formatPriceTimestamp(portfolioPriceTimestamp);
+    } else if (portfolioRiskPayload && portfolioRiskPayload.date) {
+      priceTime.textContent = `${formatLongDate(portfolioRiskPayload.date)} Close (EOD fallback)`;
+    } else {
+      priceTime.textContent = "Not refreshed";
+    }
+  }
+  if (riskDate) riskDate.textContent = portfolioRiskPayload && portfolioRiskPayload.date
+    ? `${formatLongDate(portfolioRiskPayload.date)} Close`
+    : "Latest completed EOD";
+  if (priceHeading) priceHeading.textContent = historical ? "EOD price" : "Latest price";
+  if (refreshButton) {
+    refreshButton.disabled = portfolioPriceRefreshInProgress;
+    refreshButton.title = portfolioPriceRefreshInProgress
+      ? "Price refresh is in progress."
+      : "Download the latest available prices.";
+  }
+}
+
 function portfolioCorrelation(payload, i, j) {
   if (i === j) return 1;
   const a = Math.min(i, j);
@@ -1124,12 +1327,12 @@ function portfolioCorrelation(payload, i, j) {
 function calculatePortfolioVolatility(payload) {
   if (!payload || !payload.assets || !payload.volatility) return null;
 
-  const rows = currentPortfolioRows();
+  const rows = riskPortfolioRows(payload);
   const totalMarketValue = rows.reduce((sum, row) => sum + row.marketValue, 0);
   if (totalMarketValue <= 0) return null;
 
   const positions = rows.map(row => {
-    const index = payload.assets.indexOf(row.asset);
+    const index = row.index;
     const volatility = index >= 0 ? Number(payload.volatility[index]) : NaN;
     return {
       asset: row.asset,
@@ -1153,6 +1356,40 @@ function calculatePortfolioVolatility(payload) {
   return variance >= 0 ? Math.sqrt(variance) : null;
 }
 
+function portfolioMarketValueForFrame(frame) {
+  if (!frame || !frame.assets || !frame.prices) return null;
+  let total = 0;
+  let found = false;
+  frame.assets.forEach((asset, i) => {
+    if (!portfolioSecurities.includes(asset)) return;
+    const price = Number(frame.prices[i]);
+    const shares = Math.max(0, Number(portfolioShares[asset]) || 0);
+    if (!Number.isFinite(price) || price <= 0) return;
+    total += price * shares;
+    found = true;
+  });
+  return found ? total : null;
+}
+
+function selectedPortfolioDailyChange(totalMarketValue) {
+  if (!matrixHistoryFrames.length) return null;
+
+  // Historical mode compares the selected EOD frame with its preceding frame.
+  // Current mode compares current valuation with the latest completed EOD value.
+  let previousValue;
+  if (portfolioViewMode === "historical") {
+    const index = matrixHistoryIndex;
+    if (index <= 0) return null;
+    previousValue = portfolioMarketValueForFrame(matrixHistoryFrames[index - 1]);
+  } else {
+    previousValue = portfolioMarketValueForFrame(matrixHistoryFrames[matrixHistoryFrames.length - 1]);
+  }
+
+  if (!Number.isFinite(previousValue) || previousValue <= 0) return null;
+  const change = Number(totalMarketValue) - previousValue;
+  return { change, pct: change / previousValue };
+}
+
 function updatePortfolioSummary(totalMarketValue) {
   const summary = document.getElementById("portfolioSummary");
   if (!summary) return;
@@ -1171,10 +1408,19 @@ function updatePortfolioSummary(totalMarketValue) {
     ? 100 * totalMarketValue / totalBookValue
     : null;
   const volatility = calculatePortfolioVolatility(portfolioRiskPayload);
+  const daily = selectedPortfolioDailyChange(totalMarketValue);
+  const valueDate = portfolioViewMode === "historical" && portfolioRiskPayload && portfolioRiskPayload.date
+    ? formatLongDate(portfolioRiskPayload.date)
+    : (portfolioPriceTimestamp ? formatPriceTimestamp(portfolioPriceTimestamp) : "Latest available prices");
+  const dailyText = daily === null
+    ? "—"
+    : `${daily.change >= 0 ? "+" : ""}${formatMoney(daily.change)} (${daily.pct >= 0 ? "+" : ""}${(daily.pct * 100).toFixed(2)}%)`;
 
   summary.innerHTML =
+    `<span>Value date: ${valueDate}</span>` +
     `<span>Total book value: ${formatMoney(totalBookValue)}</span>` +
-    `<span>Current value: ${formatMoney(totalMarketValue)}</span>` +
+    `<span>Market value: ${formatMoney(totalMarketValue)}</span>` +
+    `<span>Daily change: ${dailyText}</span>` +
     `<span class="portfolio-index">Portfolio index: ${indexLevel === null ? "—" : indexLevel.toFixed(2)}</span>` +
     `<span class="portfolio-volatility">Portfolio volatility: ${volatility === null ? "—" : (volatility * 100).toFixed(2) + "%"}</span>`;
 }
@@ -1189,7 +1435,7 @@ function renderPortfolioTable() {
 
   if (!rows.length) {
     summary.textContent = "";
-    body.innerHTML = '<tr><td colspan="5" class="portfolio-empty">No selected securities with current prices are available.</td></tr>';
+    body.innerHTML = `<tr><td colspan="5" class="portfolio-empty">No selected securities with ${portfolioViewMode === "historical" ? "historical" : "current"} prices are available.</td></tr>`;
     const totalValueCell = document.getElementById("portfolioTotalMarketValue");
     const totalWeightCell = document.getElementById("portfolioTotalWeight");
     if (totalValueCell) totalValueCell.textContent = "—";
@@ -1199,13 +1445,13 @@ function renderPortfolioTable() {
 
   const totalMarketValue = rows.reduce((sum, row) => sum + row.marketValue, 0);
 
-  rows.forEach(row => {
+  rows.forEach((row, rowIndex) => {
     const weightPct = totalMarketValue > 0
       ? row.marketValue / totalMarketValue * 100
       : 0;
     const tr = document.createElement("tr");
     tr.innerHTML = `
-      <td>${displayAsset(row.asset)}</td>
+      <td>${rowIndex + 1}. ${displayAsset(row.asset)}</td>
       <td>${formatMoney(row.price)}</td>
       <td><input class="portfolio-shares" data-asset="${row.asset}" type="number" min="0" step="0.0001" value="${formatShares(row.shares)}"></td>
       <td>${formatMoney(row.marketValue)}</td>
@@ -1228,6 +1474,7 @@ function renderPortfolioTable() {
   if (totalValueCell) totalValueCell.textContent = formatMoney(totalMarketValue);
   if (totalWeightCell) totalWeightCell.textContent = totalMarketValue > 0 ? "100.00%" : "0.00%";
   updatePortfolioSummary(totalMarketValue);
+  updatePortfolioDataLabels();
 }
 
 function formatMoney(value) {
@@ -1751,22 +1998,45 @@ function savePortfolio() {
   }
 
   const holdings = {};
-  portfolioSecurities.forEach(asset => {
+  const heldSecurities = portfolioSecurities.filter(asset => {
     const shares = Math.max(0, Number(portfolioShares[asset]) || 0);
+    if (shares <= 0) return false;
     holdings[asset] = shares;
+    return true;
   });
 
+  if (!heldSecurities.length) {
+    setPortfolioStorageStatus("Enter shares for at least one security before saving.");
+    return;
+  }
+
   const portfolios = readSavedPortfolios();
-  portfolios[name] = {
-    name,
-    securities: portfolioSecurities.slice(),
+  const existingName = Object.keys(portfolios).find(
+    savedName => savedName.toLowerCase() === name.toLowerCase()
+  );
+  const saveName = existingName || name;
+
+  if (existingName) {
+    const confirmed = window.confirm(
+      `A portfolio named “${existingName}” already exists. Replace it with the current holdings?`
+    );
+    if (!confirmed) {
+      setPortfolioStorageStatus("Save cancelled; the existing portfolio was not changed.");
+      return;
+    }
+  }
+
+  portfolios[saveName] = {
+    name: saveName,
+    securities: heldSecurities,
     shares: holdings,
     bookValue: Math.max(0, Number(document.getElementById("portfolioBookValue").value) || 0)
   };
 
   if (!writeSavedPortfolios(portfolios)) return;
-  refreshSavedPortfolioList(name);
-  setPortfolioStorageStatus(`Saved “${name}”.`);
+  if (nameInput) nameInput.value = saveName;
+  refreshSavedPortfolioList(saveName);
+  setPortfolioStorageStatus(existingName ? `Replaced “${saveName}”.` : `Saved “${saveName}”.`);
 }
 
 function loadPortfolio() {
@@ -1780,7 +2050,15 @@ function loadPortfolio() {
     return;
   }
 
-  const securities = Array.isArray(saved.securities) ? saved.securities.map(normalizeDisplaySymbol) : Object.keys(saved.shares || {});
+  const savedShares = saved.shares || {};
+  const listedSecurities = Array.isArray(saved.securities)
+    ? saved.securities.map(normalizeDisplaySymbol)
+    : Object.keys(savedShares).map(normalizeDisplaySymbol);
+  // Older saved portfolios may contain every selected equity, including zero-share rows.
+  // Load only actual holdings so a five-security portfolio remains five securities.
+  const securities = listedSecurities.filter(asset =>
+    Math.max(0, Number(savedShares[asset]) || 0) > 0
+  );
   document.getElementById("equitySymbols").value = securities.join(", ");
   activeYahooPreset = matchingPresetKey(document.getElementById("equitySymbols").value);
   updatePresetHighlight();
