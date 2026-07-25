@@ -1391,19 +1391,11 @@ async function refreshPortfolioAnalytics(totalMarketValue) {
   portfolioAnalyticsError = "";
 
   try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 15000);
-    let response;
-    try {
-      response = await fetch(PORTFOLIO_ANALYTICS_ENDPOINT, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-        signal: controller.signal
-      });
-    } finally {
-      clearTimeout(timeoutId);
-    }
+    const response = await fetch(PORTFOLIO_ANALYTICS_ENDPOINT, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
     const data = await response.json();
     if (!response.ok) throw new Error(data.error || data.detail || response.statusText);
     if (signature !== portfolioAnalyticsSignature) return;
@@ -1412,9 +1404,7 @@ async function refreshPortfolioAnalytics(totalMarketValue) {
     if (signature !== portfolioAnalyticsSignature) return;
     console.error("Portfolio analytics unavailable:", err);
     portfolioAnalyticsResult = null;
-    portfolioAnalyticsError = err.name === "AbortError"
-      ? "Portfolio analytics timed out."
-      : (err.message || "Portfolio analytics unavailable");
+    portfolioAnalyticsError = err.message || "Portfolio analytics unavailable";
   } finally {
     if (signature === portfolioAnalyticsSignature) {
       portfolioAnalyticsLoading = false;
@@ -1507,7 +1497,7 @@ function updatePortfolioSummary(totalMarketValue, fromServer = false) {
     `<span>Daily change: ${dailyText}</span>` +
     `<span class="portfolio-index">Portfolio index: ${indexLevel === null ? "—" : indexLevel.toFixed(2)}</span>` +
     `<span class="portfolio-volatility">Portfolio volatility: ${volatility === null ? "—" : (volatility * 100).toFixed(2) + "%"}</span>` +
-    `<span>Sharpe: ${sharpe === null ? "— (to be added after portfolio validation)" + missingText : sharpe.toFixed(2)}</span>`;
+    `<span>Sharpe (${(Number(a.risk_free_rate) * 100).toFixed(2)}% RF): ${sharpe === null ? "—" + missingText : sharpe.toFixed(2)}</span>`;
 }
 
 function renderPortfolioTable() {
