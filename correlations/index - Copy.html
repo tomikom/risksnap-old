@@ -3,7 +3,7 @@ layout: correlations-template
 ---
 <!--
 RiskSnap Correlations
-Version: index(79)
+Version: index(77)
 Changes:
 - Reduced matrix cell size so more of the matrix fits on screen
 - Kept bubble scale unchanged, creating more overlap
@@ -858,8 +858,6 @@ function normalizeMatrixFrame(frame, periodLabel) {
     ewma_returns: frame.ewma_returns || {},
     missing_ewma: frame.missing_ewma || [],
     ewma_as_of: frame.ewma_as_of || null,
-    risk_free_rate: Number.isFinite(Number(frame.risk_free_rate)) ? Number(frame.risk_free_rate) : null,
-    risk_free_as_of: frame.risk_free_as_of || frame.date || null,
     messages: frame.messages || []
   }, periodLabel);
   payload.date = frame.date || "";
@@ -1102,8 +1100,6 @@ function normalizePayload(payload, periodLabel) {
       ? payload.missing_ewma.slice()
       : [],
     ewma_as_of: payload.ewma_as_of || null,
-    risk_free_rate: Number.isFinite(Number(payload.risk_free_rate)) ? Number(payload.risk_free_rate) : null,
-    risk_free_as_of: payload.risk_free_as_of || null,
     messages: payload.messages || [],
     periodLabel
   };
@@ -1393,8 +1389,6 @@ function calculatePortfolioAnalyticsLocally(totalMarketValue) {
   let portfolioEwmaReturn = null;
   let sharpe = null;
   let missingEwma = [];
-  const payloadRiskFreeRate = portfolioRiskPayload ? Number(portfolioRiskPayload.risk_free_rate) : NaN;
-  const riskFreeRate = Number.isFinite(payloadRiskFreeRate) ? payloadRiskFreeRate : SHARPE_RISK_FREE_RATE;
 
   // Every rolling-matrix frame carries EWMA data for its own EOD date, so
   // EWMA return and Sharpe update with the Matrix History slider.
@@ -1419,7 +1413,7 @@ function calculatePortfolioAnalyticsLocally(totalMarketValue) {
     if (complete) {
       portfolioEwmaReturn = weightedReturn;
       if (Number.isFinite(volatility) && volatility > 0) {
-        sharpe = (weightedReturn - riskFreeRate) / volatility;
+        sharpe = (weightedReturn - SHARPE_RISK_FREE_RATE) / volatility;
       }
     }
   }
@@ -1432,8 +1426,7 @@ function calculatePortfolioAnalyticsLocally(totalMarketValue) {
     volatility,
     portfolio_ewma_return: portfolioEwmaReturn,
     sharpe,
-    risk_free_rate: riskFreeRate,
-    risk_free_as_of: portfolioRiskPayload ? portfolioRiskPayload.risk_free_as_of : null,
+    risk_free_rate: SHARPE_RISK_FREE_RATE,
     ewma_as_of: portfolioRiskPayload ? portfolioRiskPayload.ewma_as_of : null,
     missing_ewma: missingEwma
   };
@@ -1489,9 +1482,7 @@ function updatePortfolioSummary(totalMarketValue) {
   const returnOnBookCost = a.gain_loss_pct === null ? null : Number(a.gain_loss_pct);
   const ewmaReturn = a.portfolio_ewma_return === null ? null : Number(a.portfolio_ewma_return);
   const volatility = a.volatility === null ? null : Number(a.volatility);
-  const riskFreeRate = Number(a.risk_free_rate);
   const sharpe = a.sharpe === null ? null : Number(a.sharpe);
-  const dailyChange = selectedPortfolioDailyChange(Number(a.market_value));
 
   const signedMoney = value => `${value >= 0 ? "+" : ""}${formatMoney(value)}`;
   const signedPct = value => value === null || !Number.isFinite(value)
@@ -1503,8 +1494,6 @@ function updatePortfolioSummary(totalMarketValue) {
   const tone = value => value > 0 ? "positive" : value < 0 ? "negative" : "";
 
   let ewmaText = pct(ewmaReturn);
-  const riskFreeText = Number.isFinite(riskFreeRate) ? pct(riskFreeRate) : "—";
-  const dailyChangeText = dailyChange ? `${signedMoney(dailyChange.change)} (${signedPct(dailyChange.pct)})` : "—";
   let sharpeText = Number.isFinite(sharpe) ? sharpe.toFixed(2) : "—";
   if (Array.isArray(a.missing_ewma) && a.missing_ewma.length) {
     ewmaText = "—";
@@ -1521,15 +1510,11 @@ function updatePortfolioSummary(totalMarketValue) {
       <div class="portfolio-summary-value ${tone(gainLoss)}">${signedMoney(gainLoss)}</div>
       <div class="portfolio-summary-label">Return on Book Cost</div>
       <div class="portfolio-summary-value ${tone(returnOnBookCost || 0)}">${signedPct(returnOnBookCost)}</div>
-      <div class="portfolio-summary-label">Daily Change</div>
-      <div class="portfolio-summary-value ${dailyChange ? tone(dailyChange.change) : ""}">${dailyChangeText}</div>
       <div class="portfolio-summary-break"></div>
       <div class="portfolio-summary-label">EWMA Return</div>
       <div class="portfolio-summary-value">${ewmaText}</div>
       <div class="portfolio-summary-label">Portfolio Volatility</div>
       <div class="portfolio-summary-value">${pct(volatility)}</div>
-      <div class="portfolio-summary-label">Risk-Free Rate (1Y)</div>
-      <div class="portfolio-summary-value">${riskFreeText}</div>
       <div class="portfolio-summary-label">Sharpe Ratio</div>
       <div class="portfolio-summary-value">${sharpeText}</div>
     </div>`;
@@ -1541,9 +1526,7 @@ function updatePortfolioSummary(totalMarketValue) {
     stickySummary.textContent =
       `${dateText}  |  MV ${formatMoney(Number(a.market_value))}` +
       `  |  G/L ${signedMoney(gainLoss)} (${signedPct(returnOnBookCost)})` +
-      `  |  Day ${dailyChangeText}` +
-      `  |  EWMA ${ewmaText}  |  Vol ${pct(volatility)}` +
-      `  |  RF ${riskFreeText}  |  Sharpe ${sharpeText}`;
+      `  |  EWMA ${ewmaText}  |  Vol ${pct(volatility)}  |  Sharpe ${sharpeText}`;
   }
 }
 
