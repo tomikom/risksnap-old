@@ -3,7 +3,7 @@ layout: correlations-template
 ---
 <!--
 RiskSnap Correlations
-Version: index(79)
+Version: index(80)
 Changes:
 - Reduced matrix cell size so more of the matrix fits on screen
 - Kept bubble scale unchanged, creating more overlap
@@ -11,6 +11,8 @@ Changes:
 - Existing rolling-pair panel retained
 - Added Reset, Play, Pause, and Latest controls for automatic Matrix History playback
 - Clarified that the same 20 matrix dates are shown for every lookback, while each matrix uses the selected lookback
+- Added Annual Return (Weighted) and Sharpe Ratio for each portfolio security
+- Renamed the portfolio EWMA Return label to Annual Return (Weighted)
 -->
 
 <!--<h1>Correlations</h1>-->
@@ -137,6 +139,8 @@ Changes:
             <th>Shares</th>
             <th>Market value</th>
             <th>Weight</th>
+            <th>Annual Return (Weighted)</th>
+            <th>Sharpe Ratio</th>
           </tr>
         </thead>
         <tbody id="portfolioBody"></tbody>
@@ -145,6 +149,7 @@ Changes:
             <td colspan="3">Total</td>
             <td id="portfolioTotalMarketValue">—</td>
             <td id="portfolioTotalWeight">100.00%</td>
+            <td colspan="2"></td>
           </tr>
         </tfoot>
       </table>
@@ -1524,7 +1529,7 @@ function updatePortfolioSummary(totalMarketValue) {
       <div class="portfolio-summary-label">Daily Change</div>
       <div class="portfolio-summary-value ${dailyChange ? tone(dailyChange.change) : ""}">${dailyChangeText}</div>
       <div class="portfolio-summary-break"></div>
-      <div class="portfolio-summary-label">EWMA Return</div>
+      <div class="portfolio-summary-label">Annual Return (Weighted)</div>
       <div class="portfolio-summary-value">${ewmaText}</div>
       <div class="portfolio-summary-label">Portfolio Volatility</div>
       <div class="portfolio-summary-value">${pct(volatility)}</div>
@@ -1542,7 +1547,7 @@ function updatePortfolioSummary(totalMarketValue) {
       `${dateText}  |  MV ${formatMoney(Number(a.market_value))}` +
       `  |  G/L ${signedMoney(gainLoss)} (${signedPct(returnOnBookCost)})` +
       `  |  Day ${dailyChangeText}` +
-      `  |  EWMA ${ewmaText}  |  Vol ${pct(volatility)}` +
+      `  |  Annual Return (Weighted) ${ewmaText}  |  Vol ${pct(volatility)}` +
       `  |  RF ${riskFreeText}  |  Sharpe ${sharpeText}`;
   }
 }
@@ -1559,7 +1564,7 @@ function renderPortfolioTable() {
     summary.textContent = "";
     const stickySummary = document.getElementById("matrixPortfolioSummary");
     if (stickySummary) stickySummary.textContent = "";
-    body.innerHTML = `<tr><td colspan="5" class="portfolio-empty">No selected securities with ${portfolioViewMode === "historical" ? "historical" : "current"} prices are available.</td></tr>`;
+    body.innerHTML = `<tr><td colspan="7" class="portfolio-empty">No selected securities with ${portfolioViewMode === "historical" ? "historical" : "current"} prices are available.</td></tr>`;
     const totalValueCell = document.getElementById("portfolioTotalMarketValue");
     const totalWeightCell = document.getElementById("portfolioTotalWeight");
     if (totalValueCell) totalValueCell.textContent = "—";
@@ -1573,6 +1578,33 @@ function renderPortfolioTable() {
     const weightPct = totalMarketValue > 0
       ? row.marketValue / totalMarketValue * 100
       : 0;
+
+    const riskAssets = portfolioRiskPayload && Array.isArray(portfolioRiskPayload.assets)
+      ? portfolioRiskPayload.assets
+      : [];
+    const riskIndex = riskAssets.indexOf(row.asset);
+    const securityVolatility = riskIndex >= 0 && portfolioRiskPayload && Array.isArray(portfolioRiskPayload.volatility)
+      ? Number(portfolioRiskPayload.volatility[riskIndex])
+      : NaN;
+    const securityAnnualReturn = portfolioRiskPayload && portfolioRiskPayload.ewma_returns
+      ? Number(portfolioRiskPayload.ewma_returns[row.asset])
+      : NaN;
+    const payloadRiskFreeRate = portfolioRiskPayload
+      ? Number(portfolioRiskPayload.risk_free_rate)
+      : NaN;
+    const securityRiskFreeRate = Number.isFinite(payloadRiskFreeRate)
+      ? payloadRiskFreeRate
+      : SHARPE_RISK_FREE_RATE;
+    const securitySharpe = Number.isFinite(securityAnnualReturn) && Number.isFinite(securityVolatility) && securityVolatility > 0
+      ? (securityAnnualReturn - securityRiskFreeRate) / securityVolatility
+      : NaN;
+    const annualReturnText = Number.isFinite(securityAnnualReturn)
+      ? `${(securityAnnualReturn * 100).toFixed(2)}%`
+      : "—";
+    const securitySharpeText = Number.isFinite(securitySharpe)
+      ? securitySharpe.toFixed(2)
+      : "—";
+
     const tr = document.createElement("tr");
     tr.innerHTML = `
       <td>${rowIndex + 1}. ${displayAsset(row.asset)}</td>
@@ -1580,6 +1612,8 @@ function renderPortfolioTable() {
       <td><input class="portfolio-shares" data-asset="${row.asset}" type="number" min="0" step="0.0001" value="${formatShares(row.shares)}"></td>
       <td>${formatMoney(row.marketValue)}</td>
       <td>${weightPct.toFixed(2)}%</td>
+      <td>${annualReturnText}</td>
+      <td>${securitySharpeText}</td>
     `;
     body.appendChild(tr);
   });
