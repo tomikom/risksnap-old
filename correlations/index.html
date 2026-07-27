@@ -87,6 +87,7 @@ Changes:
           <button type="button" class="preset-button" data-preset="defensive">🛡️ Defensive</button>
           <button type="button" class="preset-button" data-preset="crypto">₿ Crypto</button>
 		  <button type="button" class="preset-button" data-preset="worldtop10">💥 World Top 10</button>
+		  <button type="button" class="preset-button" data-preset="benchmarks">┬─┬ Benchmarks</button>
         </div>
         <textarea id="equitySymbols"></textarea>
         <div class="input-note">Enter Yahoo symbols separated by commas or spaces. Maximum 20 total assets. Indices and other non-equity Yahoo codes remain in the risk matrix but are excluded from Portfolio Holdings.</div>
@@ -399,6 +400,7 @@ const YAHOO_PRESETS = {
   defensive: "PG, KO, PEP, WMT, COST, MCD, CL, GIS, KMB, MDLZ",
   crypto: "BTC-USD, ETH-USD, MSTR, COIN, MARA, RIOT, CLSK, HUT, CIFR",
   worldtop10: "NVDA,AAPL,GOOG,MSFT,AMZN,TSMC,AVGO,2222.SR,META,SPCX"
+  benchmarks:"SPY,QQQ,DIA,GWM,GLD,TLT,BTC-USD"
 };
 
 const NON_HOLDING_SYMBOLS = new Set([
