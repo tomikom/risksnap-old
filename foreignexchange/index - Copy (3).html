@@ -72,124 +72,42 @@ Foreign exchange is the largest and most liquid financial market in the world. A
 
 
 
-
-<div class="fx-instrument-controls" id="fxInstrumentControls">
-  <button data-pair="EURUSD" onclick="selectFxInstrument('EURUSD')">EUR/USD</button>
-  <button data-pair="USDJPY" onclick="selectFxInstrument('USDJPY')">USD/JPY</button>
-  <button data-pair="GBPUSD" onclick="selectFxInstrument('GBPUSD')">GBP/USD</button>
-  <button data-pair="USDCHF" onclick="selectFxInstrument('USDCHF')">USD/CHF</button>
-  <button data-pair="USDCAD" onclick="selectFxInstrument('USDCAD')">USD/CAD</button>
-  <button data-pair="GOLD" onclick="selectFxInstrument('GOLD')">Gold</button>
-  <button data-pair="OIL" onclick="selectFxInstrument('OIL')">Oil</button>
-  <button data-pair="COMBINED" onclick="selectFxInstrument('COMBINED')">Combined FX + Gold</button>
-</div>
-
 <div class="fx-controls">
-  <button data-range="1y" onclick="setFxRange('1y')">1Y</button>
-  <button data-range="3y" onclick="setFxRange('3y')">3Y</button>
-  <button data-range="5y" onclick="setFxRange('5y')">5Y</button>
-  <button data-range="10y" onclick="setFxRange('10y')">10Y</button>
-  <button data-range="max" onclick="setFxRange('max')">Max</button>
-  <button onclick="loadSelectedFx(true)">Update chart</button>
+	<button type="button" data-range="1y" onclick="setFxRange('1y')">1Y</button>
+	<button type="button" data-range="3y" onclick="setFxRange('3y')">3Y</button>
+	<button type="button" data-range="5y" onclick="setFxRange('5y')">5Y</button>
+	<button type="button" data-range="10y" onclick="setFxRange('10y')">10Y</button>
+	<button type="button" data-range="max" onclick="setFxRange('max')">Max</button>
+	<button type="button" onclick="toggleGoldInCombined()">Toggle Gold in combined chart</button>
+    <button type="button" onclick="loadFxCharts()">Update charts</button>
 </div>
 
-<div id="fxStatus" class="fx-status">Loading EUR/USD...</div>
-<div class="fx-card"><div id="fx_SELECTED" class="fx-chart"></div></div>
+<div id="fxStatus" class="fx-status">Loading charts...</div>
 
-<p class="fx-note">Data source: Yahoo Finance via the RiskSnap Cloud Run FX endpoint.</p>
-<p id="oilSourceNote" class="fx-note">Oil data source: Federal Reserve Bank of St. Louis (DCOILWTICO); Yahoo Finance (CL=F) thereafter.</p>
+<div class="fx-card fx-combined-card">
+    <div id="fx_COMBINED" class="fx-chart fx-chart-combined"></div>
+</div>
 
-<style>
-.fx-controls,.fx-instrument-controls{display:flex;flex-wrap:wrap;gap:8px;margin:18px 0 12px}
-.fx-controls button,.fx-instrument-controls button{background:#3A5FCD;color:#fff;border:0;border-radius:999px;padding:9px 16px;cursor:pointer;font-size:14px}
-.fx-controls button.active,.fx-instrument-controls button.active{background:#f59e0b;font-weight:bold}
-.fx-status{background:#f6f8fc;border-left:5px solid #3A5FCD;padding:10px 12px;margin:10px 0 16px;color:#333}
-.fx-card{background:white;border:1px solid #d9e0ef;border-radius:16px;box-shadow:0 4px 16px rgba(20,35,75,.10);padding:10px}
-.fx-chart{width:100%;height:500px}
-.fx-note{margin-top:12px;color:#555;font-size:14px}
-@media(max-width:850px){.fx-chart{height:380px}}
-</style>
+<div class="fx-grid">
+    <div class="fx-card"><div id="fx_EURUSD" class="fx-chart"></div></div>
+    <div class="fx-card"><div id="fx_USDJPY" class="fx-chart"></div></div>
+    <div class="fx-card"><div id="fx_GBPUSD" class="fx-chart"></div></div>
+    <div class="fx-card"><div id="fx_USDCHF" class="fx-chart"></div></div>
+    <div class="fx-card"><div id="fx_USDCAD" class="fx-chart"></div></div>
+    <div class="fx-card"><div id="fx_GOLD" class="fx-chart"></div></div>
+</div>
 
-<script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
-<script>
-const FX_API_URL="https://surface-203178530029.northamerica-northeast2.run.app/fx_history";
-let fxRange="1y", selectedFxInstrument="EURUSD";
-const fxBrowserCache=new Map();
-const fxPairs=[
- {key:"EURUSD",label:"EUR/USD",ticker:"EURUSD=X",color:"#1f77b4"},
- {key:"USDJPY",label:"USD/JPY",ticker:"JPY=X",color:"#ff7f0e"},
- {key:"GBPUSD",label:"GBP/USD",ticker:"GBPUSD=X",color:"#2ca02c"},
- {key:"USDCHF",label:"USD/CHF",ticker:"CHF=X",color:"#d62728"},
- {key:"USDCAD",label:"USD/CAD",ticker:"CAD=X",color:"#9467bd"},
- {key:"GOLD",label:"Gold",ticker:"GC=F",color:"#DAA520"},
- {key:"OIL",label:"WTI Crude Oil",ticker:"CL=F",color:"#8B4513"}
-];
-function key(pair){return pair+":"+fxRange}
-function updateButtons(){
- document.querySelectorAll("[data-range]").forEach(b=>b.classList.toggle("active",b.dataset.range===fxRange));
- document.querySelectorAll("[data-pair]").forEach(b=>b.classList.toggle("active",b.dataset.pair===selectedFxInstrument));
-}
-function setFxRange(r){fxRange=r;updateButtons();loadSelectedFx(false)}
-function selectFxInstrument(p){selectedFxInstrument=p;updateButtons();loadSelectedFx(false)}
-function clean(item){
- const d=item.dates||[],r=item.rates||[],x=[],y=[];
- for(let i=0;i<Math.min(d.length,r.length);i++){const v=Number(r[i]);if(d[i]&&Number.isFinite(v)){x.push(d[i]);y.push(v)}}
- return{x,y}
-}
-function placeholder(title,msg){
- Plotly.newPlot("fx_SELECTED",[],{title:{text:title,x:.03},annotations:[{text:msg,showarrow:false,xref:"paper",yref:"paper",x:.5,y:.5}],xaxis:{visible:false},yaxis:{visible:false},paper_bgcolor:"white",plot_bgcolor:"white"},{responsive:true,displaylogo:false})
-}
-function drawSingle(item){
- const p=fxPairs.find(x=>x.key===item.pair); if(!p)return;
- if(item.error){placeholder(p.label,item.error);return}
- const q=clean(item); if(!q.x.length){placeholder(p.label,"No usable data returned");return}
- const oil=p.key==="OIL",gold=p.key==="GOLD",dec=p.key==="USDJPY"?2:(oil||gold?2:4),prefix=(oil||gold)?"$":"";
- Plotly.newPlot("fx_SELECTED",[{
-   x:q.x,y:q.y,type:"scatter",mode:"lines",line:{width:2.7,color:p.color},
-   hovertemplate:`%{x}<br>${prefix}%{y:.${dec}f}<extra></extra>`,name:p.label
- }],{
-   title:{text:`${p.label} (${p.ticker}) — ${prefix}${q.y[q.y.length-1].toFixed(dec)} as of ${q.x[q.x.length-1]}`,x:.03},
-   margin:{l:65,r:24,t:62,b:52},paper_bgcolor:"white",plot_bgcolor:"white",hovermode:"x unified",
-   xaxis:{showgrid:true,gridcolor:"#edf1f7",tickformat:"%b %d, %Y",hoverformat:"%b %d, %Y"},
-   yaxis:{title:oil?"US$/barrel":(gold?"US$/ounce":"Spot rate"),showgrid:true,gridcolor:"#edf1f7"}
- },{responsive:true,displaylogo:false,modeBarButtonsToRemove:["lasso2d","select2d"]})
-}
-function drawCombined(items){
- const traces=[];
- fxPairs.filter(p=>p.key!=="OIL").forEach(p=>{
-   const item=items.find(x=>x.pair===p.key); if(!item||item.error)return;
-   const q=clean(item); if(!q.x.length)return; const base=Number(q.y[0]); if(!base)return;
-   traces.push({x:q.x,y:q.y.map(v=>Number(v)/base*100),type:"scatter",mode:"lines",line:{width:p.key==="GOLD"?3.5:2.2,color:p.color},name:p.label,hovertemplate:"%{x}<br>Index: %{y:.2f}<extra>"+p.label+"</extra>"})
- });
- Plotly.newPlot("fx_SELECTED",traces,{title:{text:"FX rates and Gold normalized to 100",x:.03},paper_bgcolor:"white",plot_bgcolor:"white",hovermode:"x unified",legend:{orientation:"h",x:.02,y:-.18},xaxis:{showgrid:true,gridcolor:"#edf1f7"},yaxis:{title:"Index, first date = 100",showgrid:true,gridcolor:"#edf1f7"}},{responsive:true,displaylogo:false})
-}
-async function fetchOne(pair,force){
- if(!force&&fxBrowserCache.has(key(pair)))return fxBrowserCache.get(key(pair));
- const r=await fetch(`${FX_API_URL}?period=${encodeURIComponent(fxRange)}&pair=${encodeURIComponent(pair)}`,{cache:"no-store"});
- if(!r.ok)throw new Error("HTTP "+r.status);
- const p=await r.json(); fxBrowserCache.set(key(pair),p); return p
-}
-async function loadSelectedFx(force=false){
- updateButtons(); const s=document.getElementById("fxStatus");
- try{
-   if(selectedFxInstrument==="COMBINED"){
-     s.textContent="Loading combined FX and Gold...";
-     const payloads=await Promise.all(fxPairs.filter(p=>p.key!=="OIL").map(p=>fetchOne(p.key,force)));
-     drawCombined(payloads.flatMap(p=>p.series||[]));
-     s.textContent=`Combined FX and Gold ready. Range: ${fxRange}.`; return;
-   }
-   const p=fxPairs.find(x=>x.key===selectedFxInstrument);
-   s.textContent=`Loading ${p.label}...`;
-   const payload=await fetchOne(selectedFxInstrument,force),item=(payload.series||[])[0];
-   if(!item)throw new Error("Selected instrument was not returned");
-   drawSingle(item);
-   if(selectedFxInstrument==="OIL"&&payload.oil_fred_through)document.getElementById("oilSourceNote").textContent=`Oil data source: FRED DCOILWTICO through ${payload.oil_fred_through}; Yahoo Finance (CL=F) thereafter.`;
-   s.textContent=`${p.label} ready. Range: ${fxRange}. ${payload.cached?"Cloud Run cache":"Downloaded"}. ${payload.updated_at||""}`;
- }catch(e){s.textContent=`Could not load data: ${e.message}`;placeholder(selectedFxInstrument,"Could not load data")}
-}
-window.addEventListener("load",()=>{updateButtons();loadSelectedFx(false)});
-</script>
+<div class="fx-card fx-oil-card">
+    <div id="fx_OIL" class="fx-chart fx-chart-oil"></div>
+</div>
 
+<p class="fx-note">
+Data source: Yahoo Finance via the RiskSnap Cloud Run FX endpoint. Yahoo tickers:
+EURUSD=X, JPY=X, GBPUSD=X, CHF=X, CAD=X and GC=F.
+</p>
+<p id="oilSourceNote" class="fx-note">
+Oil data source: Federal Reserve Bank of St. Louis (WTI Cushing, OK Spot Price, DCOILWTICO); Yahoo Finance (CL=F) thereafter.
+</p>
 <p>
 A spot price embeds expectations of future economic events and pricing models include market risk factors for these events. Gold is included because it often trades as a monetary asset alongside major currencies. The U.S. dollar remains the dominant reserve and transaction currency, appearing on one side of most foreign exchange trades. Exchange rates reflect relative
 economic growth, inflation, monetary policy, capital flows and geopolitical developments.
