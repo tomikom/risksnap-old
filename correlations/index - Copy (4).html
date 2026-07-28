@@ -3,7 +3,7 @@ layout: correlations-template
 ---
 <!--
 RiskSnap Correlations
-Version: index(84)
+Version: index(80)
 Changes:
 - Reduced matrix cell size so more of the matrix fits on screen
 - Kept bubble scale unchanged, creating more overlap
@@ -136,19 +136,18 @@ Changes:
         <thead>
           <tr>
             <th>Security</th>
-            <th>EOD price</th>
-            <th>Current price</th>
+            <th id="portfolioPriceHeading">Latest price</th>
             <th>Shares</th>
-            <th>Current market value</th>
-            <th>Current weight</th>
-            <th>Annual Return (EOD)</th>
-            <th>Sharpe Ratio (EOD)</th>
+            <th>Market value</th>
+            <th>Weight</th>
+            <th>Annual Return (Weighted)</th>
+            <th>Sharpe Ratio</th>
           </tr>
         </thead>
         <tbody id="portfolioBody"></tbody>
         <tfoot>
           <tr>
-            <td colspan="4">Total</td>
+            <td colspan="3">Total</td>
             <td id="portfolioTotalMarketValue">—</td>
             <td id="portfolioTotalWeight">100.00%</td>
             <td colspan="2"></td>
@@ -942,8 +941,8 @@ function renderSelectedMatrixFrame() {
   updateMatrixHistorySliderDate(frame, index);
   drawCorrelationChart(frame);
 
-  // A slider selection is a complete historical EOD snapshot. In Latest mode,
-  // current quotes are used only for valuation; every risk measure remains EOD.
+  // A slider selection is a complete historical portfolio snapshot:
+  // historical EOD prices, market values, weights and risk data all use this frame.
   portfolioViewMode = "historical";
   portfolioRiskPayload = frame;
   setDisplayedPortfolioPricesFromPayload(frame);
@@ -1188,9 +1187,7 @@ function pricesFromPayload(payload) {
 }
 
 function setDisplayedPortfolioPricesFromPayload(payload) {
-  // Matrix History changes the EOD risk snapshot only. Current quotes remain
-  // the valuation source so moving the risk-date slider cannot overwrite MTM.
-  portfolioPrices = { ...portfolioCurrentPrices };
+  portfolioPrices = pricesFromPayload(payload);
 }
 
 function initializePortfolio(payload, selectedEquities) {
@@ -1234,7 +1231,7 @@ function initializePortfolio(payload, selectedEquities) {
 
 function setEqualMarketValueShares() {
   const valid = portfolioSecurities.filter(asset =>
-    Number.isFinite(Number(portfolioCurrentPrices[asset])) && Number(portfolioCurrentPrices[asset]) > 0
+    Number.isFinite(Number(portfolioPrices[asset])) && Number(portfolioPrices[asset]) > 0
   );
   const totalBookValue = Math.max(
     0,
@@ -1243,18 +1240,18 @@ function setEqualMarketValueShares() {
   const targetPerSecurity = valid.length ? totalBookValue / valid.length : 0;
 
   valid.forEach(asset => {
-    portfolioShares[asset] = Math.floor(targetPerSecurity / Number(portfolioCurrentPrices[asset]));
+    portfolioShares[asset] = Math.floor(targetPerSecurity / Number(portfolioPrices[asset]));
   });
 }
 
 function currentPortfolioRows() {
   return portfolioSecurities
     .filter(asset =>
-      Number.isFinite(Number(portfolioCurrentPrices[asset])) &&
-      Number(portfolioCurrentPrices[asset]) > 0
+      Number.isFinite(Number(portfolioPrices[asset])) &&
+      Number(portfolioPrices[asset]) > 0
     )
     .map(asset => {
-      const price = Number(portfolioCurrentPrices[asset]);
+      const price = Number(portfolioPrices[asset]);
       const shares = Math.max(0, Number(portfolioShares[asset]) || 0);
       return { asset, price, shares, marketValue: price * shares };
     });
@@ -1395,7 +1392,7 @@ function updatePortfolioDataLabels() {
   if (riskDate) riskDate.textContent = portfolioRiskPayload && portfolioRiskPayload.date
     ? `${formatLongDate(portfolioRiskPayload.date)} Close`
     : "Latest completed EOD";
-  // Both EOD and current prices are shown in separate columns.
+  if (priceHeading) priceHeading.textContent = historical ? "EOD price" : "Latest price";
   if (refreshButton) {
     refreshButton.disabled = portfolioPriceRefreshInProgress;
     refreshButton.title = portfolioPriceRefreshInProgress
@@ -1417,9 +1414,10 @@ function portfolioCorrelation(payload, i, j) {
 function calculatePortfolioVolatility(payload) {
   if (!payload || !payload.assets || !payload.volatility) return null;
 
-  // Risk calculations always use the EOD prices carried by the selected
-  // correlation-matrix frame. Current quotes are valuation-only.
-  const rows = riskPortfolioRows(payload).filter(row => row.marketValue > 0);
+  // currentPortfolioRows() uses whichever prices are displayed:
+  // live/current prices in current mode and the selected EOD prices in
+  // historical mode. This makes slider changes instantaneous.
+  const rows = currentPortfolioRows().filter(row => row.marketValue > 0);
   const totalMarketValue = rows.reduce((sum, row) => sum + row.marketValue, 0);
   if (totalMarketValue <= 0) return null;
 
@@ -1449,9 +1447,7 @@ function calculatePortfolioVolatility(payload) {
 }
 
 function calculatePortfolioAnalyticsLocally(totalMarketValue) {
-  // Market value/gain-loss use displayed prices, but EWMA weighting, portfolio
-  // volatility and Sharpe must use the selected frame's EOD prices.
-  const riskRows = riskPortfolioRows(portfolioRiskPayload).filter(row => row.marketValue > 0);
+  const rows = currentPortfolioRows().filter(row => row.marketValue > 0);
   const bookValue = Math.max(
     0,
     Number(document.getElementById("portfolioBookValue").value) || 0
@@ -1473,17 +1469,16 @@ function calculatePortfolioAnalyticsLocally(totalMarketValue) {
       ? portfolioRiskPayload.missing_ewma.slice()
       : [];
 
-    const totalEodMarketValue = riskRows.reduce((sum, row) => sum + row.marketValue, 0);
     let weightedReturn = 0;
-    let complete = riskRows.length > 0 && totalEodMarketValue > 0;
-    riskRows.forEach(row => {
+    let complete = rows.length > 0 && marketValue > 0;
+    rows.forEach(row => {
       const value = Number(ewma[row.asset]);
       if (!Number.isFinite(value)) {
         complete = false;
         if (!missingEwma.includes(row.asset)) missingEwma.push(row.asset);
         return;
       }
-      weightedReturn += (row.marketValue / totalEodMarketValue) * value;
+      weightedReturn += (row.marketValue / marketValue) * value;
     });
 
     if (complete) {
@@ -1585,22 +1580,22 @@ function updatePortfolioSummary(totalMarketValue) {
     <div class="portfolio-summary-grid">
       <div class="portfolio-summary-label">Book Cost</div>
       <div class="portfolio-summary-value">${formatMoney(bookCost)}</div>
-      <div class="portfolio-summary-label">Market Value (Current)</div>
+      <div class="portfolio-summary-label">Market Value</div>
       <div class="portfolio-summary-value">${formatMoney(Number(a.market_value))}</div>
       <div class="portfolio-summary-label">Gain/Loss</div>
       <div class="portfolio-summary-value ${tone(gainLoss)}">${signedMoney(gainLoss)}</div>
       <div class="portfolio-summary-label">Return on Book Cost</div>
       <div class="portfolio-summary-value ${tone(returnOnBookCost || 0)}">${signedPct(returnOnBookCost)}</div>
-      <div class="portfolio-summary-label">Change vs Latest EOD</div>
+      <div class="portfolio-summary-label">Daily Change</div>
       <div class="portfolio-summary-value ${dailyChange ? tone(dailyChange.change) : ""}">${dailyChangeText}</div>
       <div class="portfolio-summary-break"></div>
-      <div class="portfolio-summary-label">Annual Return (Weighted, EOD)</div>
+      <div class="portfolio-summary-label">Annual Return (Weighted)</div>
       <div class="portfolio-summary-value">${ewmaText}</div>
-      <div class="portfolio-summary-label">Portfolio Volatility (EOD)</div>
+      <div class="portfolio-summary-label">Portfolio Volatility</div>
       <div class="portfolio-summary-value">${pct(volatility)}</div>
-      <div class="portfolio-summary-label">Risk-Free Rate (1Y, EOD)</div>
+      <div class="portfolio-summary-label">Risk-Free Rate (1Y)</div>
       <div class="portfolio-summary-value">${riskFreeText}</div>
-      <div class="portfolio-summary-label">Sharpe Ratio (EOD)</div>
+      <div class="portfolio-summary-label">Sharpe Ratio</div>
       <div class="portfolio-summary-value">${sharpeText}</div>
     </div>`;
 
@@ -1629,7 +1624,7 @@ function renderPortfolioTable() {
     summary.textContent = "";
     const stickySummary = document.getElementById("matrixPortfolioSummary");
     if (stickySummary) stickySummary.textContent = "";
-    body.innerHTML = `<tr><td colspan="8" class="portfolio-empty">No selected securities with current prices are available.</td></tr>`;
+    body.innerHTML = `<tr><td colspan="7" class="portfolio-empty">No selected securities with ${portfolioViewMode === "historical" ? "historical" : "current"} prices are available.</td></tr>`;
     const totalValueCell = document.getElementById("portfolioTotalMarketValue");
     const totalWeightCell = document.getElementById("portfolioTotalWeight");
     if (totalValueCell) totalValueCell.textContent = "—";
@@ -1670,14 +1665,9 @@ function renderPortfolioTable() {
       ? securitySharpe.toFixed(2)
       : "—";
 
-    const eodPrice = riskIndex >= 0 && portfolioRiskPayload && Array.isArray(portfolioRiskPayload.prices)
-      ? Number(portfolioRiskPayload.prices[riskIndex])
-      : NaN;
-
     const tr = document.createElement("tr");
     tr.innerHTML = `
       <td>${rowIndex + 1}. ${displayAsset(row.asset)}</td>
-      <td>${formatMoney(eodPrice)}</td>
       <td>${formatMoney(row.price)}</td>
       <td><input class="portfolio-shares" data-asset="${row.asset}" type="number" min="0" step="0.0001" value="${formatShares(row.shares)}"></td>
       <td>${formatMoney(row.marketValue)}</td>
