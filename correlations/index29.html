@@ -3,7 +3,7 @@ layout: correlations-template
 ---
 <!--
 RiskSnap Correlations
-Version: index(79)
+Version: index(80)
 Changes:
 - Reduced matrix cell size so more of the matrix fits on screen
 - Kept bubble scale unchanged, creating more overlap
@@ -11,6 +11,8 @@ Changes:
 - Existing rolling-pair panel retained
 - Added Reset, Play, Pause, and Latest controls for automatic Matrix History playback
 - Clarified that the same 20 matrix dates are shown for every lookback, while each matrix uses the selected lookback
+- Added Annual Return (Weighted) and Sharpe Ratio for each portfolio security
+- Renamed the portfolio EWMA Return label to Annual Return (Weighted)
 -->
 
 <!--<h1>Correlations</h1>-->
@@ -85,6 +87,7 @@ Changes:
           <button type="button" class="preset-button" data-preset="defensive">🛡️ Defensive</button>
           <button type="button" class="preset-button" data-preset="crypto">₿ Crypto</button>
 		  <button type="button" class="preset-button" data-preset="worldtop10">💥 World Top 10</button>
+		  <button type="button" class="preset-button" data-preset="benchmarks">┬─┬ Benchmarks</button>
         </div>
         <textarea id="equitySymbols"></textarea>
         <div class="input-note">Enter Yahoo symbols separated by commas or spaces. Maximum 20 total assets. Indices and other non-equity Yahoo codes remain in the risk matrix but are excluded from Portfolio Holdings.</div>
@@ -101,7 +104,7 @@ Changes:
     <div class="portfolio-band">Portfolio Holdings</div>
     <div class="portfolio-header">
       <div>
-        <div class="portfolio-note">Enter the actual number of shares held and the portfolio’s Book Cost. Holdings valuation and displayed weights use the latest downloaded prices. Portfolio volatility is recalculated instantly from the loaded EOD risk matrix and displayed portfolio weights. Sharpe uses the EOD EWMA returns for the displayed matrix date. When no saved portfolio is loaded, RiskSnap automatically creates an equal-weight portfolio from the selected securities.</div>
+        <div class="portfolio-note">Enter the actual number of shares held and the portfolio’s Book Cost. Holdings valuation and displayed weights use the latest downloaded prices. Portfolio volatility is recalculated instantly from the loaded EOD risk matrix and displayed portfolio weights. Sharpe uses the EOD EWMA returns for the displayed matrix date. When no saved portfolio is loaded, RiskSnap automatically creates an equal-weight portfolio from the selected securities .</div>
       </div>
       <div class="portfolio-controls">
         <label>Book Cost:
@@ -137,6 +140,8 @@ Changes:
             <th>Shares</th>
             <th>Market value</th>
             <th>Weight</th>
+            <th>Annual Return (Weighted)</th>
+            <th>Sharpe Ratio</th>
           </tr>
         </thead>
         <tbody id="portfolioBody"></tbody>
@@ -145,6 +150,7 @@ Changes:
             <td colspan="3">Total</td>
             <td id="portfolioTotalMarketValue">—</td>
             <td id="portfolioTotalWeight">100.00%</td>
+            <td colspan="2"></td>
           </tr>
         </tfoot>
       </table>
@@ -393,7 +399,9 @@ const YAHOO_PRESETS = {
   financials: "JPM, BAC, WFC, C, GS, MS, BLK, SCHW, RY, TD",
   defensive: "PG, KO, PEP, WMT, COST, MCD, CL, GIS, KMB, MDLZ",
   crypto: "BTC-USD, ETH-USD, MSTR, COIN, MARA, RIOT, CLSK, HUT, CIFR",
-  worldtop10: "NVDA,AAPL,GOOG,MSFT,AMZN,TSMC,AVGO,2222.SR,META,SPCX"
+  worldtop10: "NVDA,AAPL,GOOG,MSFT,AMZN,TSMC,AVGO,2222.SR,META,SPCX",
+  benchmarks: "SPY,QQQ,DIA,GWM,GLD,TLT,BTC-USD"
+  
 };
 
 const NON_HOLDING_SYMBOLS = new Set([
@@ -408,6 +416,7 @@ const PORTFOLIO_BOOK_VALUE_KEY = "RiskSnapLastBookCost";
 const ROLLING_ENDPOINT = "https://surface-203178530029.northamerica-northeast2.run.app/rolling_correlation";
 const ROLLING_MATRIX_ENDPOINT = "https://surface-203178530029.northamerica-northeast2.run.app/rolling_matrix";
 const LATEST_PRICES_ENDPOINT = "https://surface-203178530029.northamerica-northeast2.run.app/latest_prices";
+const USD_YIELD_ENDPOINT = "https://surface-203178530029.northamerica-northeast2.run.app/yield_history?country=USD&period=1y";
 const ROLLING_VISIBLE_POINTS = 20;
 const MATRIX_HISTORY_REQUEST_FRAMES = { 25: 250, 90: 250, 250: 250 };
 const SHARPE_RISK_FREE_RATE = 0.0411;
@@ -445,6 +454,8 @@ let portfolioPriceRefreshSignature = "";
 let portfolioPriceRefreshInProgress = false;
 let activeYahooPreset = null;
 let portfolioAutoEqualWeight = true;
+let usdOneYearRates = null;
+let usdOneYearRatesPromise = null;
 
 
 const scheduleCorrelationRefresh = debounce(fetchCorrelationData, 450);
@@ -714,6 +725,58 @@ function selectedPreviewLabels() {
   return getSelectedInputs().labels;
 }
 
+async function loadUsdOneYearRates() {
+  if (usdOneYearRates) return usdOneYearRates;
+  if (usdOneYearRatesPromise) return usdOneYearRatesPromise;
+
+  usdOneYearRatesPromise = fetch(USD_YIELD_ENDPOINT)
+    .then(async response => {
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.message || response.statusText);
+      const rows = Array.isArray(data.rows) ? data.rows : [];
+      const rates = new Map();
+      rows.forEach(row => {
+        const date = String(row.Date || row.date || "").slice(0, 10);
+        const ratePct = Number(row["1Y"]);
+        if (date && Number.isFinite(ratePct)) rates.set(date, ratePct / 100);
+      });
+      if (!rates.size) throw new Error("No USD 1Y Treasury rows were returned.");
+      usdOneYearRates = rates;
+      return rates;
+    })
+    .catch(err => {
+      console.warn("Unable to load the USD 1Y Treasury history.", err);
+      usdOneYearRatesPromise = null;
+      return null;
+    });
+
+  return usdOneYearRatesPromise;
+}
+
+function riskFreeRateForDate(dateText) {
+  if (!usdOneYearRates || !usdOneYearRates.size) return null;
+  const target = String(dateText || "").slice(0, 10);
+  if (!target) return null;
+  if (usdOneYearRates.has(target)) return { rate: usdOneYearRates.get(target), asOf: target };
+
+  let bestDate = null;
+  for (const date of usdOneYearRates.keys()) {
+    if (date <= target && (bestDate === null || date > bestDate)) bestDate = date;
+  }
+  return bestDate ? { rate: usdOneYearRates.get(bestDate), asOf: bestDate } : null;
+}
+
+function applyCanonicalRiskFreeRate(payload, dateText = "") {
+  if (!payload) return payload;
+  const lookupDate = dateText || payload.date || payload.risk_free_as_of || payload.ewma_as_of;
+  const match = riskFreeRateForDate(lookupDate);
+  if (match) {
+    payload.risk_free_rate = match.rate;
+    payload.risk_free_as_of = match.asOf;
+  }
+  return payload;
+}
+
 async function fetchCorrelationData() {
   const period = document.getElementById("corrPeriod").value;
   const lookback = parseInt(period, 10);
@@ -736,7 +799,8 @@ async function fetchCorrelationData() {
     });
     const data = await response.json();
     if (!response.ok) throw new Error((data.messages || [response.statusText]).join(" "));
-    activePayload = normalizePayload(data, period);
+    await loadUsdOneYearRates();
+    activePayload = applyCanonicalRiskFreeRate(normalizePayload(data, period), data.date || data.risk_free_as_of || data.ewma_as_of);
     activeIsLive = true;
     if (inputs.omitted.length) {
       activePayload.messages = [...(activePayload.messages || []), `Maximum ${MAX_ASSETS} assets shown. Omitted: ${inputs.omitted.join(", ")}.`];
@@ -787,7 +851,8 @@ async function fetchRollingMatrix(requestPayload, periodLabel) {
     if (requestId !== matrixHistoryRequestId) return;
 
     matrixHistoryAssets = (data.assets || activePayload?.assets || []).slice(0, MAX_ASSETS);
-    rawMatrixHistoryFrames = (data.frames || []).map(frame => normalizeMatrixFrame(frame, periodLabel));
+    await loadUsdOneYearRates();
+    rawMatrixHistoryFrames = (data.frames || []).map(frame => applyCanonicalRiskFreeRate(normalizeMatrixFrame(frame, periodLabel), frame.date));
     matrixHistoryLookback = lookback;
     if (!rawMatrixHistoryFrames.length) throw new Error("No matrix-history frames were returned.");
 
@@ -1524,7 +1589,7 @@ function updatePortfolioSummary(totalMarketValue) {
       <div class="portfolio-summary-label">Daily Change</div>
       <div class="portfolio-summary-value ${dailyChange ? tone(dailyChange.change) : ""}">${dailyChangeText}</div>
       <div class="portfolio-summary-break"></div>
-      <div class="portfolio-summary-label">EWMA Return</div>
+      <div class="portfolio-summary-label">Annual Return (Weighted)</div>
       <div class="portfolio-summary-value">${ewmaText}</div>
       <div class="portfolio-summary-label">Portfolio Volatility</div>
       <div class="portfolio-summary-value">${pct(volatility)}</div>
@@ -1542,7 +1607,7 @@ function updatePortfolioSummary(totalMarketValue) {
       `${dateText}  |  MV ${formatMoney(Number(a.market_value))}` +
       `  |  G/L ${signedMoney(gainLoss)} (${signedPct(returnOnBookCost)})` +
       `  |  Day ${dailyChangeText}` +
-      `  |  EWMA ${ewmaText}  |  Vol ${pct(volatility)}` +
+      `  |  Annual Return (Weighted) ${ewmaText}  |  Vol ${pct(volatility)}` +
       `  |  RF ${riskFreeText}  |  Sharpe ${sharpeText}`;
   }
 }
@@ -1559,7 +1624,7 @@ function renderPortfolioTable() {
     summary.textContent = "";
     const stickySummary = document.getElementById("matrixPortfolioSummary");
     if (stickySummary) stickySummary.textContent = "";
-    body.innerHTML = `<tr><td colspan="5" class="portfolio-empty">No selected securities with ${portfolioViewMode === "historical" ? "historical" : "current"} prices are available.</td></tr>`;
+    body.innerHTML = `<tr><td colspan="7" class="portfolio-empty">No selected securities with ${portfolioViewMode === "historical" ? "historical" : "current"} prices are available.</td></tr>`;
     const totalValueCell = document.getElementById("portfolioTotalMarketValue");
     const totalWeightCell = document.getElementById("portfolioTotalWeight");
     if (totalValueCell) totalValueCell.textContent = "—";
@@ -1573,6 +1638,33 @@ function renderPortfolioTable() {
     const weightPct = totalMarketValue > 0
       ? row.marketValue / totalMarketValue * 100
       : 0;
+
+    const riskAssets = portfolioRiskPayload && Array.isArray(portfolioRiskPayload.assets)
+      ? portfolioRiskPayload.assets
+      : [];
+    const riskIndex = riskAssets.indexOf(row.asset);
+    const securityVolatility = riskIndex >= 0 && portfolioRiskPayload && Array.isArray(portfolioRiskPayload.volatility)
+      ? Number(portfolioRiskPayload.volatility[riskIndex])
+      : NaN;
+    const securityAnnualReturn = portfolioRiskPayload && portfolioRiskPayload.ewma_returns
+      ? Number(portfolioRiskPayload.ewma_returns[row.asset])
+      : NaN;
+    const payloadRiskFreeRate = portfolioRiskPayload
+      ? Number(portfolioRiskPayload.risk_free_rate)
+      : NaN;
+    const securityRiskFreeRate = Number.isFinite(payloadRiskFreeRate)
+      ? payloadRiskFreeRate
+      : SHARPE_RISK_FREE_RATE;
+    const securitySharpe = Number.isFinite(securityAnnualReturn) && Number.isFinite(securityVolatility) && securityVolatility > 0
+      ? (securityAnnualReturn - securityRiskFreeRate) / securityVolatility
+      : NaN;
+    const annualReturnText = Number.isFinite(securityAnnualReturn)
+      ? `${(securityAnnualReturn * 100).toFixed(2)}%`
+      : "—";
+    const securitySharpeText = Number.isFinite(securitySharpe)
+      ? securitySharpe.toFixed(2)
+      : "—";
+
     const tr = document.createElement("tr");
     tr.innerHTML = `
       <td>${rowIndex + 1}. ${displayAsset(row.asset)}</td>
@@ -1580,6 +1672,8 @@ function renderPortfolioTable() {
       <td><input class="portfolio-shares" data-asset="${row.asset}" type="number" min="0" step="0.0001" value="${formatShares(row.shares)}"></td>
       <td>${formatMoney(row.marketValue)}</td>
       <td>${weightPct.toFixed(2)}%</td>
+      <td>${annualReturnText}</td>
+      <td>${securitySharpeText}</td>
     `;
     body.appendChild(tr);
   });
@@ -2213,6 +2307,15 @@ function loadPortfolio() {
   saveLastPortfolioBookCost();
   portfolioAutoEqualWeight = false;
   portfolioShares = { ...(saved.shares || {}) };
+
+  // A saved portfolio stores only its identity, holdings, shares and Book Cost.
+  // All valuation and risk measures are discarded and rebuilt from current data.
+  portfolioRiskPayload = null;
+  portfolioPrices = {};
+  portfolioCurrentPrices = {};
+  portfolioPriceTimestamp = null;
+  portfolioViewMode = "current";
+
   if (nameInput) nameInput.value = name;
   saveCurrentSettings();
   updateSaveDefaultsState();

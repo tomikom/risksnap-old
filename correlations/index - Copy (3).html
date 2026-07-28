@@ -416,7 +416,6 @@ const PORTFOLIO_BOOK_VALUE_KEY = "RiskSnapLastBookCost";
 const ROLLING_ENDPOINT = "https://surface-203178530029.northamerica-northeast2.run.app/rolling_correlation";
 const ROLLING_MATRIX_ENDPOINT = "https://surface-203178530029.northamerica-northeast2.run.app/rolling_matrix";
 const LATEST_PRICES_ENDPOINT = "https://surface-203178530029.northamerica-northeast2.run.app/latest_prices";
-const USD_YIELD_ENDPOINT = "https://surface-203178530029.northamerica-northeast2.run.app/yield_history?country=USD&period=1y";
 const ROLLING_VISIBLE_POINTS = 20;
 const MATRIX_HISTORY_REQUEST_FRAMES = { 25: 250, 90: 250, 250: 250 };
 const SHARPE_RISK_FREE_RATE = 0.0411;
@@ -454,8 +453,6 @@ let portfolioPriceRefreshSignature = "";
 let portfolioPriceRefreshInProgress = false;
 let activeYahooPreset = null;
 let portfolioAutoEqualWeight = true;
-let usdOneYearRates = null;
-let usdOneYearRatesPromise = null;
 
 
 const scheduleCorrelationRefresh = debounce(fetchCorrelationData, 450);
@@ -725,58 +722,6 @@ function selectedPreviewLabels() {
   return getSelectedInputs().labels;
 }
 
-async function loadUsdOneYearRates() {
-  if (usdOneYearRates) return usdOneYearRates;
-  if (usdOneYearRatesPromise) return usdOneYearRatesPromise;
-
-  usdOneYearRatesPromise = fetch(USD_YIELD_ENDPOINT)
-    .then(async response => {
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.message || response.statusText);
-      const rows = Array.isArray(data.rows) ? data.rows : [];
-      const rates = new Map();
-      rows.forEach(row => {
-        const date = String(row.Date || row.date || "").slice(0, 10);
-        const ratePct = Number(row["1Y"]);
-        if (date && Number.isFinite(ratePct)) rates.set(date, ratePct / 100);
-      });
-      if (!rates.size) throw new Error("No USD 1Y Treasury rows were returned.");
-      usdOneYearRates = rates;
-      return rates;
-    })
-    .catch(err => {
-      console.warn("Unable to load the USD 1Y Treasury history.", err);
-      usdOneYearRatesPromise = null;
-      return null;
-    });
-
-  return usdOneYearRatesPromise;
-}
-
-function riskFreeRateForDate(dateText) {
-  if (!usdOneYearRates || !usdOneYearRates.size) return null;
-  const target = String(dateText || "").slice(0, 10);
-  if (!target) return null;
-  if (usdOneYearRates.has(target)) return { rate: usdOneYearRates.get(target), asOf: target };
-
-  let bestDate = null;
-  for (const date of usdOneYearRates.keys()) {
-    if (date <= target && (bestDate === null || date > bestDate)) bestDate = date;
-  }
-  return bestDate ? { rate: usdOneYearRates.get(bestDate), asOf: bestDate } : null;
-}
-
-function applyCanonicalRiskFreeRate(payload, dateText = "") {
-  if (!payload) return payload;
-  const lookupDate = dateText || payload.date || payload.risk_free_as_of || payload.ewma_as_of;
-  const match = riskFreeRateForDate(lookupDate);
-  if (match) {
-    payload.risk_free_rate = match.rate;
-    payload.risk_free_as_of = match.asOf;
-  }
-  return payload;
-}
-
 async function fetchCorrelationData() {
   const period = document.getElementById("corrPeriod").value;
   const lookback = parseInt(period, 10);
@@ -799,8 +744,7 @@ async function fetchCorrelationData() {
     });
     const data = await response.json();
     if (!response.ok) throw new Error((data.messages || [response.statusText]).join(" "));
-    await loadUsdOneYearRates();
-    activePayload = applyCanonicalRiskFreeRate(normalizePayload(data, period), data.date || data.risk_free_as_of || data.ewma_as_of);
+    activePayload = normalizePayload(data, period);
     activeIsLive = true;
     if (inputs.omitted.length) {
       activePayload.messages = [...(activePayload.messages || []), `Maximum ${MAX_ASSETS} assets shown. Omitted: ${inputs.omitted.join(", ")}.`];
@@ -851,8 +795,7 @@ async function fetchRollingMatrix(requestPayload, periodLabel) {
     if (requestId !== matrixHistoryRequestId) return;
 
     matrixHistoryAssets = (data.assets || activePayload?.assets || []).slice(0, MAX_ASSETS);
-    await loadUsdOneYearRates();
-    rawMatrixHistoryFrames = (data.frames || []).map(frame => applyCanonicalRiskFreeRate(normalizeMatrixFrame(frame, periodLabel), frame.date));
+    rawMatrixHistoryFrames = (data.frames || []).map(frame => normalizeMatrixFrame(frame, periodLabel));
     matrixHistoryLookback = lookback;
     if (!rawMatrixHistoryFrames.length) throw new Error("No matrix-history frames were returned.");
 
@@ -2307,15 +2250,6 @@ function loadPortfolio() {
   saveLastPortfolioBookCost();
   portfolioAutoEqualWeight = false;
   portfolioShares = { ...(saved.shares || {}) };
-
-  // A saved portfolio stores only its identity, holdings, shares and Book Cost.
-  // All valuation and risk measures are discarded and rebuilt from current data.
-  portfolioRiskPayload = null;
-  portfolioPrices = {};
-  portfolioCurrentPrices = {};
-  portfolioPriceTimestamp = null;
-  portfolioViewMode = "current";
-
   if (nameInput) nameInput.value = name;
   saveCurrentSettings();
   updateSaveDefaultsState();
