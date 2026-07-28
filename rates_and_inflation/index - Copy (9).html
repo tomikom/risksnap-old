@@ -63,9 +63,9 @@ Daily interest-rate yields in the charts are derived from central-bank and publi
 	<button data-range="10y" onclick="setYieldRange('10y')">10Y</button>
 	<button data-range="max" onclick="setYieldRange('max')">Max</button>
     <span class="yield-control-label">Country:</span>
-    <select id="yieldCountrySelect" onchange="loadSelectedCountry()"></select>
+    <select id="yieldCountrySelect" onchange="drawYieldCharts()"></select>
     <span class="yield-control-label">Tenor:</span>
-    <select id="yieldTenorSelect" onchange="loadSelectedCountry()">
+    <select id="yieldTenorSelect" onchange="drawYieldCharts()">
         <option value="10Y" selected>10Y</option>
         <option value="1Y">1Y</option>
         <option value="2Y">2Y</option>
@@ -75,7 +75,7 @@ Daily interest-rate yields in the charts are derived from central-bank and publi
         <option value="20Y">20Y</option>
         <option value="30Y">30Y</option>
     </select>
-    <button type="button" onclick="loadSelectedCountry(true)">Update charts</button>
+    <button type="button" onclick="loadYieldCharts()">Update charts</button>
 </div>
 
 <div id="yieldStatus" class="yield-status">Loading yield charts...</div>
@@ -151,7 +151,7 @@ function updateYieldButtons() {
 function setYieldRange(range) {
     yieldRange = range;
 	updateYieldButtons();
-    loadSelectedCountry(true);
+    loadYieldCharts();
 }
 
 function selectedCountry() {
@@ -414,34 +414,25 @@ async function loadOneCountry(country) {
     return country;
 }
 
-async function loadSelectedCountry(forceReload = false) {
+async function loadYieldCharts() {
     updateYieldButtons();
-    const status = document.getElementById("yieldStatus");
-    const country = selectedCountry();
-
-    if (!forceReload && allYieldRows[country.code] && allYieldRows[country.code].length) {
-        drawYieldCharts();
+	const status = document.getElementById("yieldStatus");
+    status.textContent = "Updating yield charts...";
+    allYieldRows = {};
+    loadedYieldCountries = [];
+    const activeCountries = yieldCountries.filter(c => !c.disabled);
+    const results = await Promise.allSettled(activeCountries.map(loadOneCountry));
+    results.forEach((res, i) => {
+        if (res.status === "fulfilled") loadedYieldCountries.push(res.value);
+        else console.warn("Could not load", activeCountries[i].code, res.reason);
+    });
+    if (!loadedYieldCountries.length) {
+        status.textContent = "Could not load yield data from Cloud Run. Check that /yield_history is deployed.";
+        emptySelectedCharts("No yield data loaded.");
+        Plotly.newPlot("yield_all_tenors", [], {}, plotlyConfig());
         return;
     }
-
-    status.textContent = "Loading " + country.name + " rates...";
-    try {
-        await loadOneCountry(country);
-        if (!loadedYieldCountries.some(c => c.code === country.code)) {
-            loadedYieldCountries.push(country);
-        }
-        drawYieldCharts();
-    } catch (err) {
-        console.warn("Could not load", country.code, err);
-        status.textContent = "Could not load " + country.name + " yield data from Cloud Run.";
-        emptySelectedCharts("No data loaded for " + country.name + ".");
-    }
-}
-
-async function loadYieldCharts() {
-    // Compatibility wrapper. Load only the selected country so USD appears
-    // immediately instead of waiting for all six central-bank sources.
-    return loadSelectedCountry(true);
+    drawYieldCharts();
 }
 
 function plotlyConfig() {
@@ -450,6 +441,6 @@ function plotlyConfig() {
 
 window.addEventListener("load", function() {
     setupCountrySelect();
-    loadSelectedCountry(true);
+    loadYieldCharts();
 });
 </script>
