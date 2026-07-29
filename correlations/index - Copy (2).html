@@ -521,7 +521,6 @@ let portfolioAutoEqualWeight = true;
 let usdOneYearRates = null;
 let usdOneYearRatesPromise = null;
 const securityHistoryCache = new Map();
-const securityCurrentPriceCache = new Map();
 let selectedSecurityChartAsset = "";
 let selectedSecurityChartRange = "1y";
 
@@ -1895,7 +1894,7 @@ function drawLineChart(container, rows, valueKey, options = {}) {
     hoverPoint.setAttribute("visibility", "visible");
     if (tooltip) {
       const dateText = formatLongDate(row.date);
-      const valueLabel = row._isCurrent ? "Current price" : (options.valueLabel || "Price");
+      const valueLabel = options.valueLabel || "Value";
       const heading = options.heading ? `<strong>${options.heading}</strong><br>` : "";
       tooltip.innerHTML = `${heading}${dateText}<br>${valueLabel}: <strong>${formatValue(row[valueKey])}</strong>`;
       tooltip.style.display = "block";
@@ -1940,61 +1939,6 @@ async function openSecurityChart(asset) {
   await loadSecurityChart(symbol, selectedSecurityChartRange);
 }
 
-function torontoDateKey(value) {
-  const date = value instanceof Date ? value : new Date(value);
-  if (Number.isNaN(date.getTime())) return "";
-  const parts = new Intl.DateTimeFormat("en-CA", {
-    timeZone: "America/Toronto", year: "numeric", month: "2-digit", day: "2-digit"
-  }).formatToParts(date);
-  const get = type => parts.find(part => part.type === type)?.value || "";
-  return `${get("year")}-${get("month")}-${get("day")}`;
-}
-
-async function currentChartPrice(symbol) {
-  const normalized = normalizeDisplaySymbol(symbol);
-  const cached = securityCurrentPriceCache.get(normalized);
-  if (cached && Date.now() - cached.cachedAt < 60000) return cached;
-
-  if (Number.isFinite(Number(portfolioCurrentPrices[normalized])) && portfolioPriceTimestamp) {
-    const result = {
-      price: Number(portfolioCurrentPrices[normalized]),
-      date: torontoDateKey(portfolioPriceTimestamp),
-      cachedAt: Date.now()
-    };
-    securityCurrentPriceCache.set(normalized, result);
-    return result;
-  }
-
-  const response = await fetch(LATEST_PRICES_ENDPOINT, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ symbols: [normalized] })
-  });
-  const data = await response.json();
-  if (!response.ok) throw new Error(data.message || data.error || response.statusText);
-  const prices = parseLatestPriceResponse(data);
-  const price = Number(prices[normalized]);
-  if (!Number.isFinite(price) || price <= 0) throw new Error("No current price was returned.");
-  const result = {
-    price,
-    date: torontoDateKey(latestPriceTimestampFromResponse(data)),
-    cachedAt: Date.now()
-  };
-  securityCurrentPriceCache.set(normalized, result);
-  return result;
-}
-
-function appendCurrentChartPoint(historyRows, quote) {
-  const rows = (historyRows || []).map(row => ({ ...row }));
-  if (!quote || !quote.date || !Number.isFinite(Number(quote.price))) return rows;
-  const last = rows[rows.length - 1];
-  if (!last || !last.date) return rows;
-  const point = { date: quote.date, price: Number(quote.price), _isCurrent: true };
-  if (quote.date > last.date) rows.push(point);
-  else if (quote.date === last.date) rows[rows.length - 1] = point;
-  return rows;
-}
-
 async function loadSecurityChart(symbol, range) {
   const chart = document.getElementById("securityChart");
   const title = document.getElementById("securityChartTitle");
@@ -2017,17 +1961,10 @@ async function loadSecurityChart(symbol, range) {
       if (!response.ok) throw new Error(data.error || response.statusText);
       securityHistoryCache.set(key, data);
     }
-    const historyRows = Array.isArray(data.rows) ? data.rows : [];
-    if (historyRows.length < 2) throw new Error("Not enough price history was returned.");
-    let rows = historyRows;
-    try {
-      const quote = await currentChartPrice(symbol);
-      rows = appendCurrentChartPoint(historyRows, quote);
-    } catch (quoteError) {
-      console.warn(`Current chart price unavailable for ${symbol}:`, quoteError);
-    }
-    status.textContent = `${chartDateLabel(rows[0].date)} to ${chartDateLabel(rows[rows.length - 1].date)}`;
-    drawLineChart(chart, rows, "price", { money: true, valueLabel: "Price", heading: displayAsset(symbol), ariaLabel: `${symbol} price history` });
+    const rows = Array.isArray(data.rows) ? data.rows : [];
+    if (rows.length < 2) throw new Error("Not enough price history was returned.");
+    status.textContent = `${chartDateLabel(rows[0].date)} to ${chartDateLabel(rows[rows.length - 1].date)} · ${rows.length} EOD observations`;
+    drawLineChart(chart, rows, "price", { money: true, valueLabel: "EOD price", heading: displayAsset(symbol), ariaLabel: `${symbol} price history` });
   } catch (error) {
     status.textContent = `Chart unavailable: ${error.message}`;
   }
