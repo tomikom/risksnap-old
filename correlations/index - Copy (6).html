@@ -1628,8 +1628,6 @@ function calculatePortfolioAnalyticsLocally(totalMarketValue) {
   const volatility = calculatePortfolioVolatility(portfolioRiskPayload);
 
   let portfolioEwmaReturn = null;
-  let portfolioDividendYield = null;
-  let portfolioTotalReturn = null;
   let sharpe = null;
   let missingEwma = [];
   const payloadRiskFreeRate = portfolioRiskPayload ? Number(portfolioRiskPayload.risk_free_rate) : NaN;
@@ -1644,32 +1642,27 @@ function calculatePortfolioAnalyticsLocally(totalMarketValue) {
       : [];
 
     const totalEodMarketValue = riskRows.reduce((sum, row) => sum + row.marketValue, 0);
-    let weightedPriceReturn = 0;
-    let weightedDividendYield = 0;
+    let weightedReturn = 0;
     let complete = riskRows.length > 0 && totalEodMarketValue > 0;
     riskRows.forEach(row => {
-      const priceReturn = Number(ewma[row.asset]);
-      if (!Number.isFinite(priceReturn)) {
+      const value = Number(ewma[row.asset]);
+      if (!Number.isFinite(value)) {
         complete = false;
         if (!missingEwma.includes(row.asset)) missingEwma.push(row.asset);
         return;
       }
-      // Yahoo dividend yields are stored as decimals (for example 0.0313 = 3.13%).
-      // A missing yield is treated as zero, which is appropriate for non-dividend assets.
-      const rawDividendYield = Number(portfolioDividendYields[row.asset]);
-      const dividendYield = Number.isFinite(rawDividendYield) ? rawDividendYield : 0;
-      const weight = row.marketValue / totalEodMarketValue;
-      weightedPriceReturn += weight * priceReturn;
-      weightedDividendYield += weight * dividendYield;
+      const dividendYield = Number(portfolioDividendYields[row.asset]);
+      if (!Number.isFinite(dividendYield)) {
+        complete = false;
+        return;
+      }
+      weightedReturn += (row.marketValue / totalEodMarketValue) * (value + dividendYield);
     });
 
     if (complete) {
-      const weightedTotalReturn = weightedPriceReturn + weightedDividendYield;
-      portfolioEwmaReturn = weightedPriceReturn;
-      portfolioDividendYield = weightedDividendYield;
-      portfolioTotalReturn = weightedTotalReturn;
+      portfolioEwmaReturn = weightedReturn;
       if (Number.isFinite(volatility) && volatility > 0) {
-        sharpe = (weightedTotalReturn - riskFreeRate) / volatility;
+        sharpe = (weightedReturn - riskFreeRate) / volatility;
       }
     }
   }
@@ -1681,8 +1674,6 @@ function calculatePortfolioAnalyticsLocally(totalMarketValue) {
     gain_loss_pct: bookValue > 0 ? (marketValue - bookValue) / bookValue : null,
     volatility,
     portfolio_ewma_return: portfolioEwmaReturn,
-    portfolio_dividend_yield: portfolioDividendYield,
-    portfolio_total_return: portfolioTotalReturn,
     sharpe,
     risk_free_rate: riskFreeRate,
     risk_free_as_of: portfolioRiskPayload ? portfolioRiskPayload.risk_free_as_of : null,
@@ -1740,8 +1731,6 @@ function updatePortfolioSummary(totalMarketValue) {
   const gainLoss = Number(a.gain_loss);
   const returnOnBookCost = a.gain_loss_pct === null ? null : Number(a.gain_loss_pct);
   const ewmaReturn = a.portfolio_ewma_return === null ? null : Number(a.portfolio_ewma_return);
-  const portfolioDividendYield = a.portfolio_dividend_yield === null ? null : Number(a.portfolio_dividend_yield);
-  const portfolioTotalReturn = a.portfolio_total_return === null ? null : Number(a.portfolio_total_return);
   const volatility = a.volatility === null ? null : Number(a.volatility);
   const riskFreeRate = Number(a.risk_free_rate);
   const sharpe = a.sharpe === null ? null : Number(a.sharpe);
@@ -1757,15 +1746,11 @@ function updatePortfolioSummary(totalMarketValue) {
   const tone = value => value > 0 ? "positive" : value < 0 ? "negative" : "";
 
   let ewmaText = pct(ewmaReturn);
-  let dividendText = pct(portfolioDividendYield);
-  let totalReturnText = pct(portfolioTotalReturn);
   const riskFreeText = Number.isFinite(riskFreeRate) ? pct(riskFreeRate) : "—";
   const dailyChangeText = dailyChange ? `${signedMoney(dailyChange.change)} (${signedPct(dailyChange.pct)})` : "—";
   let sharpeText = Number.isFinite(sharpe) ? sharpe.toFixed(2) : "—";
   if (Array.isArray(a.missing_ewma) && a.missing_ewma.length) {
     ewmaText = "—";
-    dividendText = "—";
-    totalReturnText = "—";
     sharpeText = "—";
   }
 
@@ -1782,12 +1767,8 @@ function updatePortfolioSummary(totalMarketValue) {
       <div class="portfolio-summary-label">Change vs Latest EOD</div>
       <div class="portfolio-summary-value ${dailyChange ? tone(dailyChange.change) : ""}">${dailyChangeText}</div>
       <div class="portfolio-summary-break"></div>
-      <div class="portfolio-summary-label">Annual Weighted Return (EOD)</div>
-      <div class="portfolio-summary-value">${ewmaText}</div>
-      <div class="portfolio-summary-label">Portfolio Dividend Yield</div>
-      <div class="portfolio-summary-value">${dividendText}</div>
       <div class="portfolio-summary-label">An. Wtd. Total Return</div>
-      <div class="portfolio-summary-value">${totalReturnText}</div>
+      <div class="portfolio-summary-value">${ewmaText}</div>
       <div class="portfolio-summary-label">Portfolio Volatility (EOD)</div>
       <div class="portfolio-summary-value">${pct(volatility)}</div>
       <div class="portfolio-summary-label">Risk-Free Rate (1Y, EOD)</div>
@@ -1852,9 +1833,8 @@ function renderPortfolioTable() {
     const securityRiskFreeRate = Number.isFinite(payloadRiskFreeRate)
       ? payloadRiskFreeRate
       : SHARPE_RISK_FREE_RATE;
-    const rawSecurityDividendYield = Number(portfolioDividendYields[row.asset]);
-    const securityDividendYield = Number.isFinite(rawSecurityDividendYield) ? rawSecurityDividendYield : 0;
-    const securityTotalReturn = Number.isFinite(securityAnnualReturn)
+    const securityDividendYield = Number(portfolioDividendYields[row.asset]);
+    const securityTotalReturn = Number.isFinite(securityAnnualReturn) && Number.isFinite(securityDividendYield)
       ? securityAnnualReturn + securityDividendYield
       : NaN;
     const securitySharpe = Number.isFinite(securityTotalReturn) && Number.isFinite(securityVolatility) && securityVolatility > 0
