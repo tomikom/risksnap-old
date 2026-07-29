@@ -3,7 +3,7 @@ layout: correlations-template
 ---
 <!--
 RiskSnap Correlations
-Version: index(86)
+Version: index(87)
 Changes:
 - Reduced matrix cell size so more of the matrix fits on screen
 - Kept bubble scale unchanged, creating more overlap
@@ -15,6 +15,7 @@ Changes:
 - Renamed the return column to Annual Weighted Return (EOD)
 - Added on-demand individual-security price charts
 - Added portfolio market-value chart using existing Matrix History prices
+- Added hover date/value tooltips and crosshairs to equity and portfolio line charts
 -->
 
 <!--<h1>Correlations</h1>-->
@@ -418,6 +419,9 @@ h1 { color: white; text-align: center; background-color: #3A5FCD; }
 .chart-line { fill:none; stroke:#3A5FCD; stroke-width:2; }
 .chart-label { fill:#555; font-size:11px; }
 .chart-point { fill:#3A5FCD; }
+.chart-hover-line { stroke:#777; stroke-width:1; stroke-dasharray:3 3; pointer-events:none; }
+.chart-hover-point { fill:#fff; stroke:#3A5FCD; stroke-width:2; pointer-events:none; }
+.chart-hover-overlay { fill:transparent; cursor:crosshair; }
 
 </style>
 
@@ -1804,6 +1808,60 @@ function drawLineChart(container, rows, valueKey, options = {}) {
   svg.appendChild(makeSvg("polyline", { points, class: "chart-line" }));
   const last = clean[clean.length - 1];
   svg.appendChild(makeSvg("circle", { cx: x(clean.length - 1), cy: y(Number(last[valueKey])), r: 3.5, class: "chart-point" }));
+
+  const hoverLine = makeSvg("line", {
+    x1: margin.left, y1: margin.top, x2: margin.left, y2: height - margin.bottom,
+    class: "chart-hover-line", visibility: "hidden"
+  });
+  const hoverPoint = makeSvg("circle", {
+    cx: margin.left, cy: margin.top, r: 4.5,
+    class: "chart-hover-point", visibility: "hidden"
+  });
+  const overlay = makeSvg("rect", {
+    x: margin.left, y: margin.top, width: innerWidth, height: innerHeight,
+    class: "chart-hover-overlay"
+  });
+  svg.appendChild(hoverLine);
+  svg.appendChild(hoverPoint);
+  svg.appendChild(overlay);
+
+  const tooltip = document.getElementById("corrTooltip");
+  const formatValue = value => options.money
+    ? formatMoney(value)
+    : Number(value).toLocaleString(undefined, { maximumFractionDigits: 4 });
+
+  overlay.addEventListener("mousemove", event => {
+    const rect = svg.getBoundingClientRect();
+    if (!rect.width) return;
+    const svgX = (event.clientX - rect.left) * width / rect.width;
+    const ratio = Math.max(0, Math.min(1, (svgX - margin.left) / innerWidth));
+    const index = Math.max(0, Math.min(clean.length - 1, Math.round(ratio * (clean.length - 1))));
+    const row = clean[index];
+    const px = x(index);
+    const py = y(Number(row[valueKey]));
+    hoverLine.setAttribute("x1", px);
+    hoverLine.setAttribute("x2", px);
+    hoverLine.setAttribute("visibility", "visible");
+    hoverPoint.setAttribute("cx", px);
+    hoverPoint.setAttribute("cy", py);
+    hoverPoint.setAttribute("visibility", "visible");
+    if (tooltip) {
+      const dateText = formatLongDate(row.date);
+      const valueLabel = options.valueLabel || "Value";
+      const heading = options.heading ? `<strong>${options.heading}</strong><br>` : "";
+      tooltip.innerHTML = `${heading}${dateText}<br>${valueLabel}: <strong>${formatValue(row[valueKey])}</strong>`;
+      tooltip.style.display = "block";
+      tooltip.style.left = `${event.clientX + 14}px`;
+      tooltip.style.top = `${event.clientY + 14}px`;
+    }
+  });
+
+  overlay.addEventListener("mouseleave", () => {
+    hoverLine.setAttribute("visibility", "hidden");
+    hoverPoint.setAttribute("visibility", "hidden");
+    if (tooltip) tooltip.style.display = "none";
+  });
+
   container.appendChild(svg);
 }
 
@@ -1822,7 +1880,7 @@ function renderPortfolioMarketValueChart() {
     return;
   }
   status.textContent = `${chartDateLabel(rows[0].date)} to ${chartDateLabel(rows[rows.length - 1].date)} · fixed current share quantities · ${rows.length} EOD observations`;
-  drawLineChart(chart, rows, "value", { money: true, ariaLabel: "Portfolio market value history" });
+  drawLineChart(chart, rows, "value", { money: true, valueLabel: "Market value", heading: "Portfolio", ariaLabel: "Portfolio market value history" });
 }
 
 async function openSecurityChart(asset) {
@@ -1859,7 +1917,7 @@ async function loadSecurityChart(symbol, range) {
     const rows = Array.isArray(data.rows) ? data.rows : [];
     if (rows.length < 2) throw new Error("Not enough price history was returned.");
     status.textContent = `${chartDateLabel(rows[0].date)} to ${chartDateLabel(rows[rows.length - 1].date)} · ${rows.length} EOD observations`;
-    drawLineChart(chart, rows, "price", { money: true, ariaLabel: `${symbol} price history` });
+    drawLineChart(chart, rows, "price", { money: true, valueLabel: "EOD price", heading: displayAsset(symbol), ariaLabel: `${symbol} price history` });
   } catch (error) {
     status.textContent = `Chart unavailable: ${error.message}`;
   }
