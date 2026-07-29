@@ -15,7 +15,6 @@ Changes:
 - Renamed the return column to Annual Weighted Return (EOD)
 - Added on-demand individual-security price charts
 - Added portfolio market-value chart using existing Matrix History prices
-- Added chart-only shortcuts for the World Indices preset; caret-prefixed Yahoo indices remain excluded from holdings
 - Added hover date/value tooltips and crosshairs to equity and portfolio line charts
 -->
 
@@ -106,12 +105,6 @@ Changes:
 
   <div id="portfolioPanel" class="portfolio-panel">
     <div class="portfolio-band">Portfolio Holdings</div>
-
-    <div id="worldIndexCharts" class="world-index-charts" hidden>
-      <div class="world-index-charts-label">World Index Charts</div>
-      <div id="worldIndexChartButtons" class="world-index-chart-buttons"></div>
-    </div>
-
     <div class="portfolio-header">
       <div>
         <div class="portfolio-note">Enter the actual number of shares held and the portfolio’s Book Cost. Holdings valuation and displayed weights use the latest downloaded prices. Portfolio volatility is recalculated instantly from the loaded EOD risk matrix and displayed portfolio weights. Sharpe uses the EOD EWMA returns for the displayed matrix date. When no saved portfolio is loaded, RiskSnap automatically creates an equal-weight portfolio from the selected securities .</div>
@@ -379,11 +372,6 @@ h1 { color: white; text-align: center; background-color: #3A5FCD; }
 
 
 .portfolio-panel { background:#fff; border:1px solid #ddd; border-radius:8px; margin:14px 0; padding:0 14px 12px 14px; scroll-margin-top:12px; }
-.world-index-charts { margin:0 0 12px; padding:9px 10px; border:1px solid #d9e2f4; border-radius:6px; background:#f7f9fd; }
-.world-index-charts-label { margin-bottom:7px; font-size:13px; font-weight:700; color:#333; }
-.world-index-chart-buttons { display:flex; flex-wrap:wrap; gap:6px; }
-.world-index-chart-button { cursor:pointer; border:1px solid #aaa; border-radius:4px; background:#fff; padding:4px 8px; font-size:12px; }
-.world-index-chart-button:hover { background:#f0f4ff; border-color:#7188c7; }
 .portfolio-band { margin:0 -14px 12px -14px; padding:3px 10px 4px; background:#5fbd00; color:#fff; text-align:center; font-size:24px; line-height:1.1; font-weight:700; font-family:Georgia, "Times New Roman", serif; }
 .portfolio-header { display:flex; justify-content:space-between; align-items:flex-start; gap:14px; flex-wrap:wrap; }
 .portfolio-title { font-size:18px; font-weight:700; color:#222; }
@@ -1268,13 +1256,8 @@ function initializePortfolio(payload, selectedEquities) {
   portfolioRiskPayload = payload;
   portfolioSecurities = assets.filter(asset => {
     const normalized = normalizeDisplaySymbol(asset);
-    // Yahoo symbols beginning with ^ are indices/calculated benchmarks, not holdings.
-    return equitySet.has(normalized)
-      && !normalized.startsWith("^")
-      && !NON_HOLDING_SYMBOLS.has(normalized);
+    return equitySet.has(normalized) && !NON_HOLDING_SYMBOLS.has(normalized);
   });
-
-  renderWorldIndexChartButtons(assets, equitySet);
 
   // EOD prices provide the initial current-price fallback until a quote refresh completes.
   const eodPrices = pricesFromPayload(payload);
@@ -1303,36 +1286,6 @@ function initializePortfolio(payload, selectedEquities) {
     portfolioPriceRefreshSignature = signature;
     refreshPortfolioPrices();
   }
-}
-
-function renderWorldIndexChartButtons(assets, equitySet) {
-  const panel = document.getElementById("worldIndexCharts");
-  const box = document.getElementById("worldIndexChartButtons");
-  if (!panel || !box) return;
-
-  // Show these chart shortcuts only when the World Indices preset is selected.
-  const worldSymbols = parseEquities(YAHOO_PRESETS.world);
-  const worldSet = new Set(worldSymbols);
-  const selectedWorldIndices = (assets || []).filter(asset => {
-    const normalized = normalizeDisplaySymbol(asset);
-    return equitySet.has(normalized) && worldSet.has(normalized);
-  });
-
-  const show = activeYahooPreset === "world" && selectedWorldIndices.length > 0;
-  panel.hidden = !show;
-  box.innerHTML = "";
-  if (!show) return;
-
-  selectedWorldIndices.forEach(asset => {
-    const button = document.createElement("button");
-    button.type = "button";
-    button.className = "world-index-chart-button";
-    button.dataset.asset = asset;
-    button.textContent = `📈 ${displayAsset(asset)}`;
-    button.title = `View ${displayAsset(asset)} price chart`;
-    button.addEventListener("click", () => openSecurityChart(asset));
-    box.appendChild(button);
-  });
 }
 
 function setEqualMarketValueShares() {
