@@ -3,7 +3,7 @@ layout: correlations-template
 ---
 <!--
 RiskSnap Correlations
-Version: index(86)
+Version: index(84)
 Changes:
 - Reduced matrix cell size so more of the matrix fits on screen
 - Kept bubble scale unchanged, creating more overlap
@@ -12,9 +12,7 @@ Changes:
 - Added Reset, Play, Pause, and Latest controls for automatic Matrix History playback
 - Clarified that the same 20 matrix dates are shown for every lookback, while each matrix uses the selected lookback
 - Added Annual Return (Weighted) and Sharpe Ratio for each portfolio security
-- Renamed the return column to Annual Weighted Return (EOD)
-- Added on-demand individual-security price charts
-- Added portfolio market-value chart using existing Matrix History prices
+- Renamed the portfolio EWMA Return label to Annual Return (Weighted)
 -->
 
 <!--<h1>Correlations</h1>-->
@@ -138,54 +136,25 @@ Changes:
         <thead>
           <tr>
             <th>Security</th>
-            <th>Chart</th>
             <th>EOD price</th>
             <th>Current price</th>
             <th>Shares</th>
             <th>Current market value</th>
             <th>Current weight</th>
-            <th>Annual Weighted Return (EOD)</th>
+            <th>Annual Return (EOD)</th>
             <th>Sharpe Ratio (EOD)</th>
           </tr>
         </thead>
         <tbody id="portfolioBody"></tbody>
         <tfoot>
           <tr>
-            <td colspan="5">Total</td>
+            <td colspan="4">Total</td>
             <td id="portfolioTotalMarketValue">—</td>
             <td id="portfolioTotalWeight">100.00%</td>
             <td colspan="2"></td>
           </tr>
         </tfoot>
       </table>
-    </div>
-
-    <div id="securityChartPanel" class="portfolio-chart-panel" hidden>
-      <div class="portfolio-chart-header">
-        <div>
-          <div id="securityChartTitle" class="portfolio-chart-title">Security Price History</div>
-          <div id="securityChartStatus" class="portfolio-chart-status"></div>
-        </div>
-        <div class="security-chart-actions">
-          <button type="button" class="security-range" data-range="3m">3M</button>
-          <button type="button" class="security-range" data-range="6m">6M</button>
-          <button type="button" class="security-range is-active" data-range="1y">1Y</button>
-          <button type="button" class="security-range" data-range="3y">3Y</button>
-          <button type="button" class="security-range" data-range="max">Max</button>
-          <button id="securityChartClose" type="button">Close</button>
-        </div>
-      </div>
-      <div id="securityChart" class="portfolio-line-chart"></div>
-    </div>
-
-    <div id="portfolioMarketValuePanel" class="portfolio-chart-panel">
-      <div class="portfolio-chart-header">
-        <div>
-          <div class="portfolio-chart-title">Portfolio Market Value (EOD)</div>
-          <div id="portfolioMarketValueStatus" class="portfolio-chart-status">Available after Matrix History loads.</div>
-        </div>
-      </div>
-      <div id="portfolioMarketValueChart" class="portfolio-line-chart"></div>
     </div>
   </div>
 
@@ -404,22 +373,6 @@ h1 { color: white; text-align: center; background-color: #3A5FCD; }
 .portfolio-table input.portfolio-shares { width:110px; padding:4px 6px; text-align:right; box-sizing:border-box; }
 .portfolio-empty { color:#666; padding:10px 0; }
 
-.portfolio-chart-button, .security-chart-actions button { cursor:pointer; border:1px solid #aaa; border-radius:4px; background:#fff; padding:4px 8px; }
-.portfolio-chart-button:hover, .security-chart-actions button:hover { background:#f0f4ff; border-color:#7188c7; }
-.security-chart-actions button.is-active { background:#dce7ff; border-color:#3A5FCD; }
-.portfolio-chart-panel { margin-top:14px; border-top:1px solid #ddd; padding-top:12px; }
-.portfolio-chart-header { display:flex; justify-content:space-between; align-items:flex-start; gap:12px; flex-wrap:wrap; margin-bottom:6px; }
-.portfolio-chart-title { font-size:17px; font-weight:700; color:#222; }
-.portfolio-chart-status { margin-top:2px; min-height:1em; color:#666; font-size:12px; }
-.security-chart-actions { display:flex; gap:5px; flex-wrap:wrap; }
-.portfolio-line-chart { width:100%; min-height:260px; overflow:hidden; background:#fff; }
-.portfolio-line-chart svg { display:block; width:100%; height:auto; background:#fff; }
-.chart-axis { stroke:#aaa; stroke-width:1; }
-.chart-grid { stroke:#e9e9e9; stroke-width:1; }
-.chart-line { fill:none; stroke:#3A5FCD; stroke-width:2; }
-.chart-label { fill:#555; font-size:11px; }
-.chart-point { fill:#3A5FCD; }
-
 </style>
 
 <script>
@@ -464,7 +417,6 @@ const PORTFOLIO_BOOK_VALUE_KEY = "RiskSnapLastBookCost";
 const ROLLING_ENDPOINT = "https://surface-203178530029.northamerica-northeast2.run.app/rolling_correlation";
 const ROLLING_MATRIX_ENDPOINT = "https://surface-203178530029.northamerica-northeast2.run.app/rolling_matrix";
 const LATEST_PRICES_ENDPOINT = "https://surface-203178530029.northamerica-northeast2.run.app/latest_prices";
-const ASSET_HISTORY_ENDPOINT = "https://surface-203178530029.northamerica-northeast2.run.app/asset_history";
 const USD_YIELD_ENDPOINT = "https://surface-203178530029.northamerica-northeast2.run.app/yield_history?country=USD&period=1y";
 const ROLLING_VISIBLE_POINTS = 20;
 const MATRIX_HISTORY_REQUEST_FRAMES = { 25: 250, 90: 250, 250: 250 };
@@ -505,9 +457,6 @@ let activeYahooPreset = null;
 let portfolioAutoEqualWeight = true;
 let usdOneYearRates = null;
 let usdOneYearRatesPromise = null;
-const securityHistoryCache = new Map();
-let selectedSecurityChartAsset = "";
-let selectedSecurityChartRange = "1y";
 
 
 const scheduleCorrelationRefresh = debounce(fetchCorrelationData, 450);
@@ -916,7 +865,6 @@ async function fetchRollingMatrix(requestPayload, periodLabel) {
     pauseBtn.disabled = true;
     matrixHistoryReadyStatus = "";
     setMatrixHistoryStatus("");
-    renderPortfolioMarketValueChart();
   } catch (err) {
     if (requestId !== matrixHistoryRequestId) return;
     rawMatrixHistoryFrames = [];
@@ -935,7 +883,6 @@ async function fetchRollingMatrix(requestPayload, periodLabel) {
     const sliderDate = document.getElementById("matrixHistorySliderDate");
     if (sliderDate) { sliderDate.textContent = "Latest"; sliderDate.style.left = "0px"; }
     setMatrixHistoryStatus(`Matrix history unavailable: ${err.message}`);
-    renderPortfolioMarketValueChart();
   }
 }
 
@@ -1647,7 +1594,7 @@ function updatePortfolioSummary(totalMarketValue) {
       <div class="portfolio-summary-label">Change vs Latest EOD</div>
       <div class="portfolio-summary-value ${dailyChange ? tone(dailyChange.change) : ""}">${dailyChangeText}</div>
       <div class="portfolio-summary-break"></div>
-      <div class="portfolio-summary-label">Annual Weighted Return (EOD)</div>
+      <div class="portfolio-summary-label">Annual Return (Weighted, EOD)</div>
       <div class="portfolio-summary-value">${ewmaText}</div>
       <div class="portfolio-summary-label">Portfolio Volatility (EOD)</div>
       <div class="portfolio-summary-value">${pct(volatility)}</div>
@@ -1665,7 +1612,7 @@ function updatePortfolioSummary(totalMarketValue) {
       `${dateText}  |  MV ${formatMoney(Number(a.market_value))}` +
       `  |  G/L ${signedMoney(gainLoss)} (${signedPct(returnOnBookCost)})` +
       `  |  Day ${dailyChangeText}` +
-      `  |  Annual Weighted Return (EOD) ${ewmaText}  |  Vol ${pct(volatility)}` +
+      `  |  Annual Return (Weighted) ${ewmaText}  |  Vol ${pct(volatility)}` +
       `  |  RF ${riskFreeText}  |  Sharpe ${sharpeText}`;
   }
 }
@@ -1682,7 +1629,7 @@ function renderPortfolioTable() {
     summary.textContent = "";
     const stickySummary = document.getElementById("matrixPortfolioSummary");
     if (stickySummary) stickySummary.textContent = "";
-    body.innerHTML = `<tr><td colspan="9" class="portfolio-empty">No selected securities with current prices are available.</td></tr>`;
+    body.innerHTML = `<tr><td colspan="8" class="portfolio-empty">No selected securities with current prices are available.</td></tr>`;
     const totalValueCell = document.getElementById("portfolioTotalMarketValue");
     const totalWeightCell = document.getElementById("portfolioTotalWeight");
     if (totalValueCell) totalValueCell.textContent = "—";
@@ -1730,7 +1677,6 @@ function renderPortfolioTable() {
     const tr = document.createElement("tr");
     tr.innerHTML = `
       <td>${rowIndex + 1}. ${displayAsset(row.asset)}</td>
-      <td><button type="button" class="portfolio-chart-button" data-asset="${row.asset}">View</button></td>
       <td>${formatMoney(eodPrice)}</td>
       <td>${formatMoney(row.price)}</td>
       <td><input class="portfolio-shares" data-asset="${row.asset}" type="number" min="0" step="0.0001" value="${formatShares(row.shares)}"></td>
@@ -1747,14 +1693,9 @@ function renderPortfolioTable() {
       portfolioAutoEqualWeight = false;
       portfolioShares[input.dataset.asset] = Math.max(0, Number(input.value) || 0);
       renderPortfolioTable();
-      renderPortfolioMarketValueChart();
     };
     input.addEventListener("change", commit);
     input.addEventListener("blur", commit);
-  });
-
-  body.querySelectorAll(".portfolio-chart-button").forEach(button => {
-    button.addEventListener("click", () => openSecurityChart(button.dataset.asset));
   });
 
   const totalValueCell = document.getElementById("portfolioTotalMarketValue");
@@ -1763,106 +1704,6 @@ function renderPortfolioTable() {
   if (totalWeightCell) totalWeightCell.textContent = totalMarketValue > 0 ? "100.00%" : "0.00%";
   updatePortfolioSummary(totalMarketValue);
   updatePortfolioDataLabels();
-}
-
-function chartDateLabel(value) {
-  const d = new Date(`${value}T00:00:00`);
-  return Number.isNaN(d.getTime()) ? String(value || "") : d.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "2-digit" });
-}
-
-function drawLineChart(container, rows, valueKey, options = {}) {
-  if (!container) return;
-  container.innerHTML = "";
-  const clean = (rows || []).filter(row => row && row.date && Number.isFinite(Number(row[valueKey])));
-  if (clean.length < 2) return;
-
-  const width = 920, height = 280;
-  const margin = { left: 76, right: 22, top: 18, bottom: 42 };
-  const innerWidth = width - margin.left - margin.right;
-  const innerHeight = height - margin.top - margin.bottom;
-  let minValue = Math.min(...clean.map(row => Number(row[valueKey])));
-  let maxValue = Math.max(...clean.map(row => Number(row[valueKey])));
-  if (minValue === maxValue) { minValue *= 0.99; maxValue *= 1.01; }
-  const pad = (maxValue - minValue) * 0.06 || 1;
-  minValue -= pad; maxValue += pad;
-  const x = i => margin.left + (i / (clean.length - 1)) * innerWidth;
-  const y = value => margin.top + (maxValue - value) / (maxValue - minValue) * innerHeight;
-  const svg = makeSvg("svg", { viewBox: `0 0 ${width} ${height}`, role: "img", "aria-label": options.ariaLabel || "Line chart" });
-
-  for (let i = 0; i <= 4; i++) {
-    const value = minValue + (maxValue - minValue) * i / 4;
-    const yy = y(value);
-    svg.appendChild(makeSvg("line", { x1: margin.left, y1: yy, x2: width - margin.right, y2: yy, class: "chart-grid" }));
-    const label = options.money ? formatMoney(value) : Number(value).toLocaleString(undefined, { maximumFractionDigits: 2 });
-    svg.appendChild(makeSvg("text", { x: margin.left - 8, y: yy + 4, class: "chart-label", "text-anchor": "end" }, label));
-  }
-  svg.appendChild(makeSvg("line", { x1: margin.left, y1: margin.top, x2: margin.left, y2: height - margin.bottom, class: "chart-axis" }));
-  svg.appendChild(makeSvg("line", { x1: margin.left, y1: height - margin.bottom, x2: width - margin.right, y2: height - margin.bottom, class: "chart-axis" }));
-
-  const tickIndexes = [...new Set([0, Math.floor((clean.length - 1) / 2), clean.length - 1])];
-  tickIndexes.forEach(i => svg.appendChild(makeSvg("text", { x: x(i), y: height - 17, class: "chart-label", "text-anchor": "middle" }, chartDateLabel(clean[i].date))));
-  const points = clean.map((row, i) => `${x(i)},${y(Number(row[valueKey]))}`).join(" ");
-  svg.appendChild(makeSvg("polyline", { points, class: "chart-line" }));
-  const last = clean[clean.length - 1];
-  svg.appendChild(makeSvg("circle", { cx: x(clean.length - 1), cy: y(Number(last[valueKey])), r: 3.5, class: "chart-point" }));
-  container.appendChild(svg);
-}
-
-function portfolioMarketValueSeries() {
-  return matrixHistoryFrames.map(frame => ({ date: frame.date, value: portfolioMarketValueForFrame(frame) })).filter(row => Number.isFinite(row.value));
-}
-
-function renderPortfolioMarketValueChart() {
-  const chart = document.getElementById("portfolioMarketValueChart");
-  const status = document.getElementById("portfolioMarketValueStatus");
-  if (!chart || !status) return;
-  const rows = portfolioMarketValueSeries();
-  if (rows.length < 2) {
-    chart.innerHTML = "";
-    status.textContent = matrixHistoryFrames.length ? "No priced portfolio holdings are available." : "Available after Matrix History loads.";
-    return;
-  }
-  status.textContent = `${chartDateLabel(rows[0].date)} to ${chartDateLabel(rows[rows.length - 1].date)} · fixed current share quantities · ${rows.length} EOD observations`;
-  drawLineChart(chart, rows, "value", { money: true, ariaLabel: "Portfolio market value history" });
-}
-
-async function openSecurityChart(asset) {
-  const symbol = String(asset || "").trim().toUpperCase();
-  if (!symbol) return;
-  selectedSecurityChartAsset = symbol;
-  const panel = document.getElementById("securityChartPanel");
-  if (panel) panel.hidden = false;
-  await loadSecurityChart(symbol, selectedSecurityChartRange);
-}
-
-async function loadSecurityChart(symbol, range) {
-  const chart = document.getElementById("securityChart");
-  const title = document.getElementById("securityChartTitle");
-  const status = document.getElementById("securityChartStatus");
-  if (!chart || !title || !status) return;
-  title.textContent = `${displayAsset(symbol)} Price History`;
-  chart.innerHTML = "";
-  status.textContent = "Loading on demand...";
-  const key = `${symbol}|${range}`;
-  try {
-    let data = securityHistoryCache.get(key);
-    if (!data) {
-      const response = await fetch(ASSET_HISTORY_ENDPOINT, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ symbol, range })
-      });
-      data = await response.json();
-      if (!response.ok) throw new Error(data.error || response.statusText);
-      securityHistoryCache.set(key, data);
-    }
-    const rows = Array.isArray(data.rows) ? data.rows : [];
-    if (rows.length < 2) throw new Error("Not enough price history was returned.");
-    status.textContent = `${chartDateLabel(rows[0].date)} to ${chartDateLabel(rows[rows.length - 1].date)} · ${rows.length} EOD observations`;
-    drawLineChart(chart, rows, "price", { money: true, ariaLabel: `${symbol} price history` });
-  } catch (error) {
-    status.textContent = `Chart unavailable: ${error.message}`;
-  }
 }
 
 function formatMoney(value) {
@@ -2509,17 +2350,4 @@ function deletePortfolio() {
 }
 
 function debounce(fn, ms) { let t; return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), ms); }; }
-
-const securityCloseButton = document.getElementById("securityChartClose");
-if (securityCloseButton) securityCloseButton.addEventListener("click", () => {
-  const panel = document.getElementById("securityChartPanel");
-  if (panel) panel.hidden = true;
-});
-document.querySelectorAll(".security-range").forEach(button => {
-  button.addEventListener("click", async () => {
-    selectedSecurityChartRange = button.dataset.range || "1y";
-    document.querySelectorAll(".security-range").forEach(item => item.classList.toggle("is-active", item === button));
-    if (selectedSecurityChartAsset) await loadSecurityChart(selectedSecurityChartAsset, selectedSecurityChartRange);
-  });
-});
 </script>
