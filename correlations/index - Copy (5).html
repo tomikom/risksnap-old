@@ -1435,7 +1435,7 @@ function parseDividendYieldResponse(data) {
     // Yahoo normally returns a decimal (0.021 = 2.10%). Accept percentage
     // values as well so the endpoint can safely return either representation.
     if (value > 0.5) value /= 100;
-    result[normalizeDisplaySymbol(asset)] = value;
+    result[normalizeSymbol(asset)] = value;
   });
   return result;
 }
