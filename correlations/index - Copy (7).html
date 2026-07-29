@@ -138,13 +138,13 @@ Changes:
         <thead>
           <tr>
             <th>Security</th>
-            <th aria-label="Price chart"></th>
+            <th>Chart</th>
             <th>EOD price</th>
             <th>Current price</th>
             <th>Shares</th>
             <th>Current market value</th>
             <th>Current weight</th>
-            <th>An. Wt. Return (EOD)</th>
+            <th>Annual Weighted Return (EOD)</th>
             <th>Sharpe Ratio (EOD)</th>
           </tr>
         </thead>
@@ -171,6 +171,7 @@ Changes:
           <button type="button" class="security-range" data-range="6m">6M</button>
           <button type="button" class="security-range is-active" data-range="1y">1Y</button>
           <button type="button" class="security-range" data-range="3y">3Y</button>
+          <button type="button" class="security-range" data-range="max">Max</button>
           <button id="securityChartClose" type="button">Close</button>
         </div>
       </div>
@@ -1729,7 +1730,7 @@ function renderPortfolioTable() {
     const tr = document.createElement("tr");
     tr.innerHTML = `
       <td>${rowIndex + 1}. ${displayAsset(row.asset)}</td>
-      <td><button type="button" class="portfolio-chart-button" data-asset="${row.asset}" title="View price chart" aria-label="View ${displayAsset(row.asset)} price chart">📈</button></td>
+      <td><button type="button" class="portfolio-chart-button" data-asset="${row.asset}">View</button></td>
       <td>${formatMoney(eodPrice)}</td>
       <td>${formatMoney(row.price)}</td>
       <td><input class="portfolio-shares" data-asset="${row.asset}" type="number" min="0" step="0.0001" value="${formatShares(row.shares)}"></td>
@@ -1839,8 +1840,7 @@ async function loadSecurityChart(symbol, range) {
   const title = document.getElementById("securityChartTitle");
   const status = document.getElementById("securityChartStatus");
   if (!chart || !title || !status) return;
-  const rangeLabels = { "3m": "3 Month", "6m": "6 Month", "1y": "1 Year", "3y": "3 Year" };
-  title.textContent = `${displayAsset(symbol)} — ${rangeLabels[range] || "Price"} Price History`;
+  title.textContent = `${displayAsset(symbol)} Price History`;
   chart.innerHTML = "";
   status.textContent = "Loading on demand...";
   const key = `${symbol}|${range}`;
