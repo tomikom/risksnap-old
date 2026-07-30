@@ -14,7 +14,7 @@ Changes:
 - Clarified that the same 20 matrix dates are shown for every lookback, while each matrix uses the selected lookback
 - Added Annual Return (Weighted) and Sharpe Ratio for each portfolio security
 - Renamed the return column to An. Wtd. Total Return and added Div %
-- Changed the page and navigation title to Risk Analytics; retained Correlations and Portfolio Analysis section buttons/headings
+- Changed the page and navigation title to Risk Analytics; retained Correlations and Portfolio Analytics section buttons/headings
 - Added on-demand individual-security price charts
 - Added portfolio market-value chart using existing Matrix History prices
 - Added chart-only shortcuts for the World Indices preset; caret-prefixed Yahoo indices remain excluded from holdings
@@ -46,11 +46,13 @@ if (document.readyState === 'loading') {
   applyRiskAnalyticsTitles();
 }
 </script>
+<p>Correlations are important both for signs of future price movement by watching related data and for protection of portfolios during market downturns.
 
+</p>
 <div class="text-section correlations-page">
   <div class="analytics-section-nav" aria-label="Portfolio Analytics sections">
     <button id="correlationsJump" type="button">Correlations</button>
-    <button id="portfolioJump" type="button">Portfolio Analysis</button>
+    <button id="portfolioJump" type="button">Portfolio Analytics</button>
   </div>
 
   <div id="correlationsSection" class="analytics-section-heading">Correlations</div>
@@ -137,8 +139,8 @@ if (document.readyState === 'loading') {
 
 
   <div id="portfolioPanel" class="portfolio-panel">
-    <div class="portfolio-band">Portfolio Analysis</div>
-    <div class="portfolio-subheading">Portfolio Holdings</div>
+    <div class="portfolio-band">Portfolio Analytics</div>
+    <div class="portfolio-subheading">Holdings</div>
 
     <div id="worldIndexCharts" class="world-index-charts" hidden>
       <div class="world-index-charts-label">World Index Charts</div>
@@ -147,7 +149,7 @@ if (document.readyState === 'loading') {
 
     <div class="portfolio-header">
       <div>
-        <div class="portfolio-note">Enter the actual number of shares held and the portfolio’s Book Cost. Holdings valuation and displayed weights use the latest downloaded prices. Portfolio volatility is recalculated instantly from the loaded EOD risk matrix and displayed portfolio weights. Sharpe uses the EOD EWMA price returns for the displayed matrix date plus the current dividend yield. When no saved portfolio is loaded, RiskSnap automatically creates an equal-weight portfolio from the selected securities .</div>
+        <div class="portfolio-note">Use the Correlations section to enter codes, then below, the number of shares held and the portfolio’s Book Cost.  If desired the portfolio may be saved locally in your cache.  When no saved portfolio is loaded, RiskSnap automatically creates an equal-weight portfolio from the selected securities .</div>
       </div>
       <div class="portfolio-controls">
         <label>Book Cost:
@@ -188,7 +190,7 @@ if (document.readyState === 'loading') {
             <th>Vol (EOD)</th>
             <th>Div %</th>
             <th>An. Wtd. Total Return</th>
-            <th>Sharpe Ratio (EOD)</th>
+            <th>Sharpe Ratio </th>
           </tr>
         </thead>
         <tbody id="portfolioBody"></tbody>
@@ -1792,7 +1794,7 @@ function updatePortfolioSummary(totalMarketValue) {
       <div class="portfolio-summary-value">${pct(volatility)}</div>
       <div class="portfolio-summary-label">Risk-Free Rate (1Y, EOD)</div>
       <div class="portfolio-summary-value">${riskFreeText}</div>
-      <div class="portfolio-summary-label">Sharpe Ratio (EOD)</div>
+      <div class="portfolio-summary-label">Sharpe Ratio</div>
       <div class="portfolio-summary-value">${sharpeText}</div>
     </div>`;
 
