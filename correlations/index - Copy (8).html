@@ -1,9 +1,10 @@
 ---
 layout: correlations-template
+title: Correlations, Portfolios
 ---
 <!--
 RiskSnap Correlations
-Version: index(87)
+Version: index(94)
 Changes:
 - Reduced matrix cell size so more of the matrix fits on screen
 - Kept bubble scale unchanged, creating more overlap
@@ -12,15 +13,28 @@ Changes:
 - Added Reset, Play, Pause, and Latest controls for automatic Matrix History playback
 - Clarified that the same 20 matrix dates are shown for every lookback, while each matrix uses the selected lookback
 - Added Annual Return (Weighted) and Sharpe Ratio for each portfolio security
-- Renamed the return column to Annual Weighted Return (EOD)
+- Individual Sharpe Ratio uses annual price return plus the security dividend yield
+- Portfolio risk weights continue to use the selected EOD matrix prices; current prices are valuation-only
+- Renamed the return column to An. Wtd. Total Return and added Div %
+- Retained the page identity as Correlations and Portfolios
 - Added on-demand individual-security price charts
 - Added portfolio market-value chart using existing Matrix History prices
+- Added chart-only shortcuts for the World Indices preset; caret-prefixed Yahoo indices remain excluded from holdings
 - Added hover date/value tooltips and crosshairs to equity and portfolio line charts
 -->
 
-<!--<h1>Correlations</h1>-->
+
+<p>Correlations are important both for signs of future price movement by watching related data and for protection of portfolios during market downturns.
+
+</p>
 <div class="text-section correlations-page">
-  <p>Correlations are calculated for 25, 90, or 250 business days for a variety of assets.  Historical volatilities are on the Matrix diagonal.</p>
+  <div class="analytics-section-nav" aria-label="Portfolio Analytics sections">
+    <button id="correlationsJump" type="button">Correlations</button>
+    <button id="portfolioJump" type="button">Portfolio Analytics</button>
+  </div>
+
+  <div id="correlationsSection" class="analytics-section-heading">Correlations</div>
+  <p>Correlations are calculated for 25, 90, or 250 business days for a variety of assets. Historical volatilities are on the Matrix diagonal.</p>
 
   <div class="corr-input-panel">
     <div class="corr-controls main-controls">
@@ -35,7 +49,6 @@ Changes:
 		<span id="scaleReadout"></span>
 	  </span>
       <button id="corrRefresh" type="button"><span class="btn-label">Calculate correlations</span></button>
-      <button id="portfolioJump" type="button">Portfolio Holdings</button>
       <button id="corrSaveDefaults" type="button">Save Defaults</button>
       <button id="corrResetFactory" type="button">Reset to Original Defaults</button>
     </div>
@@ -104,10 +117,17 @@ Changes:
 
 
   <div id="portfolioPanel" class="portfolio-panel">
-    <div class="portfolio-band">Portfolio Holdings</div>
+    <div class="portfolio-band">Portfolio Analytics</div>
+    <div class="portfolio-subheading">Holdings</div>
+
+    <div id="worldIndexCharts" class="world-index-charts" hidden>
+      <div class="world-index-charts-label">World Index Charts</div>
+      <div id="worldIndexChartButtons" class="world-index-chart-buttons"></div>
+    </div>
+
     <div class="portfolio-header">
       <div>
-        <div class="portfolio-note">Enter the actual number of shares held and the portfolio’s Book Cost. Holdings valuation and displayed weights use the latest downloaded prices. Portfolio volatility is recalculated instantly from the loaded EOD risk matrix and displayed portfolio weights. Sharpe uses the EOD EWMA returns for the displayed matrix date. When no saved portfolio is loaded, RiskSnap automatically creates an equal-weight portfolio from the selected securities .</div>
+        <div class="portfolio-note">Use the Correlations section to enter codes, then below, the number of shares held and the portfolio’s Book Cost.  If desired the portfolio may be saved locally in your cache.  When no saved portfolio is loaded, RiskSnap automatically creates an equal-weight portfolio from the selected securities. Click on button beside equity for charts</div>
       </div>
       <div class="portfolio-controls">
         <label>Book Cost:
@@ -145,8 +165,10 @@ Changes:
             <th>Shares</th>
             <th>Current market value</th>
             <th>Current weight</th>
-            <th>An. Wt. Return (EOD)</th>
-            <th>Sharpe Ratio (EOD)</th>
+            <th>Vol (EOD)</th>
+            <th>Div %</th>
+            <th>An. Wtd. Total Return</th>
+            <th>Sharpe Ratio </th>
           </tr>
         </thead>
         <tbody id="portfolioBody"></tbody>
@@ -155,7 +177,7 @@ Changes:
             <td colspan="5">Total</td>
             <td id="portfolioTotalMarketValue">—</td>
             <td id="portfolioTotalWeight">100.00%</td>
-            <td colspan="2"></td>
+            <td colspan="4"></td>
           </tr>
         </tfoot>
       </table>
@@ -239,11 +261,17 @@ Changes:
 <style>
 h1 { color: white; text-align: center; background-color: #3A5FCD; }
 .correlations-page { background: #ffffff; color: #222; }
+
+.analytics-section-nav { display:flex; justify-content:center; gap:10px; flex-wrap:wrap; margin:4px 0 14px; }
+.analytics-section-nav button { cursor:pointer; border:1px solid #aaa; border-radius:4px; background:#fff; padding:6px 14px; font-size:14px; font-weight:600; }
+.analytics-section-nav button:hover { background:#f0f4ff; border-color:#7188c7; }
+.analytics-section-heading { margin:10px 0 8px; padding:4px 10px 5px; background:#3A5FCD; color:#fff; text-align:center; font-size:24px; line-height:1.1; font-weight:700; font-family:Georgia, "Times New Roman", serif; scroll-margin-top:12px; }
+
 .corr-input-panel { background: #fff; border: 1px solid #e5e5e5; border-radius: 8px; padding: 12px; margin: 14px 0; }
 .corr-controls { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin: 0 0 12px 0; }
 .corr-status { background: #f6f8fc; border-left: 5px solid #3A5FCD; padding: 8px 10px; margin: 8px 0 12px 0; color: #333; font-size: 13px; }
-#corrPeriod, #corrRefresh, #portfolioJump, #corrSaveDefaults, #corrResetFactory { padding: 5px 8px; font-size: 14px; }
-#corrRefresh, #portfolioJump, #corrSaveDefaults, #corrResetFactory { cursor: pointer; position: relative; border: 1px solid #aaa; border-radius: 4px; background: #fff; }
+#corrPeriod, #corrRefresh, #corrSaveDefaults, #corrResetFactory { padding: 5px 8px; font-size: 14px; }
+#corrRefresh, #corrSaveDefaults, #corrResetFactory { cursor: pointer; position: relative; border: 1px solid #aaa; border-radius: 4px; background: #fff; }
 #corrSaveDefaults:disabled { cursor: default; opacity: 0.55; }
 #corrRefresh.is-loading { color: #333; padding-left: 28px; outline: 2px dotted #3A5FCD; outline-offset: 3px; }
 #corrRefresh.is-loading::before { content: ""; position: absolute; left: 8px; top: 50%; width: 12px; height: 12px; margin-top: -6px; border: 2px solid #c8d6f6; border-top-color: #3A5FCD; border-radius: 50%; animation: corrSpin .8s linear infinite; }
@@ -372,6 +400,12 @@ h1 { color: white; text-align: center; background-color: #3A5FCD; }
 
 
 .portfolio-panel { background:#fff; border:1px solid #ddd; border-radius:8px; margin:14px 0; padding:0 14px 12px 14px; scroll-margin-top:12px; }
+.world-index-charts { margin:0 0 12px; padding:9px 10px; border:1px solid #d9e2f4; border-radius:6px; background:#f7f9fd; }
+.world-index-charts-label { margin-bottom:7px; font-size:13px; font-weight:700; color:#333; }
+.world-index-chart-buttons { display:flex; flex-wrap:wrap; gap:6px; }
+.world-index-chart-button { cursor:pointer; border:1px solid #aaa; border-radius:4px; background:#fff; padding:4px 8px; font-size:12px; }
+.world-index-chart-button:hover { background:#f0f4ff; border-color:#7188c7; }
+.portfolio-subheading { margin:2px 0 10px; font-size:18px; font-weight:700; color:#222; }
 .portfolio-band { margin:0 -14px 12px -14px; padding:3px 10px 4px; background:#5fbd00; color:#fff; text-align:center; font-size:24px; line-height:1.1; font-weight:700; font-family:Georgia, "Times New Roman", serif; }
 .portfolio-header { display:flex; justify-content:space-between; align-items:flex-start; gap:14px; flex-wrap:wrap; }
 .portfolio-title { font-size:18px; font-weight:700; color:#222; }
@@ -498,6 +532,7 @@ let portfolioShares = {};
 let portfolioSecurities = [];
 let portfolioPrices = {};
 let portfolioCurrentPrices = {};
+let portfolioDividendYields = {};
 let portfolioRiskPayload = null;
 let portfolioViewMode = "current"; // "current" or "historical"
 let portfolioPriceTimestamp = null;
@@ -509,6 +544,7 @@ let portfolioAutoEqualWeight = true;
 let usdOneYearRates = null;
 let usdOneYearRatesPromise = null;
 const securityHistoryCache = new Map();
+const securityCurrentPriceCache = new Map();
 let selectedSecurityChartAsset = "";
 let selectedSecurityChartRange = "1y";
 
@@ -542,6 +578,10 @@ document.getElementById("corrRefresh").addEventListener("click", fetchCorrelatio
 document.getElementById("corrSaveDefaults").addEventListener("click", saveUserDefaults);
 document.getElementById("corrResetFactory").addEventListener("click", resetToFactoryDefaults);
 document.getElementById("rollingClose").addEventListener("click", closeRollingPanel);
+document.getElementById("correlationsJump").addEventListener("click", () => {
+  const section = document.getElementById("correlationsSection");
+  if (section) section.scrollIntoView({ behavior: "smooth", block: "start" });
+});
 document.getElementById("portfolioJump").addEventListener("click", () => {
   const panel = document.getElementById("portfolioPanel");
   if (panel) panel.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -1256,8 +1296,13 @@ function initializePortfolio(payload, selectedEquities) {
   portfolioRiskPayload = payload;
   portfolioSecurities = assets.filter(asset => {
     const normalized = normalizeDisplaySymbol(asset);
-    return equitySet.has(normalized) && !NON_HOLDING_SYMBOLS.has(normalized);
+    // Yahoo symbols beginning with ^ are indices/calculated benchmarks, not holdings.
+    return equitySet.has(normalized)
+      && !normalized.startsWith("^")
+      && !NON_HOLDING_SYMBOLS.has(normalized);
   });
+
+  renderWorldIndexChartButtons(assets, equitySet);
 
   // EOD prices provide the initial current-price fallback until a quote refresh completes.
   const eodPrices = pricesFromPayload(payload);
@@ -1286,6 +1331,36 @@ function initializePortfolio(payload, selectedEquities) {
     portfolioPriceRefreshSignature = signature;
     refreshPortfolioPrices();
   }
+}
+
+function renderWorldIndexChartButtons(assets, equitySet) {
+  const panel = document.getElementById("worldIndexCharts");
+  const box = document.getElementById("worldIndexChartButtons");
+  if (!panel || !box) return;
+
+  // Show these chart shortcuts only when the World Indices preset is selected.
+  const worldSymbols = parseEquities(YAHOO_PRESETS.world);
+  const worldSet = new Set(worldSymbols);
+  const selectedWorldIndices = (assets || []).filter(asset => {
+    const normalized = normalizeDisplaySymbol(asset);
+    return equitySet.has(normalized) && worldSet.has(normalized);
+  });
+
+  const show = activeYahooPreset === "world" && selectedWorldIndices.length > 0;
+  panel.hidden = !show;
+  box.innerHTML = "";
+  if (!show) return;
+
+  selectedWorldIndices.forEach(asset => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "world-index-chart-button";
+    button.dataset.asset = asset;
+    button.textContent = `📈 ${displayAsset(asset)}`;
+    button.title = `View ${displayAsset(asset)} price chart`;
+    button.addEventListener("click", () => openSecurityChart(asset));
+    box.appendChild(button);
+  });
 }
 
 function setEqualMarketValueShares() {
@@ -1357,6 +1432,21 @@ function latestPriceTimestampFromResponse(data) {
   return Number.isNaN(parsed.getTime()) ? new Date() : parsed;
 }
 
+function parseDividendYieldResponse(data) {
+  const source = data && (data.dividend_yields || data.dividendYields || data.yields);
+  const result = {};
+  if (!source || typeof source !== "object") return result;
+  Object.entries(source).forEach(([asset, raw]) => {
+    let value = Number(raw);
+    if (!Number.isFinite(value) || value < 0) return;
+    // Yahoo normally returns a decimal (0.021 = 2.10%). Accept percentage
+    // values as well so the endpoint can safely return either representation.
+    if (value > 0.5) value /= 100;
+    result[normalizeDisplaySymbol(asset)] = value;
+  });
+  return result;
+}
+
 async function refreshPortfolioPrices() {
   if (portfolioPriceRefreshInProgress || !portfolioSecurities.length) return;
   const button = document.getElementById("portfolioRefreshPrices");
@@ -1378,11 +1468,12 @@ async function refreshPortfolioPrices() {
     const response = await fetch(LATEST_PRICES_ENDPOINT, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ symbols: portfolioSecurities })
+      body: JSON.stringify({ symbols: portfolioSecurities, include_dividends: true })
     });
     const data = await response.json();
     if (!response.ok) throw new Error(data.message || data.error || response.statusText);
     const downloaded = parseLatestPriceResponse(data);
+    const downloadedDividendYields = parseDividendYieldResponse(data);
     const nextPrices = { ...portfolioCurrentPrices };
     const failed = [];
     portfolioSecurities.forEach(asset => {
@@ -1396,6 +1487,7 @@ async function refreshPortfolioPrices() {
       throw new Error("No current prices were returned.");
     }
     portfolioCurrentPrices = nextPrices;
+    portfolioDividendYields = { ...portfolioDividendYields, ...downloadedDividendYields };
     portfolioPrices = { ...portfolioCurrentPrices };
     portfolioPriceTimestamp = latestPriceTimestampFromResponse(data);
     if (portfolioAutoEqualWeight) setEqualMarketValueShares();
@@ -1516,6 +1608,8 @@ function calculatePortfolioAnalyticsLocally(totalMarketValue) {
   const volatility = calculatePortfolioVolatility(portfolioRiskPayload);
 
   let portfolioEwmaReturn = null;
+  let portfolioDividendYield = null;
+  let portfolioTotalReturn = null;
   let sharpe = null;
   let missingEwma = [];
   const payloadRiskFreeRate = portfolioRiskPayload ? Number(portfolioRiskPayload.risk_free_rate) : NaN;
@@ -1530,22 +1624,32 @@ function calculatePortfolioAnalyticsLocally(totalMarketValue) {
       : [];
 
     const totalEodMarketValue = riskRows.reduce((sum, row) => sum + row.marketValue, 0);
-    let weightedReturn = 0;
+    let weightedPriceReturn = 0;
+    let weightedDividendYield = 0;
     let complete = riskRows.length > 0 && totalEodMarketValue > 0;
     riskRows.forEach(row => {
-      const value = Number(ewma[row.asset]);
-      if (!Number.isFinite(value)) {
+      const priceReturn = Number(ewma[row.asset]);
+      if (!Number.isFinite(priceReturn)) {
         complete = false;
         if (!missingEwma.includes(row.asset)) missingEwma.push(row.asset);
         return;
       }
-      weightedReturn += (row.marketValue / totalEodMarketValue) * value;
+      // Yahoo dividend yields are stored as decimals (for example 0.0313 = 3.13%).
+      // A missing yield is treated as zero, which is appropriate for non-dividend assets.
+      const rawDividendYield = Number(portfolioDividendYields[row.asset]);
+      const dividendYield = Number.isFinite(rawDividendYield) ? rawDividendYield : 0;
+      const weight = row.marketValue / totalEodMarketValue;
+      weightedPriceReturn += weight * priceReturn;
+      weightedDividendYield += weight * dividendYield;
     });
 
     if (complete) {
-      portfolioEwmaReturn = weightedReturn;
+      const weightedTotalReturn = weightedPriceReturn + weightedDividendYield;
+      portfolioEwmaReturn = weightedPriceReturn;
+      portfolioDividendYield = weightedDividendYield;
+      portfolioTotalReturn = weightedTotalReturn;
       if (Number.isFinite(volatility) && volatility > 0) {
-        sharpe = (weightedReturn - riskFreeRate) / volatility;
+        sharpe = (weightedTotalReturn - riskFreeRate) / volatility;
       }
     }
   }
@@ -1557,6 +1661,8 @@ function calculatePortfolioAnalyticsLocally(totalMarketValue) {
     gain_loss_pct: bookValue > 0 ? (marketValue - bookValue) / bookValue : null,
     volatility,
     portfolio_ewma_return: portfolioEwmaReturn,
+    portfolio_dividend_yield: portfolioDividendYield,
+    portfolio_total_return: portfolioTotalReturn,
     sharpe,
     risk_free_rate: riskFreeRate,
     risk_free_as_of: portfolioRiskPayload ? portfolioRiskPayload.risk_free_as_of : null,
@@ -1614,6 +1720,8 @@ function updatePortfolioSummary(totalMarketValue) {
   const gainLoss = Number(a.gain_loss);
   const returnOnBookCost = a.gain_loss_pct === null ? null : Number(a.gain_loss_pct);
   const ewmaReturn = a.portfolio_ewma_return === null ? null : Number(a.portfolio_ewma_return);
+  const portfolioDividendYield = a.portfolio_dividend_yield === null ? null : Number(a.portfolio_dividend_yield);
+  const portfolioTotalReturn = a.portfolio_total_return === null ? null : Number(a.portfolio_total_return);
   const volatility = a.volatility === null ? null : Number(a.volatility);
   const riskFreeRate = Number(a.risk_free_rate);
   const sharpe = a.sharpe === null ? null : Number(a.sharpe);
@@ -1629,11 +1737,15 @@ function updatePortfolioSummary(totalMarketValue) {
   const tone = value => value > 0 ? "positive" : value < 0 ? "negative" : "";
 
   let ewmaText = pct(ewmaReturn);
+  let dividendText = pct(portfolioDividendYield);
+  let totalReturnText = pct(portfolioTotalReturn);
   const riskFreeText = Number.isFinite(riskFreeRate) ? pct(riskFreeRate) : "—";
   const dailyChangeText = dailyChange ? `${signedMoney(dailyChange.change)} (${signedPct(dailyChange.pct)})` : "—";
   let sharpeText = Number.isFinite(sharpe) ? sharpe.toFixed(2) : "—";
   if (Array.isArray(a.missing_ewma) && a.missing_ewma.length) {
     ewmaText = "—";
+    dividendText = "—";
+    totalReturnText = "—";
     sharpeText = "—";
   }
 
@@ -1652,11 +1764,15 @@ function updatePortfolioSummary(totalMarketValue) {
       <div class="portfolio-summary-break"></div>
       <div class="portfolio-summary-label">Annual Weighted Return (EOD)</div>
       <div class="portfolio-summary-value">${ewmaText}</div>
+      <div class="portfolio-summary-label">Portfolio Dividend Yield</div>
+      <div class="portfolio-summary-value">${dividendText}</div>
+      <div class="portfolio-summary-label">An. Wtd. Total Return</div>
+      <div class="portfolio-summary-value">${totalReturnText}</div>
       <div class="portfolio-summary-label">Portfolio Volatility (EOD)</div>
       <div class="portfolio-summary-value">${pct(volatility)}</div>
       <div class="portfolio-summary-label">Risk-Free Rate (1Y, EOD)</div>
       <div class="portfolio-summary-value">${riskFreeText}</div>
-      <div class="portfolio-summary-label">Sharpe Ratio (EOD)</div>
+      <div class="portfolio-summary-label">Sharpe Ratio</div>
       <div class="portfolio-summary-value">${sharpeText}</div>
     </div>`;
 
@@ -1668,7 +1784,7 @@ function updatePortfolioSummary(totalMarketValue) {
       `${dateText}  |  MV ${formatMoney(Number(a.market_value))}` +
       `  |  G/L ${signedMoney(gainLoss)} (${signedPct(returnOnBookCost)})` +
       `  |  Day ${dailyChangeText}` +
-      `  |  Annual Weighted Return (EOD) ${ewmaText}  |  Vol ${pct(volatility)}` +
+      `  |  An. Wtd. Total Return ${ewmaText}  |  Vol ${pct(volatility)}` +
       `  |  RF ${riskFreeText}  |  Sharpe ${sharpeText}`;
   }
 }
@@ -1685,7 +1801,7 @@ function renderPortfolioTable() {
     summary.textContent = "";
     const stickySummary = document.getElementById("matrixPortfolioSummary");
     if (stickySummary) stickySummary.textContent = "";
-    body.innerHTML = `<tr><td colspan="9" class="portfolio-empty">No selected securities with current prices are available.</td></tr>`;
+    body.innerHTML = `<tr><td colspan="11" class="portfolio-empty">No selected securities with current prices are available.</td></tr>`;
     const totalValueCell = document.getElementById("portfolioTotalMarketValue");
     const totalWeightCell = document.getElementById("portfolioTotalWeight");
     if (totalValueCell) totalValueCell.textContent = "—";
@@ -1716,11 +1832,22 @@ function renderPortfolioTable() {
     const securityRiskFreeRate = Number.isFinite(payloadRiskFreeRate)
       ? payloadRiskFreeRate
       : SHARPE_RISK_FREE_RATE;
-    const securitySharpe = Number.isFinite(securityAnnualReturn) && Number.isFinite(securityVolatility) && securityVolatility > 0
-      ? (securityAnnualReturn - securityRiskFreeRate) / securityVolatility
+    const rawSecurityDividendYield = Number(portfolioDividendYields[row.asset]);
+    const securityDividendYield = Number.isFinite(rawSecurityDividendYield) ? rawSecurityDividendYield : 0;
+    const securityTotalReturn = Number.isFinite(securityAnnualReturn)
+      ? securityAnnualReturn + securityDividendYield
       : NaN;
-    const annualReturnText = Number.isFinite(securityAnnualReturn)
-      ? `${(securityAnnualReturn * 100).toFixed(2)}%`
+    const securitySharpe = Number.isFinite(securityTotalReturn) && Number.isFinite(securityVolatility) && securityVolatility > 0
+      ? (securityTotalReturn - securityRiskFreeRate) / securityVolatility
+      : NaN;
+    const volatilityText = Number.isFinite(securityVolatility)
+      ? `${(securityVolatility * 100).toFixed(6)}%`
+      : "—";
+    const dividendYieldText = Number.isFinite(securityDividendYield)
+      ? `${(securityDividendYield * 100).toFixed(6)}%`
+      : "—";
+    const annualReturnText = Number.isFinite(securityTotalReturn)
+      ? `${(securityTotalReturn * 100).toFixed(6)}%`
       : "—";
     const securitySharpeText = Number.isFinite(securitySharpe)
       ? securitySharpe.toFixed(2)
@@ -1739,6 +1866,8 @@ function renderPortfolioTable() {
       <td><input class="portfolio-shares" data-asset="${row.asset}" type="number" min="0" step="0.0001" value="${formatShares(row.shares)}"></td>
       <td>${formatMoney(row.marketValue)}</td>
       <td>${weightPct.toFixed(2)}%</td>
+      <td>${volatilityText}</td>
+      <td>${dividendYieldText}</td>
       <td>${annualReturnText}</td>
       <td>${securitySharpeText}</td>
     `;
@@ -1847,7 +1976,7 @@ function drawLineChart(container, rows, valueKey, options = {}) {
     hoverPoint.setAttribute("visibility", "visible");
     if (tooltip) {
       const dateText = formatLongDate(row.date);
-      const valueLabel = options.valueLabel || "Value";
+      const valueLabel = row._isCurrent ? "Current price" : (options.valueLabel || "Price");
       const heading = options.heading ? `<strong>${options.heading}</strong><br>` : "";
       tooltip.innerHTML = `${heading}${dateText}<br>${valueLabel}: <strong>${formatValue(row[valueKey])}</strong>`;
       tooltip.style.display = "block";
@@ -1892,6 +2021,61 @@ async function openSecurityChart(asset) {
   await loadSecurityChart(symbol, selectedSecurityChartRange);
 }
 
+function torontoDateKey(value) {
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Toronto", year: "numeric", month: "2-digit", day: "2-digit"
+  }).formatToParts(date);
+  const get = type => parts.find(part => part.type === type)?.value || "";
+  return `${get("year")}-${get("month")}-${get("day")}`;
+}
+
+async function currentChartPrice(symbol) {
+  const normalized = normalizeDisplaySymbol(symbol);
+  const cached = securityCurrentPriceCache.get(normalized);
+  if (cached && Date.now() - cached.cachedAt < 60000) return cached;
+
+  if (Number.isFinite(Number(portfolioCurrentPrices[normalized])) && portfolioPriceTimestamp) {
+    const result = {
+      price: Number(portfolioCurrentPrices[normalized]),
+      date: torontoDateKey(portfolioPriceTimestamp),
+      cachedAt: Date.now()
+    };
+    securityCurrentPriceCache.set(normalized, result);
+    return result;
+  }
+
+  const response = await fetch(LATEST_PRICES_ENDPOINT, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ symbols: [normalized] })
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || data.error || response.statusText);
+  const prices = parseLatestPriceResponse(data);
+  const price = Number(prices[normalized]);
+  if (!Number.isFinite(price) || price <= 0) throw new Error("No current price was returned.");
+  const result = {
+    price,
+    date: torontoDateKey(latestPriceTimestampFromResponse(data)),
+    cachedAt: Date.now()
+  };
+  securityCurrentPriceCache.set(normalized, result);
+  return result;
+}
+
+function appendCurrentChartPoint(historyRows, quote) {
+  const rows = (historyRows || []).map(row => ({ ...row }));
+  if (!quote || !quote.date || !Number.isFinite(Number(quote.price))) return rows;
+  const last = rows[rows.length - 1];
+  if (!last || !last.date) return rows;
+  const point = { date: quote.date, price: Number(quote.price), _isCurrent: true };
+  if (quote.date > last.date) rows.push(point);
+  else if (quote.date === last.date) rows[rows.length - 1] = point;
+  return rows;
+}
+
 async function loadSecurityChart(symbol, range) {
   const chart = document.getElementById("securityChart");
   const title = document.getElementById("securityChartTitle");
@@ -1914,10 +2098,17 @@ async function loadSecurityChart(symbol, range) {
       if (!response.ok) throw new Error(data.error || response.statusText);
       securityHistoryCache.set(key, data);
     }
-    const rows = Array.isArray(data.rows) ? data.rows : [];
-    if (rows.length < 2) throw new Error("Not enough price history was returned.");
-    status.textContent = `${chartDateLabel(rows[0].date)} to ${chartDateLabel(rows[rows.length - 1].date)} · ${rows.length} EOD observations`;
-    drawLineChart(chart, rows, "price", { money: true, valueLabel: "EOD price", heading: displayAsset(symbol), ariaLabel: `${symbol} price history` });
+    const historyRows = Array.isArray(data.rows) ? data.rows : [];
+    if (historyRows.length < 2) throw new Error("Not enough price history was returned.");
+    let rows = historyRows;
+    try {
+      const quote = await currentChartPrice(symbol);
+      rows = appendCurrentChartPoint(historyRows, quote);
+    } catch (quoteError) {
+      console.warn(`Current chart price unavailable for ${symbol}:`, quoteError);
+    }
+    status.textContent = `${chartDateLabel(rows[0].date)} to ${chartDateLabel(rows[rows.length - 1].date)}`;
+    drawLineChart(chart, rows, "price", { money: true, valueLabel: "Price", heading: displayAsset(symbol), ariaLabel: `${symbol} price history` });
   } catch (error) {
     status.textContent = `Chart unavailable: ${error.message}`;
   }
