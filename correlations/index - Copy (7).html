@@ -4,7 +4,7 @@ title: Correlations, Portfolios
 ---
 <!--
 RiskSnap Correlations
-Version: index(94)
+Version: index(93)
 Changes:
 - Reduced matrix cell size so more of the matrix fits on screen
 - Kept bubble scale unchanged, creating more overlap
@@ -13,10 +13,8 @@ Changes:
 - Added Reset, Play, Pause, and Latest controls for automatic Matrix History playback
 - Clarified that the same 20 matrix dates are shown for every lookback, while each matrix uses the selected lookback
 - Added Annual Return (Weighted) and Sharpe Ratio for each portfolio security
-- Individual Sharpe Ratio uses annual price return plus the security dividend yield
-- Portfolio risk weights continue to use the selected EOD matrix prices; current prices are valuation-only
 - Renamed the return column to An. Wtd. Total Return and added Div %
-- Retained the page identity as Correlations and Portfolios
+- Changed the page and navigation title to Risk Analytics; retained Correlations and Portfolio Analytics section buttons/headings
 - Added on-demand individual-security price charts
 - Added portfolio market-value chart using existing Matrix History prices
 - Added chart-only shortcuts for the World Indices preset; caret-prefixed Yahoo indices remain excluded from holdings
@@ -24,6 +22,30 @@ Changes:
 -->
 
 
+<script>
+function applyRiskAnalyticsTitles() {
+  document.title = document.title.replace(/Correlations|Portfolio Analytics/gi, "Risk Analytics");
+
+  document.querySelectorAll('a[href]').forEach(link => {
+    const href = String(link.getAttribute('href') || '').replace(/\/+$/, '');
+    if (href.endsWith('/correlations') && link.textContent.trim() === 'Correlations') {
+      link.textContent = 'Risk Analytics';
+    }
+  });
+
+  document.querySelectorAll('h1').forEach(heading => {
+    if (heading.textContent.trim() === 'Correlations' || heading.textContent.trim() === 'Portfolio Analytics') {
+      heading.textContent = 'Risk Analytics';
+    }
+  });
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', applyRiskAnalyticsTitles);
+} else {
+  applyRiskAnalyticsTitles();
+}
+</script>
 <p>Correlations are important both for signs of future price movement by watching related data and for protection of portfolios during market downturns.
 
 </p>

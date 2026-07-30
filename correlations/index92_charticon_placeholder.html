@@ -4,7 +4,7 @@ title: Correlations, Portfolios
 ---
 <!--
 RiskSnap Correlations
-Version: index(94)
+Version: index(93)
 Changes:
 - Reduced matrix cell size so more of the matrix fits on screen
 - Kept bubble scale unchanged, creating more overlap
@@ -13,10 +13,8 @@ Changes:
 - Added Reset, Play, Pause, and Latest controls for automatic Matrix History playback
 - Clarified that the same 20 matrix dates are shown for every lookback, while each matrix uses the selected lookback
 - Added Annual Return (Weighted) and Sharpe Ratio for each portfolio security
-- Individual Sharpe Ratio uses annual price return plus the security dividend yield
-- Portfolio risk weights continue to use the selected EOD matrix prices; current prices are valuation-only
 - Renamed the return column to An. Wtd. Total Return and added Div %
-- Retained the page identity as Correlations and Portfolios
+- Changed the page and navigation title to Risk Analytics; retained Correlations and Portfolio Analytics section buttons/headings
 - Added on-demand individual-security price charts
 - Added portfolio market-value chart using existing Matrix History prices
 - Added chart-only shortcuts for the World Indices preset; caret-prefixed Yahoo indices remain excluded from holdings
@@ -24,6 +22,30 @@ Changes:
 -->
 
 
+<script>
+function applyRiskAnalyticsTitles() {
+  document.title = document.title.replace(/Correlations|Portfolio Analytics/gi, "Risk Analytics");
+
+  document.querySelectorAll('a[href]').forEach(link => {
+    const href = String(link.getAttribute('href') || '').replace(/\/+$/, '');
+    if (href.endsWith('/correlations') && link.textContent.trim() === 'Correlations') {
+      link.textContent = 'Risk Analytics';
+    }
+  });
+
+  document.querySelectorAll('h1').forEach(heading => {
+    if (heading.textContent.trim() === 'Correlations' || heading.textContent.trim() === 'Portfolio Analytics') {
+      heading.textContent = 'Risk Analytics';
+    }
+  });
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', applyRiskAnalyticsTitles);
+} else {
+  applyRiskAnalyticsTitles();
+}
+</script>
 <p>Correlations are important both for signs of future price movement by watching related data and for protection of portfolios during market downturns.
 
 </p>
@@ -95,7 +117,7 @@ Changes:
         <div id="presetButtons" class="preset-buttons">
           <button type="button" class="preset-button" data-preset="original">⭐ Original</button>
           <button type="button" class="preset-button" data-preset="world">🌍 World Indices</button>
-          <button type="button" class="preset-button" data-preset="macro">📊 Macro</button>
+          <button type="button" class="preset-button" data-preset="macro"><img src="chart_icon.png" alt="Chart" style="width:20px;height:20px;vertical-align:middle;"> Macro</button>
           <button type="button" class="preset-button" data-preset="ai">🤖 AI Ecosystem</button>
           <button type="button" class="preset-button" data-preset="healthcare">⚕️ Healthcare</button>
           <button type="button" class="preset-button" data-preset="energy">⚡ Energy</button>
@@ -127,7 +149,7 @@ Changes:
 
     <div class="portfolio-header">
       <div>
-        <div class="portfolio-note">Use the Correlations section to enter codes, then below, the number of shares held and the portfolio’s Book Cost.  If desired the portfolio may be saved locally in your cache.  When no saved portfolio is loaded, RiskSnap automatically creates an equal-weight portfolio from the selected securities. Click on button beside equity for charts</div>
+        <div class="portfolio-note">Use the Correlations section to enter codes, then below, the number of shares held and the portfolio’s Book Cost.  If desired the portfolio may be saved locally in your cache.  When no saved portfolio is loaded, RiskSnap automatically creates an equal-weight portfolio from the selected securities .</div>
       </div>
       <div class="portfolio-controls">
         <label>Book Cost:
@@ -1356,7 +1378,7 @@ function renderWorldIndexChartButtons(assets, equitySet) {
     button.type = "button";
     button.className = "world-index-chart-button";
     button.dataset.asset = asset;
-    button.textContent = `📈 ${displayAsset(asset)}`;
+    button.textContent = `<img src="chart_icon.png" alt="Chart" style="width:20px;height:20px;vertical-align:middle;"> ${displayAsset(asset)}`;
     button.title = `View ${displayAsset(asset)} price chart`;
     button.addEventListener("click", () => openSecurityChart(asset));
     box.appendChild(button);
@@ -1860,7 +1882,7 @@ function renderPortfolioTable() {
     const tr = document.createElement("tr");
     tr.innerHTML = `
       <td>${rowIndex + 1}. ${displayAsset(row.asset)}</td>
-      <td><button type="button" class="portfolio-chart-button" data-asset="${row.asset}" title="View price chart" aria-label="View ${displayAsset(row.asset)} price chart">📈</button></td>
+      <td><button type="button" class="portfolio-chart-button" data-asset="${row.asset}" title="View price chart" aria-label="View ${displayAsset(row.asset)} price chart"><img src="chart_icon.png" alt="Chart" style="width:20px;height:20px;vertical-align:middle;"></button></td>
       <td>${formatMoney(eodPrice)}</td>
       <td>${formatMoney(row.price)}</td>
       <td><input class="portfolio-shares" data-asset="${row.asset}" type="number" min="0" step="0.0001" value="${formatShares(row.shares)}"></td>
