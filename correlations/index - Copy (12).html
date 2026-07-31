@@ -541,9 +541,6 @@ let portfolioShares = {};
 let portfolioSecurities = [];
 let portfolioPrices = {};
 let portfolioCurrentPrices = {};
-// Preserve the newest completed EOD prices independently of Matrix History,
-// whose final frame can lag the main correlation payload by one business day.
-let portfolioLatestEodPrices = {};
 let portfolioDividendYields = {};
 let portfolioRiskPayload = null;
 let portfolioViewMode = "current"; // "current" or "historical"
@@ -1318,7 +1315,6 @@ function initializePortfolio(payload, selectedEquities) {
 
   // EOD prices provide the initial current-price fallback until a quote refresh completes.
   const eodPrices = pricesFromPayload(payload);
-  portfolioLatestEodPrices = { ...eodPrices };
   const priorCurrentPrices = { ...portfolioCurrentPrices };
   portfolioCurrentPrices = { ...eodPrices };
   Object.keys(priorCurrentPrices).forEach(asset => {
@@ -1710,19 +1706,7 @@ function selectedPortfolioDailyChange(totalMarketValue) {
     if (index <= 0) return null;
     previousValue = portfolioMarketValueForFrame(matrixHistoryFrames[index - 1]);
   } else {
-    // Use the main payload's latest completed EOD prices. The rolling Matrix
-    // History endpoint can end one business day earlier, which would make
-    // “Change vs Latest EOD” compare against the wrong date.
-    let total = 0;
-    let found = false;
-    portfolioSecurities.forEach(asset => {
-      const price = Number(portfolioLatestEodPrices[asset]);
-      const shares = Math.max(0, Number(portfolioShares[asset]) || 0);
-      if (!Number.isFinite(price) || price <= 0) return;
-      total += price * shares;
-      found = true;
-    });
-    previousValue = found ? total : null;
+    previousValue = portfolioMarketValueForFrame(matrixHistoryFrames[matrixHistoryFrames.length - 1]);
   }
 
   if (!Number.isFinite(previousValue) || previousValue <= 0) return null;
@@ -2771,7 +2755,6 @@ function loadPortfolio() {
   portfolioRiskPayload = null;
   portfolioPrices = {};
   portfolioCurrentPrices = {};
-  portfolioLatestEodPrices = {};
   portfolioPriceTimestamp = null;
   portfolioViewMode = "current";
 
