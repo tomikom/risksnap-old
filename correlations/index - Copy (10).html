@@ -4,7 +4,7 @@ title: Correlations, Portfolios
 ---
 <!--
 RiskSnap Correlations
-Version: index(97)
+Version: index(94)
 Changes:
 - Reduced matrix cell size so more of the matrix fits on screen
 - Kept bubble scale unchanged, creating more overlap
@@ -15,7 +15,7 @@ Changes:
 - Added Annual Return (Weighted) and Sharpe Ratio for each portfolio security
 - Individual Sharpe Ratio uses annual price return plus the security dividend yield
 - Portfolio risk weights continue to use the selected EOD matrix prices; current prices are valuation-only
-- Renamed the return column to An. Wtd. Total Return and added TTM dividend yield with a footnote
+- Renamed the return column to An. Wtd. Total Return and added Div %
 - Retained the page identity as Correlations and Portfolios
 - Added on-demand individual-security price charts
 - Added portfolio market-value chart using existing Matrix History prices
@@ -166,7 +166,7 @@ Changes:
             <th>Current market value</th>
             <th>Current weight</th>
             <th>Vol (EOD)</th>
-            <th>Div<sup>1</sup></th>
+            <th>Div %</th>
             <th>An. Wtd. Total Return</th>
             <th>Sharpe Ratio </th>
           </tr>
@@ -182,7 +182,6 @@ Changes:
         </tfoot>
       </table>
     </div>
-    <div class="portfolio-footnote"><sup>1</sup> Div is the trailing twelve-month (TTM) dividend or distribution yield: total cash dividends paid by a stock, or distributions paid by an ETF, during the previous 12 months divided by the current market price.</div>
 
     <div id="securityChartPanel" class="portfolio-chart-panel" hidden>
       <div class="portfolio-chart-header">
@@ -438,8 +437,6 @@ h1 { color: white; text-align: center; background-color: #3A5FCD; }
 .portfolio-table tfoot td { font-weight:700; border-top:2px solid #999; border-bottom:0; }
 .portfolio-table input.portfolio-shares { width:110px; padding:4px 6px; text-align:right; box-sizing:border-box; }
 .portfolio-empty { color:#666; padding:10px 0; }
-.portfolio-footnote { margin:7px 2px 0; color:#666; font-size:11px; line-height:1.35; }
-.portfolio-footnote sup, .portfolio-table th sup { font-size:9px; vertical-align:super; }
 
 .portfolio-chart-button, .security-chart-actions button { cursor:pointer; border:1px solid #aaa; border-radius:4px; background:#fff; padding:4px 8px; }
 .portfolio-chart-button:hover, .security-chart-actions button:hover { background:#f0f4ff; border-color:#7188c7; }
@@ -1637,8 +1634,8 @@ function calculatePortfolioAnalyticsLocally(totalMarketValue) {
         if (!missingEwma.includes(row.asset)) missingEwma.push(row.asset);
         return;
       }
-      // TTM dividend/distribution yields are stored as decimals (for example 0.0313 = 3.13%).
-      // A missing yield is treated as zero, which is appropriate for non-income assets.
+      // Yahoo dividend yields are stored as decimals (for example 0.0313 = 3.13%).
+      // A missing yield is treated as zero, which is appropriate for non-dividend assets.
       const rawDividendYield = Number(portfolioDividendYields[row.asset]);
       const dividendYield = Number.isFinite(rawDividendYield) ? rawDividendYield : 0;
       const weight = row.marketValue / totalEodMarketValue;
@@ -1767,7 +1764,7 @@ function updatePortfolioSummary(totalMarketValue) {
       <div class="portfolio-summary-break"></div>
       <div class="portfolio-summary-label">Annual Weighted Return (EOD)</div>
       <div class="portfolio-summary-value">${ewmaText}</div>
-      <div class="portfolio-summary-label">Portfolio TTM Dividend Yield</div>
+      <div class="portfolio-summary-label">Portfolio Dividend Yield</div>
       <div class="portfolio-summary-value">${dividendText}</div>
       <div class="portfolio-summary-label">An. Wtd. Total Return</div>
       <div class="portfolio-summary-value">${totalReturnText}</div>
