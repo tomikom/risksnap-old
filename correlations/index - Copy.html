@@ -1734,28 +1734,28 @@ function selectedPortfolioDailyChange(totalMarketValue) {
     if (index <= 0) return null;
     previousValue = portfolioMarketValueForFrame(matrixHistoryFrames[index - 1]);
   } else {
-    // Current mode must always compare with the newest completed EOD source.
-    // portfolioRiskPayload can later be replaced by the final Matrix History
-    // frame, which may be one business day older and must not overwrite this
-    // current-vs-EOD comparison.
-    let total = 0;
-    let found = false;
-    portfolioSecurities.forEach(asset => {
-      const price = Number(portfolioLatestEodPrices[asset]);
-      const shares = Math.max(0, Number(portfolioShares[asset]) || 0);
-      if (!Number.isFinite(price) || price <= 0) return;
-      total += price * shares;
-      found = true;
-    });
-    previousValue = found ? total : null;
+    // Compare current value with the same latest EOD price set displayed in
+    // the holdings table. Using a separate cached source can lag by one day
+    // when the correlation and rolling-matrix endpoints refresh at different
+    // times.
+    previousValue = portfolioMarketValueForFrame(portfolioRiskPayload);
 
-    // Fallbacks apply only during the short interval before the authoritative
-    // latest-EOD map has been populated.
+    // Fallbacks are retained only for the brief interval before the risk
+    // payload is ready.
     if (!Number.isFinite(previousValue) || previousValue <= 0) {
       previousValue = portfolioMarketValueForFrame(activePayload);
     }
     if (!Number.isFinite(previousValue) || previousValue <= 0) {
-      previousValue = portfolioMarketValueForFrame(portfolioRiskPayload);
+      let total = 0;
+      let found = false;
+      portfolioSecurities.forEach(asset => {
+        const price = Number(portfolioLatestEodPrices[asset]);
+        const shares = Math.max(0, Number(portfolioShares[asset]) || 0);
+        if (!Number.isFinite(price) || price <= 0) return;
+        total += price * shares;
+        found = true;
+      });
+      previousValue = found ? total : null;
     }
   }
 
