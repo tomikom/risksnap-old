@@ -964,9 +964,9 @@ async function fetchRollingMatrix(requestPayload, periodLabel) {
     matrixHistoryLookback = lookback;
     if (!rawMatrixHistoryFrames.length) throw new Error("No matrix-history frames were returned.");
 
-    // Matrix History supplies historical risk frames only. It must never
-    // replace the latest EOD prices shown in the holdings table, because its
-    // final frame can lag the main correlation payload by one or more days.
+    // The correlation and rolling-matrix endpoints can refresh at slightly
+    // different times. Select the newest dated EOD price set from either one.
+    updateLatestEodPriceSource(rawMatrixHistoryFrames[rawMatrixHistoryFrames.length - 1]);
 
     applyMatrixHistoryRange(false);
     slider.disabled = false;
@@ -1734,9 +1734,10 @@ function selectedPortfolioDailyChange(totalMarketValue) {
     if (index <= 0) return null;
     previousValue = portfolioMarketValueForFrame(matrixHistoryFrames[index - 1]);
   } else {
-    // Current mode compares against the EOD prices shown in the holdings
-    // table. This map is populated only from the main correlation payload;
-    // Matrix History is deliberately excluded because it can lag.
+    // Current mode must always compare with the newest completed EOD source.
+    // portfolioRiskPayload can later be replaced by the final Matrix History
+    // frame, which may be one business day older and must not overwrite this
+    // current-vs-EOD comparison.
     let total = 0;
     let found = false;
     portfolioSecurities.forEach(asset => {
