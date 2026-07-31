@@ -1734,19 +1734,29 @@ function selectedPortfolioDailyChange(totalMarketValue) {
     if (index <= 0) return null;
     previousValue = portfolioMarketValueForFrame(matrixHistoryFrames[index - 1]);
   } else {
-    // Use the main payload's latest completed EOD prices. The rolling Matrix
-    // History endpoint can end one business day earlier, which would make
-    // “Change vs Latest EOD” compare against the wrong date.
-    let total = 0;
-    let found = false;
-    portfolioSecurities.forEach(asset => {
-      const price = Number(portfolioLatestEodPrices[asset]);
-      const shares = Math.max(0, Number(portfolioShares[asset]) || 0);
-      if (!Number.isFinite(price) || price <= 0) return;
-      total += price * shares;
-      found = true;
-    });
-    previousValue = found ? total : null;
+    // Compare current value with the same latest EOD price set displayed in
+    // the holdings table. Using a separate cached source can lag by one day
+    // when the correlation and rolling-matrix endpoints refresh at different
+    // times.
+    previousValue = portfolioMarketValueForFrame(portfolioRiskPayload);
+
+    // Fallbacks are retained only for the brief interval before the risk
+    // payload is ready.
+    if (!Number.isFinite(previousValue) || previousValue <= 0) {
+      previousValue = portfolioMarketValueForFrame(activePayload);
+    }
+    if (!Number.isFinite(previousValue) || previousValue <= 0) {
+      let total = 0;
+      let found = false;
+      portfolioSecurities.forEach(asset => {
+        const price = Number(portfolioLatestEodPrices[asset]);
+        const shares = Math.max(0, Number(portfolioShares[asset]) || 0);
+        if (!Number.isFinite(price) || price <= 0) return;
+        total += price * shares;
+        found = true;
+      });
+      previousValue = found ? total : null;
+    }
   }
 
   if (!Number.isFinite(previousValue) || previousValue <= 0) return null;
