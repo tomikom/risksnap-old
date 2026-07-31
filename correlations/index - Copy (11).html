@@ -21,9 +21,6 @@ Changes:
 - Added portfolio market-value chart using existing Matrix History prices
 - Added chart-only shortcuts for the World Indices preset; caret-prefixed Yahoo indices remain excluded from holdings
 - Added hover date/value tooltips and crosshairs to equity and portfolio line charts
-- Split the portfolio summary into Current Portfolio Valuation and Portfolio Analytics columns
-- Added display placeholders for Maximum Drawdown and Beta; calculations are intentionally not yet implemented
-- Period-dependent labels now show the selected 25d, 90d, or 250d lookback
 -->
 
 
@@ -427,13 +424,10 @@ h1 { color: white; text-align: center; background-color: #3A5FCD; }
 .portfolio-data-status { display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin:2px 0 8px; color:#666; font-size:12px; }
 .portfolio-price-status { color:#555; }
 .portfolio-summary { margin:10px 0 8px; color:#333; }
-.portfolio-summary-columns { display:grid; grid-template-columns:repeat(2, minmax(280px, 1fr)); gap:24px 42px; max-width:920px; }
-.portfolio-summary-section { min-width:0; }
-.portfolio-summary-heading { margin:0 0 7px; padding-bottom:4px; border-bottom:1px solid #9fb17f; color:#315d22; font-size:17px; font-weight:700; }
-.portfolio-summary-grid { display:grid; grid-template-columns:minmax(175px,1fr) minmax(95px,auto); gap:5px 16px; width:100%; }
+.portfolio-summary-grid { display:grid; grid-template-columns:minmax(145px,auto) minmax(110px,auto); gap:4px 18px; width:max-content; max-width:100%; }
+.portfolio-summary-break { grid-column:1 / -1; height:5px; }
 .portfolio-summary-label { font-weight:600; }
 .portfolio-summary-value { text-align:right; font-variant-numeric:tabular-nums; }
-@media (max-width:760px) { .portfolio-summary-columns { grid-template-columns:1fr; gap:18px; } }
 .portfolio-summary-value.positive { color:#137333; }
 .portfolio-summary-value.negative { color:#b3261e; }
 .matrix-portfolio-summary { margin:3px 0 5px; font-size:12px; font-weight:600; color:#333; white-space:normal; }
@@ -1758,46 +1752,31 @@ function updatePortfolioSummary(totalMarketValue) {
     sharpeText = "—";
   }
 
-  const selectedPeriodText = (document.getElementById("corrPeriod")?.value || "250 Day");
-  const selectedDays = parseInt(selectedPeriodText, 10) || 250;
-
   summary.innerHTML = `
-    <div class="portfolio-summary-columns">
-      <section class="portfolio-summary-section" aria-label="Current Portfolio Valuation">
-        <div class="portfolio-summary-heading">Current Portfolio Valuation</div>
-        <div class="portfolio-summary-grid">
-          <div class="portfolio-summary-label">Book Cost</div>
-          <div class="portfolio-summary-value">${formatMoney(bookCost)}</div>
-          <div class="portfolio-summary-label">Current Market Value</div>
-          <div class="portfolio-summary-value">${formatMoney(Number(a.market_value))}</div>
-          <div class="portfolio-summary-label">Gain/Loss</div>
-          <div class="portfolio-summary-value ${tone(gainLoss)}">${signedMoney(gainLoss)}</div>
-          <div class="portfolio-summary-label">Return on Book Cost</div>
-          <div class="portfolio-summary-value ${tone(returnOnBookCost || 0)}">${signedPct(returnOnBookCost)}</div>
-          <div class="portfolio-summary-label">Change vs Latest EOD</div>
-          <div class="portfolio-summary-value ${dailyChange ? tone(dailyChange.change) : ""}">${dailyChangeText}</div>
-          <div class="portfolio-summary-label">Maximum Drawdown (${selectedDays}d)</div>
-          <div class="portfolio-summary-value">—</div>
-        </div>
-      </section>
-
-      <section class="portfolio-summary-section" aria-label="Portfolio Analytics">
-        <div class="portfolio-summary-heading">Portfolio Analytics</div>
-        <div class="portfolio-summary-grid">
-          <div class="portfolio-summary-label">Annual Weighted Return (EWMA)</div>
-          <div class="portfolio-summary-value">${ewmaText}</div>
-          <div class="portfolio-summary-label">Portfolio TTM Dividend Yield</div>
-          <div class="portfolio-summary-value">${dividendText}</div>
-          <div class="portfolio-summary-label">Portfolio Volatility (${selectedDays}d)</div>
-          <div class="portfolio-summary-value">${pct(volatility)}</div>
-          <div class="portfolio-summary-label">Beta (${selectedDays}d)</div>
-          <div class="portfolio-summary-value">—</div>
-          <div class="portfolio-summary-label">Risk-Free Rate (1Y)</div>
-          <div class="portfolio-summary-value">${riskFreeText}</div>
-          <div class="portfolio-summary-label">Sharpe Ratio</div>
-          <div class="portfolio-summary-value">${sharpeText}</div>
-        </div>
-      </section>
+    <div class="portfolio-summary-grid">
+      <div class="portfolio-summary-label">Book Cost</div>
+      <div class="portfolio-summary-value">${formatMoney(bookCost)}</div>
+      <div class="portfolio-summary-label">Market Value (Current)</div>
+      <div class="portfolio-summary-value">${formatMoney(Number(a.market_value))}</div>
+      <div class="portfolio-summary-label">Gain/Loss</div>
+      <div class="portfolio-summary-value ${tone(gainLoss)}">${signedMoney(gainLoss)}</div>
+      <div class="portfolio-summary-label">Return on Book Cost</div>
+      <div class="portfolio-summary-value ${tone(returnOnBookCost || 0)}">${signedPct(returnOnBookCost)}</div>
+      <div class="portfolio-summary-label">Change vs Latest EOD</div>
+      <div class="portfolio-summary-value ${dailyChange ? tone(dailyChange.change) : ""}">${dailyChangeText}</div>
+      <div class="portfolio-summary-break"></div>
+      <div class="portfolio-summary-label">Annual Weighted Return (EOD)</div>
+      <div class="portfolio-summary-value">${ewmaText}</div>
+      <div class="portfolio-summary-label">Portfolio TTM Dividend Yield</div>
+      <div class="portfolio-summary-value">${dividendText}</div>
+      <div class="portfolio-summary-label">An. Wtd. Total Return</div>
+      <div class="portfolio-summary-value">${totalReturnText}</div>
+      <div class="portfolio-summary-label">Portfolio Volatility (EOD)</div>
+      <div class="portfolio-summary-value">${pct(volatility)}</div>
+      <div class="portfolio-summary-label">Risk-Free Rate (1Y, EOD)</div>
+      <div class="portfolio-summary-value">${riskFreeText}</div>
+      <div class="portfolio-summary-label">Sharpe Ratio</div>
+      <div class="portfolio-summary-value">${sharpeText}</div>
     </div>`;
 
   if (stickySummary) {
@@ -1808,7 +1787,7 @@ function updatePortfolioSummary(totalMarketValue) {
       `${dateText}  |  MV ${formatMoney(Number(a.market_value))}` +
       `  |  G/L ${signedMoney(gainLoss)} (${signedPct(returnOnBookCost)})` +
       `  |  Day ${dailyChangeText}` +
-      `  |  EWMA ${ewmaText}  |  Vol (${selectedDays}d) ${pct(volatility)}` +
+      `  |  An. Wtd. Total Return ${ewmaText}  |  Vol ${pct(volatility)}` +
       `  |  RF ${riskFreeText}  |  Sharpe ${sharpeText}`;
   }
 }
