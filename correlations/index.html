@@ -1090,20 +1090,25 @@ function renderSelectedMatrixFrame() {
   const slider = document.getElementById("matrixHistorySlider");
   const index = Math.max(0, Math.min(matrixHistoryFrames.length - 1, Number(slider.value) || 0));
   matrixHistoryIndex = index;
-  const frame = matrixHistoryFrames[index];
-  document.getElementById("matrixHistoryDate").textContent = frame.date ? formatLongDate(frame.date) : `Frame ${index + 1}`;
-  updateMatrixHistorySliderDate(frame, index);
-  drawCorrelationChart(frame);
 
-  // A slider selection is a complete historical EOD snapshot. In Latest mode,
-  // current quotes are used only for valuation; every risk measure remains EOD.
+  // The selected frame is the dated market valuation (for example Apr 20).
+  // The preceding completed trading-day frame is the EOD correlation/risk
+  // snapshot (for example Apr 17 when Apr 20 is a Monday).
+  const marketFrame = matrixHistoryFrames[index];
+  const eodFrame = matrixHistoryFrames[Math.max(0, index - 1)] || marketFrame;
+
+  document.getElementById("matrixHistoryDate").textContent = eodFrame.date
+    ? formatLongDate(eodFrame.date)
+    : `Frame ${Math.max(1, index)}`;
+  updateMatrixHistorySliderDate(eodFrame, index);
+  drawCorrelationChart(eodFrame);
+
   portfolioViewMode = "historical";
-  const eodFrame = matrixHistoryFrames[Math.max(0, index - 1)] || frame;
   portfolioRiskPayload = eodFrame;
-  setDisplayedPortfolioPricesFromPayload(frame);
+  setDisplayedPortfolioPricesFromPayload(marketFrame);
   renderPortfolioTable();
   renderPortfolioDividendHistory();
-  updateSelectedPairStatsFromMatrixFrame(frame);
+  updateSelectedPairStatsFromMatrixFrame(eodFrame);
 }
 
 function updateMatrixHistorySliderDate(frame, index) {
@@ -1470,13 +1475,15 @@ function setEqualMarketValueShares() {
 }
 
 function currentPortfolioRows() {
+  // portfolioPrices is the active valuation map: live quotes in Current mode,
+  // or the selected Matrix History market-date prices in historical mode.
   return portfolioSecurities
     .filter(asset =>
-      Number.isFinite(Number(portfolioCurrentPrices[asset])) &&
-      Number(portfolioCurrentPrices[asset]) > 0
+      Number.isFinite(Number(portfolioPrices[asset])) &&
+      Number(portfolioPrices[asset]) > 0
     )
     .map(asset => {
-      const price = Number(portfolioCurrentPrices[asset]);
+      const price = Number(portfolioPrices[asset]);
       const shares = Math.max(0, Number(portfolioShares[asset]) || 0);
       return { asset, price, shares, marketValue: price * shares };
     });
@@ -1756,8 +1763,8 @@ function updatePortfolioDataLabels() {
   const historical = portfolioViewMode === "historical";
 
   if (priceTime) {
-    if (historical && portfolioRiskPayload && portfolioRiskPayload.date) {
-      priceTime.textContent = `${formatLongDate(portfolioRiskPayload.date)} Close`;
+    if (historical && matrixHistoryFrames[matrixHistoryIndex]?.date) {
+      priceTime.textContent = `${formatLongDate(matrixHistoryFrames[matrixHistoryIndex].date)} Close`;
     } else if (portfolioPriceTimestamp) {
       priceTime.textContent = formatPriceTimestamp(portfolioPriceTimestamp);
     } else if (portfolioRiskPayload && portfolioRiskPayload.date) {
