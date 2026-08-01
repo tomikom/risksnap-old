@@ -1067,13 +1067,14 @@ function applyMatrixHistoryRange(keepNearestDate) {
   // Initial Matrix History loading must not switch the portfolio into
   // historical mode. Show the newest matrix visually, but leave the holdings,
   // EOD prices and summary tied to the authoritative main correlation payload.
-  const frame = matrixHistoryFrames[index];
-  document.getElementById("matrixHistoryDate").textContent = frame.date
-    ? formatLongDate(frame.date)
-    : `Frame ${index + 1}`;
-  updateMatrixHistorySliderDate(frame, index);
-  drawCorrelationChart(frame);
-  updateSelectedPairStatsFromMatrixFrame(frame);
+  const marketFrame = matrixHistoryFrames[index];
+  const eodFrame = matrixEodFrame(index) || marketFrame;
+  document.getElementById("matrixHistoryDate").textContent = eodFrame.date
+    ? formatLongDate(eodFrame.date)
+    : `Frame ${Math.max(1, index)}`;
+  updateMatrixHistorySliderDate(marketFrame, index);
+  drawCorrelationChart(eodFrame);
+  updateSelectedPairStatsFromMatrixFrame(eodFrame);
 
   setMatrixHistoryStatus("");
 }
@@ -1161,13 +1162,14 @@ function showLatestMatrixFrame() {
     const matrixSlider = document.getElementById("matrixHistorySlider");
     matrixSlider.value = matrixHistoryFrames.length - 1;
     matrixHistoryIndex = matrixHistoryFrames.length - 1;
-    const latestFrame = matrixHistoryFrames[matrixHistoryIndex];
-    document.getElementById("matrixHistoryDate").textContent = latestFrame.date
-      ? formatLongDate(latestFrame.date)
+    const latestMarketFrame = matrixHistoryFrames[matrixHistoryIndex];
+    const latestEodFrame = matrixEodFrame(matrixHistoryIndex) || latestMarketFrame;
+    document.getElementById("matrixHistoryDate").textContent = latestEodFrame.date
+      ? formatLongDate(latestEodFrame.date)
       : "Latest matrix";
-    updateMatrixHistorySliderDate(latestFrame, matrixHistoryIndex);
-    drawCorrelationChart(latestFrame);
-    updateSelectedPairStatsFromMatrixFrame(latestFrame);
+    updateMatrixHistorySliderDate(latestMarketFrame, matrixHistoryIndex);
+    drawCorrelationChart(latestEodFrame);
+    updateSelectedPairStatsFromMatrixFrame(latestEodFrame);
   }
 
   // Latest means current valuation prices plus the authoritative latest
