@@ -24,6 +24,7 @@ Changes:
 - Split the portfolio summary into Current Portfolio Valuation and Portfolio Analytics columns
 - Added display placeholders for Maximum Drawdown and Beta; calculations are intentionally not yet implemented
 - Added total EOD portfolio value with its actual date and shortened Change vs EOD label
+- Moved EOD Value below Return on Book Cost and kept Change vs EOD directly beneath it
 - Period-dependent labels now show the selected 25d, 90d, or 250d lookback
 -->
 
@@ -165,14 +166,14 @@ Changes:
             <th>Security</th>
             <th aria-label="Price chart"></th>
             <th>EOD price</th>
-            <th>Current price</th>
+            <th>Market price</th>
             <th>Shares</th>
-            <th>Current market value</th>
-            <th>Current weight</th>
+            <th>Market value</th>
             <th>Vol (EOD)</th>
             <th>Div<sup>1</sup></th>
             <th>An. Wtd. Total Return</th>
-            <th>Sharpe Ratio </th>
+            <th>Sharpe Ratio</th>
+            <th>Beta vs SPY</th>
           </tr>
         </thead>
         <tbody id="portfolioBody"></tbody>
@@ -180,13 +181,23 @@ Changes:
           <tr>
             <td colspan="5">Total</td>
             <td id="portfolioTotalMarketValue">—</td>
-            <td id="portfolioTotalWeight">100.00%</td>
-            <td colspan="4"></td>
+            <td colspan="5"></td>
           </tr>
         </tfoot>
       </table>
     </div>
-    <div class="portfolio-footnote"><sup>1</sup> Div is the trailing twelve-month (TTM) dividend or distribution yield: total cash dividends paid by a stock, or distributions paid by an ETF, during the previous 12 months divided by the current market price.</div>
+    <div class="portfolio-footnote"><sup>1</sup> Div is the trailing twelve-month (TTM) dividend or distribution yield for the selected EOD date: split-adjusted cash dividends or ETF distributions during the preceding 12 months divided by that EOD price.</div>
+
+    <div id="portfolioDividendHistoryPanel" class="portfolio-dividend-history">
+      <div class="portfolio-dividend-history-header">
+        <div>
+          <div class="portfolio-dividend-history-title">TTM Dividends Used for Matrix History</div>
+          <div id="portfolioDividendHistoryStatus" class="portfolio-dividend-history-status">Loading dividend history...</div>
+        </div>
+        <button id="portfolioDividendDownload" type="button" disabled>Download CSV</button>
+      </div>
+      <div id="portfolioDividendHistoryTable" class="portfolio-dividend-history-table"></div>
+    </div>
 
     <div id="securityChartPanel" class="portfolio-chart-panel" hidden>
       <div class="portfolio-chart-header">
@@ -434,6 +445,7 @@ h1 { color: white; text-align: center; background-color: #3A5FCD; }
 .portfolio-summary-grid { display:grid; grid-template-columns:minmax(175px,1fr) minmax(95px,auto); gap:5px 16px; width:100%; }
 .portfolio-summary-label { font-weight:600; }
 .portfolio-summary-value { text-align:right; font-variant-numeric:tabular-nums; }
+.portfolio-summary-break { grid-column:1 / -1; height:7px; }
 @media (max-width:760px) { .portfolio-summary-columns { grid-template-columns:1fr; gap:18px; } }
 .portfolio-summary-value.positive { color:#137333; }
 .portfolio-summary-value.negative { color:#b3261e; }
@@ -447,6 +459,18 @@ h1 { color: white; text-align: center; background-color: #3A5FCD; }
 .portfolio-empty { color:#666; padding:10px 0; }
 .portfolio-footnote { margin:7px 2px 0; color:#666; font-size:11px; line-height:1.35; }
 .portfolio-footnote sup, .portfolio-table th sup { font-size:9px; vertical-align:super; }
+.portfolio-dividend-history { margin:12px 0 4px; border:1px solid #d8dfe9; border-radius:6px; padding:10px; background:#fbfcfe; }
+.portfolio-dividend-history-header { display:flex; justify-content:space-between; align-items:flex-start; gap:12px; flex-wrap:wrap; margin-bottom:8px; }
+.portfolio-dividend-history-title { font-size:15px; font-weight:700; color:#222; }
+.portfolio-dividend-history-status { margin-top:2px; color:#666; font-size:11px; }
+#portfolioDividendDownload { cursor:pointer; border:1px solid #aaa; border-radius:4px; background:#fff; padding:4px 9px; }
+#portfolioDividendDownload:disabled { cursor:default; opacity:.55; }
+.portfolio-dividend-history-table { overflow-x:auto; }
+.portfolio-dividend-history-table table { width:100%; border-collapse:collapse; font-size:12px; }
+.portfolio-dividend-history-table th, .portfolio-dividend-history-table td { border-bottom:1px solid #e7e7e7; padding:5px 7px; text-align:right; white-space:nowrap; }
+.portfolio-dividend-history-table th:first-child, .portfolio-dividend-history-table td:first-child { text-align:left; }
+.portfolio-dividend-history-table .dividend-events { text-align:left; white-space:normal; min-width:300px; }
+
 
 .portfolio-chart-button, .security-chart-actions button { cursor:pointer; border:1px solid #aaa; border-radius:4px; background:#fff; padding:4px 8px; }
 .portfolio-chart-button:hover, .security-chart-actions button:hover { background:#f0f4ff; border-color:#7188c7; }
@@ -511,6 +535,7 @@ const PORTFOLIO_BOOK_VALUE_KEY = "RiskSnapLastBookCost";
 const ROLLING_ENDPOINT = "https://surface-203178530029.northamerica-northeast2.run.app/rolling_correlation";
 const ROLLING_MATRIX_ENDPOINT = "https://surface-203178530029.northamerica-northeast2.run.app/rolling_matrix";
 const LATEST_PRICES_ENDPOINT = "https://surface-203178530029.northamerica-northeast2.run.app/latest_prices";
+const DIVIDEND_HISTORY_ENDPOINT = "https://surface-203178530029.northamerica-northeast2.run.app/dividend_history";
 const ASSET_HISTORY_ENDPOINT = "https://surface-203178530029.northamerica-northeast2.run.app/asset_history";
 const USD_YIELD_ENDPOINT = "https://surface-203178530029.northamerica-northeast2.run.app/yield_history?country=USD&period=1y";
 const ROLLING_VISIBLE_POINTS = 20;
@@ -547,6 +572,9 @@ let portfolioCurrentPrices = {};
 let portfolioLatestEodPrices = {};
 let portfolioLatestEodDate = "";
 let portfolioDividendYields = {};
+let portfolioDividendHistory = {};
+let portfolioDividendHistorySignature = "";
+let portfolioDividendHistoryRows = [];
 let portfolioRiskPayload = null;
 let portfolioViewMode = "current"; // "current" or "historical"
 let portfolioPriceTimestamp = null;
@@ -601,6 +629,7 @@ document.getElementById("portfolioJump").addEventListener("click", () => {
   if (panel) panel.scrollIntoView({ behavior: "smooth", block: "start" });
 });
 document.getElementById("portfolioRefreshPrices").addEventListener("click", refreshPortfolioPrices);
+document.getElementById("portfolioDividendDownload").addEventListener("click", downloadPortfolioDividendCsv);
 document.getElementById("portfolioBookValue").addEventListener("input", () => {
   saveLastPortfolioBookCost();
   if (portfolioAutoEqualWeight) setEqualMarketValueShares();
@@ -970,6 +999,10 @@ async function fetchRollingMatrix(requestPayload, periodLabel) {
     // final frame can lag the main correlation payload by one or more days.
 
     applyMatrixHistoryRange(false);
+    // Once the history is available, initialize the page through the same
+    // Latest path used by the button. This supplies the preceding EOD frame
+    // after Ctrl+F5 and after loading a saved portfolio.
+    showLatestMatrixFrame();
     slider.disabled = false;
     latestBtn.disabled = false;
     resetBtn.disabled = false;
@@ -1062,18 +1095,27 @@ function renderSelectedMatrixFrame() {
   const slider = document.getElementById("matrixHistorySlider");
   const index = Math.max(0, Math.min(matrixHistoryFrames.length - 1, Number(slider.value) || 0));
   matrixHistoryIndex = index;
-  const frame = matrixHistoryFrames[index];
-  document.getElementById("matrixHistoryDate").textContent = frame.date ? formatLongDate(frame.date) : `Frame ${index + 1}`;
-  updateMatrixHistorySliderDate(frame, index);
-  drawCorrelationChart(frame);
 
-  // A slider selection is a complete historical EOD snapshot. In Latest mode,
-  // current quotes are used only for valuation; every risk measure remains EOD.
+  // The selected frame is the dated market valuation (for example Apr 20).
+  // The preceding completed trading-day frame is the EOD correlation/risk
+  // snapshot (for example Apr 17 when Apr 20 is a Monday).
+  const marketFrame = matrixHistoryFrames[index];
+  const eodFrame = matrixHistoryFrames[Math.max(0, index - 1)] || marketFrame;
+
+  document.getElementById("matrixHistoryDate").textContent = eodFrame.date
+    ? formatLongDate(eodFrame.date)
+    : `Frame ${Math.max(1, index)}`;
+  // The slider label is the selected valuation/current date. The matrix
+  // itself and all EOD analytics use the preceding completed trading day.
+  updateMatrixHistorySliderDate(marketFrame, index);
+  drawCorrelationChart(eodFrame);
+
   portfolioViewMode = "historical";
-  portfolioRiskPayload = frame;
-  setDisplayedPortfolioPricesFromPayload(frame);
+  portfolioRiskPayload = eodFrame;
+  setDisplayedPortfolioPricesFromPayload(marketFrame);
   renderPortfolioTable();
-  updateSelectedPairStatsFromMatrixFrame(frame);
+  renderPortfolioDividendHistory();
+  updateSelectedPairStatsFromMatrixFrame(eodFrame);
 }
 
 function updateMatrixHistorySliderDate(frame, index) {
@@ -1106,24 +1148,35 @@ function showLatestMatrixFrame() {
 
   if (matrixHistoryFrames.length) {
     const matrixSlider = document.getElementById("matrixHistorySlider");
-    matrixSlider.value = matrixHistoryFrames.length - 1;
-    matrixHistoryIndex = matrixHistoryFrames.length - 1;
-    const latestFrame = matrixHistoryFrames[matrixHistoryIndex];
-    document.getElementById("matrixHistoryDate").textContent = latestFrame.date
-      ? formatLongDate(latestFrame.date)
-      : "Latest matrix";
-    updateMatrixHistorySliderDate(latestFrame, matrixHistoryIndex);
-    drawCorrelationChart(latestFrame);
-    updateSelectedPairStatsFromMatrixFrame(latestFrame);
-  }
+    const marketIndex = matrixHistoryFrames.length - 1;
+    const marketFrame = matrixHistoryFrames[marketIndex];
+    const eodFrame = matrixHistoryFrames[Math.max(0, marketIndex - 1)] || marketFrame;
 
-  // Latest means current valuation prices plus the authoritative latest
-  // completed EOD payload. Matrix History may end a day earlier and must not
-  // replace the holdings-table EOD prices or the current-vs-EOD comparison.
-  portfolioViewMode = "current";
-  if (activePayload) portfolioRiskPayload = activePayload;
-  portfolioPrices = { ...portfolioCurrentPrices };
-  renderPortfolioTable();
+    matrixSlider.value = marketIndex;
+    matrixHistoryIndex = marketIndex;
+
+    // Latest uses the newest available frame as the valuation date and the
+    // preceding available frame as EOD, exactly like a historical selection.
+    document.getElementById("matrixHistoryDate").textContent = eodFrame.date
+      ? formatLongDate(eodFrame.date)
+      : "Latest matrix";
+    updateMatrixHistorySliderDate(marketFrame, marketIndex);
+    drawCorrelationChart(eodFrame);
+    updateSelectedPairStatsFromMatrixFrame(eodFrame);
+
+    portfolioViewMode = "current";
+    portfolioRiskPayload = eodFrame;
+    portfolioLatestEodPrices = pricesFromPayload(eodFrame);
+    portfolioLatestEodDate = String(eodFrame.date || "").slice(0, 10);
+    portfolioPrices = { ...portfolioCurrentPrices };
+    renderPortfolioTable();
+    renderPortfolioDividendHistory();
+  } else {
+    portfolioViewMode = "current";
+    if (activePayload) portfolioRiskPayload = activePayload;
+    portfolioPrices = { ...portfolioCurrentPrices };
+    renderPortfolioTable();
+  }
 
   // Keep the lower rolling-history slider synchronized at its newest window.
   const rollingSlider = document.getElementById("rollingSlider");
@@ -1138,7 +1191,7 @@ function resetMatrixHistoryPlayback() {
 
   if (matrixHistoryFrames.length) {
     const matrixSlider = document.getElementById("matrixHistorySlider");
-    matrixSlider.value = 0;
+    matrixSlider.value = matrixHistoryFrames.length > 1 ? 1 : 0;
     renderSelectedMatrixFrame();
   }
 
@@ -1157,9 +1210,10 @@ function playMatrixHistory() {
   const playBtn = document.getElementById("matrixHistoryPlay");
   const pauseBtn = document.getElementById("matrixHistoryPause");
 
-  // When Play is pressed at the latest frame, restart from the first frame.
+  // When Play is pressed at the latest frame, restart from the second
+  // available valuation date so the first frame remains its prior EOD.
   if (Number(slider.value) >= Number(slider.max)) {
-    slider.value = 0;
+    slider.value = matrixHistoryFrames.length > 1 ? 1 : 0;
     renderSelectedMatrixFrame();
   }
 
@@ -1334,9 +1388,13 @@ function pricesFromPayload(payload) {
 }
 
 function setDisplayedPortfolioPricesFromPayload(payload) {
-  // Matrix History changes the EOD risk snapshot only. Current quotes remain
-  // the valuation source so moving the risk-date slider cannot overwrite MTM.
-  portfolioPrices = { ...portfolioCurrentPrices };
+  // In Matrix History, the selected frame supplies the dated market value.
+  // The immediately preceding frame supplies EOD prices and risk analytics.
+  if (portfolioViewMode === "historical") {
+    portfolioPrices = pricesFromPayload(payload);
+  } else {
+    portfolioPrices = { ...portfolioCurrentPrices };
+  }
 }
 
 function initializePortfolio(payload, selectedEquities) {
@@ -1381,6 +1439,12 @@ function initializePortfolio(payload, selectedEquities) {
   if (signature && signature !== portfolioPriceRefreshSignature) {
     portfolioPriceRefreshSignature = signature;
     refreshPortfolioPrices();
+  }
+  if (signature && signature !== portfolioDividendHistorySignature) {
+    portfolioDividendHistorySignature = signature;
+    loadPortfolioDividendHistory();
+  } else {
+    renderPortfolioDividendHistory();
   }
 }
 
@@ -1430,13 +1494,15 @@ function setEqualMarketValueShares() {
 }
 
 function currentPortfolioRows() {
+  // portfolioPrices is the active valuation map: live quotes in Current mode,
+  // or the selected Matrix History market-date prices in historical mode.
   return portfolioSecurities
     .filter(asset =>
-      Number.isFinite(Number(portfolioCurrentPrices[asset])) &&
-      Number(portfolioCurrentPrices[asset]) > 0
+      Number.isFinite(Number(portfolioPrices[asset])) &&
+      Number(portfolioPrices[asset]) > 0
     )
     .map(asset => {
-      const price = Number(portfolioCurrentPrices[asset]);
+      const price = Number(portfolioPrices[asset]);
       const shares = Math.max(0, Number(portfolioShares[asset]) || 0);
       return { asset, price, shares, marketValue: price * shares };
     });
@@ -1563,6 +1629,141 @@ async function refreshPortfolioPrices() {
   }
 }
 
+function isoDateMinusDays(value, days) {
+  const d = new Date(`${String(value).slice(0, 10)}T12:00:00Z`);
+  if (Number.isNaN(d.getTime())) return "";
+  d.setUTCDate(d.getUTCDate() - days);
+  return d.toISOString().slice(0, 10);
+}
+
+async function loadPortfolioDividendHistory() {
+  const status = document.getElementById("portfolioDividendHistoryStatus");
+  const button = document.getElementById("portfolioDividendDownload");
+  if (!portfolioSecurities.length) return;
+  if (status) status.textContent = "Downloading dividend and split events...";
+  if (button) button.disabled = true;
+  try {
+    const earliestFrame = matrixHistoryFrames.length ? matrixHistoryFrames[0].date : "";
+    const latestFrame = matrixHistoryFrames.length ? matrixHistoryFrames[matrixHistoryFrames.length - 1].date : "";
+    const end = latestFrame || new Date().toISOString().slice(0, 10);
+    const start = earliestFrame ? isoDateMinusDays(earliestFrame, 370) : isoDateMinusDays(end, 3 * 366);
+    const response = await fetch(DIVIDEND_HISTORY_ENDPOINT, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ symbols: portfolioSecurities, start, end })
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || response.statusText);
+    portfolioDividendHistory = data.series || {};
+    renderPortfolioDividendHistory();
+  } catch (error) {
+    portfolioDividendHistory = {};
+    portfolioDividendHistoryRows = [];
+    if (status) status.textContent = `Dividend history unavailable: ${error.message}`;
+  }
+}
+
+function selectedPortfolioEodDate() {
+  if (portfolioViewMode === "historical" && matrixHistoryFrames.length) {
+    const prior = matrixHistoryFrames[Math.max(0, matrixHistoryIndex - 1)];
+    return prior && prior.date ? String(prior.date).slice(0, 10) : "";
+  }
+  return String(portfolioRiskPayload?.date || portfolioLatestEodDate || "").slice(0, 10);
+}
+
+function splitAdjustmentBetween(splits, eventDate, asOfDate) {
+  return (splits || []).reduce((factor, split) => {
+    if (split.date > eventDate && split.date <= asOfDate) {
+      const ratio = Number(split.ratio);
+      if (Number.isFinite(ratio) && ratio > 0) return factor * ratio;
+    }
+    return factor;
+  }, 1);
+}
+
+function historicalDividendDetail(asset, asOfDate, eodPrice) {
+  const series = portfolioDividendHistory[asset] || {};
+  const startDate = isoDateMinusDays(asOfDate, 365);
+  const events = (series.dividends || []).filter(row => row.date > startDate && row.date <= asOfDate).map(row => {
+    const rawAmount = Number(row.amount);
+    const splitFactor = splitAdjustmentBetween(series.splits || [], row.date, asOfDate);
+    const adjustedAmount = Number.isFinite(rawAmount) && splitFactor > 0 ? rawAmount / splitFactor : NaN;
+    return { date: row.date, rawAmount, splitFactor, adjustedAmount };
+  }).filter(row => Number.isFinite(row.adjustedAmount));
+  const ttmDividend = events.reduce((sum, row) => sum + row.adjustedAmount, 0);
+  const yieldValue = Number.isFinite(Number(eodPrice)) && Number(eodPrice) > 0 ? ttmDividend / Number(eodPrice) : null;
+  return { asset, asOfDate, startDate, eodPrice: Number(eodPrice), events, ttmDividend, yield: yieldValue };
+}
+
+function dividendDetailForAsset(asset) {
+  const asOfDate = selectedPortfolioEodDate();
+  const riskAssets = portfolioRiskPayload?.assets || [];
+  const index = riskAssets.indexOf(asset);
+  const price = index >= 0 ? Number(portfolioRiskPayload?.prices?.[index]) : NaN;
+  if (!asOfDate || !portfolioDividendHistory[asset]) return null;
+  return historicalDividendDetail(asset, asOfDate, price);
+}
+
+function effectiveDividendYield(asset) {
+  const detail = dividendDetailForAsset(asset);
+  if (detail && Number.isFinite(detail.yield)) return detail.yield;
+  const fallback = Number(portfolioDividendYields[asset]);
+  return Number.isFinite(fallback) ? fallback : 0;
+}
+
+function renderPortfolioDividendHistory() {
+  const box = document.getElementById("portfolioDividendHistoryTable");
+  const status = document.getElementById("portfolioDividendHistoryStatus");
+  const button = document.getElementById("portfolioDividendDownload");
+  if (!box || !status || !button) return;
+  const asOfDate = selectedPortfolioEodDate();
+  if (!asOfDate || !portfolioSecurities.length) {
+    box.innerHTML = "";
+    status.textContent = "Available after holdings and Matrix History load.";
+    button.disabled = true;
+    return;
+  }
+  portfolioDividendHistoryRows = portfolioSecurities.map(dividendDetailForAsset).filter(Boolean);
+  if (!portfolioDividendHistoryRows.length) {
+    box.innerHTML = "";
+    status.textContent = `No dividend history has loaded for EOD ${formatLongDate(asOfDate)}.`;
+    button.disabled = true;
+    return;
+  }
+  status.textContent = `Cash dividends/distributions in the 12 months ending ${formatLongDate(asOfDate)}; amounts are adjusted for intervening splits.`;
+  box.innerHTML = `<table><thead><tr><th>Security</th><th>Dividend dates and adjusted amounts</th><th>TTM dividend/share</th><th>EOD price</th><th>TTM yield</th></tr></thead><tbody>${portfolioDividendHistoryRows.map(row => {
+    const events = row.events.length ? row.events.map(event => `${formatShortDate(event.date)}: ${formatMoney(event.adjustedAmount)}`).join("; ") : "None";
+    return `<tr><td>${displayAsset(row.asset)}</td><td class="dividend-events">${events}</td><td>${formatMoney(row.ttmDividend)}</td><td>${formatMoney(row.eodPrice)}</td><td>${Number.isFinite(row.yield) ? (row.yield * 100).toFixed(6) + "%" : "—"}</td></tr>`;
+  }).join("")}</tbody></table>`;
+  button.disabled = false;
+}
+
+function csvCell(value) {
+  const text = String(value ?? "");
+  return `"${text.replace(/"/g, '""')}"`;
+}
+
+function downloadPortfolioDividendCsv() {
+  if (!portfolioDividendHistoryRows.length) return;
+  const lines = [["Security", "EOD Date", "Window Start", "Dividend Date", "Raw Dividend", "Split Factor", "Adjusted Dividend", "TTM Dividend Per Share", "EOD Price", "TTM Yield"]];
+  portfolioDividendHistoryRows.forEach(row => {
+    if (!row.events.length) {
+      lines.push([row.asset, row.asOfDate, row.startDate, "", "", "", "", row.ttmDividend, row.eodPrice, row.yield]);
+    } else {
+      row.events.forEach(event => lines.push([row.asset, row.asOfDate, row.startDate, event.date, event.rawAmount, event.splitFactor, event.adjustedAmount, row.ttmDividend, row.eodPrice, row.yield]));
+    }
+  });
+  const csv = lines.map(row => row.map(csvCell).join(",")).join("\r\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.download = `RiskSnap_TTM_Dividends_${selectedPortfolioEodDate() || "EOD"}.csv`;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(link.href);
+}
+
 function formatPriceTimestamp(date) {
   if (!(date instanceof Date) || Number.isNaN(date.getTime())) return "Not refreshed";
   return date.toLocaleString("en-CA", {
@@ -1581,8 +1782,8 @@ function updatePortfolioDataLabels() {
   const historical = portfolioViewMode === "historical";
 
   if (priceTime) {
-    if (historical && portfolioRiskPayload && portfolioRiskPayload.date) {
-      priceTime.textContent = `${formatLongDate(portfolioRiskPayload.date)} Close`;
+    if (historical && matrixHistoryFrames[matrixHistoryIndex]?.date) {
+      priceTime.textContent = `${formatLongDate(matrixHistoryFrames[matrixHistoryIndex].date)} Close`;
     } else if (portfolioPriceTimestamp) {
       priceTime.textContent = formatPriceTimestamp(portfolioPriceTimestamp);
     } else if (portfolioRiskPayload && portfolioRiskPayload.date) {
@@ -1611,6 +1812,37 @@ function portfolioCorrelation(payload, i, j) {
     ? Number(payload.matrix[a][b])
     : NaN;
   return Number.isFinite(value) ? value : null;
+}
+
+function securityBetaVsSpy(payload, asset) {
+  if (!payload || !Array.isArray(payload.assets) || !Array.isArray(payload.volatility)) return null;
+
+  const assetIndex = payload.assets.indexOf(asset);
+  const spyIndex = payload.assets.indexOf("SPY");
+  if (assetIndex < 0 || spyIndex < 0) return null;
+
+  const assetVol = Number(payload.volatility[assetIndex]);
+  const spyVol = Number(payload.volatility[spyIndex]);
+  if (!Number.isFinite(assetVol) || !Number.isFinite(spyVol) || spyVol <= 0) return null;
+
+  const corr = portfolioCorrelation(payload, assetIndex, spyIndex);
+  if (corr === null) return null;
+
+  return corr * assetVol / spyVol;
+}
+
+function calculatePortfolioBeta(payload) {
+  const rows = riskPortfolioRows(payload).filter(row => row.marketValue > 0);
+  const totalEodMarketValue = rows.reduce((sum, row) => sum + row.marketValue, 0);
+  if (!rows.length || totalEodMarketValue <= 0) return null;
+
+  let beta = 0;
+  for (const row of rows) {
+    const securityBeta = securityBetaVsSpy(payload, row.asset);
+    if (!Number.isFinite(securityBeta)) return null;
+    beta += (row.marketValue / totalEodMarketValue) * securityBeta;
+  }
+  return beta;
 }
 
 function calculatePortfolioVolatility(payload) {
@@ -1657,6 +1889,7 @@ function calculatePortfolioAnalyticsLocally(totalMarketValue) {
   );
   const marketValue = Number(totalMarketValue) || 0;
   const volatility = calculatePortfolioVolatility(portfolioRiskPayload);
+  const beta = calculatePortfolioBeta(portfolioRiskPayload);
 
   let portfolioEwmaReturn = null;
   let portfolioDividendYield = null;
@@ -1687,8 +1920,7 @@ function calculatePortfolioAnalyticsLocally(totalMarketValue) {
       }
       // TTM dividend/distribution yields are stored as decimals (for example 0.0313 = 3.13%).
       // A missing yield is treated as zero, which is appropriate for non-income assets.
-      const rawDividendYield = Number(portfolioDividendYields[row.asset]);
-      const dividendYield = Number.isFinite(rawDividendYield) ? rawDividendYield : 0;
+      const dividendYield = effectiveDividendYield(row.asset);
       const weight = row.marketValue / totalEodMarketValue;
       weightedPriceReturn += weight * priceReturn;
       weightedDividendYield += weight * dividendYield;
@@ -1711,6 +1943,7 @@ function calculatePortfolioAnalyticsLocally(totalMarketValue) {
     gain_loss: marketValue - bookValue,
     gain_loss_pct: bookValue > 0 ? (marketValue - bookValue) / bookValue : null,
     volatility,
+    beta,
     portfolio_ewma_return: portfolioEwmaReturn,
     portfolio_dividend_yield: portfolioDividendYield,
     portfolio_total_return: portfolioTotalReturn,
@@ -1802,6 +2035,7 @@ function updatePortfolioSummary(totalMarketValue) {
   const portfolioDividendYield = a.portfolio_dividend_yield === null ? null : Number(a.portfolio_dividend_yield);
   const portfolioTotalReturn = a.portfolio_total_return === null ? null : Number(a.portfolio_total_return);
   const volatility = a.volatility === null ? null : Number(a.volatility);
+  const beta = a.beta === null ? null : Number(a.beta);
   const riskFreeRate = Number(a.risk_free_rate);
   const sharpe = a.sharpe === null ? null : Number(a.sharpe);
   const dailyChange = selectedPortfolioDailyChange(Number(a.market_value));
@@ -1825,6 +2059,7 @@ function updatePortfolioSummary(totalMarketValue) {
     ? `EOD Value (${formatShortDate(dailyChange.eodDate)})`
     : "EOD Value";
   let sharpeText = Number.isFinite(sharpe) ? sharpe.toFixed(2) : "—";
+  const betaText = Number.isFinite(beta) ? beta.toFixed(2) : "—";
   if (Array.isArray(a.missing_ewma) && a.missing_ewma.length) {
     ewmaText = "—";
     dividendText = "—";
@@ -1838,20 +2073,22 @@ function updatePortfolioSummary(totalMarketValue) {
   summary.innerHTML = `
     <div class="portfolio-summary-columns">
       <section class="portfolio-summary-section" aria-label="Current Portfolio Valuation">
-        <div class="portfolio-summary-heading">Current Portfolio Valuation</div>
+        <div class="portfolio-summary-heading">${portfolioViewMode === "historical" && matrixHistoryFrames[matrixHistoryIndex]?.date ? `Portfolio Valuation (${formatLongDate(matrixHistoryFrames[matrixHistoryIndex].date)})` : "Current Portfolio Valuation"}</div>
         <div class="portfolio-summary-grid">
           <div class="portfolio-summary-label">Book Cost</div>
           <div class="portfolio-summary-value">${formatMoney(bookCost)}</div>
-          <div class="portfolio-summary-label">Current Market Value</div>
+          <div class="portfolio-summary-label">${portfolioViewMode === "historical" && matrixHistoryFrames[matrixHistoryIndex]?.date ? `Market Value (${formatShortDate(matrixHistoryFrames[matrixHistoryIndex].date)})` : "Current Market Value"}</div>
           <div class="portfolio-summary-value">${formatMoney(Number(a.market_value))}</div>
-          <div class="portfolio-summary-label">${eodValueLabel}</div>
-          <div class="portfolio-summary-value">${eodValueText}</div>
           <div class="portfolio-summary-label">Gain/Loss</div>
           <div class="portfolio-summary-value ${tone(gainLoss)}">${signedMoney(gainLoss)}</div>
           <div class="portfolio-summary-label">Return on Book Cost</div>
           <div class="portfolio-summary-value ${tone(returnOnBookCost || 0)}">${signedPct(returnOnBookCost)}</div>
+          <div class="portfolio-summary-break"></div>
+          <div class="portfolio-summary-label">${eodValueLabel}</div>
+          <div class="portfolio-summary-value">${eodValueText}</div>
           <div class="portfolio-summary-label">Change vs EOD</div>
           <div class="portfolio-summary-value ${dailyChange ? tone(dailyChange.change) : ""}">${dailyChangeText}</div>
+          <div class="portfolio-summary-break"></div>
           <div class="portfolio-summary-label">Maximum Drawdown (${selectedDays}d)</div>
           <div class="portfolio-summary-value">—</div>
         </div>
@@ -1866,8 +2103,8 @@ function updatePortfolioSummary(totalMarketValue) {
           <div class="portfolio-summary-value">${dividendText}</div>
           <div class="portfolio-summary-label">Portfolio Volatility (${selectedDays}d)</div>
           <div class="portfolio-summary-value">${pct(volatility)}</div>
-          <div class="portfolio-summary-label">Beta (${selectedDays}d)</div>
-          <div class="portfolio-summary-value">—</div>
+          <div class="portfolio-summary-label">Beta vs SPY (${selectedDays}d)</div>
+          <div class="portfolio-summary-value">${betaText}</div>
           <div class="portfolio-summary-label">Risk-Free Rate (1Y)</div>
           <div class="portfolio-summary-value">${riskFreeText}</div>
           <div class="portfolio-summary-label">Sharpe Ratio</div>
@@ -1885,7 +2122,7 @@ function updatePortfolioSummary(totalMarketValue) {
       `  |  G/L ${signedMoney(gainLoss)} (${signedPct(returnOnBookCost)})` +
       `  |  Day ${dailyChangeText}` +
       `  |  EWMA ${ewmaText}  |  Vol (${selectedDays}d) ${pct(volatility)}` +
-      `  |  RF ${riskFreeText}  |  Sharpe ${sharpeText}`;
+      `  |  Beta ${betaText}  |  RF ${riskFreeText}  |  Sharpe ${sharpeText}`;
   }
 }
 
@@ -1903,19 +2140,13 @@ function renderPortfolioTable() {
     if (stickySummary) stickySummary.textContent = "";
     body.innerHTML = `<tr><td colspan="11" class="portfolio-empty">No selected securities with current prices are available.</td></tr>`;
     const totalValueCell = document.getElementById("portfolioTotalMarketValue");
-    const totalWeightCell = document.getElementById("portfolioTotalWeight");
     if (totalValueCell) totalValueCell.textContent = "—";
-    if (totalWeightCell) totalWeightCell.textContent = "0.00%";
     return;
   }
 
   const totalMarketValue = rows.reduce((sum, row) => sum + row.marketValue, 0);
 
   rows.forEach((row, rowIndex) => {
-    const weightPct = totalMarketValue > 0
-      ? row.marketValue / totalMarketValue * 100
-      : 0;
-
     const riskAssets = portfolioRiskPayload && Array.isArray(portfolioRiskPayload.assets)
       ? portfolioRiskPayload.assets
       : [];
@@ -1932,8 +2163,7 @@ function renderPortfolioTable() {
     const securityRiskFreeRate = Number.isFinite(payloadRiskFreeRate)
       ? payloadRiskFreeRate
       : SHARPE_RISK_FREE_RATE;
-    const rawSecurityDividendYield = Number(portfolioDividendYields[row.asset]);
-    const securityDividendYield = Number.isFinite(rawSecurityDividendYield) ? rawSecurityDividendYield : 0;
+    const securityDividendYield = effectiveDividendYield(row.asset);
     const securityTotalReturn = Number.isFinite(securityAnnualReturn)
       ? securityAnnualReturn + securityDividendYield
       : NaN;
@@ -1952,6 +2182,10 @@ function renderPortfolioTable() {
     const securitySharpeText = Number.isFinite(securitySharpe)
       ? securitySharpe.toFixed(2)
       : "—";
+    const securityBeta = securityBetaVsSpy(portfolioRiskPayload, row.asset);
+    const securityBetaText = Number.isFinite(securityBeta)
+      ? securityBeta.toFixed(2)
+      : "—";
 
     const eodPrice = riskIndex >= 0 && portfolioRiskPayload && Array.isArray(portfolioRiskPayload.prices)
       ? Number(portfolioRiskPayload.prices[riskIndex])
@@ -1965,11 +2199,11 @@ function renderPortfolioTable() {
       <td>${formatMoney(row.price)}</td>
       <td><input class="portfolio-shares" data-asset="${row.asset}" type="number" min="0" step="0.0001" value="${formatShares(row.shares)}"></td>
       <td>${formatMoney(row.marketValue)}</td>
-      <td>${weightPct.toFixed(2)}%</td>
       <td>${volatilityText}</td>
       <td>${dividendYieldText}</td>
       <td>${annualReturnText}</td>
       <td>${securitySharpeText}</td>
+      <td>${securityBetaText}</td>
     `;
     body.appendChild(tr);
   });
@@ -1990,9 +2224,7 @@ function renderPortfolioTable() {
   });
 
   const totalValueCell = document.getElementById("portfolioTotalMarketValue");
-  const totalWeightCell = document.getElementById("portfolioTotalWeight");
   if (totalValueCell) totalValueCell.textContent = formatMoney(totalMarketValue);
-  if (totalWeightCell) totalWeightCell.textContent = totalMarketValue > 0 ? "100.00%" : "0.00%";
   updatePortfolioSummary(totalMarketValue);
   updatePortfolioDataLabels();
 }

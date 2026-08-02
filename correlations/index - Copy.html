@@ -518,7 +518,7 @@ const YAHOO_PRESETS = {
   defensive: "PG, KO, PEP, WMT, COST, MCD, CL, GIS, KMB, MDLZ",
   crypto: "BTC-USD, ETH-USD, MSTR, COIN, MARA, RIOT, CLSK, HUT, CIFR",
   worldtop10: "NVDA,AAPL,GOOG,MSFT,AMZN,TSMC,AVGO,2222.SR,META,SPCX",
-  benchmarks: "SPY,QQQ,DIA,GWM,GLD,TLT,BTC-USD"
+  benchmarks: "SPY,QQQ,DIA,IWM,ACWI,VT,TLT"
   
 };
 
@@ -998,6 +998,10 @@ async function fetchRollingMatrix(requestPayload, periodLabel) {
     // final frame can lag the main correlation payload by one or more days.
 
     applyMatrixHistoryRange(false);
+    // Once the history is available, initialize the page through the same
+    // Latest path used by the button. This supplies the preceding EOD frame
+    // after Ctrl+F5 and after loading a saved portfolio.
+    showLatestMatrixFrame();
     slider.disabled = false;
     latestBtn.disabled = false;
     resetBtn.disabled = false;
@@ -1143,24 +1147,35 @@ function showLatestMatrixFrame() {
 
   if (matrixHistoryFrames.length) {
     const matrixSlider = document.getElementById("matrixHistorySlider");
-    matrixSlider.value = matrixHistoryFrames.length - 1;
-    matrixHistoryIndex = matrixHistoryFrames.length - 1;
-    const latestFrame = matrixHistoryFrames[matrixHistoryIndex];
-    document.getElementById("matrixHistoryDate").textContent = latestFrame.date
-      ? formatLongDate(latestFrame.date)
-      : "Latest matrix";
-    updateMatrixHistorySliderDate(latestFrame, matrixHistoryIndex);
-    drawCorrelationChart(latestFrame);
-    updateSelectedPairStatsFromMatrixFrame(latestFrame);
-  }
+    const marketIndex = matrixHistoryFrames.length - 1;
+    const marketFrame = matrixHistoryFrames[marketIndex];
+    const eodFrame = matrixHistoryFrames[Math.max(0, marketIndex - 1)] || marketFrame;
 
-  // Latest means current valuation prices plus the authoritative latest
-  // completed EOD payload. Matrix History may end a day earlier and must not
-  // replace the holdings-table EOD prices or the current-vs-EOD comparison.
-  portfolioViewMode = "current";
-  if (activePayload) portfolioRiskPayload = activePayload;
-  portfolioPrices = { ...portfolioCurrentPrices };
-  renderPortfolioTable();
+    matrixSlider.value = marketIndex;
+    matrixHistoryIndex = marketIndex;
+
+    // Latest uses the newest available frame as the valuation date and the
+    // preceding available frame as EOD, exactly like a historical selection.
+    document.getElementById("matrixHistoryDate").textContent = eodFrame.date
+      ? formatLongDate(eodFrame.date)
+      : "Latest matrix";
+    updateMatrixHistorySliderDate(marketFrame, marketIndex);
+    drawCorrelationChart(eodFrame);
+    updateSelectedPairStatsFromMatrixFrame(eodFrame);
+
+    portfolioViewMode = "current";
+    portfolioRiskPayload = eodFrame;
+    portfolioLatestEodPrices = pricesFromPayload(eodFrame);
+    portfolioLatestEodDate = String(eodFrame.date || "").slice(0, 10);
+    portfolioPrices = { ...portfolioCurrentPrices };
+    renderPortfolioTable();
+    renderPortfolioDividendHistory();
+  } else {
+    portfolioViewMode = "current";
+    if (activePayload) portfolioRiskPayload = activePayload;
+    portfolioPrices = { ...portfolioCurrentPrices };
+    renderPortfolioTable();
+  }
 
   // Keep the lower rolling-history slider synchronized at its newest window.
   const rollingSlider = document.getElementById("rollingSlider");
@@ -1175,7 +1190,7 @@ function resetMatrixHistoryPlayback() {
 
   if (matrixHistoryFrames.length) {
     const matrixSlider = document.getElementById("matrixHistorySlider");
-    matrixSlider.value = 0;
+    matrixSlider.value = matrixHistoryFrames.length > 1 ? 1 : 0;
     renderSelectedMatrixFrame();
   }
 
@@ -1194,9 +1209,10 @@ function playMatrixHistory() {
   const playBtn = document.getElementById("matrixHistoryPlay");
   const pauseBtn = document.getElementById("matrixHistoryPause");
 
-  // When Play is pressed at the latest frame, restart from the first frame.
+  // When Play is pressed at the latest frame, restart from the second
+  // available valuation date so the first frame remains its prior EOD.
   if (Number(slider.value) >= Number(slider.max)) {
-    slider.value = 0;
+    slider.value = matrixHistoryFrames.length > 1 ? 1 : 0;
     renderSelectedMatrixFrame();
   }
 

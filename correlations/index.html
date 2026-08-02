@@ -172,7 +172,8 @@ Changes:
             <th>Vol (EOD)</th>
             <th>Div<sup>1</sup></th>
             <th>An. Wtd. Total Return</th>
-            <th>Sharpe Ratio </th>
+            <th>Sharpe Ratio</th>
+            <th>Beta vs SPY</th>
           </tr>
         </thead>
         <tbody id="portfolioBody"></tbody>
@@ -180,7 +181,7 @@ Changes:
           <tr>
             <td colspan="5">Total</td>
             <td id="portfolioTotalMarketValue">—</td>
-            <td colspan="4"></td>
+            <td colspan="5"></td>
           </tr>
         </tfoot>
       </table>
@@ -518,7 +519,7 @@ const YAHOO_PRESETS = {
   defensive: "PG, KO, PEP, WMT, COST, MCD, CL, GIS, KMB, MDLZ",
   crypto: "BTC-USD, ETH-USD, MSTR, COIN, MARA, RIOT, CLSK, HUT, CIFR",
   worldtop10: "NVDA,AAPL,GOOG,MSFT,AMZN,TSMC,AVGO,2222.SR,META,SPCX",
-  benchmarks: "SPY,QQQ,DIA,IWM,ACWI,VT,TLT"
+  benchmarks: "SPY,QQQ,DIA,GWM,GLD,TLT,BTC-USD"
   
 };
 
@@ -1813,6 +1814,37 @@ function portfolioCorrelation(payload, i, j) {
   return Number.isFinite(value) ? value : null;
 }
 
+function securityBetaVsSpy(payload, asset) {
+  if (!payload || !Array.isArray(payload.assets) || !Array.isArray(payload.volatility)) return null;
+
+  const assetIndex = payload.assets.indexOf(asset);
+  const spyIndex = payload.assets.indexOf("SPY");
+  if (assetIndex < 0 || spyIndex < 0) return null;
+
+  const assetVol = Number(payload.volatility[assetIndex]);
+  const spyVol = Number(payload.volatility[spyIndex]);
+  if (!Number.isFinite(assetVol) || !Number.isFinite(spyVol) || spyVol <= 0) return null;
+
+  const corr = portfolioCorrelation(payload, assetIndex, spyIndex);
+  if (corr === null) return null;
+
+  return corr * assetVol / spyVol;
+}
+
+function calculatePortfolioBeta(payload) {
+  const rows = riskPortfolioRows(payload).filter(row => row.marketValue > 0);
+  const totalEodMarketValue = rows.reduce((sum, row) => sum + row.marketValue, 0);
+  if (!rows.length || totalEodMarketValue <= 0) return null;
+
+  let beta = 0;
+  for (const row of rows) {
+    const securityBeta = securityBetaVsSpy(payload, row.asset);
+    if (!Number.isFinite(securityBeta)) return null;
+    beta += (row.marketValue / totalEodMarketValue) * securityBeta;
+  }
+  return beta;
+}
+
 function calculatePortfolioVolatility(payload) {
   if (!payload || !payload.assets || !payload.volatility) return null;
 
@@ -1857,6 +1889,7 @@ function calculatePortfolioAnalyticsLocally(totalMarketValue) {
   );
   const marketValue = Number(totalMarketValue) || 0;
   const volatility = calculatePortfolioVolatility(portfolioRiskPayload);
+  const beta = calculatePortfolioBeta(portfolioRiskPayload);
 
   let portfolioEwmaReturn = null;
   let portfolioDividendYield = null;
@@ -1910,6 +1943,7 @@ function calculatePortfolioAnalyticsLocally(totalMarketValue) {
     gain_loss: marketValue - bookValue,
     gain_loss_pct: bookValue > 0 ? (marketValue - bookValue) / bookValue : null,
     volatility,
+    beta,
     portfolio_ewma_return: portfolioEwmaReturn,
     portfolio_dividend_yield: portfolioDividendYield,
     portfolio_total_return: portfolioTotalReturn,
@@ -2001,6 +2035,7 @@ function updatePortfolioSummary(totalMarketValue) {
   const portfolioDividendYield = a.portfolio_dividend_yield === null ? null : Number(a.portfolio_dividend_yield);
   const portfolioTotalReturn = a.portfolio_total_return === null ? null : Number(a.portfolio_total_return);
   const volatility = a.volatility === null ? null : Number(a.volatility);
+  const beta = a.beta === null ? null : Number(a.beta);
   const riskFreeRate = Number(a.risk_free_rate);
   const sharpe = a.sharpe === null ? null : Number(a.sharpe);
   const dailyChange = selectedPortfolioDailyChange(Number(a.market_value));
@@ -2024,6 +2059,7 @@ function updatePortfolioSummary(totalMarketValue) {
     ? `EOD Value (${formatShortDate(dailyChange.eodDate)})`
     : "EOD Value";
   let sharpeText = Number.isFinite(sharpe) ? sharpe.toFixed(2) : "—";
+  const betaText = Number.isFinite(beta) ? beta.toFixed(2) : "—";
   if (Array.isArray(a.missing_ewma) && a.missing_ewma.length) {
     ewmaText = "—";
     dividendText = "—";
@@ -2067,8 +2103,8 @@ function updatePortfolioSummary(totalMarketValue) {
           <div class="portfolio-summary-value">${dividendText}</div>
           <div class="portfolio-summary-label">Portfolio Volatility (${selectedDays}d)</div>
           <div class="portfolio-summary-value">${pct(volatility)}</div>
-          <div class="portfolio-summary-label">Beta (${selectedDays}d)</div>
-          <div class="portfolio-summary-value">—</div>
+          <div class="portfolio-summary-label">Beta vs SPY (${selectedDays}d)</div>
+          <div class="portfolio-summary-value">${betaText}</div>
           <div class="portfolio-summary-label">Risk-Free Rate (1Y)</div>
           <div class="portfolio-summary-value">${riskFreeText}</div>
           <div class="portfolio-summary-label">Sharpe Ratio</div>
@@ -2086,7 +2122,7 @@ function updatePortfolioSummary(totalMarketValue) {
       `  |  G/L ${signedMoney(gainLoss)} (${signedPct(returnOnBookCost)})` +
       `  |  Day ${dailyChangeText}` +
       `  |  EWMA ${ewmaText}  |  Vol (${selectedDays}d) ${pct(volatility)}` +
-      `  |  RF ${riskFreeText}  |  Sharpe ${sharpeText}`;
+      `  |  Beta ${betaText}  |  RF ${riskFreeText}  |  Sharpe ${sharpeText}`;
   }
 }
 
@@ -2102,7 +2138,7 @@ function renderPortfolioTable() {
     summary.textContent = "";
     const stickySummary = document.getElementById("matrixPortfolioSummary");
     if (stickySummary) stickySummary.textContent = "";
-    body.innerHTML = `<tr><td colspan="10" class="portfolio-empty">No selected securities with current prices are available.</td></tr>`;
+    body.innerHTML = `<tr><td colspan="11" class="portfolio-empty">No selected securities with current prices are available.</td></tr>`;
     const totalValueCell = document.getElementById("portfolioTotalMarketValue");
     if (totalValueCell) totalValueCell.textContent = "—";
     return;
@@ -2146,6 +2182,10 @@ function renderPortfolioTable() {
     const securitySharpeText = Number.isFinite(securitySharpe)
       ? securitySharpe.toFixed(2)
       : "—";
+    const securityBeta = securityBetaVsSpy(portfolioRiskPayload, row.asset);
+    const securityBetaText = Number.isFinite(securityBeta)
+      ? securityBeta.toFixed(2)
+      : "—";
 
     const eodPrice = riskIndex >= 0 && portfolioRiskPayload && Array.isArray(portfolioRiskPayload.prices)
       ? Number(portfolioRiskPayload.prices[riskIndex])
@@ -2163,6 +2203,7 @@ function renderPortfolioTable() {
       <td>${dividendYieldText}</td>
       <td>${annualReturnText}</td>
       <td>${securitySharpeText}</td>
+      <td>${securityBetaText}</td>
     `;
     body.appendChild(tr);
   });
