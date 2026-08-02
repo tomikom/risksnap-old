@@ -506,8 +506,6 @@ const NUM_X = LEFT - 132;
 const ROW_LABEL_X = LEFT - 64;
 const VOL_X = LEFT - 22;
 const MAX_ASSETS = 20;
-const MAX_INTERNAL_ASSETS = MAX_ASSETS + 1;
-const BETA_BENCHMARK = "SPY";
 const DEFAULT_EQUITIES = "AAPL, AMZN, NVDA, MSTR, GS, CAT, UNH, AMGN, V, HD, IBM";
 
 const YAHOO_PRESETS = {
@@ -591,7 +589,6 @@ const securityHistoryCache = new Map();
 const securityCurrentPriceCache = new Map();
 let selectedSecurityChartAsset = "";
 let selectedSecurityChartRange = "1y";
-let hideInternalSpyBenchmark = false;
 
 
 const scheduleCorrelationRefresh = debounce(fetchCorrelationData, 450);
@@ -922,15 +919,11 @@ async function fetchCorrelationData() {
   const period = document.getElementById("corrPeriod").value;
   const lookback = parseInt(period, 10);
   const inputs = getSelectedInputs();
-  hideInternalSpyBenchmark = !inputs.equities.includes(BETA_BENCHMARK);
-  const requestedEquities = hideInternalSpyBenchmark
-    ? [...inputs.equities, BETA_BENCHMARK]
-    : [...inputs.equities];
   const requestPayload = {
     lookback,
     fx_gold_oil: inputs.fx_gold_oil,
     yields: inputs.yields,
-    equities: requestedEquities.join(", ")
+    equities: inputs.equities.join(", ")
   };
 
   setLoading(true);
@@ -995,7 +988,7 @@ async function fetchRollingMatrix(requestPayload, periodLabel) {
     if (!response.ok) throw new Error((data.messages || [response.statusText]).join(" "));
     if (requestId !== matrixHistoryRequestId) return;
 
-    matrixHistoryAssets = (data.assets || activePayload?.assets || []).slice(0, MAX_INTERNAL_ASSETS);
+    matrixHistoryAssets = (data.assets || activePayload?.assets || []).slice(0, MAX_ASSETS);
     await loadUsdOneYearRates();
     rawMatrixHistoryFrames = (data.frames || []).map(frame => applyCanonicalRiskFreeRate(normalizeMatrixFrame(frame, periodLabel), frame.date));
     matrixHistoryLookback = lookback;
@@ -1080,7 +1073,7 @@ function applyMatrixHistoryRange(keepNearestDate) {
 }
 
 function normalizeMatrixFrame(frame, periodLabel) {
-  const assets = (frame.assets || matrixHistoryAssets || activePayload?.assets || []).slice(0, MAX_INTERNAL_ASSETS);
+  const assets = (frame.assets || matrixHistoryAssets || activePayload?.assets || []).slice(0, MAX_ASSETS);
   const payload = normalizePayload({
     assets,
     matrix: frame.matrix || frame.correlation || [],
@@ -1825,7 +1818,7 @@ function securityBetaVsSpy(payload, asset) {
   if (!payload || !Array.isArray(payload.assets) || !Array.isArray(payload.volatility)) return null;
 
   const assetIndex = payload.assets.indexOf(asset);
-  const spyIndex = payload.assets.indexOf(BETA_BENCHMARK);
+  const spyIndex = payload.assets.indexOf("SPY");
   if (assetIndex < 0 || spyIndex < 0) return null;
 
   const assetVol = Number(payload.volatility[assetIndex]);
@@ -1834,6 +1827,7 @@ function securityBetaVsSpy(payload, asset) {
 
   const corr = portfolioCorrelation(payload, assetIndex, spyIndex);
   if (corr === null) return null;
+
   return corr * assetVol / spyVol;
 }
 
@@ -1844,9 +1838,9 @@ function calculatePortfolioBeta(payload) {
 
   let beta = 0;
   for (const row of rows) {
-    const individualBeta = securityBetaVsSpy(payload, row.asset);
-    if (!Number.isFinite(individualBeta)) return null;
-    beta += (row.marketValue / totalEodMarketValue) * individualBeta;
+    const securityBeta = securityBetaVsSpy(payload, row.asset);
+    if (!Number.isFinite(securityBeta)) return null;
+    beta += (row.marketValue / totalEodMarketValue) * securityBeta;
   }
   return beta;
 }
@@ -2469,27 +2463,7 @@ function formatShares(value) {
   return n.toFixed(4).replace(/\.?0+$/, "");
 }
 
-function visibleCorrelationPayload(payload) {
-  if (!hideInternalSpyBenchmark || !payload || !Array.isArray(payload.assets)) return payload;
-  const hiddenIndex = payload.assets.indexOf(BETA_BENCHMARK);
-  if (hiddenIndex < 0) return payload;
-
-  const keep = payload.assets.map((_, i) => i).filter(i => i !== hiddenIndex);
-  const result = { ...payload };
-  result.assets = keep.map(i => payload.assets[i]);
-  result.volatility = keep.map(i => (payload.volatility || [])[i]);
-  result.prices = keep.map(i => (payload.prices || [])[i]);
-  result.matrix = keep.map(i => keep.map(j => {
-    const row = (payload.matrix || [])[i] || [];
-    if (j >= i) return row[j];
-    const reverse = (payload.matrix || [])[j] || [];
-    return reverse[i];
-  }));
-  return result;
-}
-
 function drawCorrelationChart(payload) {
-  payload = visibleCorrelationPayload(payload);
   const assets = payload.assets || [];
   const matrix = payload.matrix || [];
   const vol = payload.volatility || [];
