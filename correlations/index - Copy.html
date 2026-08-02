@@ -1175,7 +1175,7 @@ function resetMatrixHistoryPlayback() {
 
   if (matrixHistoryFrames.length) {
     const matrixSlider = document.getElementById("matrixHistorySlider");
-    matrixSlider.value = matrixHistoryFrames.length > 1 ? 1 : 0;
+    matrixSlider.value = 0;
     renderSelectedMatrixFrame();
   }
 
@@ -1194,10 +1194,9 @@ function playMatrixHistory() {
   const playBtn = document.getElementById("matrixHistoryPlay");
   const pauseBtn = document.getElementById("matrixHistoryPause");
 
-  // When Play is pressed at the latest frame, restart from the second
-  // available valuation date so the first frame remains its prior EOD.
+  // When Play is pressed at the latest frame, restart from the first frame.
   if (Number(slider.value) >= Number(slider.max)) {
-    slider.value = matrixHistoryFrames.length > 1 ? 1 : 0;
+    slider.value = 0;
     renderSelectedMatrixFrame();
   }
 
