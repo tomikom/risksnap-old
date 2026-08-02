@@ -1175,9 +1175,7 @@ function resetMatrixHistoryPlayback() {
 
   if (matrixHistoryFrames.length) {
     const matrixSlider = document.getElementById("matrixHistorySlider");
-    // Start at the second available valuation date so the first frame can serve
-    // as its preceding EOD observation.
-    matrixSlider.value = Math.min(1, Number(matrixSlider.max) || 0);
+    matrixSlider.value = 0;
     renderSelectedMatrixFrame();
   }
 
@@ -1196,10 +1194,9 @@ function playMatrixHistory() {
   const playBtn = document.getElementById("matrixHistoryPlay");
   const pauseBtn = document.getElementById("matrixHistoryPause");
 
-  // When Play is pressed at the latest frame, restart from the second
-  // available valuation date so the first frame remains its preceding EOD.
+  // When Play is pressed at the latest frame, restart from the first frame.
   if (Number(slider.value) >= Number(slider.max)) {
-    slider.value = Math.min(1, Number(slider.max) || 0);
+    slider.value = 0;
     renderSelectedMatrixFrame();
   }
 
