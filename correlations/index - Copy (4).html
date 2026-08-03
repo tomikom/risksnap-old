@@ -4,7 +4,7 @@ title: Correlations, Portfolios
 ---
 <!--
 RiskSnap Correlations
-Version: index(129)
+Version: index(97)
 Changes:
 - Reduced matrix cell size so more of the matrix fits on screen
 - Kept bubble scale unchanged, creating more overlap
@@ -22,7 +22,7 @@ Changes:
 - Added chart-only shortcuts for the World Indices preset; caret-prefixed Yahoo indices remain excluded from holdings
 - Added hover date/value tooltips and crosshairs to equity and portfolio line charts
 - Split the portfolio summary into Current Portfolio Valuation and Portfolio Analytics columns
-- Added Maximum Drawdown with peak and trough dates for the selected 25d, 90d, or 250d lookback
+- Added display placeholders for Maximum Drawdown and Beta; calculations are intentionally not yet implemented
 - Added total EOD portfolio value with its actual date and shortened Change vs EOD label
 - Moved EOD Value below Return on Book Cost and kept Change vs EOD directly beneath it
 - Period-dependent labels now show the selected 25d, 90d, or 250d lookback
@@ -2037,52 +2037,6 @@ function portfolioMarketValueForFrame(frame) {
   return found ? total : null;
 }
 
-function selectedPortfolioMaximumDrawdown(selectedDays) {
-  if (!matrixHistoryFrames.length) return null;
-
-  // End the drawdown window at the selected historical frame, or at the
-  // newest available EOD frame when the portfolio is in current mode.
-  const endIndex = portfolioViewMode === "historical"
-    ? Math.max(0, Math.min(matrixHistoryFrames.length - 1, matrixHistoryIndex))
-    : matrixHistoryFrames.length - 1;
-  const startIndex = Math.max(0, endIndex - Math.max(1, Number(selectedDays) || 250) + 1);
-  const rows = matrixHistoryFrames
-    .slice(startIndex, endIndex + 1)
-    .map(frame => ({
-      date: String(frame.date || "").slice(0, 10),
-      value: portfolioMarketValueForFrame(frame)
-    }))
-    .filter(row => row.date && Number.isFinite(row.value) && row.value > 0);
-
-  if (rows.length < 2) return null;
-
-  let peakValue = rows[0].value;
-  let peakDate = rows[0].date;
-  let maxDrawdown = 0;
-  let maxPeakDate = peakDate;
-  let maxTroughDate = peakDate;
-
-  rows.forEach(row => {
-    if (row.value > peakValue) {
-      peakValue = row.value;
-      peakDate = row.date;
-    }
-    const drawdown = (row.value - peakValue) / peakValue;
-    if (drawdown < maxDrawdown) {
-      maxDrawdown = drawdown;
-      maxPeakDate = peakDate;
-      maxTroughDate = row.date;
-    }
-  });
-
-  return {
-    drawdown: maxDrawdown,
-    peakDate: maxPeakDate,
-    troughDate: maxTroughDate,
-    observations: rows.length
-  };
-}
-
 function selectedPortfolioDailyChange(totalMarketValue) {
   if (!matrixHistoryFrames.length) return null;
 
@@ -2182,11 +2136,6 @@ function updatePortfolioSummary(totalMarketValue) {
 
   const selectedPeriodText = (document.getElementById("corrPeriod")?.value || "250 Day");
   const selectedDays = parseInt(selectedPeriodText, 10) || 250;
-  const maximumDrawdown = selectedPortfolioMaximumDrawdown(selectedDays);
-  const maximumDrawdownText = maximumDrawdown ? pct(maximumDrawdown.drawdown) : "—";
-  const maximumDrawdownDates = maximumDrawdown
-    ? `${formatShortDate(maximumDrawdown.peakDate)} → ${formatShortDate(maximumDrawdown.troughDate)}`
-    : "—";
 
   summary.innerHTML = `
     <div class="portfolio-summary-columns">
@@ -2208,9 +2157,7 @@ function updatePortfolioSummary(totalMarketValue) {
           <div class="portfolio-summary-value ${dailyChange ? tone(dailyChange.change) : ""}">${dailyChangeText}</div>
           <div class="portfolio-summary-break"></div>
           <div class="portfolio-summary-label">Maximum Drawdown (${selectedDays}d)</div>
-          <div class="portfolio-summary-value ${maximumDrawdown ? tone(maximumDrawdown.drawdown) : ""}">${maximumDrawdownText}</div>
-          <div class="portfolio-summary-label">Peak → Trough</div>
-          <div class="portfolio-summary-value">${maximumDrawdownDates}</div>
+          <div class="portfolio-summary-value">—</div>
         </div>
       </section>
 
@@ -2241,7 +2188,6 @@ function updatePortfolioSummary(totalMarketValue) {
       `${dateText}  |  MV ${formatMoney(Number(a.market_value))}` +
       `  |  G/L ${signedMoney(gainLoss)} (${signedPct(returnOnBookCost)})` +
       `  |  Day ${dailyChangeText}` +
-      `  |  MDD (${selectedDays}d) ${maximumDrawdownText}` +
       `  |  EWMA ${ewmaText}  |  Vol (${selectedDays}d) ${pct(volatility)}` +
       `  |  Beta ${betaText}  |  RF ${riskFreeText}  |  Sharpe ${sharpeText}`;
   }
