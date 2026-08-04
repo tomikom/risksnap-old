@@ -22,10 +22,11 @@ Changes:
 - Added chart-only shortcuts for the World Indices preset; caret-prefixed Yahoo indices remain excluded from holdings
 - Added hover date/value tooltips and crosshairs to equity and portfolio line charts
 - Split the portfolio summary into Current Portfolio Valuation and Portfolio Analytics columns
-- Added Maximum Drawdown with peak and trough dates for the selected 25d, 90d, or 250d lookback
+- Added Maximum Drawdown with peak/trough dates, dollar loss, and chart markers for the selected 25d, 90d, or 250d lookback
 - Added total EOD portfolio value with its actual date and shortened Change vs EOD label
 - Moved EOD Value below Return on Book Cost and kept Change vs EOD directly beneath it
 - Period-dependent labels now show the selected 25d, 90d, or 250d lookback
+- Moved the detailed dividend-history panel below the Portfolio Market Value chart
 -->
 
 
@@ -188,20 +189,6 @@ Changes:
     </div>
     <div class="portfolio-footnote"><sup>1</sup> Div is the trailing twelve-month (TTM) dividend or distribution yield for the selected EOD date: split-adjusted cash dividends or ETF distributions during the preceding 12 months divided by that EOD price.</div>
 
-    <div id="portfolioDividendHistoryPanel" class="portfolio-dividend-history">
-      <div class="portfolio-dividend-history-header">
-        <div>
-          <div class="portfolio-dividend-history-title">TTM Dividends Used for Matrix History</div>
-          <div id="portfolioDividendHistoryStatus" class="portfolio-dividend-history-status">Loading dividend history...</div>
-        </div>
-        <div style="display:flex; gap:6px; flex-wrap:wrap;">
-          <button id="portfolioBetaDownload" type="button">Download Beta CSV</button>
-          <button id="portfolioDividendDownload" type="button" disabled>Download Dividend CSV</button>
-        </div>
-      </div>
-      <div id="portfolioDividendHistoryTable" class="portfolio-dividend-history-table"></div>
-    </div>
-
     <div id="securityChartPanel" class="portfolio-chart-panel" hidden>
       <div class="portfolio-chart-header">
         <div>
@@ -228,6 +215,21 @@ Changes:
       </div>
       <div id="portfolioMarketValueChart" class="portfolio-line-chart"></div>
     </div>
+
+    <div id="portfolioDividendHistoryPanel" class="portfolio-dividend-history">
+      <div class="portfolio-dividend-history-header">
+        <div>
+          <div class="portfolio-dividend-history-title">TTM Dividends Used for Matrix History</div>
+          <div id="portfolioDividendHistoryStatus" class="portfolio-dividend-history-status">Loading dividend history...</div>
+        </div>
+        <div style="display:flex; gap:6px; flex-wrap:wrap;">
+          <button id="portfolioBetaDownload" type="button">Download Beta CSV</button>
+          <button id="portfolioDividendDownload" type="button" disabled>Download Dividend CSV</button>
+        </div>
+      </div>
+      <div id="portfolioDividendHistoryTable" class="portfolio-dividend-history-table"></div>
+    </div>
+
   </div>
 
   <div id="matrixHistoryPanel" class="matrix-history-panel">
@@ -493,6 +495,12 @@ h1 { color: white; text-align: center; background-color: #3A5FCD; }
 .chart-hover-line { stroke:#777; stroke-width:1; stroke-dasharray:3 3; pointer-events:none; }
 .chart-hover-point { fill:#fff; stroke:#3A5FCD; stroke-width:2; pointer-events:none; }
 .chart-hover-overlay { fill:transparent; cursor:crosshair; }
+.chart-drawdown-marker { stroke:#fff; stroke-width:2; }
+.chart-drawdown-peak { fill:#2e8b57; }
+.chart-drawdown-trough { fill:#b3261e; }
+.chart-drawdown-label { font-size:11px; font-weight:700; paint-order:stroke; stroke:#fff; stroke-width:3px; stroke-linejoin:round; }
+.chart-drawdown-peak-label { fill:#2e8b57; }
+.chart-drawdown-trough-label { fill:#b3261e; }
 
 </style>
 
@@ -2061,6 +2069,8 @@ function selectedPortfolioMaximumDrawdown(selectedDays) {
   let maxDrawdown = 0;
   let maxPeakDate = peakDate;
   let maxTroughDate = peakDate;
+  let maxPeakValue = peakValue;
+  let maxTroughValue = peakValue;
 
   rows.forEach(row => {
     if (row.value > peakValue) {
@@ -2072,13 +2082,18 @@ function selectedPortfolioMaximumDrawdown(selectedDays) {
       maxDrawdown = drawdown;
       maxPeakDate = peakDate;
       maxTroughDate = row.date;
+      maxPeakValue = peakValue;
+      maxTroughValue = row.value;
     }
   });
 
   return {
     drawdown: maxDrawdown,
+    dollarDrawdown: maxTroughValue - maxPeakValue,
     peakDate: maxPeakDate,
     troughDate: maxTroughDate,
+    peakValue: maxPeakValue,
+    troughValue: maxTroughValue,
     observations: rows.length
   };
 }
@@ -2184,6 +2199,7 @@ function updatePortfolioSummary(totalMarketValue) {
   const selectedDays = parseInt(selectedPeriodText, 10) || 250;
   const maximumDrawdown = selectedPortfolioMaximumDrawdown(selectedDays);
   const maximumDrawdownText = maximumDrawdown ? pct(maximumDrawdown.drawdown) : "—";
+  const maximumDrawdownDollarText = maximumDrawdown ? signedMoney(maximumDrawdown.dollarDrawdown) : "—";
   const maximumDrawdownDates = maximumDrawdown
     ? `${formatShortDate(maximumDrawdown.peakDate)} → ${formatShortDate(maximumDrawdown.troughDate)}`
     : "—";
@@ -2209,6 +2225,8 @@ function updatePortfolioSummary(totalMarketValue) {
           <div class="portfolio-summary-break"></div>
           <div class="portfolio-summary-label">Maximum Drawdown (${selectedDays}d)</div>
           <div class="portfolio-summary-value ${maximumDrawdown ? tone(maximumDrawdown.drawdown) : ""}">${maximumDrawdownText}</div>
+          <div class="portfolio-summary-label">Dollar Drawdown</div>
+          <div class="portfolio-summary-value ${maximumDrawdown ? tone(maximumDrawdown.dollarDrawdown) : ""}">${maximumDrawdownDollarText}</div>
           <div class="portfolio-summary-label">Peak → Trough</div>
           <div class="portfolio-summary-value">${maximumDrawdownDates}</div>
         </div>
@@ -2242,7 +2260,8 @@ function updatePortfolioSummary(totalMarketValue) {
       `  |  G/L ${signedMoney(gainLoss)} (${signedPct(returnOnBookCost)})` +
       `  |  Day ${dailyChangeText}` +
       `  |  MDD (${selectedDays}d) ${maximumDrawdownText}` +
-      `  |  EWMA ${ewmaText}  |  Vol (${selectedDays}d) ${pct(volatility)}` +
+      `  |  EWMA ${ewmaText}  |  Div ${dividendText}` +
+      `  |  Vol (${selectedDays}d) ${pct(volatility)}` +
       `  |  Beta ${betaText}  |  RF ${riskFreeText}  |  Sharpe ${sharpeText}`;
   }
 }
@@ -2391,6 +2410,21 @@ function drawLineChart(container, rows, valueKey, options = {}) {
   const last = clean[clean.length - 1];
   svg.appendChild(makeSvg("circle", { cx: x(clean.length - 1), cy: y(Number(last[valueKey])), r: 3.5, class: "chart-point" }));
 
+  if (Array.isArray(options.markers)) {
+    options.markers.forEach(marker => {
+      const index = clean.findIndex(row => row.date === marker.date);
+      if (index < 0) return;
+      const value = Number(clean[index][valueKey]);
+      const markerClass = marker.kind === "trough" ? "chart-drawdown-trough" : "chart-drawdown-peak";
+      const labelClass = marker.kind === "trough" ? "chart-drawdown-trough-label" : "chart-drawdown-peak-label";
+      const px = x(index);
+      const py = y(value);
+      svg.appendChild(makeSvg("circle", { cx: px, cy: py, r: 6, class: `chart-drawdown-marker ${markerClass}` }));
+      const labelY = marker.kind === "trough" ? py + 18 : py - 10;
+      svg.appendChild(makeSvg("text", { x: px, y: labelY, class: `chart-drawdown-label ${labelClass}`, "text-anchor": "middle" }, marker.label || ""));
+    });
+  }
+
   const hoverLine = makeSvg("line", {
     x1: margin.left, y1: margin.top, x2: margin.left, y2: height - margin.bottom,
     class: "chart-hover-line", visibility: "hidden"
@@ -2461,8 +2495,14 @@ function renderPortfolioMarketValueChart() {
     status.textContent = matrixHistoryFrames.length ? "No priced portfolio holdings are available." : "Available after Matrix History loads.";
     return;
   }
+  const selectedDays = parseInt(document.getElementById("corrPeriod")?.value || "250", 10) || 250;
+  const maximumDrawdown = selectedPortfolioMaximumDrawdown(selectedDays);
+  const markers = maximumDrawdown ? [
+    { date: maximumDrawdown.peakDate, kind: "peak", label: `Peak ${formatMoney(maximumDrawdown.peakValue)}` },
+    { date: maximumDrawdown.troughDate, kind: "trough", label: `Trough ${formatMoney(maximumDrawdown.troughValue)}` }
+  ] : [];
   status.textContent = `${chartDateLabel(rows[0].date)} to ${chartDateLabel(rows[rows.length - 1].date)} · fixed current share quantities · ${rows.length} EOD observations`;
-  drawLineChart(chart, rows, "value", { money: true, valueLabel: "Market value", heading: "Portfolio", ariaLabel: "Portfolio market value history" });
+  drawLineChart(chart, rows, "value", { money: true, valueLabel: "Market value", heading: "Portfolio", ariaLabel: "Portfolio market value history", markers });
 }
 
 async function openSecurityChart(asset) {
