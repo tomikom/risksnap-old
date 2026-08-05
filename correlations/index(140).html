@@ -4,8 +4,9 @@ title: Correlations, Portfolios
 ---
 <!--
 RiskSnap Correlations
-Version: index(137)
+Version: index(140)
 Changes:
+- Redraws Portfolio Market Value chart and drawdown markers whenever the Matrix History slider moves
 - Corrected Matrix History and Latest so the selected completed EOD frame is used directly instead of the preceding frame
 - Restored automatic equal-weight shares whenever a preset is selected
 - Reduced matrix cell size so more of the matrix fits on screen
@@ -1147,6 +1148,7 @@ function renderSelectedMatrixFrame() {
   renderPortfolioTable();
   renderPortfolioDividendHistory();
   updateSelectedPairStatsFromMatrixFrame(eodFrame);
+  renderPortfolioMarketValueChart();
 }
 
 function updateMatrixHistorySliderDate(frame, index) {
