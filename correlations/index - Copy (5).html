@@ -4,9 +4,8 @@ title: Correlations, Portfolios
 ---
 <!--
 RiskSnap Correlations
-Version: index(137)
+Version: index(134)
 Changes:
-- Corrected Matrix History and Latest so the selected completed EOD frame is used directly instead of the preceding frame
 - Restored automatic equal-weight shares whenever a preset is selected
 - Reduced matrix cell size so more of the matrix fits on screen
 - Kept bubble scale unchanged, creating more overlap
@@ -1129,15 +1128,17 @@ function renderSelectedMatrixFrame() {
   const index = Math.max(0, Math.min(matrixHistoryFrames.length - 1, Number(slider.value) || 0));
   matrixHistoryIndex = index;
 
-  // Each Matrix History frame already represents a completed EOD date.
-  // Use the selected frame itself for valuation, matrix, and risk analytics.
+  // The selected frame is the dated market valuation (for example Apr 20).
+  // The preceding completed trading-day frame is the EOD correlation/risk
+  // snapshot (for example Apr 17 when Apr 20 is a Monday).
   const marketFrame = matrixHistoryFrames[index];
-  const eodFrame = marketFrame;
+  const eodFrame = matrixHistoryFrames[Math.max(0, index - 1)] || marketFrame;
 
   document.getElementById("matrixHistoryDate").textContent = eodFrame.date
     ? formatLongDate(eodFrame.date)
     : `Frame ${Math.max(1, index)}`;
-  // The slider label, matrix, and all EOD analytics use the selected date.
+  // The slider label is the selected valuation/current date. The matrix
+  // itself and all EOD analytics use the preceding completed trading day.
   updateMatrixHistorySliderDate(marketFrame, index);
   drawCorrelationChart(eodFrame);
 
@@ -1181,12 +1182,13 @@ function showLatestMatrixFrame() {
     const matrixSlider = document.getElementById("matrixHistorySlider");
     const marketIndex = matrixHistoryFrames.length - 1;
     const marketFrame = matrixHistoryFrames[marketIndex];
-    const eodFrame = marketFrame;
+    const eodFrame = matrixHistoryFrames[Math.max(0, marketIndex - 1)] || marketFrame;
 
     matrixSlider.value = marketIndex;
     matrixHistoryIndex = marketIndex;
 
-    // Latest uses the newest completed EOD frame for valuation and risk data.
+    // Latest uses the newest available frame as the valuation date and the
+    // preceding available frame as EOD, exactly like a historical selection.
     document.getElementById("matrixHistoryDate").textContent = eodFrame.date
       ? formatLongDate(eodFrame.date)
       : "Latest matrix";
