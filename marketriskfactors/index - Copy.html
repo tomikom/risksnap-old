@@ -1,0 +1,168 @@
+---
+layout: marketriskfactors-template
+---
+
+<style>
+* {
+    box-sizing: border-box;
+}
+div.a {
+    text-indent: 50px;
+	line-height:1.6;
+}
+h1 {
+    color: white;
+    text-align: center;
+	background-color: #3A5FCD;
+}
+h2 {
+    color: white;
+    text-align: center;
+	background-color: #59B300;
+}
+table {
+    font-family: arial, sans-serif;
+    border-collapse: collapse;
+    width: 100%;
+}
+
+td, th {
+    border: 1px solid #dddddd;
+    text-align: left;
+    padding: 8px;
+}
+
+tr:nth-child(even) {
+    background-color: #dddddd;
+}
+</style>
+
+<div class="a">
+<style>
+.button {
+    background-color: #4CAF50; /* Green */
+    border: none;
+    color: white;
+    padding: 15px 32px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 16px;
+    margin: 4px 2px;
+    cursor: pointer;
+}
+
+.button2 {background-color: #008CBA;} /* Blue */
+.button3 {background-color: #f44336;} /* Red */ 
+.button4 {background-color: #3A5FCD;} /* Royal Blue */ 
+
+.button {border-radius: 12px;}
+.button2 {border-radius: 12px;}
+.button3 {border-radius: 12px;}
+.button4 {border-radius: 12px;}
+
+
+</style>
+
+<button class="button"  onclick="window.location.href='#Yields'">Yields</button>
+<button class="button button2"  onclick="window.location.href='#Volatility'">Volatility</button>
+<button class="button button3"  onclick="window.location.href='#SpotForeignExchange'">Spot 
+Foreign Exchange</button>
+<button class="button button4"  onclick="window.location.href='#Volatility Surface'">Volatility Surface</button> 
+
+<p>A market risk factor is an attribute of a financial instrument that contributes to the valuation of that instrument.  Pricing models use mathematical formulas to convert market risk factors into a price that can be used to buy or sell (trade) the instrument.  An instrument with high liquidity will allow traders to put higher reliance on the underlying market risk factors.
+<p>
+The most liquid market risk factors are foreign exchange rates with a daily trading volume of $5 trillion per day.  Other “spot” type of market risk factors, ie. Those with short days to settlement include treasury bonds, large cap equities, and futures with large trading volume
+<p>
+A spot price embeds expectations of future economic events and pricing models include market risk factors for these events.  The price of a bond embeds expectations of future short term rates and each bond in the term structure becomes a market risk factor. In the case of interest rate swaps the term structure becomes complex with many instruments used including over-night interest, cash, futures, bonds and swap spreads.  Liquidity is also important in term structures with the most liquid instruments used to build a discount curve.  Similarly, liquidity in option pricing is reflected by tendency for sellers to charge more as an option moves away from at-the-money.  The following graphs show risk factors for interest rate yields and volatility risk factors for a number of assets.
+
+
+<p>
+<span id="Yields"/>
+<h2>Yields</h2>
+<div class="a">    
+	<p>Yield curves are graphed for central governments of Canada, Europe, U.K., Japan and the U.S.(10 years of history, for 1, 2, 3, 5, 7, 10, 20, 30 yr tenors). Yield curves are flattening. Short term rates, especially U.S. yields are starting to turn up.  Long term yields embed<sup>*</sup> future expectations of short term interest rates, suggesting that rates in the future will be low.  With short term rates rising currently, a straight-line projection should indicate that long term yields will rise also.  Since that is not happening, the counter-intuitive reasoning is possibly that current high rates will depress future economic growth. The yield curve for the Japanese Treasuries is starting to decline following an uptick in 2016.
+    <p>Volatility is increasing in the S&P500 index, ^GSPC.
+	<p>
+	
+	<img src="./images/Yields_CAD.png" alt="Yields CAD" width="200" height="100">
+	<b><font color="red">Click and expand below to view and compare curves</font></b></p>
+	<table>
+		<td><a href="http://www.risksnap.com/marketriskfactors/RiskSnapPopUp_Yields_CAD.html" target="_blank">CAD Yields</a> </td>
+		<td><a href="http://www.risksnap.com/marketriskfactors/RiskSnapPopUp_Yields_EUR.html" target="_blank">EUR Yields</a></td> 
+		<td><a href="http://www.risksnap.com/marketriskfactors/RiskSnapPopUp_Yields_GBP.html" target="_blank">GBP Yields</a></td>
+		<td><a href="http://www.risksnap.com/marketriskfactors/RiskSnapPopUp_Yields_JPY.html" target="_blank">JPY Yields</a></td> 
+		<td><a href="http://www.risksnap.com/marketriskfactors/RiskSnapPopUp_Yields_USD.html" target="_blank">USD Yields</a></td> 
+	</table> 
+	<p>
+	
+	<small><sup>*</sup>Bootstrapping of interest rates is a method used to price fixed rate and floating rate instruments consistently.  In this methodology the discounted sum of bond coupon payments equals the discounted sum of the expected short tem interest rates.    In fixed income analytics, a discount factor, d(t) = (1 - r(t)*sum of the discount facters up to t)/(1+r(t)).  From this the expected short term rate can be derived as  d(t-1)/d(t)-1.</small>
+    </p>
+	
+	</div>
+
+<p>
+<span id="Volatility"/>
+<h2>Volatility</h2>
+<div class="a">	
+	<p>Volatility is the risk factor that distinguishes the pricing of options from pricing of their underlying assets.  The graphs above plot historical standard deviations for various time periods for the S&P Index (^GSPC), a cryptocurrency, bitcoin(BTC), gasoline futures (RB) and foreign exchange spot (GBPUSD).  Unlike many risk factors where highest risk was observed during the financial crisis of 2008, energy volatility is a function not only of economic/political factors, but of weather. At the end of August, wholesale gasoline jumped nearly 14% due to tropical storm Harvey. The pound sterling experienced high volatility following the Brexit vote in June 2016.
+	</p>
+	<img src="./images/Vols_Equity_^GSPC.png" alt="Volatility ^GSPC" width="200" height="100">
+	<b><font color="red">Click and expand below to view and compare curves</font></b></p>
+	<table>
+		<td><a href="http://www.risksnap.com/marketriskfactors/RiskSnapPopUp_Vols_Equity_^GSPC.html" target="_blank">Equity ^GSPC Vols</a> </td>
+		<td><a href="http://www.risksnap.com/marketriskfactors/RiskSnapPopUp_Vols_Futures_CL.html" target="_blank">Futures CL Vols</a></td> 
+		<td><a href="http://www.risksnap.com/marketriskfactors/RiskSnapPopUp_Vols_Futures_RB.html" target="_blank">Futures RB Vols</a></td>
+		<td><a href="http://www.risksnap.com/marketriskfactors/RiskSnapPopUp_Vols_FX_GBPUSD.html" target="_blank">FX GBPUSD Vols</a></td> 
+	</table> 
+	</div>
+</div>
+<p>
+<span id="SpotForeignExchange"/>
+<h2><a id="div_id">Spot Foreign Exchange</a></h2>
+<div class="a">	
+	<p>Foreign Exchange is the largest and most liquid market in the world. The Triennial Central Bank Survey, Foreign exchange turnover in April 2016, published by the Bank for International Settlements (BIS), averaged $5.1 trillion per day.  The US dollar remained the dominant vehicle currency being on one side of 88% of all trades during April 2016.  Currencies are used for settling international trades with bank intermediating dealers facilitating the process.  Since the beinning of 2017, the EUR, GBP, and JPY have been rising against the US dollar.  The Canadian dollar also experienced a strengthening but now is weakening.
+	</p>
+	<img src="./images/Spot_FX_CADUSD.png" alt="Spot FX CADUSD" width="200" height="100">
+	<b><font color="red">Click and expand below to view and compare curves</font></b></p>
+	<table>
+		<td><a href="http://www.risksnap.com/marketriskfactors/RiskSnapPopUp_Spot_FX_CADUSD.html" target="_blank">Spot_FX_CADUSD</a> </td>
+		<td><a href="http://www.risksnap.com/marketriskfactors/RiskSnapPopUp_Spot_FX_EURUSD.html" target="_blank">Spot_FX_EURUSD</a></td> 
+		<td><a href="http://www.risksnap.com/marketriskfactors/RiskSnapPopUp_Spot_FX_GBPUSD.html" target="_blank">Spot_FX_GBPUSD</a></td>
+		<td><a href="http://www.risksnap.com/marketriskfactors/RiskSnapPopUp_Spot_FX_JPYUSD.html" target="_blank">Spot_FX_JPYUSD</a></td> 
+	</table> 
+	</div>
+</div>
+
+<p>tenor color chart for graphs:
+</div>
+<div class ="image-section">
+    <img class="figure" alt="" src="./images/Tenor Codes.png"  style="width:100%" />
+</div>
+<p>
+<span id="Volatility Surface"/>
+<h2>Volatility Surface</h2>
+<div class="a">	
+	<p>A volatility surface is a 3D representation of implied volatility of asset prices with time and strike being the other 2 axes.  The data source for a volatility surface are option prices.  The volatilities are backed out of an option pricing model, in this case Black-Scholes, with spot, interest rates and dividend yields being held constant.  In this way, the volatilities reflect current supply and demand for the underlying assets.  In general volatilities increase with time, however based on market conditions, near term options may exhibit higher volatility. Absent preference for puts or for calls, the ATM (at-the-money) volatility is lowest with volatility increasing as the strike goes further OTM (out-of-the-money) due to market preference for lower priced options.  A preference for puts over calls, such as hedges of underlying long positions in the assets, will introduce a skew into the surface. 
+	<p>
+	RiskSnap provides alternative methods and factors.  The description below is the default.
+	<p>
+	<p> The components of a surface are sourced from option market prices.  In order to standardize strikes, “Moneyness” is used defined as strike divided by spot.  Tenors are standardized market expiry dates. 	In producing a surface from market data, many factors are taken into consideration:  bid-offer spreads, minimum number of options for an expiry, and also certain arbitrage free conditions. These include: •	risk-reversal arbitrages:  puts and calls of the same strike for the same maturity must have the same volatility; as call strikes increase, the prices should fall, conversely for puts;•	bull and bear spread arbitrages.  The following arbitrage (butterfly put) should not exist. The minimum profit is .02 and maximum 1.02.  This is a win-win situation (before commissions).
+	<p>
+	<img src="./images/ButterflyPut.png" alt="Butterfly Put" width="800" height="200">
+	<p>
+	The pricing model is Black-Scholes where the dividend yield is based on put-call parity. This accommodates certain unknown factors such as the repo rate or the borrowing rate of equities for short sales or collateral and the dividend yield can sometimes be negative.  Interpolation across strikes is through a monotonic spline of implied vols from market prices.  Interpolation across time is linear variance.  Extrapolation is always an estimation process and a linear method is used to indicate direction base on the last 2 points. In order to distinguish source of data the surface table uses green for interpolations only, beige for extrapolations only, and wine for a mixture.
+	</p>
+	
+	<b><font color="red">Click and expand below to view compare surface and table</font></b></p>
+	<table>
+		<td><a href="http://www.risksnap.com/marketriskfactors/RiskSnapPopUp_Surf_Eq_AAPL.html" target="_blank">Surf Eq AAPL</a> </td>
+		<td><a href="http://www.risksnap.com/marketriskfactors/RiskSnapPopUp_Surf_Eq_AAPL_T.html" target="_blank">Surf Eq AAPL Table</a></td> 
+		<td><a href="http://www.risksnap.com/marketriskfactors/RiskSnapPopUp_Surf_Eq_TSLA.html" target="_blank">Surf Eq TSLA</a></td>
+		<td><a href="http://www.risksnap.com/marketriskfactors/RiskSnapPopUp_Surf_Eq_TSLA_T.html" target="_blank">Surf Eq TSLA Table</a></td> 
+	</table> 
+	</div>
+</div>
+<p>
+
+
