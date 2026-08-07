@@ -863,7 +863,11 @@ function parseEquities(raw) {
 }
 
 function normalizeDisplaySymbol(symbol) {
-  return String(symbol).trim().toUpperCase();
+  const s = String(symbol).trim().toUpperCase();
+  if (["NASDAQ", "NASD", "^NASDAQ"].includes(s)) return "NASDAQ";
+  if (["S&P500", "S&P", "S&P 500", "SP500", "SNP500", "SPX", "^GSPC"].includes(s)) return "S&P500";
+  if (s === "VIX") return "^VIX";
+  return s;
 }
 
 function getSelectedInputs() {

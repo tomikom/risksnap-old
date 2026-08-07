@@ -1,18 +1,22 @@
 ---
-layout: equities-template
+layout: correlations-template
 title: Equities
 ---
 <!--
 RiskSnap Equities
-Version: Equities 147
+Version: Equities 1
 - Separate security-reference page from Correlations / Portfolio Analytics
 - Load symbols from RiskSnap presets or saved portfolios
 - Saved portfolios are read from the same browser localStorage used by Correlations
 - Display descriptive Yahoo information, market cap/net assets, valuation and reference fields
 -->
+
 <div class="text-section equities-page">
-  <!--<h2>Equities bbb</h2>-->
-  <p class="equities-intro">Research stocks and ETFs using RiskSnap presets or portfolios saved on the <strong>Correlations, Portfolios</strong> page.</p>
+  <div class="equities-band">Equities</div>
+  <p class="equities-intro">
+    Select a RiskSnap preset or a saved portfolio to view descriptive information about its securities.
+    Portfolios can be created and saved on the <strong>Correlations, Portfolios</strong> page.
+  </p>
 
   <div class="equities-selectors">
     <div class="equities-selector-card">
@@ -92,7 +96,17 @@ Version: Equities 147
 
 <style>
 .equities-page { background:#fff; color:#222; }
-h2 { color:white; text-align:center; background-color:#59B300; }
+.equities-band {
+  margin:0 0 14px;
+  padding:5px 10px 6px;
+  background:#3A5FCD;
+  color:#fff;
+  text-align:center;
+  font-size:26px;
+  line-height:1.1;
+  font-weight:700;
+  font-family:Georgia, "Times New Roman", serif;
+}
 .equities-intro { margin:0 0 14px; }
 .equities-selectors {
   display:grid;
@@ -180,7 +194,7 @@ const EQUITIES_PRESETS = {
   world: "^GSPC, ^NDX, ^DJI, ^RUT, ^GSPTSE, ^FTSE, ^GDAXI, ^FCHI, ^N225, ^HSI, ^KS11",
   macro: "DX-Y.NYB, EURUSD=X, GC=F, CL=F, BTC-USD, ^VIX, ^GSPC, ^NDX",
   ai: "NVDA, MSFT, GOOG, AMZN, META, AMD, AVGO, TSM, ORCL, PLTR",
-  healthcare: "UNH, LLY, JNJ, ABBV, AMGN, MRK, ISRG, ABT, TMO, PFE",
+  healthcare: "UNH, LLY, JNJ, ABBV, AMGN, MRK, ISRG, ABT, TMO, PFE,NBIX",
   energy: "XOM, CVX, COP, SLB, EOG, OXY, CNQ, SU, ENB, TRP",
   financials: "JPM, BAC, WFC, C, GS, MS, BLK, SCHW, RY, TD",
   defensive: "PG, KO, PEP, WMT, COST, MCD, CL, GIS, KMB, MDLZ",
