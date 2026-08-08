@@ -79,7 +79,6 @@ Foreign exchange is the largest and most liquid financial market in the world.  
   <button data-pair="GBPUSD" onclick="selectFxInstrument('GBPUSD')">GBP/USD</button>
   <button data-pair="USDCHF" onclick="selectFxInstrument('USDCHF')">USD/CHF</button>
   <button data-pair="USDCAD" onclick="selectFxInstrument('USDCAD')">USD/CAD</button>
-  <button data-pair="USDSAR" onclick="selectFxInstrument('USDSAR')">USD/SAR</button>
   <button data-pair="GOLD" onclick="selectFxInstrument('GOLD')">Gold</button>
   <button data-pair="OIL" onclick="selectFxInstrument('OIL')">Oil</button>
   <button data-pair="COMBINED" onclick="selectFxInstrument('COMBINED')">Combined FX + Gold</button>
@@ -122,7 +121,6 @@ const fxPairs=[
  {key:"GBPUSD",label:"GBP/USD",ticker:"GBPUSD=X",color:"#2ca02c"},
  {key:"USDCHF",label:"USD/CHF",ticker:"CHF=X",color:"#d62728"},
  {key:"USDCAD",label:"USD/CAD",ticker:"CAD=X",color:"#9467bd"},
- {key:"USDSAR",label:"USD/SAR",ticker:"SAR=X",color:"#17becf"},
  {key:"GOLD",label:"Gold",ticker:"GC=F",color:"#DAA520"},
  {key:"OIL",label:"WTI Crude Oil",ticker:"CL=F",color:"#8B4513"}
 ];
@@ -297,7 +295,6 @@ const fxPairs = [
     { key: "GBPUSD", label: "GBP/USD", ticker: "GBPUSD=X", div: "fx_GBPUSD", color: "#2ca02c" },
     { key: "USDCHF", label: "USD/CHF", ticker: "CHF=X",    div: "fx_USDCHF", color: "#d62728" },
     { key: "USDCAD", label: "USD/CAD", ticker: "CAD=X",    div: "fx_USDCAD", color: "#9467bd" },
-    { key: "USDSAR", label: "USD/SAR", ticker: "SAR=X",    div: "fx_USDSAR", color: "#17becf" },
     { key: "GOLD", label: "Gold", ticker: "GC=F", div: "fx_GOLD", color: "#DAA520" }
 ];
 const oilPair = { key: "OIL", label: "WTI Crude Oil", ticker: "CL=F", div: "fx_OIL", color: "#8B4513" };
