@@ -99,7 +99,7 @@ title: Portfolio Optimization
 
   <div id="optChartPanel" class="opt-panel" hidden>
     <div class="opt-panel-title">Simulated Portfolios — Risk vs Total Return</div>
-    <div class="opt-chart-note">Click a point to inspect that simulation. Only a sample of points is drawn when many simulations are run.</div>
+    <div class="opt-chart-note">Click a point to inspect that simulation. The pink point marks the maximum-Sharpe portfolio. Only a sample of points is drawn when many simulations are run.</div>
     <div id="optChart" class="opt-chart"></div>
   </div>
 
@@ -277,6 +277,7 @@ h1 { color:white; text-align:center; background-color:#3A5FCD; }
 .opt-point { fill:#3A5FCD; fill-opacity:.32; cursor:pointer; }
 .opt-point:hover { fill-opacity:.85; }
 .opt-point-special { stroke:#111; stroke-width:1.2; fill-opacity:.9; }
+.opt-point-max-sharpe { fill:#d81b60; fill-opacity:1; stroke:#111; stroke-width:1.8; }
 .opt-table-wrap { overflow-x:auto; }
 .opt-table { width:100%; border-collapse:collapse; font-size:12px; }
 .opt-table th, .opt-table td {
@@ -841,13 +842,18 @@ function renderChart() {
       .filter(Boolean).map(x => x.id)
   );
 
-  const points = draw.map(x => `
-    <circle class="opt-point ${specials.has(x.id) ? "opt-point-special" : ""}"
+  const maxSharpeId = optState.maxSharpe ? optState.maxSharpe.id : null;
+  const points = draw.map(x => {
+    const isMaxSharpe = x.id === maxSharpeId;
+    const isSpecial = specials.has(x.id);
+    return `
+    <circle class="opt-point ${isSpecial ? "opt-point-special" : ""} ${isMaxSharpe ? "opt-point-max-sharpe" : ""}"
       data-id="${x.id}" cx="${xp(x.volatility)}" cy="${yp(x.totalReturn)}"
-      r="${specials.has(x.id) ? 5 : 2.5}">
-      <title>Simulation #${x.id} | Return ${(x.totalReturn*100).toFixed(2)}% | Vol ${(x.volatility*100).toFixed(2)}% | Sharpe ${x.sharpe.toFixed(3)}</title>
+      r="${isMaxSharpe ? 7 : (isSpecial ? 5 : 2.5)}">
+      <title>${isMaxSharpe ? "MAXIMUM SHARPE | " : ""}Simulation #${x.id} | Return ${(x.totalReturn*100).toFixed(2)}% | Vol ${(x.volatility*100).toFixed(2)}% | Sharpe ${x.sharpe.toFixed(3)}</title>
     </circle>
-  `).join("");
+  `;
+  }).join("");
 
   host.innerHTML = `
     <svg viewBox="0 0 ${width} ${height}" role="img" aria-label="Portfolio simulations plotted by volatility and total return">
