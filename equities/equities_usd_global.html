@@ -415,6 +415,24 @@ function fmtLarge(value) {
   return n.toLocaleString(undefined, {maximumFractionDigits:0});
 }
 
+function fmtMarketCapOrAssets(row) {
+  const marketCap = Number(row && row.market_cap);
+  const netAssets = Number(row && row.net_assets);
+  const currency = String(row && row.currency || "USD");
+
+  // For foreign-currency operating companies, show market capitalization
+  // converted to USD using the same FX quote displayed beside the stock price.
+  if (currency !== "USD" && Number.isFinite(marketCap) && marketCap > 0) {
+    const usdMarketCap = Number(row && row.market_cap_usd);
+    return Number.isFinite(usdMarketCap) && usdMarketCap > 0
+      ? `${fmtLarge(usdMarketCap)} (USD)`
+      : "N/A";
+  }
+
+  const size = Number.isFinite(netAssets) && netAssets > 0 ? netAssets : marketCap;
+  return fmtLarge(size);
+}
+
 function fmtNumber(value, decimals = 2) {
   const n = Number(value);
   return Number.isFinite(n) ? n.toFixed(decimals) : "N/A";
@@ -440,7 +458,6 @@ function renderRows(rows) {
   }
 
   body.innerHTML = rows.map(row => {
-    const size = Number(row.net_assets) > 0 ? row.net_assets : row.market_cap;
     const symbol = String(row.symbol || "").trim().toUpperCase();
     return `<tr data-symbol="${escapeHtml(symbol)}">
       <td class="equities-code">${escapeHtml(row.flag || "")} ${escapeHtml(symbol)}</td>
@@ -452,7 +469,7 @@ function renderRows(rows) {
       ${td(row.exchange)}
       ${td(row.currency)}
       ${td(fmtLocalUsdPrice(row))}
-      ${td(fmtLarge(size))}
+      ${td(fmtMarketCapOrAssets(row))}
       ${td(fmtNumber(row.trailing_pe))}
       ${td(fmtNumber(row.forward_pe))}
       ${td(fmtPercent(row.dividend_yield))}
