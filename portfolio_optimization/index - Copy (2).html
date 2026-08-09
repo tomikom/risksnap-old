@@ -12,7 +12,17 @@ title: Portfolio Optimization
   <div class="optimization-controls">
     <div class="optimization-card">
       <label for="optPreset"><strong>Preset</strong></label>
-      <select id="optPreset"><option value="">Select a preset</option></select>
+      <select id="optPreset">
+        <option value="">Select a preset</option>
+        <option value="original">Original</option>
+        <option value="ai">AI Ecosystem</option>
+        <option value="healthcare">Healthcare</option>
+        <option value="energy">Energy</option>
+        <option value="financials">Financials</option>
+        <option value="defensive">Defensive</option>
+        <option value="worldtop10">World Top 10</option>
+        <option value="topetfs">Top ETFs</option>
+      </select>
     </div>
 
     <div class="optimization-card">
@@ -328,29 +338,23 @@ const OPT_CORRELATIONS_ENDPOINT = "https://surface-203178530029.northamerica-nor
 const OPT_LATEST_PRICES_ENDPOINT = "https://surface-203178530029.northamerica-northeast2.run.app/latest_prices";
 const OPT_USD_YIELD_ENDPOINT = "https://surface-203178530029.northamerica-northeast2.run.app/yield_history?country=USD&period=1y";
 const OPT_FX_HISTORY_ENDPOINT = "https://surface-203178530029.northamerica-northeast2.run.app/fx_history";
+const OPT_CURRENCY_FALLBACKS = {
+  "2222.SR":"SAR",
+  "CNQ":"USD","SU":"USD","RY":"USD","TD":"USD"
+};
 const OPT_PORTFOLIOS_KEY = "RiskSnapSavedPortfolios";
 const OPT_MAX_ASSETS = 20;
-const OPT_CONFIG_ENDPOINT = "https://surface-203178530029.northamerica-northeast2.run.app/risksnap_config";
-let OPT_PRESETS = {};
-let OPT_SECURITY_META = {};
 
-async function loadOptimizationConfig() {
-  const response = await fetch(OPT_CONFIG_ENDPOINT);
-  const data = await response.json();
-  if (!response.ok) throw new Error(data.error || response.statusText);
-  OPT_PRESETS = data.portfolio_presets || {};
-  OPT_SECURITY_META = data.security_metadata || {};
-  const labels = data.preset_labels || {};
-  const keys = (data.preset_surfaces || {}).optimization || Object.keys(OPT_PRESETS);
-  const select = document.getElementById("optPreset");
-  select.innerHTML = '<option value="">Select a preset</option>';
-  keys.filter(key => OPT_PRESETS[key]).forEach(key => {
-    const option = document.createElement("option");
-    option.value = key;
-    option.textContent = labels[key] || key;
-    select.appendChild(option);
-  });
-}
+const OPT_PRESETS = {
+  original: "AAPL, AMZN, NVDA, MSTR, GS, CAT, UNH, AMGN, V, HD, IBM",
+  ai: "NVDA, MSFT, GOOG, AMZN, META, AMD, AVGO, TSM, ORCL, PLTR",
+  healthcare: "UNH, LLY, JNJ, ABBV, AMGN, MRK, ISRG, ABT, TMO, PFE, NBIX",
+  energy: "XOM, CVX, COP, SLB, EOG, OXY, CNQ, SU, ENB, TRP",
+  financials: "JPM, BAC, WFC, C, GS, MS, BLK, SCHW, RY, TD",
+  defensive: "PG, KO, PEP, WMT, COST, MCD, CL, GIS, KMB, MDLZ",
+  worldtop10: "NVDA, AAPL, GOOG, MSFT, AMZN, TSM, AVGO, 2222.SR, META, TSLA",
+  topetfs: "VOO, IVV, SPY, VTI, QQQ, VUG, VEA, IEFA, VTV, BND"
+};
 
 let optState = {
   assets: [],
@@ -359,7 +363,6 @@ let optState = {
   ewma: {},
   dividends: {},
   prices: {},
-  usdPrices: {},
   currencies: {},
   fxToUsd: {},
   investmentAmount: 100000,
@@ -527,18 +530,11 @@ function parseLatestSecurityData(data, assets) {
     });
   });
 
-  const topCurrencies = data && data.currencies && typeof data.currencies === "object" ? data.currencies : {};
-  const usdPrices = data && data.usd_prices && typeof data.usd_prices === "object" ? data.usd_prices : {};
-  const fxPairs = data && data.fx_pairs && typeof data.fx_pairs === "object" ? data.fx_pairs : {};
-  const fxRates = data && data.fx_rates && typeof data.fx_rates === "object" ? data.fx_rates : {};
-
   (assets || []).forEach(asset => {
-    const ccy = topCurrencies[asset];
-    if (ccy) currencies[asset] = String(ccy);
-    if (!currencies[asset]) currencies[asset] = "USD";
+    if (!currencies[asset]) currencies[asset] = OPT_CURRENCY_FALLBACKS[asset] || "USD";
   });
 
-  return {prices, currencies, usdPrices, fxPairs, fxRates};
+  return {prices, currencies};
 }
 
 function normalizeFxRows(data) {
@@ -655,10 +651,8 @@ function shareAllocation(sim) {
     const fxInfo = optState.fxToUsd[currency] || {rate:NaN,date:"",source:"Unavailable"};
     const fxToUsd = Number(fxInfo.rate);
     const fxDisplay = Number(fxInfo.displayRate);
-    const backendUsdPrice = Number(optState.usdPrices[asset]);
-    const usdPrice = Number.isFinite(backendUsdPrice) && backendUsdPrice > 0
-      ? backendUsdPrice
-      : (Number.isFinite(localPrice) && Number.isFinite(fxToUsd) ? localPrice * fxToUsd : NaN);
+    const usdPrice = Number.isFinite(localPrice) && Number.isFinite(fxToUsd)
+      ? localPrice * fxToUsd : NaN;
     const targetValue = amount * sim.weights[i];
     const shares = Number.isFinite(usdPrice) && usdPrice > 0
       ? Math.floor(targetValue / usdPrice) : 0;
@@ -1090,28 +1084,13 @@ async function runOptimization() {
     optState.dividends = parseDividendYields(priceResult);
     const securityData = parseLatestSecurityData(priceResult, validAssets);
     optState.prices = securityData.prices;
-    optState.usdPrices = securityData.usdPrices || {};
     optState.currencies = securityData.currencies;
     optState.investmentAmount = investmentAmount;
     validAssets.forEach(asset => {
       if (!Number.isFinite(Number(optState.dividends[asset]))) optState.dividends[asset] = 0;
     });
-    setStatus("Applying currency conversions...");
-    optState.fxToUsd = {};
-    validAssets.forEach(asset => {
-      const currency = String(optState.currencies[asset] || "USD");
-      const local = Number(optState.prices[asset]);
-      const usd = Number(optState.usdPrices[asset]);
-      const displayRate = Number(securityData.fxRates && securityData.fxRates[asset]);
-      const pair = String(securityData.fxPairs && securityData.fxPairs[asset] || (currency === "USD" ? "USD" : ""));
-      const rate = Number.isFinite(local) && local > 0 && Number.isFinite(usd) ? usd / local : (currency === "USD" ? 1 : NaN);
-      optState.fxToUsd[currency] = {
-        rate,
-        displayRate: Number.isFinite(displayRate) ? displayRate : (currency === "USD" ? 1 : NaN),
-        date: normalized.asOf,
-        source: pair || "RiskSnap"
-      };
-    });
+    setStatus("Loading currency conversions...");
+    optState.fxToUsd = await loadFxMap(optState.currencies, normalized.asOf);
     optState.riskFree = rfResult.rate;
     optState.riskFreeAsOf = rfResult.date || normalized.riskFreeAsOf;
 
@@ -1175,14 +1154,5 @@ document.getElementById("inspectMinVol").addEventListener("click", () => optStat
 document.getElementById("inspectMaxReturn").addEventListener("click", () => optState.maxReturn && inspectSimulation(optState.maxReturn.id));
 document.getElementById("inspectEqualWeight").addEventListener("click", () => optState.equalWeight && inspectSimulation(optState.equalWeight.id));
 
-async function initializeOptimizationPage() {
-  try {
-    await loadOptimizationConfig();
-  } catch (err) {
-    setStatus(`RiskSnap configuration unavailable: ${err.message || err}`);
-    return;
-  }
-  refreshPortfolioSelector();
-}
-initializeOptimizationPage();
+refreshPortfolioSelector();
 </script>

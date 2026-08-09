@@ -9,6 +9,10 @@ Version: Equities 2
 - Load symbols from RiskSnap presets or saved portfolios
 - Saved portfolios are read from the same browser localStorage used by Correlations
 - Display descriptive Yahoo information, market cap/net assets, valuation and reference fields
+- Added independent 25-day unusual-move detection on Equities only
+- Latest News link now appears for every security; 2.5σ is used only to highlight unusual moves
+- Compact responsive equity table: wrapped long headers, Currency shortened to Ccy, tighter columns
+- Clarified news design: RiskSnap flags unusual moves; news links open external searches rather than republishing headlines
 -->
 
 <div class="text-section equities-page">
@@ -70,18 +74,21 @@ Version: Equities 2
           <th>Industry / Category</th>
           <th>Country</th>
           <th>Exchange</th>
-          <th>Currency</th>
+          <th>Ccy</th>
           <th>Price</th>
-          <th>Mkt Cap / Net Assets</th>
+          <th>Mkt Cap /<br>Net Assets</th>
           <th>P/E</th>
           <th>Fwd P/E</th>
           <th>Div Yield</th>
           <th>Beta</th>
-          <th>Expense Ratio</th>
+          <th>Expense<br>Ratio</th>
+          <th>Daily<br>Move</th>
+          <th>σ<br>Move</th>
+          <th>External<br>News</th>
         </tr>
       </thead>
       <tbody id="equitiesBody">
-        <tr><td colspan="15" class="equities-empty">Choose a preset or saved portfolio, then load the securities.</td></tr>
+        <tr><td colspan="18" class="equities-empty">Choose a preset or saved portfolio, then load the securities.</td></tr>
       </tbody>
     </table>
   </div>
@@ -90,6 +97,7 @@ Version: Equities 2
     <p><strong>Market Cap / Net Assets:</strong> Market capitalization is shown for operating companies; fund net assets are shown for ETFs/funds when Yahoo supplies them.</p>
     <p><strong>P/E:</strong> An ETF may have no Yahoo P/E even though its underlying holdings have earnings. Missing values are shown as N/A rather than inferred.</p>
     <p>Sector, industry, fund category, P/E, beta and expense ratio depend on what Yahoo makes available for each security.</p>
+    <p><strong>σ Move:</strong> latest daily return compared with the preceding 25 daily returns. Moves with |σ| of at least 2.5 are highlighted as unusual. RiskSnap performs this calculation; the news links open external Google News searches and do not republish article content. For an unusual move, <strong>News around move</strong> searches around that trading date. This calculation is independent of the Correlation Lens and portfolio analytics.</p>
   </div>
 </div>
 
@@ -151,41 +159,101 @@ Version: Equities 2
 .equities-actions button:disabled { cursor:default; opacity:.55; }
 .equities-status { color:#555; font-size:12px; }
 .equities-table-wrap { overflow-x:auto; border:1px solid #ddd; border-radius:7px; }
-.equities-table { width:100%; border-collapse:collapse; font-size:12px; background:#fff; }
+.equities-table { width:100%; border-collapse:collapse; font-size:12px; background:#fff; table-layout:auto; }
 .equities-table th,
 .equities-table td {
   border-bottom:1px solid #e6e6e6;
-  padding:7px 8px;
+  padding:6px 6px;
   text-align:right;
   white-space:nowrap;
   vertical-align:top;
 }
 .equities-table th { background:#f4f6fa; font-weight:700; position:sticky; top:0; z-index:1; }
+.equities-table th { white-space:normal; line-height:1.08; }
+.equities-table th:nth-child(1), .equities-table td:nth-child(1) { padding-left:7px; padding-right:5px; }
+.equities-table th:nth-child(6), .equities-table td:nth-child(6) { max-width:86px; }
+.equities-table th:nth-child(7), .equities-table td:nth-child(7) { max-width:72px; }
+.equities-table th:nth-child(8), .equities-table td:nth-child(8) { width:42px; min-width:38px; max-width:44px; }
+.equities-table th:nth-child(9), .equities-table td:nth-child(9) { min-width:62px; }
+.equities-table th:nth-child(10), .equities-table td:nth-child(10) { min-width:72px; }
+.equities-table th:nth-child(11), .equities-table td:nth-child(11),
+.equities-table th:nth-child(12), .equities-table td:nth-child(12),
+.equities-table th:nth-child(13), .equities-table td:nth-child(13),
+.equities-table th:nth-child(14), .equities-table td:nth-child(14),
+.equities-table th:nth-child(15), .equities-table td:nth-child(15),
+.equities-table th:nth-child(16), .equities-table td:nth-child(16),
+.equities-table th:nth-child(17), .equities-table td:nth-child(17) {
+  padding-left:4px;
+  padding-right:4px;
+}
+.equities-table th:nth-child(15), .equities-table td:nth-child(15) { min-width:52px; }
+.equities-table th:nth-child(16), .equities-table td:nth-child(16) { min-width:56px; }
+.equities-table th:nth-child(17), .equities-table td:nth-child(17) { min-width:47px; }
+.equities-table th:nth-child(18), .equities-table td:nth-child(18) { min-width:86px; }
+
 .equities-table th:nth-child(-n+8), .equities-table td:nth-child(-n+8) { text-align:left; }
 .equities-table td:nth-child(2) {
   white-space:normal;
-  min-width:190px;
-  max-width:280px;
+  min-width:150px;
+  max-width:235px;
   line-height:1.25;
 }
 .equities-table td:nth-child(4),
 .equities-table td:nth-child(5) {
   white-space:normal;
-  min-width:115px;
-  max-width:190px;
+  min-width:90px;
+  max-width:155px;
 }
 .equities-code { font-weight:700; color:#244b9b; }
 .equities-empty { text-align:left !important; color:#666; padding:14px !important; }
 .equities-na { color:#888; }
+
+.equities-move-positive { color:#137333; font-weight:700; }
+.equities-move-negative { color:#b3261e; font-weight:700; }
+.equities-sigma-unusual {
+  display:inline-block;
+  padding:2px 6px;
+  border:1px solid #d39b24;
+  border-radius:999px;
+  background:#fff7df;
+  color:#7a5200;
+  font-weight:700;
+}
+.equities-news-link {
+  display:inline-block;
+  border:1px solid #9aa8c4;
+  border-radius:4px;
+  background:#fff;
+  padding:3px 7px;
+  color:#244b9b;
+  text-decoration:none;
+  font-weight:600;
+}
+.equities-news-link:hover { background:#f0f4ff; border-color:#7188c7; }
+.equities-move-pending { color:#888; font-size:11px; }
+
 .equities-footnotes { margin:10px 2px 0; color:#666; font-size:11px; line-height:1.35; }
 .equities-footnotes p { margin:4px 0; }
+@media (max-width:1180px) {
+  .equities-table { font-size:11px; }
+  .equities-table th, .equities-table td { padding-top:5px; padding-bottom:5px; }
+  .equities-table td:nth-child(2) { min-width:125px; max-width:190px; }
+  .equities-table td:nth-child(4),
+  .equities-table td:nth-child(5) { min-width:78px; max-width:125px; }
+}
 @media (max-width:900px) {
   .equities-selectors { grid-template-columns:1fr; }
+  .equities-table { font-size:10.5px; }
+  .equities-table th, .equities-table td { padding-left:3px; padding-right:3px; }
 }
 </style>
 
 <script>
 const EQUITIES_ENDPOINT = "https://surface-203178530029.northamerica-northeast2.run.app/equity_info";
+const EQUITIES_HISTORY_ENDPOINT = "https://surface-203178530029.northamerica-northeast2.run.app/asset_history";
+const UNUSUAL_MOVE_LOOKBACK = 25;
+const UNUSUAL_MOVE_THRESHOLD = 2.5;
+const equitiesMoveCache = new Map();
 const EQUITIES_PORTFOLIOS_KEY = "RiskSnapSavedPortfolios";
 const CORRELATION_SETTINGS_KEY = "RiskSnapCorrelationSettings";
 const ACTIVE_SELECTION_KEY = "RiskSnapActiveSelection";
@@ -352,14 +420,15 @@ function td(value, extraClass = "") {
 function renderRows(rows) {
   const body = document.getElementById("equitiesBody");
   if (!Array.isArray(rows) || !rows.length) {
-    body.innerHTML = '<tr><td colspan="15" class="equities-empty">No security information was returned.</td></tr>';
+    body.innerHTML = '<tr><td colspan="18" class="equities-empty">No security information was returned.</td></tr>';
     return;
   }
 
   body.innerHTML = rows.map(row => {
     const size = Number(row.net_assets) > 0 ? row.net_assets : row.market_cap;
-    return `<tr>
-      <td class="equities-code">${escapeHtml(row.symbol || "")}</td>
+    const symbol = String(row.symbol || "").trim().toUpperCase();
+    return `<tr data-symbol="${escapeHtml(symbol)}">
+      <td class="equities-code">${escapeHtml(symbol)}</td>
       ${td(row.description)}
       ${td(row.type)}
       ${td(row.sector)}
@@ -374,9 +443,162 @@ function renderRows(rows) {
       ${td(fmtPercent(row.dividend_yield))}
       ${td(fmtNumber(row.beta))}
       ${td(fmtPercent(row.expense_ratio))}
+      <td class="equities-daily-move"><span class="equities-move-pending">…</span></td>
+      <td class="equities-sigma-move"><span class="equities-move-pending">…</span></td>
+      <td class="equities-news"><span class="equities-move-pending">…</span></td>
     </tr>`;
   }).join("");
+
+  enrichUnusualMoves(rows);
 }
+
+
+function mean(values) {
+  if (!values.length) return NaN;
+  return values.reduce((sum, value) => sum + value, 0) / values.length;
+}
+
+function sampleStdDev(values) {
+  if (values.length < 2) return NaN;
+  const m = mean(values);
+  const variance = values.reduce((sum, value) => sum + Math.pow(value - m, 2), 0) / (values.length - 1);
+  return Math.sqrt(variance);
+}
+
+function historicalReturns(rows) {
+  const clean = (Array.isArray(rows) ? rows : [])
+    .map(row => ({ date: String(row.date || ""), price: Number(row.price) }))
+    .filter(row => row.date && Number.isFinite(row.price) && row.price > 0)
+    .sort((a, b) => a.date.localeCompare(b.date));
+
+  const returns = [];
+  for (let i = 1; i < clean.length; i++) {
+    const previous = clean[i - 1].price;
+    const current = clean[i].price;
+    if (previous > 0 && current > 0) {
+      returns.push({
+        date: clean[i].date,
+        value: current / previous - 1
+      });
+    }
+  }
+  return returns;
+}
+
+function googleLatestNewsUrl(symbol) {
+  const query = `${symbol} stock`;
+  return `https://news.google.com/search?q=${encodeURIComponent(query)}&hl=en-CA&gl=CA&ceid=CA:en`;
+}
+
+function googleNewsAroundDateUrl(symbol, dateText) {
+  const date = new Date(`${dateText}T12:00:00`);
+  if (Number.isNaN(date.getTime())) return googleLatestNewsUrl(symbol);
+  const before = new Date(date);
+  before.setDate(before.getDate() + 2);
+  const after = new Date(date);
+  after.setDate(after.getDate() - 1);
+  const ymd = value => value.toISOString().slice(0, 10);
+  const query = `${symbol} stock after:${ymd(after)} before:${ymd(before)}`;
+  return `https://news.google.com/search?q=${encodeURIComponent(query)}&hl=en-CA&gl=CA&ceid=CA:en`;
+}
+
+async function unusualMoveForSymbol(symbol) {
+  if (equitiesMoveCache.has(symbol)) return equitiesMoveCache.get(symbol);
+
+  const promise = (async () => {
+    const response = await fetch(EQUITIES_HISTORY_ENDPOINT, {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({symbol, range:"3m"})
+    });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(payload.error || `HTTP ${response.status}`);
+
+    const returns = historicalReturns(payload.rows || []);
+    if (returns.length < UNUSUAL_MOVE_LOOKBACK + 1) {
+      throw new Error("Not enough price history");
+    }
+
+    const latest = returns[returns.length - 1];
+    const prior = returns
+      .slice(-(UNUSUAL_MOVE_LOOKBACK + 1), -1)
+      .map(row => row.value);
+
+    const avg = mean(prior);
+    const sd = sampleStdDev(prior);
+    const z = Number.isFinite(sd) && sd > 0 ? (latest.value - avg) / sd : NaN;
+
+    return {
+      date: latest.date,
+      dailyReturn: latest.value,
+      z
+    };
+  })();
+
+  equitiesMoveCache.set(symbol, promise);
+  return promise;
+}
+
+function renderUnusualMove(symbol, result) {
+  const row = document.querySelector(`tr[data-symbol="${CSS.escape(symbol)}"]`);
+  if (!row) return;
+
+  const moveCell = row.querySelector(".equities-daily-move");
+  const sigmaCell = row.querySelector(".equities-sigma-move");
+  const newsCell = row.querySelector(".equities-news");
+
+  if (!result || !Number.isFinite(result.dailyReturn)) {
+    moveCell.textContent = "N/A";
+    sigmaCell.textContent = "N/A";
+    const href = googleLatestNewsUrl(symbol);
+    newsCell.innerHTML = `<a class="equities-news-link" href="${escapeHtml(href)}" target="_blank" rel="noopener noreferrer" title="Open an external Google News search for this security">Latest News →</a>`;
+    return;
+  }
+
+  const pct = result.dailyReturn * 100;
+  const moveClass = pct >= 0 ? "equities-move-positive" : "equities-move-negative";
+  moveCell.innerHTML = `<span class="${moveClass}" title="${escapeHtml(result.date)}">${pct >= 0 ? "+" : ""}${pct.toFixed(2)}%</span>`;
+
+  if (!Number.isFinite(result.z)) {
+    sigmaCell.textContent = "N/A";
+    const href = googleLatestNewsUrl(symbol);
+    newsCell.innerHTML = `<a class="equities-news-link" href="${escapeHtml(href)}" target="_blank" rel="noopener noreferrer" title="Open an external Google News search for this security">Latest News →</a>`;
+    return;
+  }
+
+  const absZ = Math.abs(result.z);
+  const sigmaText = `${result.z >= 0 ? "+" : ""}${result.z.toFixed(2)}σ`;
+  sigmaCell.innerHTML = absZ >= UNUSUAL_MOVE_THRESHOLD
+    ? `<span class="equities-sigma-unusual" title="Unusual move: |σ| is at least 2.5">${sigmaText}</span>`
+    : escapeHtml(sigmaText);
+
+  const latestHref = googleLatestNewsUrl(symbol);
+  if (absZ >= UNUSUAL_MOVE_THRESHOLD) {
+    const datedHref = googleNewsAroundDateUrl(symbol, result.date);
+    newsCell.innerHTML =
+      `<a class="equities-news-link" href="${escapeHtml(latestHref)}" target="_blank" rel="noopener noreferrer" title="Open an external Google News search for this security">Latest News →</a>` +
+      `<br><a class="equities-news-link" style="margin-top:4px" href="${escapeHtml(datedHref)}" target="_blank" rel="noopener noreferrer" title="Open an external Google News search around ${escapeHtml(result.date)}">News around move →</a>`;
+  } else {
+    newsCell.innerHTML = `<a class="equities-news-link" href="${escapeHtml(latestHref)}" target="_blank" rel="noopener noreferrer" title="Open an external Google News search for this security">Latest News →</a>`;
+  }
+}
+
+async function enrichUnusualMoves(rows) {
+  const symbols = (Array.isArray(rows) ? rows : [])
+    .map(row => String(row.symbol || "").trim().toUpperCase())
+    .filter(Boolean);
+
+  await Promise.allSettled(symbols.map(async symbol => {
+    try {
+      const result = await unusualMoveForSymbol(symbol);
+      renderUnusualMove(symbol, result);
+    } catch (err) {
+      console.log(`Unusual-move calculation unavailable for ${symbol}:`, err);
+      renderUnusualMove(symbol, null);
+    }
+  }));
+}
+
 
 async function loadEquities() {
   const symbolText = document.getElementById("equitiesSymbols").value;
@@ -408,7 +630,7 @@ async function loadEquities() {
     setStatus(`Loaded ${Array.isArray(payload.rows) ? payload.rows.length : 0} securities${time ? ` — ${time}` : ""}${failed.length ? `; unavailable: ${failed.join(", ")}` : ""}.`);
   } catch (err) {
     console.log(err);
-    document.getElementById("equitiesBody").innerHTML = '<tr><td colspan="15" class="equities-empty">Unable to load Equity information. The Cloud Run equity_info endpoint must be deployed.</td></tr>';
+    document.getElementById("equitiesBody").innerHTML = '<tr><td colspan="18" class="equities-empty">Unable to load Equity information. The Cloud Run equity_info endpoint must be deployed.</td></tr>';
     setStatus(`Unable to load data: ${err.message || err}`);
   } finally {
     button.disabled = false;
