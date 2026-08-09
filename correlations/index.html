@@ -2655,6 +2655,17 @@ function jumpMatrixHistoryToDate(dateText) {
   if (panel) panel.scrollIntoView({ behavior: "smooth", block: "nearest" });
 }
 
+function formatChartPrice(value, currency = "USD") {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return "—";
+  const ccy = String(currency || "USD");
+  if (ccy === "USD") return formatMoney(n);
+  if (ccy === "GBp") {
+    return `GBp ${n.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}`;
+  }
+  return `${ccy} ${n.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}`;
+}
+
 function drawLineChart(container, rows, valueKey, options = {}) {
   if (!container) return;
   container.innerHTML = "";
@@ -2678,7 +2689,9 @@ function drawLineChart(container, rows, valueKey, options = {}) {
     const value = minValue + (maxValue - minValue) * i / 4;
     const yy = y(value);
     svg.appendChild(makeSvg("line", { x1: margin.left, y1: yy, x2: width - margin.right, y2: yy, class: "chart-grid" }));
-    const label = options.money ? formatMoney(value) : Number(value).toLocaleString(undefined, { maximumFractionDigits: 2 });
+    const label = options.currency
+      ? formatChartPrice(value, options.currency)
+      : (options.money ? formatMoney(value) : Number(value).toLocaleString(undefined, { maximumFractionDigits: 2 }));
     svg.appendChild(makeSvg("text", { x: margin.left - 8, y: yy + 4, class: "chart-label", "text-anchor": "end" }, label));
   }
   svg.appendChild(makeSvg("line", { x1: margin.left, y1: margin.top, x2: margin.left, y2: height - margin.bottom, class: "chart-axis" }));
@@ -2764,9 +2777,11 @@ function drawLineChart(container, rows, valueKey, options = {}) {
   svg.appendChild(overlay);
 
   const tooltip = document.getElementById("corrTooltip");
-  const formatValue = value => options.money
-    ? formatMoney(value)
-    : Number(value).toLocaleString(undefined, { maximumFractionDigits: 4 });
+  const formatValue = value => options.currency
+    ? formatChartPrice(value, options.currency)
+    : (options.money
+      ? formatMoney(value)
+      : Number(value).toLocaleString(undefined, { maximumFractionDigits: 4 }));
 
   overlay.addEventListener("mousemove", event => {
     const rect = svg.getBoundingClientRect();
@@ -2854,9 +2869,9 @@ async function currentChartPrice(symbol) {
   const cached = securityCurrentPriceCache.get(normalized);
   if (cached && Date.now() - cached.cachedAt < 60000) return cached;
 
-  if (Number.isFinite(Number(portfolioCurrentPrices[normalized])) && portfolioPriceTimestamp) {
+  if (Number.isFinite(Number(portfolioCurrentLocalPrices[normalized])) && portfolioPriceTimestamp) {
     const result = {
-      price: Number(portfolioCurrentPrices[normalized]),
+      price: Number(portfolioCurrentLocalPrices[normalized]),
       date: torontoDateKey(portfolioPriceTimestamp),
       cachedAt: Date.now()
     };
@@ -2918,6 +2933,8 @@ async function loadSecurityChart(symbol, range) {
     }
     const historyRows = Array.isArray(data.rows) ? data.rows : [];
     if (historyRows.length < 2) throw new Error("Not enough price history was returned.");
+    const chartCurrency = String(data.currency || portfolioCurrentCurrencies[symbol] || "USD");
+    title.textContent = `${displayAsset(symbol)} — ${rangeLabels[range] || "Price"} Price History (${chartCurrency})`;
     let rows = historyRows;
     try {
       const quote = await currentChartPrice(symbol);
@@ -2926,7 +2943,12 @@ async function loadSecurityChart(symbol, range) {
       console.warn(`Current chart price unavailable for ${symbol}:`, quoteError);
     }
     status.textContent = `${chartDateLabel(rows[0].date)} to ${chartDateLabel(rows[rows.length - 1].date)}`;
-    drawLineChart(chart, rows, "price", { money: true, valueLabel: "Price", heading: displayAsset(symbol), ariaLabel: `${symbol} price history` });
+    drawLineChart(chart, rows, "price", {
+      currency: chartCurrency,
+      valueLabel: "Price",
+      heading: displayAsset(symbol),
+      ariaLabel: `${symbol} price history in ${chartCurrency}`
+    });
   } catch (error) {
     status.textContent = `Chart unavailable: ${error.message}`;
   }
