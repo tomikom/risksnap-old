@@ -596,15 +596,14 @@ async function loadCurrencyToUsd(currency, asOf) {
   // For SAR this asks specifically for USDSAR, whose Yahoo ticker is SAR=X.
   const inversePair = `USD${ccy}`;
   const directPair = `${ccy}USD`;
-  const preferredPair = ["JPY","CAD","CHF","SAR","KRW","HKD","CNY","BRL","SEK","DKK"].includes(ccy) ? inversePair : directPair;
+  const preferredPair = ["JPY","CAD","CHF","SAR"].includes(ccy) ? inversePair : directPair;
   const response = await fetch(`${OPT_FX_HISTORY_ENDPOINT}?period=1y&pair=${encodeURIComponent(preferredPair)}`);
   const data = await response.json();
   if (!response.ok) throw new Error(data.error || data.message || response.statusText);
   const rows = normalizeFxRows(data);
 
   // Convention handling:
-  // USDJPY / USDCAD / USDCHF / USDSAR / USDKRW / USDHKD / USDCNY / USDBRL / USDSEK / USDDKK
-  // = local currency per USD -> invert.
+  // USDJPY / USDCAD / USDCHF / USDSAR = local currency per USD -> invert.
   // EURUSD / GBPUSD / AUDUSD / NZDUSD = USD per local currency -> use directly.
   const direct = pickLatestFxValue(rows,
     [`${ccy}USD`, `${ccy}/USD`, `${ccy}=X`], asOf);
@@ -1100,7 +1099,7 @@ async function runOptimization() {
     setStatus("Applying currency conversions...");
     optState.fxToUsd = {};
     validAssets.forEach(asset => {
-      const currency = String(optState.currencies[asset] || "USD").toUpperCase();
+      const currency = String(optState.currencies[asset] || "USD");
       const local = Number(optState.prices[asset]);
       const usd = Number(optState.usdPrices[asset]);
       const displayRate = Number(securityData.fxRates && securityData.fxRates[asset]);
@@ -1113,23 +1112,6 @@ async function runOptimization() {
         source: pair || "RiskSnap"
       };
     });
-
-    // If latest_prices did not supply a usable USD conversion, fall back to
-    // RiskSnap FX history. This lets foreign listings such as ASML.AS (EUR)
-    // work without ticker-specific conversion code.
-    const missingFxCurrencies = [...new Set(validAssets
-      .map(asset => String(optState.currencies[asset] || "USD").toUpperCase())
-      .filter(ccy => ccy !== "USD")
-      .filter(ccy => !Number.isFinite(Number(optState.fxToUsd[ccy]?.rate))))];
-
-    if (missingFxCurrencies.length) {
-      const fallbackCurrencies = Object.fromEntries(missingFxCurrencies.map((ccy,i) => [`fx${i}`,ccy]));
-      const fallbackFx = await loadFxMap(fallbackCurrencies, normalized.asOf);
-      missingFxCurrencies.forEach(ccy => {
-        const info = fallbackFx[ccy];
-        if (info && Number.isFinite(Number(info.rate))) optState.fxToUsd[ccy] = info;
-      });
-    }
     optState.riskFree = rfResult.rate;
     optState.riskFreeAsOf = rfResult.date || normalized.riskFreeAsOf;
 
