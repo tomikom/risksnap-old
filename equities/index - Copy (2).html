@@ -4,7 +4,7 @@ title: Equities
 ---
 <!--
 RiskSnap Equities
-Version: Equities 3
+Version: Equities 2
 - Separate security-reference page from Correlations / Portfolio Analytics
 - Load symbols from RiskSnap presets or saved portfolios
 - Saved portfolios are read from the same browser localStorage used by Correlations
@@ -13,9 +13,6 @@ Version: Equities 3
 - Latest News link now appears for every security; 2.5σ is used only to highlight unusual moves
 - Compact responsive equity table: wrapped long headers, Currency shortened to Ccy, tighter columns
 - Clarified news design: RiskSnap flags unusual moves; news links open external searches rather than republishing headlines
-- Replaced Expense Ratio with an on-demand Chart link
-- Stacked foreign local/USD/FX price lines to narrow the Price column
-- Kept Google News opening in a separate tab so Equities remains open on mobile
 -->
 
 <div class="text-section equities-page">
@@ -70,7 +67,7 @@ Version: Equities 3
           <th>Fwd P/E</th>
           <th>Div Yield</th>
           <th>Beta</th>
-          <th>Chart</th>
+          <th>Expense<br>Ratio</th>
           <th>Daily<br>Move</th>
           <th>σ<br>Move</th>
           <th>External<br>News</th>
@@ -82,28 +79,11 @@ Version: Equities 3
     </table>
   </div>
 
-  <div id="equitiesChartPanel" class="equities-chart-panel" hidden>
-    <div class="equities-chart-header">
-      <div>
-        <div id="equitiesChartTitle" class="equities-chart-title">Security Price History</div>
-        <div id="equitiesChartStatus" class="equities-chart-status"></div>
-      </div>
-      <div class="equities-chart-actions">
-        <button type="button" class="equities-chart-range" data-range="3m">3M</button>
-        <button type="button" class="equities-chart-range" data-range="6m">6M</button>
-        <button type="button" class="equities-chart-range is-active" data-range="1y">1Y</button>
-        <button type="button" class="equities-chart-range" data-range="3y">3Y</button>
-        <button id="equitiesChartClose" type="button">Close</button>
-      </div>
-    </div>
-    <div id="equitiesPriceChart" class="equities-price-chart"></div>
-  </div>
-
   <div class="equities-footnotes">
     <p><strong>Market Cap / Net Assets:</strong> Market capitalization is shown for operating companies; fund net assets are shown for ETFs/funds when Yahoo supplies them.</p>
     <p><strong>P/E:</strong> An ETF may have no Yahoo P/E even though its underlying holdings have earnings. Missing values are shown as N/A rather than inferred.</p>
-    <p>Sector, industry, fund category, P/E and beta depend on what Yahoo makes available for each security.</p>
-    <p><strong>σ Move:</strong> latest daily return compared with the preceding 25 daily returns. Moves with |σ| of at least 2.5 are highlighted as unusual. RiskSnap performs this calculation; the news links open external Google News searches in a separate tab and do not republish article content. For an unusual move, <strong>News around move</strong> searches around that trading date. This calculation is independent of the Correlation Lens and portfolio analytics.</p>
+    <p>Sector, industry, fund category, P/E, beta and expense ratio depend on what Yahoo makes available for each security.</p>
+    <p><strong>σ Move:</strong> latest daily return compared with the preceding 25 daily returns. Moves with |σ| of at least 2.5 are highlighted as unusual. RiskSnap performs this calculation; the news links open external Google News searches and do not republish article content. For an unusual move, <strong>News around move</strong> searches around that trading date. This calculation is independent of the Correlation Lens and portfolio analytics.</p>
   </div>
 </div>
 
@@ -180,7 +160,7 @@ Version: Equities 3
 .equities-table th:nth-child(6), .equities-table td:nth-child(6) { max-width:86px; }
 .equities-table th:nth-child(7), .equities-table td:nth-child(7) { max-width:72px; }
 .equities-table th:nth-child(8), .equities-table td:nth-child(8) { width:42px; min-width:38px; max-width:44px; }
-.equities-table th:nth-child(9), .equities-table td:nth-child(9) { width:78px; min-width:72px; max-width:88px; }
+.equities-table th:nth-child(9), .equities-table td:nth-child(9) { min-width:62px; }
 .equities-table th:nth-child(10), .equities-table td:nth-child(10) { min-width:72px; }
 .equities-table th:nth-child(11), .equities-table td:nth-child(11),
 .equities-table th:nth-child(12), .equities-table td:nth-child(12),
@@ -192,7 +172,7 @@ Version: Equities 3
   padding-left:4px;
   padding-right:4px;
 }
-.equities-table th:nth-child(15), .equities-table td:nth-child(15) { min-width:48px; width:52px; text-align:center; }
+.equities-table th:nth-child(15), .equities-table td:nth-child(15) { min-width:52px; }
 .equities-table th:nth-child(16), .equities-table td:nth-child(16) { min-width:56px; }
 .equities-table th:nth-child(17), .equities-table td:nth-child(17) { min-width:47px; }
 .equities-table th:nth-child(18), .equities-table td:nth-child(18) { min-width:86px; }
@@ -237,39 +217,6 @@ Version: Equities 3
 }
 .equities-news-link:hover { background:#f0f4ff; border-color:#7188c7; }
 .equities-move-pending { color:#888; font-size:11px; }
-
-
-.equities-price-stack { line-height:1.22; white-space:nowrap; }
-.equities-price-stack > div + div { margin-top:2px; }
-.equities-price-usd { color:#244b9b; }
-.equities-price-fx { color:#666; font-size:10px; }
-.equities-chart-link {
-  display:inline-block; border:1px solid #9aa8c4; border-radius:4px; background:#fff;
-  padding:3px 7px; color:#244b9b; text-decoration:none; font-weight:600; cursor:pointer;
-}
-.equities-chart-link:hover { background:#f0f4ff; border-color:#7188c7; }
-.equities-chart-panel { margin-top:12px; border:1px solid #ddd; border-radius:7px; padding:10px; background:#fff; }
-.equities-chart-header { display:flex; justify-content:space-between; align-items:flex-start; gap:10px; flex-wrap:wrap; margin-bottom:6px; }
-.equities-chart-title { font-size:17px; font-weight:700; }
-.equities-chart-status { color:#666; font-size:12px; margin-top:2px; min-height:1em; }
-.equities-chart-actions { display:flex; gap:5px; flex-wrap:wrap; }
-.equities-chart-actions button { cursor:pointer; border:1px solid #aaa; border-radius:4px; background:#fff; padding:4px 8px; }
-.equities-chart-actions button:hover { background:#f0f4ff; border-color:#7188c7; }
-.equities-chart-actions button.is-active { background:#dce7ff; border-color:#3A5FCD; }
-.equities-price-chart { width:100%; min-height:260px; overflow:hidden; background:#fff; }
-.equities-price-chart svg { display:block; width:100%; height:auto; }
-.eq-chart-axis { stroke:#aaa; stroke-width:1; }
-.eq-chart-grid { stroke:#e9e9e9; stroke-width:1; }
-.eq-chart-line { fill:none; stroke:#3A5FCD; stroke-width:2; }
-.eq-chart-label { fill:#555; font-size:11px; }
-.eq-chart-hover-line { stroke:#777; stroke-width:1; stroke-dasharray:3 3; pointer-events:none; }
-.eq-chart-hover-point { fill:#fff; stroke:#3A5FCD; stroke-width:2; pointer-events:none; }
-.eq-chart-overlay { fill:transparent; cursor:crosshair; }
-.eq-chart-tooltip { position:absolute; display:none; pointer-events:none; background:#fff; border:1px solid #aaa; border-radius:4px; padding:5px 7px; font-size:11px; box-shadow:0 1px 4px rgba(0,0,0,.12); z-index:5; white-space:nowrap; }
-@media (max-width:600px) {
-  .equities-table th:nth-child(9), .equities-table td:nth-child(9) { width:68px; min-width:65px; max-width:75px; }
-  .equities-chart-actions { width:100%; }
-}
 
 .equities-footnotes { margin:10px 2px 0; color:#666; font-size:11px; line-height:1.35; }
 .equities-footnotes p { margin:4px 0; }
@@ -436,12 +383,12 @@ function fmtFxRate(row) {
   return pair && Number.isFinite(rate) ? `${pair} ${rate.toFixed(4)}` : "";
 }
 
-function fmtLocalUsdPriceHtml(row) {
+function fmtLocalUsdPrice(row) {
   const local = Number(row && row.price);
   const usd = Number(row && row.usd_price);
   const currency = String(row && row.currency || "USD");
-  if (!Number.isFinite(local)) return '<span class="equities-na">N/A</span>';
-  if (currency === "USD") return `<div class="equities-price-stack"><div>${escapeHtml(fmtMoney(local, "USD"))}</div></div>`;
+  if (!Number.isFinite(local)) return "N/A";
+  if (currency === "USD") return fmtMoney(local, "USD");
   const localText = currency === "GBp"
     ? `GBp ${local.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}`
     : `${currency} ${local.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}`;
@@ -449,7 +396,7 @@ function fmtLocalUsdPriceHtml(row) {
     ? `US$${usd.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}`
     : "USD N/A";
   const fx = fmtFxRate(row);
-  return `<div class="equities-price-stack"><div>${escapeHtml(localText)}</div><div class="equities-price-usd">${escapeHtml(usdText)}</div>${fx ? `<div class="equities-price-fx">${escapeHtml(fx)}</div>` : ""}</div>`;
+  return `${localText} | ${usdText}${fx ? ` | ${fx}` : ""}`;
 }
 
 function fmtMoney(value, currency) {
@@ -521,130 +468,20 @@ function renderRows(rows) {
       ${td(row.country)}
       ${td(row.exchange)}
       ${td(row.currency)}
-      <td>${fmtLocalUsdPriceHtml(row)}</td>
+      ${td(fmtLocalUsdPrice(row))}
       ${td(fmtMarketCapOrAssets(row))}
       ${td(fmtNumber(row.trailing_pe))}
       ${td(fmtNumber(row.forward_pe))}
       ${td(fmtPercent(row.dividend_yield))}
       ${td(fmtNumber(row.beta))}
-      <td><button type="button" class="equities-chart-link" data-symbol="${escapeHtml(symbol)}">Chart</button></td>
+      ${td(fmtPercent(row.expense_ratio))}
       <td class="equities-daily-move"><span class="equities-move-pending">…</span></td>
       <td class="equities-sigma-move"><span class="equities-move-pending">…</span></td>
       <td class="equities-news"><span class="equities-move-pending">…</span></td>
     </tr>`;
   }).join("");
 
-  body.querySelectorAll(".equities-chart-link").forEach(button => {
-    button.addEventListener("click", () => openEquitiesChart(button.dataset.symbol));
-  });
   enrichUnusualMoves(rows);
-}
-
-
-let selectedEquitiesChartSymbol = "";
-let selectedEquitiesChartRange = "1y";
-const equitiesChartCache = new Map();
-
-function eqSvg(name, attrs = {}, text = "") {
-  const node = document.createElementNS("http://www.w3.org/2000/svg", name);
-  Object.entries(attrs).forEach(([key, value]) => node.setAttribute(key, value));
-  if (text !== "") node.textContent = text;
-  return node;
-}
-
-function eqChartDateLabel(value) {
-  const d = new Date(`${value}T00:00:00`);
-  return Number.isNaN(d.getTime()) ? String(value || "") : d.toLocaleDateString(undefined, { month:"short", day:"numeric", year:"2-digit" });
-}
-
-function drawEquitiesPriceChart(rows, symbol) {
-  const container = document.getElementById("equitiesPriceChart");
-  container.innerHTML = "";
-  container.style.position = "relative";
-  const clean = (rows || []).map(row => ({date:String(row.date || ""), price:Number(row.price)}))
-    .filter(row => row.date && Number.isFinite(row.price) && row.price > 0)
-    .sort((a,b) => a.date.localeCompare(b.date));
-  if (clean.length < 2) return false;
-
-  const width=920, height=280, margin={left:72,right:22,top:18,bottom:42};
-  const iw=width-margin.left-margin.right, ih=height-margin.top-margin.bottom;
-  let lo=Math.min(...clean.map(r=>r.price)), hi=Math.max(...clean.map(r=>r.price));
-  if (lo===hi) { lo*=.99; hi*=1.01; }
-  const pad=(hi-lo)*.06 || 1; lo-=pad; hi+=pad;
-  const x=i=>margin.left+(i/(clean.length-1))*iw;
-  const y=v=>margin.top+(hi-v)/(hi-lo)*ih;
-  const svg=eqSvg("svg",{viewBox:`0 0 ${width} ${height}`,role:"img","aria-label":`${symbol} price history`});
-
-  for(let i=0;i<=4;i++){
-    const value=lo+(hi-lo)*i/4, yy=y(value);
-    svg.appendChild(eqSvg("line",{x1:margin.left,y1:yy,x2:width-margin.right,y2:yy,class:"eq-chart-grid"}));
-    svg.appendChild(eqSvg("text",{x:margin.left-8,y:yy+4,class:"eq-chart-label","text-anchor":"end"},value.toLocaleString(undefined,{maximumFractionDigits:2})));
-  }
-  svg.appendChild(eqSvg("line",{x1:margin.left,y1:margin.top,x2:margin.left,y2:height-margin.bottom,class:"eq-chart-axis"}));
-  svg.appendChild(eqSvg("line",{x1:margin.left,y1:height-margin.bottom,x2:width-margin.right,y2:height-margin.bottom,class:"eq-chart-axis"}));
-  [0,Math.floor((clean.length-1)/2),clean.length-1].forEach(i=>{
-    svg.appendChild(eqSvg("text",{x:x(i),y:height-15,class:"eq-chart-label","text-anchor":i===0?"start":(i===clean.length-1?"end":"middle")},eqChartDateLabel(clean[i].date)));
-  });
-  const points=clean.map((r,i)=>`${i?"L":"M"}${x(i).toFixed(2)},${y(r.price).toFixed(2)}`).join(" ");
-  svg.appendChild(eqSvg("path",{d:points,class:"eq-chart-line"}));
-
-  const hoverLine=eqSvg("line",{x1:0,y1:margin.top,x2:0,y2:height-margin.bottom,class:"eq-chart-hover-line",visibility:"hidden"});
-  const hoverPoint=eqSvg("circle",{cx:0,cy:0,r:4,class:"eq-chart-hover-point",visibility:"hidden"});
-  svg.appendChild(hoverLine); svg.appendChild(hoverPoint);
-  const overlay=eqSvg("rect",{x:margin.left,y:margin.top,width:iw,height:ih,class:"eq-chart-overlay"});
-  svg.appendChild(overlay);
-  const tip=document.createElement("div"); tip.className="eq-chart-tooltip"; container.appendChild(tip);
-  overlay.addEventListener("mousemove",event=>{
-    const rect=svg.getBoundingClientRect();
-    const sx=width/rect.width;
-    const px=(event.clientX-rect.left)*sx;
-    const idx=Math.max(0,Math.min(clean.length-1,Math.round(((px-margin.left)/iw)*(clean.length-1))));
-    const row=clean[idx], xx=x(idx), yy=y(row.price);
-    hoverLine.setAttribute("x1",xx); hoverLine.setAttribute("x2",xx); hoverLine.setAttribute("visibility","visible");
-    hoverPoint.setAttribute("cx",xx); hoverPoint.setAttribute("cy",yy); hoverPoint.setAttribute("visibility","visible");
-    tip.innerHTML=`<strong>${escapeHtml(symbol)}</strong><br>${escapeHtml(eqChartDateLabel(row.date))}<br>${escapeHtml(row.price.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}))}`;
-    tip.style.display="block";
-    const cx=(xx/width)*container.clientWidth;
-    const cy=(yy/height)*container.clientWidth;
-    tip.style.left=`${Math.min(container.clientWidth-tip.offsetWidth-5,cx+10)}px`;
-    tip.style.top=`${Math.max(3,cy-tip.offsetHeight-8)}px`;
-  });
-  overlay.addEventListener("mouseleave",()=>{ hoverLine.setAttribute("visibility","hidden"); hoverPoint.setAttribute("visibility","hidden"); tip.style.display="none"; });
-  container.appendChild(svg);
-  return true;
-}
-
-async function loadEquitiesChart(symbol, range) {
-  const title=document.getElementById("equitiesChartTitle");
-  const status=document.getElementById("equitiesChartStatus");
-  const chart=document.getElementById("equitiesPriceChart");
-  title.textContent=`${symbol} Price History`;
-  status.textContent="Loading…"; chart.innerHTML="";
-  const key=`${symbol}|${range}`;
-  try {
-    let rows=equitiesChartCache.get(key);
-    if (!rows) {
-      const response=await fetch(EQUITIES_HISTORY_ENDPOINT,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({symbol,range})});
-      const payload=await response.json().catch(()=>({}));
-      if(!response.ok) throw new Error(payload.error || `HTTP ${response.status}`);
-      rows=Array.isArray(payload)?payload:(payload.rows || payload.history || payload.data || []);
-      equitiesChartCache.set(key,rows);
-    }
-    const ok=drawEquitiesPriceChart(rows,symbol);
-    const clean=(rows||[]).filter(r=>r&&r.date&&Number.isFinite(Number(r.price)));
-    status.textContent=ok && clean.length ? `${eqChartDateLabel(clean[0].date)} to ${eqChartDateLabel(clean[clean.length-1].date)} · ${clean.length} EOD observations` : "No usable price history returned.";
-  } catch(err) {
-    status.textContent=`Chart unavailable: ${err.message}`; chart.innerHTML="";
-  }
-}
-
-async function openEquitiesChart(symbol) {
-  selectedEquitiesChartSymbol=String(symbol||"").trim().toUpperCase();
-  if(!selectedEquitiesChartSymbol) return;
-  const panel=document.getElementById("equitiesChartPanel");
-  panel.hidden=false;
-  panel.scrollIntoView({behavior:"smooth",block:"nearest"});
-  await loadEquitiesChart(selectedEquitiesChartSymbol,selectedEquitiesChartRange);
 }
 
 
@@ -882,17 +719,6 @@ document.getElementById("equitiesPortfolio").addEventListener("change", event =>
   document.getElementById("equitiesSymbols").value = symbols.join(", ");
   saveActiveSelection({ type: "portfolio", name });
   loadEquities();
-});
-
-document.getElementById("equitiesChartClose").addEventListener("click", () => {
-  document.getElementById("equitiesChartPanel").hidden = true;
-});
-document.querySelectorAll(".equities-chart-range").forEach(button => {
-  button.addEventListener("click", async () => {
-    selectedEquitiesChartRange = button.dataset.range || "1y";
-    document.querySelectorAll(".equities-chart-range").forEach(item => item.classList.toggle("is-active", item === button));
-    if (selectedEquitiesChartSymbol) await loadEquitiesChart(selectedEquitiesChartSymbol, selectedEquitiesChartRange);
-  });
 });
 
 document.getElementById("equitiesLoad").addEventListener("click", loadEquities);
