@@ -6,6 +6,7 @@ title: Correlations, Portfolios
 RiskSnap Correlations
 Version: index(150)
 Changes:
+- Pairwise rolling history now keeps the full Matrix History range and follows Matrix History playback/slider movement without truncating at the originally clicked date
 - Latest Risk Data now remains tied to the authoritative /correlations_data EOD even when Matrix History ends on an older date
 - Removed Market Cap and P/E columns from Portfolio Holdings; all other portfolio analytics retained
 - Added Top ETFs preset using 10 of the largest U.S.-listed ETFs by assets
@@ -3176,6 +3177,28 @@ function updateSelectedPairStatsFromMatrixFrame(frame) {
     date: frame.date || ""
   };
   document.getElementById("rollingPair").textContent = rollingPairTitle(rollingContext);
+  syncRollingSliderToDate(frame.date || "");
+}
+
+function syncRollingSliderToDate(targetDate) {
+  if (!selectedRollingPair || !targetDate || !rollingRows.length) return;
+
+  const slider = document.getElementById("rollingSlider");
+  if (!slider) return;
+
+  // Put the Matrix History date at the right edge of the 20-point rolling strip.
+  // If an exact row is unavailable, use the latest rolling row on or before it.
+  let targetIndex = -1;
+  for (let i = 0; i < rollingRows.length; i += 1) {
+    const rowDate = String(rollingRows[i].date || "");
+    if (rowDate <= targetDate) targetIndex = i;
+    if (rowDate > targetDate) break;
+  }
+  if (targetIndex < 0) return;
+
+  const maxStart = Math.max(0, rollingRows.length - ROLLING_VISIBLE_POINTS);
+  slider.value = Math.max(0, Math.min(maxStart, targetIndex - ROLLING_VISIBLE_POINTS + 1));
+  renderRollingStrip();
 }
 
 function rollingPairTitle(context) {
@@ -3230,16 +3253,15 @@ async function fetchRollingCorrelation(assetA, assetB, corr, volA, volB, asOfDat
     if (!response.ok) throw new Error((data.messages || [response.statusText]).join(" "));
     const allRollingRows = data.rows || [];
 
-    // Keep the rolling-pair history within the same date range as Matrix History.
-    // When a historical matrix bubble is clicked, also stop at that selected date.
+    // Keep the rolling-pair history within the full Matrix History date range.
+    // A historical bubble click chooses the initial visible window only; it must
+    // not truncate the pair history, otherwise playback cannot advance past that date.
     const matrixStartDate = matrixHistoryFrames.length
       ? matrixHistoryFrames[0].date
       : "";
-    const matrixEndDate = asOfDate || (
-      matrixHistoryFrames.length
-        ? matrixHistoryFrames[matrixHistoryFrames.length - 1].date
-        : ""
-    );
+    const matrixEndDate = matrixHistoryFrames.length
+      ? matrixHistoryFrames[matrixHistoryFrames.length - 1].date
+      : (activePayload && activePayload.date ? activePayload.date : "");
 
     rollingRows = allRollingRows.filter(row => {
       const rowDate = String(row.date || "");
