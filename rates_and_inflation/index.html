@@ -90,11 +90,15 @@ tr:nth-child(even) { background-color: #dddddd; }
 </div>
 
 <div class="yield-card yield-wide-card">
+    <div id="treasury_net_borrowing" class="yield-chart"></div>
+</div>
+
+<div class="yield-card yield-wide-card">
     <div id="treasury_foreign_demand" class="yield-chart"></div>
 </div>
 
 <p class="yield-note">
-USD data source: RiskSnap Cloud Run yields endpoint using public Treasury/FRED daily constant-maturity data. The 10Y Inflation Expectations series is the market-implied average inflation rate expected over the next 10 years.
+USD data source: RiskSnap Cloud Run using public Treasury/FRED data. Treasury gross issuance is from Treasury auction data; net borrowing from the public is from the Monthly Treasury Statement. The 10Y Inflation Expectations series is the market-implied average inflation rate expected over the next 10 years.
 </p>
 
 <details class="yield-note" style="margin-top:10px;">
@@ -473,6 +477,17 @@ function drawTreasuryPressureCharts() {
         }, plotlyConfig());
     }
     if (treasuryForeignRows.length) {
+        const borrowing=treasuryForeignRows.filter(r=>Number.isFinite(r.BorrowingFromPublic));
+        if (borrowing.length) {
+            Plotly.newPlot("treasury_net_borrowing", [
+                {x:borrowing.map(r=>r.Date),y:borrowing.map(r=>r.BorrowingFromPublic/1000),type:"bar",name:"Net borrowing",hovertemplate:"%{x}<br>Net borrowing: $%{y:,.1f}bn<extra></extra>"}
+            ], {
+                title:{text:"U.S. Treasury net borrowing from the public — " + label,x:0.03,xanchor:"left",font:{size:18}},
+                margin:{l:74,r:24,t:58,b:58},paper_bgcolor:"white",plot_bgcolor:"white",hovermode:"x unified",
+                xaxis:{showgrid:true,gridcolor:"#edf1f7",zeroline:false,tickformat:"%b %Y",hoverformat:"%b %Y"},
+                yaxis:{title:"$ billions per month",showgrid:true,gridcolor:"#edf1f7",zeroline:true,zerolinecolor:"#999",tickformat:",.0f"}
+            }, plotlyConfig());
+        }
         const holdings=treasuryForeignRows.filter(r=>Number.isFinite(r.ForeignTreasuryHoldings));
         const purchases=treasuryForeignRows.filter(r=>Number.isFinite(r.ForeignTreasuryNetPurchases));
         Plotly.newPlot("treasury_foreign_demand", [
@@ -495,7 +510,7 @@ async function loadTreasuryPressure(forceReload=false) {
         if(!response.ok) throw new Error("HTTP "+response.status);
         const payload=await response.json();
         treasuryIssuanceRows=(payload.issuance_rows||[]).map(r=>({Date:r.Date,Bills:Number(r.Bills||0),Notes:Number(r.Notes||0),Bonds:Number(r.Bonds||0)}));
-        treasuryForeignRows=(payload.foreign_rows||[]).map(r=>({Date:r.Date,ForeignTreasuryHoldings:r.ForeignTreasuryHoldings==null?null:Number(r.ForeignTreasuryHoldings),ForeignTreasuryNetPurchases:r.ForeignTreasuryNetPurchases==null?null:Number(r.ForeignTreasuryNetPurchases)}));
+        treasuryForeignRows=(payload.foreign_rows||[]).map(r=>({Date:r.Date,BorrowingFromPublic:r.BorrowingFromPublic==null?null:Number(r.BorrowingFromPublic),ForeignTreasuryHoldings:r.ForeignTreasuryHoldings==null?null:Number(r.ForeignTreasuryHoldings),ForeignTreasuryNetPurchases:r.ForeignTreasuryNetPurchases==null?null:Number(r.ForeignTreasuryNetPurchases)}));
         treasuryPressureLoadedRange=yieldRange;
         drawTreasuryPressureCharts();
     } catch(err) { console.warn("Could not load Treasury supply / foreign demand",err); }
