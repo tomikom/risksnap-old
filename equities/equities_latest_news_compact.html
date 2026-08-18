@@ -1,0 +1,705 @@
+---
+layout: equities-template
+title: Equities
+---
+<!--
+RiskSnap Equities
+Version: Equities 2
+- Separate security-reference page from Correlations / Portfolio Analytics
+- Load symbols from RiskSnap presets or saved portfolios
+- Saved portfolios are read from the same browser localStorage used by Correlations
+- Display descriptive Yahoo information, market cap/net assets, valuation and reference fields
+- Added independent 25-day unusual-move detection on Equities only
+- Latest News link now appears for every security; 2.5σ is used only to highlight unusual moves
+- Compact responsive equity table: wrapped long headers, Currency shortened to Ccy, tighter columns
+-->
+
+<div class="text-section equities-page">
+  <p class="equities-intro">
+    Select a RiskSnap preset or a saved portfolio to view descriptive information about its securities.
+    Portfolios can be created and saved on the <strong>Correlations, Portfolios</strong> page.
+  </p>
+
+  <div class="equities-selectors">
+    <div class="equities-selector-card">
+      <label for="equitiesPreset"><strong>Preset</strong></label>
+      <select id="equitiesPreset">
+        <option value="">Select a preset</option>
+        <option value="original">Original</option>
+        <option value="world">World Indices</option>
+        <option value="macro">Macro</option>
+        <option value="ai">AI Ecosystem</option>
+        <option value="healthcare">Healthcare</option>
+        <option value="energy">Energy</option>
+        <option value="financials">Financials</option>
+        <option value="defensive">Defensive</option>
+        <option value="crypto">Crypto</option>
+        <option value="worldtop10">World Top 10</option>
+        <option value="benchmarks">Benchmarks</option>
+        <option value="topetfs">Top ETFs</option>
+      </select>
+      <div class="selector-note">Loads the same symbol groups used on the Correlations page.</div>
+    </div>
+
+    <div class="equities-selector-card">
+      <label for="equitiesPortfolio"><strong>Saved portfolio</strong></label>
+      <select id="equitiesPortfolio">
+        <option value="">Select a saved portfolio</option>
+      </select>
+      <div class="selector-note" id="portfolioNote">Saved portfolios from this browser appear here automatically.</div>
+    </div>
+
+    <div class="equities-selector-card symbols-card">
+      <label for="equitiesSymbols"><strong>Symbols</strong></label>
+      <textarea id="equitiesSymbols" rows="2" spellcheck="false" placeholder="AAPL, MSFT, NVDA"></textarea>
+      <div class="selector-note">You can also enter or edit Yahoo symbols directly.</div>
+    </div>
+  </div>
+
+  <div class="equities-actions">
+    <button id="equitiesLoad" type="button">Load Equities</button>
+    <button id="equitiesRefreshPortfolios" type="button">Refresh Saved Portfolios</button>
+    <span id="equitiesStatus" class="equities-status">Ready.</span>
+  </div>
+
+  <div class="equities-table-wrap">
+    <table class="equities-table">
+      <thead>
+        <tr>
+          <th>Code</th>
+          <th>Description</th>
+          <th>Type</th>
+          <th>Sector</th>
+          <th>Industry / Category</th>
+          <th>Country</th>
+          <th>Exchange</th>
+          <th>Ccy</th>
+          <th>Price</th>
+          <th>Mkt Cap /<br>Net Assets</th>
+          <th>P/E</th>
+          <th>Fwd P/E</th>
+          <th>Div Yield</th>
+          <th>Beta</th>
+          <th>Expense<br>Ratio</th>
+          <th>Daily<br>Move</th>
+          <th>σ<br>Move</th>
+          <th>News</th>
+        </tr>
+      </thead>
+      <tbody id="equitiesBody">
+        <tr><td colspan="18" class="equities-empty">Choose a preset or saved portfolio, then load the securities.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="equities-footnotes">
+    <p><strong>Market Cap / Net Assets:</strong> Market capitalization is shown for operating companies; fund net assets are shown for ETFs/funds when Yahoo supplies them.</p>
+    <p><strong>P/E:</strong> An ETF may have no Yahoo P/E even though its underlying holdings have earnings. Missing values are shown as N/A rather than inferred.</p>
+    <p>Sector, industry, fund category, P/E, beta and expense ratio depend on what Yahoo makes available for each security.</p>
+    <p><strong>σ Move:</strong> latest daily return compared with the preceding 25 daily returns. Moves with |σ| of at least 2.5 are highlighted as unusual. Latest News is available for every security. This calculation is independent of the Correlation Lens and portfolio analytics.</p>
+  </div>
+</div>
+
+<style>
+.equities-page { background:#fff; color:#222; }
+.equities-band {
+  margin:0 0 14px;
+  padding:5px 10px 6px;
+  background:#3A5FCD;
+  color:#fff;
+  text-align:center;
+  font-size:26px;
+  line-height:1.1;
+  font-weight:700;
+  font-family:Georgia, "Times New Roman", serif;
+}
+.equities-intro { margin:0 0 14px; }
+.equities-selectors {
+  display:grid;
+  grid-template-columns:minmax(210px,.8fr) minmax(230px,.9fr) minmax(330px,1.4fr);
+  gap:12px;
+  margin-bottom:12px;
+}
+.equities-selector-card {
+  border:1px solid #dfe3ea;
+  border-radius:7px;
+  background:#fafbfe;
+  padding:11px;
+}
+.equities-selector-card label { display:block; margin-bottom:6px; }
+.equities-selector-card select,
+.equities-selector-card textarea {
+  width:100%;
+  box-sizing:border-box;
+  border:1px solid #aaa;
+  border-radius:4px;
+  background:#fff;
+  padding:6px 7px;
+  font:inherit;
+}
+.equities-selector-card textarea { resize:vertical; min-height:58px; }
+.selector-note { margin-top:6px; color:#666; font-size:11px; line-height:1.3; }
+.equities-actions {
+  display:flex;
+  align-items:center;
+  gap:9px;
+  flex-wrap:wrap;
+  margin:8px 0 12px;
+}
+.equities-actions button {
+  cursor:pointer;
+  border:1px solid #999;
+  border-radius:4px;
+  background:#fff;
+  padding:6px 11px;
+  font-size:13px;
+}
+.equities-actions button:hover { background:#f0f4ff; border-color:#7188c7; }
+.equities-actions button:disabled { cursor:default; opacity:.55; }
+.equities-status { color:#555; font-size:12px; }
+.equities-table-wrap { overflow-x:auto; border:1px solid #ddd; border-radius:7px; }
+.equities-table { width:100%; border-collapse:collapse; font-size:12px; background:#fff; table-layout:auto; }
+.equities-table th,
+.equities-table td {
+  border-bottom:1px solid #e6e6e6;
+  padding:6px 6px;
+  text-align:right;
+  white-space:nowrap;
+  vertical-align:top;
+}
+.equities-table th { background:#f4f6fa; font-weight:700; position:sticky; top:0; z-index:1; }
+.equities-table th { white-space:normal; line-height:1.08; }
+.equities-table th:nth-child(1), .equities-table td:nth-child(1) { padding-left:7px; padding-right:5px; }
+.equities-table th:nth-child(6), .equities-table td:nth-child(6) { max-width:86px; }
+.equities-table th:nth-child(7), .equities-table td:nth-child(7) { max-width:72px; }
+.equities-table th:nth-child(8), .equities-table td:nth-child(8) { width:42px; min-width:38px; max-width:44px; }
+.equities-table th:nth-child(9), .equities-table td:nth-child(9) { min-width:62px; }
+.equities-table th:nth-child(10), .equities-table td:nth-child(10) { min-width:72px; }
+.equities-table th:nth-child(11), .equities-table td:nth-child(11),
+.equities-table th:nth-child(12), .equities-table td:nth-child(12),
+.equities-table th:nth-child(13), .equities-table td:nth-child(13),
+.equities-table th:nth-child(14), .equities-table td:nth-child(14),
+.equities-table th:nth-child(15), .equities-table td:nth-child(15),
+.equities-table th:nth-child(16), .equities-table td:nth-child(16),
+.equities-table th:nth-child(17), .equities-table td:nth-child(17) {
+  padding-left:4px;
+  padding-right:4px;
+}
+.equities-table th:nth-child(15), .equities-table td:nth-child(15) { min-width:52px; }
+.equities-table th:nth-child(16), .equities-table td:nth-child(16) { min-width:56px; }
+.equities-table th:nth-child(17), .equities-table td:nth-child(17) { min-width:47px; }
+.equities-table th:nth-child(18), .equities-table td:nth-child(18) { min-width:82px; }
+
+.equities-table th:nth-child(-n+8), .equities-table td:nth-child(-n+8) { text-align:left; }
+.equities-table td:nth-child(2) {
+  white-space:normal;
+  min-width:150px;
+  max-width:235px;
+  line-height:1.25;
+}
+.equities-table td:nth-child(4),
+.equities-table td:nth-child(5) {
+  white-space:normal;
+  min-width:90px;
+  max-width:155px;
+}
+.equities-code { font-weight:700; color:#244b9b; }
+.equities-empty { text-align:left !important; color:#666; padding:14px !important; }
+.equities-na { color:#888; }
+
+.equities-move-positive { color:#137333; font-weight:700; }
+.equities-move-negative { color:#b3261e; font-weight:700; }
+.equities-sigma-unusual {
+  display:inline-block;
+  padding:2px 6px;
+  border:1px solid #d39b24;
+  border-radius:999px;
+  background:#fff7df;
+  color:#7a5200;
+  font-weight:700;
+}
+.equities-news-link {
+  display:inline-block;
+  border:1px solid #9aa8c4;
+  border-radius:4px;
+  background:#fff;
+  padding:3px 7px;
+  color:#244b9b;
+  text-decoration:none;
+  font-weight:600;
+}
+.equities-news-link:hover { background:#f0f4ff; border-color:#7188c7; }
+.equities-move-pending { color:#888; font-size:11px; }
+
+.equities-footnotes { margin:10px 2px 0; color:#666; font-size:11px; line-height:1.35; }
+.equities-footnotes p { margin:4px 0; }
+@media (max-width:1180px) {
+  .equities-table { font-size:11px; }
+  .equities-table th, .equities-table td { padding-top:5px; padding-bottom:5px; }
+  .equities-table td:nth-child(2) { min-width:125px; max-width:190px; }
+  .equities-table td:nth-child(4),
+  .equities-table td:nth-child(5) { min-width:78px; max-width:125px; }
+}
+@media (max-width:900px) {
+  .equities-selectors { grid-template-columns:1fr; }
+  .equities-table { font-size:10.5px; }
+  .equities-table th, .equities-table td { padding-left:3px; padding-right:3px; }
+}
+</style>
+
+<script>
+const EQUITIES_ENDPOINT = "https://surface-203178530029.northamerica-northeast2.run.app/equity_info";
+const EQUITIES_HISTORY_ENDPOINT = "https://surface-203178530029.northamerica-northeast2.run.app/asset_history";
+const UNUSUAL_MOVE_LOOKBACK = 25;
+const UNUSUAL_MOVE_THRESHOLD = 2.5;
+const equitiesMoveCache = new Map();
+const EQUITIES_PORTFOLIOS_KEY = "RiskSnapSavedPortfolios";
+const CORRELATION_SETTINGS_KEY = "RiskSnapCorrelationSettings";
+const ACTIVE_SELECTION_KEY = "RiskSnapActiveSelection";
+
+const EQUITIES_PRESETS = {
+  original: "AAPL, AMZN, NVDA, MSTR, GS, CAT, UNH, AMGN, V, HD, IBM",
+  world: "^GSPC, ^NDX, ^DJI, ^RUT, ^GSPTSE, ^FTSE, ^GDAXI, ^FCHI, ^N225, ^HSI, ^KS11",
+  macro: "DX-Y.NYB, EURUSD=X, GC=F, CL=F, BTC-USD, ^VIX, ^GSPC, ^NDX",
+  ai: "NVDA, MSFT, GOOG, AMZN, META, AMD, AVGO, TSM, ORCL, PLTR",
+  healthcare: "UNH, LLY, JNJ, ABBV, AMGN, MRK, ISRG, ABT, TMO, PFE,NBIX",
+  energy: "XOM, CVX, COP, SLB, EOG, OXY, CNQ, SU, ENB, TRP",
+  financials: "JPM, BAC, WFC, C, GS, MS, BLK, SCHW, RY, TD",
+  defensive: "PG, KO, PEP, WMT, COST, MCD, CL, GIS, KMB, MDLZ",
+  crypto: "BTC-USD, ETH-USD, MSTR, COIN, MARA, RIOT, CLSK, HUT, CIFR",
+  worldtop10: "NVDA, AAPL, GOOG, MSFT, AMZN, TSM, AVGO, 2222.SR, META, TSLA",
+  benchmarks: "SPY, QQQ, DIA, GWM, GLD, TLT, BTC-USD",
+  topetfs: "VOO, IVV, SPY, VTI, QQQ, VUG, VEA, IEFA, VTV, BND"
+};
+
+function readActiveSelection() {
+  try {
+    const raw = localStorage.getItem(ACTIVE_SELECTION_KEY);
+    const parsed = raw ? JSON.parse(raw) : null;
+    return parsed && typeof parsed === "object" ? parsed : null;
+  } catch (err) {
+    return null;
+  }
+}
+
+function saveActiveSelection(selection) {
+  try {
+    localStorage.setItem(ACTIVE_SELECTION_KEY, JSON.stringify(selection || {}));
+  } catch (err) {
+    console.log("Unable to save the active RiskSnap selection.", err);
+  }
+}
+
+function parseSymbols(raw) {
+  const seen = new Set();
+  return String(raw || "")
+    .split(/[\s,;]+/)
+    .map(s => s.trim().toUpperCase())
+    .filter(symbol => {
+      if (!symbol || seen.has(symbol)) return false;
+      seen.add(symbol);
+      return true;
+    });
+}
+
+function readSavedPortfolios() {
+  try {
+    const raw = localStorage.getItem(EQUITIES_PORTFOLIOS_KEY);
+    const parsed = raw ? JSON.parse(raw) : {};
+    return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : {};
+  } catch (err) {
+    console.log("Unable to read RiskSnap saved portfolios.", err);
+    return {};
+  }
+}
+
+function refreshPortfolioSelector(selectedName = "") {
+  const select = document.getElementById("equitiesPortfolio");
+  const portfolios = readSavedPortfolios();
+  const names = Object.keys(portfolios).sort((a, b) => a.localeCompare(b));
+  select.innerHTML = '<option value="">Select a saved portfolio</option>';
+  names.forEach(name => {
+    const option = document.createElement("option");
+    option.value = name;
+    option.textContent = name;
+    select.appendChild(option);
+  });
+  if (selectedName && portfolios[selectedName]) select.value = selectedName;
+  document.getElementById("portfolioNote").textContent = names.length
+    ? `${names.length} saved portfolio${names.length === 1 ? "" : "s"} found in this browser.`
+    : 'No saved portfolios found. Portfolios can be saved on the "Correlations, Portfolios" page.';
+}
+
+function symbolsFromPortfolio(name) {
+  const saved = readSavedPortfolios()[name];
+  if (!saved) return [];
+  const shares = saved.shares || {};
+  const listed = Array.isArray(saved.securities) ? saved.securities : Object.keys(shares);
+  return listed
+    .map(s => String(s || "").trim().toUpperCase())
+    .filter(symbol => symbol && (Object.keys(shares).length === 0 || Number(shares[symbol]) > 0));
+}
+
+function sameSymbolList(a, b) {
+  const aa = parseSymbols(a);
+  const bb = parseSymbols(b);
+  return aa.length === bb.length && aa.every((symbol, i) => symbol === bb[i]);
+}
+
+function inferActiveSelection() {
+  try {
+    const raw = localStorage.getItem(CORRELATION_SETTINGS_KEY);
+    const settings = raw ? JSON.parse(raw) : null;
+    const symbols = settings && settings.equities ? settings.equities : "";
+    if (!parseSymbols(symbols).length) return null;
+
+    const portfolios = readSavedPortfolios();
+    for (const name of Object.keys(portfolios)) {
+      if (sameSymbolList(symbols, symbolsFromPortfolio(name))) {
+        return { type: "portfolio", name };
+      }
+    }
+
+    for (const [key, presetSymbols] of Object.entries(EQUITIES_PRESETS)) {
+      if (sameSymbolList(symbols, presetSymbols)) return { type: "preset", key };
+    }
+
+    return { type: "symbols", symbols };
+  } catch (err) {
+    return null;
+  }
+}
+
+function setStatus(message) {
+  document.getElementById("equitiesStatus").textContent = message || "";
+}
+
+function escapeHtml(value) {
+  return String(value == null ? "" : value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+function fmtMoney(value, currency) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return "N/A";
+  const prefix = currency === "USD" || !currency ? "$" : `${currency} `;
+  return `${prefix}${n.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}`;
+}
+
+function fmtLarge(value) {
+  const n = Number(value);
+  if (!Number.isFinite(n) || n <= 0) return "N/A";
+  if (n >= 1e12) return `${(n / 1e12).toFixed(2)}T`;
+  if (n >= 1e9) return `${(n / 1e9).toFixed(2)}B`;
+  if (n >= 1e6) return `${(n / 1e6).toFixed(2)}M`;
+  return n.toLocaleString(undefined, {maximumFractionDigits:0});
+}
+
+function fmtNumber(value, decimals = 2) {
+  const n = Number(value);
+  return Number.isFinite(n) ? n.toFixed(decimals) : "N/A";
+}
+
+function fmtPercent(raw) {
+  const n = Number(raw);
+  if (!Number.isFinite(n)) return "N/A";
+  const pct = Math.abs(n) <= 1.5 ? n * 100 : n;
+  return `${pct.toFixed(2)}%`;
+}
+
+function td(value, extraClass = "") {
+  const isNA = value === "N/A" || value === "" || value == null;
+  return `<td class="${isNA ? "equities-na " : ""}${extraClass}">${escapeHtml(isNA ? "N/A" : value)}</td>`;
+}
+
+function renderRows(rows) {
+  const body = document.getElementById("equitiesBody");
+  if (!Array.isArray(rows) || !rows.length) {
+    body.innerHTML = '<tr><td colspan="18" class="equities-empty">No security information was returned.</td></tr>';
+    return;
+  }
+
+  body.innerHTML = rows.map(row => {
+    const size = Number(row.net_assets) > 0 ? row.net_assets : row.market_cap;
+    const symbol = String(row.symbol || "").trim().toUpperCase();
+    return `<tr data-symbol="${escapeHtml(symbol)}">
+      <td class="equities-code">${escapeHtml(symbol)}</td>
+      ${td(row.description)}
+      ${td(row.type)}
+      ${td(row.sector)}
+      ${td(row.industry)}
+      ${td(row.country)}
+      ${td(row.exchange)}
+      ${td(row.currency)}
+      ${td(fmtMoney(row.price, row.currency))}
+      ${td(fmtLarge(size))}
+      ${td(fmtNumber(row.trailing_pe))}
+      ${td(fmtNumber(row.forward_pe))}
+      ${td(fmtPercent(row.dividend_yield))}
+      ${td(fmtNumber(row.beta))}
+      ${td(fmtPercent(row.expense_ratio))}
+      <td class="equities-daily-move"><span class="equities-move-pending">…</span></td>
+      <td class="equities-sigma-move"><span class="equities-move-pending">…</span></td>
+      <td class="equities-news"><span class="equities-move-pending">…</span></td>
+    </tr>`;
+  }).join("");
+
+  enrichUnusualMoves(rows);
+}
+
+
+function mean(values) {
+  if (!values.length) return NaN;
+  return values.reduce((sum, value) => sum + value, 0) / values.length;
+}
+
+function sampleStdDev(values) {
+  if (values.length < 2) return NaN;
+  const m = mean(values);
+  const variance = values.reduce((sum, value) => sum + Math.pow(value - m, 2), 0) / (values.length - 1);
+  return Math.sqrt(variance);
+}
+
+function historicalReturns(rows) {
+  const clean = (Array.isArray(rows) ? rows : [])
+    .map(row => ({ date: String(row.date || ""), price: Number(row.price) }))
+    .filter(row => row.date && Number.isFinite(row.price) && row.price > 0)
+    .sort((a, b) => a.date.localeCompare(b.date));
+
+  const returns = [];
+  for (let i = 1; i < clean.length; i++) {
+    const previous = clean[i - 1].price;
+    const current = clean[i].price;
+    if (previous > 0 && current > 0) {
+      returns.push({
+        date: clean[i].date,
+        value: current / previous - 1
+      });
+    }
+  }
+  return returns;
+}
+
+function googleLatestNewsUrl(symbol) {
+  const query = `${symbol} stock`;
+  return `https://news.google.com/search?q=${encodeURIComponent(query)}&hl=en-CA&gl=CA&ceid=CA:en`;
+}
+
+function googleNewsAroundDateUrl(symbol, dateText) {
+  const date = new Date(`${dateText}T12:00:00`);
+  if (Number.isNaN(date.getTime())) return googleLatestNewsUrl(symbol);
+  const before = new Date(date);
+  before.setDate(before.getDate() + 2);
+  const after = new Date(date);
+  after.setDate(after.getDate() - 1);
+  const ymd = value => value.toISOString().slice(0, 10);
+  const query = `${symbol} stock after:${ymd(after)} before:${ymd(before)}`;
+  return `https://news.google.com/search?q=${encodeURIComponent(query)}&hl=en-CA&gl=CA&ceid=CA:en`;
+}
+
+async function unusualMoveForSymbol(symbol) {
+  if (equitiesMoveCache.has(symbol)) return equitiesMoveCache.get(symbol);
+
+  const promise = (async () => {
+    const response = await fetch(EQUITIES_HISTORY_ENDPOINT, {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({symbol, range:"3m"})
+    });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(payload.error || `HTTP ${response.status}`);
+
+    const returns = historicalReturns(payload.rows || []);
+    if (returns.length < UNUSUAL_MOVE_LOOKBACK + 1) {
+      throw new Error("Not enough price history");
+    }
+
+    const latest = returns[returns.length - 1];
+    const prior = returns
+      .slice(-(UNUSUAL_MOVE_LOOKBACK + 1), -1)
+      .map(row => row.value);
+
+    const avg = mean(prior);
+    const sd = sampleStdDev(prior);
+    const z = Number.isFinite(sd) && sd > 0 ? (latest.value - avg) / sd : NaN;
+
+    return {
+      date: latest.date,
+      dailyReturn: latest.value,
+      z
+    };
+  })();
+
+  equitiesMoveCache.set(symbol, promise);
+  return promise;
+}
+
+function renderUnusualMove(symbol, result) {
+  const row = document.querySelector(`tr[data-symbol="${CSS.escape(symbol)}"]`);
+  if (!row) return;
+
+  const moveCell = row.querySelector(".equities-daily-move");
+  const sigmaCell = row.querySelector(".equities-sigma-move");
+  const newsCell = row.querySelector(".equities-news");
+
+  if (!result || !Number.isFinite(result.dailyReturn)) {
+    moveCell.textContent = "N/A";
+    sigmaCell.textContent = "N/A";
+    const href = googleLatestNewsUrl(symbol);
+    newsCell.innerHTML = `<a class="equities-news-link" href="${escapeHtml(href)}" target="_blank" rel="noopener noreferrer">Latest News →</a>`;
+    return;
+  }
+
+  const pct = result.dailyReturn * 100;
+  const moveClass = pct >= 0 ? "equities-move-positive" : "equities-move-negative";
+  moveCell.innerHTML = `<span class="${moveClass}" title="${escapeHtml(result.date)}">${pct >= 0 ? "+" : ""}${pct.toFixed(2)}%</span>`;
+
+  if (!Number.isFinite(result.z)) {
+    sigmaCell.textContent = "N/A";
+    const href = googleLatestNewsUrl(symbol);
+    newsCell.innerHTML = `<a class="equities-news-link" href="${escapeHtml(href)}" target="_blank" rel="noopener noreferrer">Latest News →</a>`;
+    return;
+  }
+
+  const absZ = Math.abs(result.z);
+  const sigmaText = `${result.z >= 0 ? "+" : ""}${result.z.toFixed(2)}σ`;
+  sigmaCell.innerHTML = absZ >= UNUSUAL_MOVE_THRESHOLD
+    ? `<span class="equities-sigma-unusual">${sigmaText}</span>`
+    : escapeHtml(sigmaText);
+
+  const latestHref = googleLatestNewsUrl(symbol);
+  if (absZ >= UNUSUAL_MOVE_THRESHOLD) {
+    const datedHref = googleNewsAroundDateUrl(symbol, result.date);
+    newsCell.innerHTML =
+      `<a class="equities-news-link" href="${escapeHtml(latestHref)}" target="_blank" rel="noopener noreferrer">Latest News →</a>` +
+      `<br><a class="equities-news-link" style="margin-top:4px" href="${escapeHtml(datedHref)}" target="_blank" rel="noopener noreferrer" title="Search sourced news around ${escapeHtml(result.date)}">News around move →</a>`;
+  } else {
+    newsCell.innerHTML = `<a class="equities-news-link" href="${escapeHtml(latestHref)}" target="_blank" rel="noopener noreferrer">Latest News →</a>`;
+  }
+}
+
+async function enrichUnusualMoves(rows) {
+  const symbols = (Array.isArray(rows) ? rows : [])
+    .map(row => String(row.symbol || "").trim().toUpperCase())
+    .filter(Boolean);
+
+  await Promise.allSettled(symbols.map(async symbol => {
+    try {
+      const result = await unusualMoveForSymbol(symbol);
+      renderUnusualMove(symbol, result);
+    } catch (err) {
+      console.log(`Unusual-move calculation unavailable for ${symbol}:`, err);
+      renderUnusualMove(symbol, null);
+    }
+  }));
+}
+
+
+async function loadEquities() {
+  const symbolText = document.getElementById("equitiesSymbols").value;
+  const symbols = parseSymbols(symbolText);
+  const button = document.getElementById("equitiesLoad");
+  const presetKey = document.getElementById("equitiesPreset").value;
+  const portfolioName = document.getElementById("equitiesPortfolio").value;
+  if (!presetKey && !portfolioName && symbols.length) {
+    saveActiveSelection({ type: "symbols", symbols: symbolText });
+  }
+  if (!symbols.length) {
+    setStatus("Choose a preset or saved portfolio first.");
+    return;
+  }
+
+  button.disabled = true;
+  setStatus(`Loading ${symbols.length} securit${symbols.length === 1 ? "y" : "ies"}...`);
+  try {
+    const response = await fetch(EQUITIES_ENDPOINT, {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({symbols})
+    });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(payload.error || `HTTP ${response.status}`);
+    renderRows(payload.rows || []);
+    const failed = Array.isArray(payload.failed) ? payload.failed : [];
+    const time = payload.timestamp ? new Date(payload.timestamp).toLocaleString() : "";
+    setStatus(`Loaded ${Array.isArray(payload.rows) ? payload.rows.length : 0} securities${time ? ` — ${time}` : ""}${failed.length ? `; unavailable: ${failed.join(", ")}` : ""}.`);
+  } catch (err) {
+    console.log(err);
+    document.getElementById("equitiesBody").innerHTML = '<tr><td colspan="18" class="equities-empty">Unable to load Equity information. The Cloud Run equity_info endpoint must be deployed.</td></tr>';
+    setStatus(`Unable to load data: ${err.message || err}`);
+  } finally {
+    button.disabled = false;
+  }
+}
+
+function restoreActiveSelectionAndLoad() {
+  const active = readActiveSelection() || inferActiveSelection();
+  if (!active) return;
+  if (!readActiveSelection()) saveActiveSelection(active);
+
+  if (active.type === "portfolio" && active.name) {
+    const portfolios = readSavedPortfolios();
+    if (portfolios[active.name]) {
+      refreshPortfolioSelector(active.name);
+      const symbols = symbolsFromPortfolio(active.name);
+      document.getElementById("equitiesPreset").value = "";
+      document.getElementById("equitiesSymbols").value = symbols.join(", ");
+      loadEquities();
+      return;
+    }
+  }
+
+  if (active.type === "preset" && EQUITIES_PRESETS[active.key]) {
+    document.getElementById("equitiesPreset").value = active.key;
+    document.getElementById("equitiesPortfolio").value = "";
+    document.getElementById("equitiesSymbols").value = EQUITIES_PRESETS[active.key];
+    loadEquities();
+    return;
+  }
+
+  if (active.type === "symbols" && active.symbols) {
+    document.getElementById("equitiesPreset").value = "";
+    document.getElementById("equitiesPortfolio").value = "";
+    document.getElementById("equitiesSymbols").value = active.symbols;
+    loadEquities();
+  }
+}
+
+document.getElementById("equitiesPreset").addEventListener("change", event => {
+  const key = event.target.value;
+  if (!key || !EQUITIES_PRESETS[key]) return;
+  document.getElementById("equitiesPortfolio").value = "";
+  document.getElementById("equitiesSymbols").value = EQUITIES_PRESETS[key];
+  saveActiveSelection({ type: "preset", key });
+  loadEquities();
+});
+
+document.getElementById("equitiesPortfolio").addEventListener("change", event => {
+  const name = event.target.value;
+  if (!name) return;
+  const symbols = symbolsFromPortfolio(name);
+  document.getElementById("equitiesPreset").value = "";
+  document.getElementById("equitiesSymbols").value = symbols.join(", ");
+  saveActiveSelection({ type: "portfolio", name });
+  loadEquities();
+});
+
+document.getElementById("equitiesLoad").addEventListener("click", loadEquities);
+document.getElementById("equitiesRefreshPortfolios").addEventListener("click", () => {
+  refreshPortfolioSelector(document.getElementById("equitiesPortfolio").value);
+  setStatus("Saved portfolio list refreshed.");
+});
+
+document.getElementById("equitiesSymbols").addEventListener("input", () => {
+  document.getElementById("equitiesPreset").value = "";
+  document.getElementById("equitiesPortfolio").value = "";
+  saveActiveSelection({ type: "symbols", symbols: document.getElementById("equitiesSymbols").value });
+});
+
+refreshPortfolioSelector();
+restoreActiveSelectionAndLoad();
+</script>
