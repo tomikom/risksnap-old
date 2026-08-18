@@ -1,5 +1,5 @@
 ---
-layout: marketriskfactors-template
+layout: rates_and_inflation-template
 ---
 
 <style>
@@ -23,8 +23,14 @@ tr:nth-child(even) { background-color: #dddddd; }
     background: #3A5FCD; color: white; border: 0; border-radius: 999px;
     padding: 9px 16px; cursor: pointer; font-size: 14px;
 }
+.yield-controls button.active {
+    background: #f59e0b;
+    color: white;
+    font-weight: bold;
+}
 .yield-controls select { background: #ffffff; color: #222; border: 1px solid #bfc9df; cursor: pointer; }
 .yield-controls button:hover { opacity: 0.88; }
+
 .yield-status { background: #f6f8fc; border-left: 5px solid #3A5FCD; padding: 10px 12px; margin: 10px 0 16px 0; color: #333; }
 .yield-grid { display: grid; grid-template-columns: repeat(2, minmax(320px, 1fr)); gap: 18px; }
 .yield-card { background: white; border: 1px solid #d9e0ef; border-radius: 16px; box-shadow: 0 4px 16px rgba(20, 35, 75, 0.10); padding: 10px; }
@@ -41,25 +47,25 @@ tr:nth-child(even) { background-color: #dddddd; }
 <div class="yield-section">
 
 <span id="Yields"></span>
-<h2>Yields</h2>
+<!--<h2>Rates &amp; Inflation</h2>-->
 
 <p>
-Daily interest rate yields in the charts are derived from Central Bank data covering historical periods to date, starting in 1962 for the  Fed (USD), 1970  BOC (CAD),  2004 ECB (EUR),  1979 BOE (GBP), 1974  MOF (JPY), and 1988  SNB (CHF).  
+Daily interest-rate yields in the charts are derived from central-bank and public market data covering historical periods to date, starting in 1962 for the Fed (USD), 1970 for the BOC (CAD), 2004 for the ECB (EUR), 1979 for the BOE (GBP), 1974 for the MOF (JPY), and 1988 for the SNB (CHF). For the United States, the page also shows the market-implied average inflation rate expected over the next 10 years. (US BEI 10Y  10-year Treasury yield − 10-year TIPS yield).
 </p>
-<small>Explanation of some peaks and troughs: The oil embargo of 1973-1974 resulted in high inflation, capped  by Paul Volcker by 19% rates in 1979.  During the dot-com era, in early 2000, the U.S. Federal Reserve raised  rates modestly to curb investment.  In 2002, the Nasdaq fell from 5048 to 1139.  During 2007-08 (Financial Crisis, Lehman Brothers default, Sub-prime loans), the US housing market collapsed. Quantitative easing addressed the crisis. Rates were starting to rise when Covid 19 led to near zero and negative rates in some countries.  Raising of the rates to 2023 led to topping of the housing markets recently .</small>
+<small>Explanation of some peaks and troughs: The oil embargo of 1973-1974 resulted in high inflation, capped  by Paul Volcker by 19% rates in 1979. A 16 month US Recession lasted from July 1981 to Nov 1982. During the dot-com era, in early 2000, the U.S. Federal Reserve raised  rates modestly to curb investment.  In 2002, Nasdaq fell -77% from 5048 to 1139.  During 2007-08 (Financial Crisis, Lehman Brothers default, Sub-prime loans) the US housing market collapsed and an 18 month US Great recession ensued from Dec 2007 to June 2009.  Quantitative easing followed between 2008 and 2014 after which Fed Rates started to rise however Covid 19 led to near zero and negative rates in some countries.  Raising of the rates to 2023 led to topping of the housing markets recently .</small>
 </p>
 
 <div class="yield-controls">
     <span class="yield-control-label">History:</span>
-    <button type="button" onclick="setYieldRange('1y')">1Y</button>
-    <button type="button" onclick="setYieldRange('3y')">3Y</button>
-    <button type="button" onclick="setYieldRange('5y')">5Y</button>
-    <button type="button" onclick="setYieldRange('10y')">10Y</button>
-    <button type="button" onclick="setYieldRange('max')">Max</button>
+	<button data-range="1y" onclick="setYieldRange('1y')">1Y</button>
+	<button data-range="3y" onclick="setYieldRange('3y')">3Y</button>
+	<button data-range="5y" onclick="setYieldRange('5y')">5Y</button>
+	<button data-range="10y" onclick="setYieldRange('10y')">10Y</button>
+	<button data-range="max" onclick="setYieldRange('max')">Max</button>
     <span class="yield-control-label">Country:</span>
-    <select id="yieldCountrySelect" onchange="drawYieldCharts()"></select>
+    <select id="yieldCountrySelect" onchange="loadSelectedCountry()"></select>
     <span class="yield-control-label">Tenor:</span>
-    <select id="yieldTenorSelect" onchange="drawYieldCharts()">
+    <select id="yieldTenorSelect" onchange="loadSelectedCountry()">
         <option value="10Y" selected>10Y</option>
         <option value="1Y">1Y</option>
         <option value="2Y">2Y</option>
@@ -69,7 +75,7 @@ Daily interest rate yields in the charts are derived from Central Bank data cove
         <option value="20Y">20Y</option>
         <option value="30Y">30Y</option>
     </select>
-    <button type="button" onclick="loadYieldCharts()">Update charts</button>
+    <button type="button" onclick="loadSelectedCountry(true)">Update charts</button>
 </div>
 
 <div id="yieldStatus" class="yield-status">Loading yield charts...</div>
@@ -85,8 +91,16 @@ Daily interest rate yields in the charts are derived from Central Bank data cove
     <div class="yield-card"><div id="yield_table_chart" class="yield-chart"></div></div>
 </div>
 
+<div class="yield-card yield-wide-card" style="margin-top:18px;">
+    <div id="treasury_borrowing" class="yield-chart"></div>
+</div>
+
+<div class="yield-card yield-wide-card">
+    <div id="treasury_foreign_demand" class="yield-chart"></div>
+</div>
+
 <p class="yield-note">
-USD data source: RiskSnap Cloud Run yields endpoint using public Treasury/FRED daily constant-maturity data. Other countries can be added later using the same endpoint structure.
+USD yield data source: RiskSnap Cloud Run using public Treasury/FRED constant-maturity data. The 10Y Inflation Expectations series is the market-implied average inflation rate expected over the next 10 years. Treasury borrowing is monthly borrowing from the public reported by U.S. Treasury Fiscal Service. Foreign Treasury holdings and net purchases are monthly Treasury International Capital measures.
 </p>
 
 </div>
@@ -99,8 +113,10 @@ USD data source: RiskSnap Cloud Run yields endpoint using public Treasury/FRED d
    https://surface-203178530029.northamerica-northeast2.run.app/yield_history?country=USD&period=10y
 */
 const YIELDS_API_URL = "https://surface-203178530029.northamerica-northeast2.run.app/yield_history";
+const TREASURY_PRESSURE_API_URL = "https://surface-203178530029.northamerica-northeast2.run.app/treasury_pressure";
 const yieldTenors = ["1Y", "2Y", "3Y", "5Y", "7Y", "10Y", "20Y", "30Y"];
 const yieldMaturities = [1, 2, 3, 5, 7, 10, 20, 30];
+const inflationField = "InflationExp";
 const yieldTenorColors = {
     "1Y": "#1f77b4",
     "2Y": "#ff7f0e",
@@ -120,9 +136,11 @@ const yieldCountries = [
     { code: "CHF", name: "Switzerland",   color: "#8c564b" }
 ];
 
-let yieldRange = "10y";
+let yieldRange = "1y";
 let allYieldRows = {};
 let loadedYieldCountries = [];
+let treasuryPressureRows = [];
+let treasuryPressureLoadedRange = null;
 
 function setupCountrySelect() {
     const sel = document.getElementById("yieldCountrySelect");
@@ -136,10 +154,16 @@ function setupCountrySelect() {
     });
     sel.value = "USD";
 }
-
+function updateYieldButtons() {
+    document.querySelectorAll(".yield-controls button[data-range]").forEach(btn => {
+        btn.classList.toggle("active", btn.dataset.range === yieldRange);
+    });
+}
 function setYieldRange(range) {
     yieldRange = range;
-    loadYieldCharts();
+	updateYieldButtons();
+    loadSelectedCountry(true);
+    loadTreasuryPressure(true);
 }
 
 function selectedCountry() {
@@ -160,6 +184,11 @@ function normalizeYieldRows(payload) {
                 ? null
                 : Number(v);
         });
+
+        const inflationValue = r[inflationField];
+        row[inflationField] = (inflationValue === null || inflationValue === "" || inflationValue === undefined)
+            ? null
+            : Number(inflationValue);
 
         return row;
     }).filter(row =>
@@ -201,8 +230,9 @@ function drawCombined10Y() {
         plot_bgcolor: "white",
         hovermode: "x unified",
         legend: { orientation: "h", x: 0.02, y: -0.18 },
-        xaxis: { showgrid: true, gridcolor: "#edf1f7", zeroline: false, rangeslider: { visible: false } },
-        yaxis: { title: "Yield (%)", showgrid: true, gridcolor: "#edf1f7", zeroline: false, tickformat: ".2f" }
+        xaxis: { showgrid: true, gridcolor: "#edf1f7", zeroline: false, rangeslider: { visible: false },tickformat: "%b %d, %Y",hoverformat: "%b %d, %Y"
+	},
+        yaxis: { title: "Yield (%)", showgrid: true, gridcolor: "#edf1f7", zeroline: false, tickformat: ".2f" },tickformat: "%b %d, %Y",hoverformat: "%b %d, %Y"
     };
 
     Plotly.newPlot("yield_combined_10y", traces, layout, plotlyConfig());
@@ -224,15 +254,31 @@ function drawAllTenorsHistory(country, rows) {
         });
     });
 
+    if (country.code === "USD") {
+        const inflationPoints = rows.filter(r => isFinite(r[inflationField]));
+        if (inflationPoints.length) {
+            traces.push({
+                x: inflationPoints.map(r => r.Date),
+                y: inflationPoints.map(r => r[inflationField]),
+                type: "scatter",
+                mode: "lines",
+                line: { width: 3.2, color: "#cc0000", dash: "dash" },
+                hovertemplate: "%{x}<br>10Y Inflation Expectations: %{y:.2f}%<extra></extra>",
+                name: "10Y Inflation Expectations"
+            });
+        }
+    }
+
     const layout = {
-        title: { text: country.name + " yield history by all tenors — " + yieldRange, x: 0.03, xanchor: "left", font: { size: 18 } },
+        title: { text: country.name + (country.code === "USD" ? " rates & inflation — " : " yield history by all tenors — ") + yieldRange, x: 0.03, xanchor: "left", font: { size: 18 } },
         margin: { l: 60, r: 24, t: 58, b: 52 },
         paper_bgcolor: "white",
         plot_bgcolor: "white",
         hovermode: "x unified",
         legend: { orientation: "h", x: 0.02, y: -0.18 },
-        xaxis: { showgrid: true, gridcolor: "#edf1f7", zeroline: false, rangeslider: { visible: false } },
-        yaxis: { title: "Yield (%)", showgrid: true, gridcolor: "#edf1f7", zeroline: false, tickformat: ".2f" }
+        xaxis: { showgrid: true, gridcolor: "#edf1f7", zeroline: false, rangeslider: { visible: false },tickformat: "%b %d, %Y",hoverformat: "%b %d, %Y"
+	},
+        yaxis: { title: country.code === "USD" ? "Rate (%)" : "Yield (%)", showgrid: true, gridcolor: "#edf1f7", zeroline: false, tickformat: ".2f" }
     };
 
     Plotly.newPlot("yield_all_tenors", traces, layout, plotlyConfig());
@@ -281,7 +327,8 @@ function drawYieldHistory(country, rows) {
         paper_bgcolor: "white",
         plot_bgcolor: "white",
         hovermode: "x unified",
-        xaxis: { showgrid: true, gridcolor: "#edf1f7", zeroline: false, rangeslider: { visible: false } },
+        xaxis: { showgrid: true, gridcolor: "#edf1f7", zeroline: false, rangeslider: { visible: false },tickformat: "%b %d, %Y",hoverformat: "%b %d, %Y"
+	},
         yaxis: { title: "Yield (%)", showgrid: true, gridcolor: "#edf1f7", zeroline: false, tickformat: ".2f" }
     };
     Plotly.newPlot("yield_history", [trace], layout, plotlyConfig());
@@ -303,7 +350,8 @@ function drawYieldSpread(country, rows) {
         paper_bgcolor: "white",
         plot_bgcolor: "white",
         hovermode: "x unified",
-        xaxis: { showgrid: true, gridcolor: "#edf1f7", zeroline: false, rangeslider: { visible: false } },
+        xaxis: { showgrid: true, gridcolor: "#edf1f7", zeroline: false, rangeslider: { visible: false },tickformat: "%b %d, %Y",hoverformat: "%b %d, %Y"
+	},
         yaxis: { title: "Spread (%)", showgrid: true, gridcolor: "#edf1f7", zeroline: true, zerolinecolor: "#999", tickformat: ".2f" }
     };
     Plotly.newPlot("yield_spread", [trace], layout, plotlyConfig());
@@ -378,24 +426,126 @@ async function loadOneCountry(country) {
     return country;
 }
 
-async function loadYieldCharts() {
+async function loadSelectedCountry(forceReload = false) {
+    updateYieldButtons();
     const status = document.getElementById("yieldStatus");
-    status.textContent = "Updating yield charts...";
-    allYieldRows = {};
-    loadedYieldCountries = [];
-    const activeCountries = yieldCountries.filter(c => !c.disabled);
-    const results = await Promise.allSettled(activeCountries.map(loadOneCountry));
-    results.forEach((res, i) => {
-        if (res.status === "fulfilled") loadedYieldCountries.push(res.value);
-        else console.warn("Could not load", activeCountries[i].code, res.reason);
-    });
-    if (!loadedYieldCountries.length) {
-        status.textContent = "Could not load yield data from Cloud Run. Check that /yield_history is deployed.";
-        emptySelectedCharts("No yield data loaded.");
-        Plotly.newPlot("yield_all_tenors", [], {}, plotlyConfig());
+    const country = selectedCountry();
+
+    if (!forceReload && allYieldRows[country.code] && allYieldRows[country.code].length) {
+        drawYieldCharts();
         return;
     }
-    drawYieldCharts();
+
+    status.textContent = "Loading " + country.name + " rates...";
+    try {
+        await loadOneCountry(country);
+        if (!loadedYieldCountries.some(c => c.code === country.code)) {
+            loadedYieldCountries.push(country);
+        }
+        drawYieldCharts();
+    } catch (err) {
+        console.warn("Could not load", country.code, err);
+        status.textContent = "Could not load " + country.name + " yield data from Cloud Run.";
+        emptySelectedCharts("No data loaded for " + country.name + ".");
+    }
+}
+
+async function loadYieldCharts() {
+    // Compatibility wrapper. Load only the selected country so USD appears
+    // immediately instead of waiting for all six central-bank sources.
+    return loadSelectedCountry(true);
+}
+
+
+function normalizeTreasuryPressureRows(payload) {
+    const rows = payload.rows || payload.data || [];
+    return rows.map(r => ({
+        Date: r.Date || r.date || r.observation_date,
+        BorrowingFromPublic: r.BorrowingFromPublic === null || r.BorrowingFromPublic === "" || r.BorrowingFromPublic === undefined ? null : Number(r.BorrowingFromPublic),
+        ForeignTreasuryHoldings: r.ForeignTreasuryHoldings === null || r.ForeignTreasuryHoldings === "" || r.ForeignTreasuryHoldings === undefined ? null : Number(r.ForeignTreasuryHoldings),
+        ForeignTreasuryNetPurchases: r.ForeignTreasuryNetPurchases === null || r.ForeignTreasuryNetPurchases === "" || r.ForeignTreasuryNetPurchases === undefined ? null : Number(r.ForeignTreasuryNetPurchases)
+    })).filter(r => r.Date);
+}
+
+function drawTreasuryPressureCharts() {
+    if (!treasuryPressureRows.length) return;
+
+    const borrowing = treasuryPressureRows.filter(r => Number.isFinite(r.BorrowingFromPublic));
+    Plotly.newPlot("treasury_borrowing", [{
+        x: borrowing.map(r => r.Date),
+        y: borrowing.map(r => r.BorrowingFromPublic / 1000.0),
+        type: "bar",
+        hovertemplate: "%{x}<br>Borrowing: $%{y:,.1f}bn<extra></extra>",
+        name: "Borrowing from public"
+    }], {
+        title: { text: "U.S. Treasury borrowing from the public — " + yieldRange, x: 0.03, xanchor: "left", font: { size: 18 } },
+        margin: { l: 70, r: 24, t: 58, b: 52 },
+        paper_bgcolor: "white",
+        plot_bgcolor: "white",
+        hovermode: "x unified",
+        xaxis: { showgrid: true, gridcolor: "#edf1f7", zeroline: false, tickformat: "%b %Y", hoverformat: "%b %Y" },
+        yaxis: { title: "$ billions per month", showgrid: true, gridcolor: "#edf1f7", zeroline: true, zerolinecolor: "#999", tickformat: ",.0f" }
+    }, plotlyConfig());
+
+    const holdings = treasuryPressureRows.filter(r => Number.isFinite(r.ForeignTreasuryHoldings));
+    const purchases = treasuryPressureRows.filter(r => Number.isFinite(r.ForeignTreasuryNetPurchases));
+    const traces = [
+        {
+            x: purchases.map(r => r.Date),
+            y: purchases.map(r => r.ForeignTreasuryNetPurchases / 1000.0),
+            type: "bar",
+            name: "Net foreign purchases",
+            yaxis: "y",
+            opacity: 0.55,
+            hovertemplate: "%{x}<br>Net purchases: $%{y:,.1f}bn<extra></extra>"
+        },
+        {
+            x: holdings.map(r => r.Date),
+            y: holdings.map(r => r.ForeignTreasuryHoldings / 1000000.0),
+            type: "scatter",
+            mode: "lines+markers",
+            name: "Foreign holdings",
+            yaxis: "y2",
+            line: { width: 2.6 },
+            marker: { size: 5 },
+            hovertemplate: "%{x}<br>Holdings: $%{y:,.3f}tn<extra></extra>"
+        }
+    ];
+    Plotly.newPlot("treasury_foreign_demand", traces, {
+        title: { text: "Foreign demand for U.S. Treasuries — " + yieldRange, x: 0.03, xanchor: "left", font: { size: 18 } },
+        margin: { l: 74, r: 82, t: 58, b: 72 },
+        paper_bgcolor: "white",
+        plot_bgcolor: "white",
+        hovermode: "x unified",
+        legend: { orientation: "h", x: 0.02, y: -0.18 },
+        xaxis: { showgrid: true, gridcolor: "#edf1f7", zeroline: false, tickformat: "%b %Y", hoverformat: "%b %Y" },
+        yaxis: { title: "Net purchases ($bn/month)", showgrid: true, gridcolor: "#edf1f7", zeroline: true, zerolinecolor: "#999", tickformat: ",.0f" },
+        yaxis2: { title: "Holdings ($tn)", overlaying: "y", side: "right", showgrid: false, tickformat: ".2f" }
+    }, plotlyConfig());
+}
+
+async function loadTreasuryPressure(forceReload = false) {
+    if (!forceReload && treasuryPressureLoadedRange === yieldRange && treasuryPressureRows.length) {
+        drawTreasuryPressureCharts();
+        return;
+    }
+    try {
+        const url = TREASURY_PRESSURE_API_URL + "?period=" + encodeURIComponent(yieldRange);
+        const response = await fetch(url, { cache: "no-store" });
+        if (!response.ok) throw new Error("HTTP " + response.status);
+        const payload = await response.json();
+        if (payload.error) throw new Error(payload.error);
+        treasuryPressureRows = normalizeTreasuryPressureRows(payload).sort((a, b) => new Date(a.Date) - new Date(b.Date));
+        treasuryPressureLoadedRange = yieldRange;
+        drawTreasuryPressureCharts();
+    } catch (err) {
+        console.warn("Could not load Treasury supply / foreign demand", err);
+        const layout = {
+            annotations: [{ text: "Treasury supply / foreign-demand data unavailable.", showarrow: false, xref: "paper", yref: "paper", x: 0.5, y: 0.5 }],
+            margin: { l: 50, r: 20, t: 40, b: 40 }, xaxis: { visible: false }, yaxis: { visible: false }, paper_bgcolor: "white", plot_bgcolor: "white"
+        };
+        ["treasury_borrowing", "treasury_foreign_demand"].forEach(id => Plotly.newPlot(id, [], layout, plotlyConfig()));
+    }
 }
 
 function plotlyConfig() {
@@ -404,6 +554,7 @@ function plotlyConfig() {
 
 window.addEventListener("load", function() {
     setupCountrySelect();
-    loadYieldCharts();
+    loadSelectedCountry(true);
+    loadTreasuryPressure(true);
 });
 </script>
