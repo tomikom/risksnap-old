@@ -86,6 +86,7 @@ tr:nth-child(even) { background-color: #dddddd; }
 </div>
 
 <div class="yield-card yield-wide-card" style="margin-top:18px;">
+    <div id="breakeven_inflation" class="yield-chart"></div>
     <div id="treasury_issuance" class="yield-chart"></div>
 </div>
 
@@ -121,6 +122,8 @@ Daily interest-rate yields in the charts are derived from central-bank and publi
 */
 const YIELDS_API_URL = "https://surface-203178530029.northamerica-northeast2.run.app/yield_history";
 const TREASURY_PRESSURE_API_URL = "https://surface-203178530029.northamerica-northeast2.run.app/treasury_pressure";
+const BREAKEVEN_INFLATION_API_URL = "https://surface-203178530029.northamerica-northeast2.run.app/breakeven_inflation";
+const TREASURY_PRESSURE_RANGE = "10y";
 const yieldTenors = ["1Y", "2Y", "3Y", "5Y", "7Y", "10Y", "20Y", "30Y"];
 const yieldMaturities = [1, 2, 3, 5, 7, 10, 20, 30];
 const inflationField = "InflationExp";
@@ -168,6 +171,7 @@ function setYieldRange(range) {
     yieldRange = range;
 	updateYieldButtons();
     loadSelectedCountry(true);
+    loadBreakevenInflation(true);
 }
 
 function selectedCountry() {
@@ -458,10 +462,12 @@ async function loadSelectedCountry(forceReload = false) {
 
 let treasuryIssuanceRows = [];
 let treasuryForeignRows = [];
+let breakevenRows = [];
+let breakevenLoadedRange = null;
 let treasuryPressureLoadedRange = null;
 
 function drawTreasuryPressureCharts() {
-    const label = yieldRange === "max" ? "full history" : "last " + yieldRange.toUpperCase();
+    const label = "last 10Y";
     if (treasuryIssuanceRows.length) {
         const traces = [
             {x: treasuryIssuanceRows.map(r=>r.Date), y: treasuryIssuanceRows.map(r=>r.Bills/1e9), type:"bar", name:"Bills", hovertemplate:"%{x}<br>Bills: $%{y:,.1f}bn<extra></extra>"},
@@ -504,16 +510,60 @@ function drawTreasuryPressureCharts() {
 }
 
 async function loadTreasuryPressure(forceReload=false) {
-    if (!forceReload && treasuryPressureLoadedRange===yieldRange && (treasuryIssuanceRows.length || treasuryForeignRows.length)) { drawTreasuryPressureCharts(); return; }
+    if (!forceReload && treasuryPressureLoadedRange===TREASURY_PRESSURE_RANGE && (treasuryIssuanceRows.length || treasuryForeignRows.length)) { drawTreasuryPressureCharts();
+        loadBreakevenInflation(); return; }
     try {
-        const response=await fetch(TREASURY_PRESSURE_API_URL+"?period="+encodeURIComponent(yieldRange),{cache:"no-store"});
+        const response=await fetch(TREASURY_PRESSURE_API_URL+"?period="+encodeURIComponent(TREASURY_PRESSURE_RANGE),{cache:"no-store"});
         if(!response.ok) throw new Error("HTTP "+response.status);
         const payload=await response.json();
         treasuryIssuanceRows=(payload.issuance_rows||[]).map(r=>({Date:r.Date,Bills:Number(r.Bills||0),Notes:Number(r.Notes||0),Bonds:Number(r.Bonds||0)}));
         treasuryForeignRows=(payload.foreign_rows||[]).map(r=>({Date:r.Date,BorrowingFromPublic:r.BorrowingFromPublic==null?null:Number(r.BorrowingFromPublic),ForeignTreasuryHoldings:r.ForeignTreasuryHoldings==null?null:Number(r.ForeignTreasuryHoldings),ForeignTreasuryNetPurchases:r.ForeignTreasuryNetPurchases==null?null:Number(r.ForeignTreasuryNetPurchases)}));
-        treasuryPressureLoadedRange=yieldRange;
+        treasuryPressureLoadedRange=TREASURY_PRESSURE_RANGE;
         drawTreasuryPressureCharts();
     } catch(err) { console.warn("Could not load Treasury supply / foreign demand",err); }
+}
+
+
+function drawBreakevenInflationChart() {
+    if (!breakevenRows.length) return;
+    const label = yieldRange === "max" ? "full history" : "last " + yieldRange.toUpperCase();
+    const s5 = breakevenRows.filter(r=>Number.isFinite(r.Breakeven5Y));
+    const s10 = breakevenRows.filter(r=>Number.isFinite(r.Breakeven10Y));
+    const f55 = breakevenRows.filter(r=>Number.isFinite(r.Forward5Y5Y));
+
+    Plotly.newPlot("breakeven_inflation", [
+        {x:s5.map(r=>r.Date),y:s5.map(r=>r.Breakeven5Y),type:"scatter",mode:"lines",name:"5Y breakeven",line:{width:2.2},connectgaps:false},
+        {x:s10.map(r=>r.Date),y:s10.map(r=>r.Breakeven10Y),type:"scatter",mode:"lines",name:"10Y breakeven",line:{width:2.2},connectgaps:false},
+        {x:f55.map(r=>r.Date),y:f55.map(r=>r.Forward5Y5Y),type:"scatter",mode:"lines",name:"5Y5Y forward",line:{width:2.2,dash:"dash"},connectgaps:false}
+    ], {
+        title:{text:"U.S. market-implied inflation expectations — "+label,x:0.03,xanchor:"left",font:{size:18}},
+        margin:{l:68,r:24,t:58,b:72},paper_bgcolor:"white",plot_bgcolor:"white",hovermode:"x unified",
+        legend:{orientation:"h",x:0.02,y:-0.18},
+        xaxis:{showgrid:true,gridcolor:"#edf1f7",zeroline:false,tickformat:"%b %Y",hoverformat:"%b %Y"},
+        yaxis:{title:"Expected inflation (%)",showgrid:true,gridcolor:"#edf1f7",zeroline:false,ticksuffix:"%"}
+    }, plotlyConfig());
+}
+
+async function loadBreakevenInflation(forceReload=false) {
+    if (!forceReload && breakevenLoadedRange===yieldRange && breakevenRows.length) {
+        drawBreakevenInflationChart();
+        return;
+    }
+    try {
+        const response=await fetch(BREAKEVEN_INFLATION_API_URL+"?period="+encodeURIComponent(yieldRange),{cache:"no-store"});
+        if(!response.ok) throw new Error("HTTP "+response.status);
+        const payload=await response.json();
+        breakevenRows=(payload.rows||[]).map(r=>({
+            Date:r.Date,
+            Breakeven5Y:r.Breakeven5Y==null?null:Number(r.Breakeven5Y),
+            Breakeven10Y:r.Breakeven10Y==null?null:Number(r.Breakeven10Y),
+            Forward5Y5Y:r.Forward5Y5Y==null?null:Number(r.Forward5Y5Y)
+        }));
+        breakevenLoadedRange=yieldRange;
+        drawBreakevenInflationChart();
+    } catch(err) {
+        console.warn("Could not load breakeven inflation expectations",err);
+    }
 }
 
 async function loadYieldCharts() {
