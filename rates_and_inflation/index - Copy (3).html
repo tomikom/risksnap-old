@@ -452,7 +452,6 @@ async function loadSelectedCountry(forceReload = false) {
         }
         drawYieldCharts();
         loadTreasuryPressure(forceReload);
-        loadBreakevenInflation(forceReload);
     } catch (err) {
         console.warn("Could not load", country.code, err);
         status.textContent = "Could not load " + country.name + " yield data from Cloud Run.";
@@ -580,6 +579,5 @@ function plotlyConfig() {
 window.addEventListener("load", function() {
     setupCountrySelect();
     loadSelectedCountry(true);
-    loadBreakevenInflation(true);
 });
 </script>
