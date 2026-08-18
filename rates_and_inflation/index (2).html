@@ -47,10 +47,10 @@ tr:nth-child(even) { background-color: #dddddd; }
 <div class="yield-section">
 
 <span id="Yields"></span>
-<h2>Rates &amp; Inflation</h2>
+<!--<h2>Rates &amp; Inflation</h2>-->
 
 <p>
-Daily interest-rate yields in the charts are derived from central-bank and public market data covering historical periods to date, starting in 1962 for the Fed (USD), 1970 for the BOC (CAD), 2004 for the ECB (EUR), 1979 for the BOE (GBP), 1974 for the MOF (JPY), and 1988 for the SNB (CHF). For the United States, the page also shows the market-implied average inflation rate expected over the next 10 years.
+Daily interest-rate yields in the charts are derived from central-bank and public market data covering historical periods to date, starting in 1962 for the Fed (USD), 1970 for the BOC (CAD), 2004 for the ECB (EUR), 1979 for the BOE (GBP), 1974 for the MOF (JPY), and 1988 for the SNB (CHF). For the United States, the page also shows the market-implied average inflation rate expected over the next 10 years. (US BEI 10Y  10-year Treasury yield − 10-year TIPS yield).
 </p>
 <small>Explanation of some peaks and troughs: The oil embargo of 1973-1974 resulted in high inflation, capped  by Paul Volcker by 19% rates in 1979. A 16 month US Recession lasted from July 1981 to Nov 1982. During the dot-com era, in early 2000, the U.S. Federal Reserve raised  rates modestly to curb investment.  In 2002, Nasdaq fell -77% from 5048 to 1139.  During 2007-08 (Financial Crisis, Lehman Brothers default, Sub-prime loans) the US housing market collapsed and an 18 month US Great recession ensued from Dec 2007 to June 2009.  Quantitative easing followed between 2008 and 2014 after which Fed Rates started to rise however Covid 19 led to near zero and negative rates in some countries.  Raising of the rates to 2023 led to topping of the housing markets recently .</small>
 </p>
@@ -63,9 +63,9 @@ Daily interest-rate yields in the charts are derived from central-bank and publi
 	<button data-range="10y" onclick="setYieldRange('10y')">10Y</button>
 	<button data-range="max" onclick="setYieldRange('max')">Max</button>
     <span class="yield-control-label">Country:</span>
-    <select id="yieldCountrySelect" onchange="drawYieldCharts()"></select>
+    <select id="yieldCountrySelect" onchange="loadSelectedCountry()"></select>
     <span class="yield-control-label">Tenor:</span>
-    <select id="yieldTenorSelect" onchange="drawYieldCharts()">
+    <select id="yieldTenorSelect" onchange="loadSelectedCountry()">
         <option value="10Y" selected>10Y</option>
         <option value="1Y">1Y</option>
         <option value="2Y">2Y</option>
@@ -75,7 +75,7 @@ Daily interest-rate yields in the charts are derived from central-bank and publi
         <option value="20Y">20Y</option>
         <option value="30Y">30Y</option>
     </select>
-    <button type="button" onclick="loadYieldCharts()">Update charts</button>
+    <button type="button" onclick="loadSelectedCountry(true)">Update charts</button>
 </div>
 
 <div id="yieldStatus" class="yield-status">Loading yield charts...</div>
@@ -151,7 +151,7 @@ function updateYieldButtons() {
 function setYieldRange(range) {
     yieldRange = range;
 	updateYieldButtons();
-    loadYieldCharts();
+    loadSelectedCountry(true);
 }
 
 function selectedCountry() {
@@ -414,25 +414,34 @@ async function loadOneCountry(country) {
     return country;
 }
 
-async function loadYieldCharts() {
+async function loadSelectedCountry(forceReload = false) {
     updateYieldButtons();
-	const status = document.getElementById("yieldStatus");
-    status.textContent = "Updating yield charts...";
-    allYieldRows = {};
-    loadedYieldCountries = [];
-    const activeCountries = yieldCountries.filter(c => !c.disabled);
-    const results = await Promise.allSettled(activeCountries.map(loadOneCountry));
-    results.forEach((res, i) => {
-        if (res.status === "fulfilled") loadedYieldCountries.push(res.value);
-        else console.warn("Could not load", activeCountries[i].code, res.reason);
-    });
-    if (!loadedYieldCountries.length) {
-        status.textContent = "Could not load yield data from Cloud Run. Check that /yield_history is deployed.";
-        emptySelectedCharts("No yield data loaded.");
-        Plotly.newPlot("yield_all_tenors", [], {}, plotlyConfig());
+    const status = document.getElementById("yieldStatus");
+    const country = selectedCountry();
+
+    if (!forceReload && allYieldRows[country.code] && allYieldRows[country.code].length) {
+        drawYieldCharts();
         return;
     }
-    drawYieldCharts();
+
+    status.textContent = "Loading " + country.name + " rates...";
+    try {
+        await loadOneCountry(country);
+        if (!loadedYieldCountries.some(c => c.code === country.code)) {
+            loadedYieldCountries.push(country);
+        }
+        drawYieldCharts();
+    } catch (err) {
+        console.warn("Could not load", country.code, err);
+        status.textContent = "Could not load " + country.name + " yield data from Cloud Run.";
+        emptySelectedCharts("No data loaded for " + country.name + ".");
+    }
+}
+
+async function loadYieldCharts() {
+    // Compatibility wrapper. Load only the selected country so USD appears
+    // immediately instead of waiting for all six central-bank sources.
+    return loadSelectedCountry(true);
 }
 
 function plotlyConfig() {
@@ -441,6 +450,6 @@ function plotlyConfig() {
 
 window.addEventListener("load", function() {
     setupCountrySelect();
-    loadYieldCharts();
+    loadSelectedCountry(true);
 });
 </script>
