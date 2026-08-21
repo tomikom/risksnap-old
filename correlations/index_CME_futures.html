@@ -4,8 +4,10 @@ title: Correlations, Portfolios
 ---
 <!--
 RiskSnap Correlations
-Version: index(148)
+Version: index(150)
 Changes:
+- Pairwise rolling history now keeps the full Matrix History range and follows Matrix History playback/slider movement without truncating at the originally clicked date
+- Latest Risk Data now remains tied to the authoritative /correlations_data EOD even when Matrix History ends on an older date
 - Removed Market Cap and P/E columns from Portfolio Holdings; all other portfolio analytics retained
 - Added Top ETFs preset using 10 of the largest U.S.-listed ETFs by assets
 - Added latest Yahoo Market Cap and trailing P/E columns after Beta, labelled with the Yahoo market date
@@ -50,6 +52,7 @@ Changes:
 
   <div id="correlationsSection" class="analytics-section-heading">Correlation Lens</div>
   <p><strong>Multi-Horizon Correlation Map.</strong> Correlations are calculated over selectable 25, 90, or 250 business-day horizons for a variety of assets. Historical volatilities are shown on the diagonal. Click play below to examine the relationship through time. For pairs, click on the bubble first.</p>
+<p class="input-note"><strong>Calendar note:</strong> RiskSnap currently uses a Monday-Friday analytical calendar. Some exchanges, including Saudi Arabia, trade Sunday-Thursday.</p>
 
   <div class="corr-input-panel">
     <div class="corr-controls main-controls">
@@ -71,7 +74,7 @@ Changes:
 
     <div class="selector-grid">
       <div class="selector-card">
-        <div class="selector-title">FX / Gold / Oil</div>
+        <div class="selector-title">FX / Commodities</div>
         <div class="mini-buttons">
           <button type="button" data-target="fx" data-action="all">Select all</button>
           <button type="button" data-target="fx" data-action="none">Clear all</button>
@@ -81,9 +84,15 @@ Changes:
         <label><input type="checkbox" class="fx-check" value="GBPUSD"> GBPUSD</label>
         <label><input type="checkbox" class="fx-check" value="USDJPY"> USDJPY</label>
         <label><input type="checkbox" class="fx-check" value="USDCHF"> USDCHF</label>
-        <label><input type="checkbox" class="fx-check" value="GOLD" checked> GOLD</label>
-        <label><input type="checkbox" class="fx-check" value="OIL"> OIL</label>
+        <label><input type="checkbox" class="fx-check" value="GOLD" checked> Gold</label>
+        <label><input type="checkbox" class="fx-check" value="OIL"> Oil</label>
+        <label><input type="checkbox" class="fx-check" value="WHEAT"> Wheat</label>
+        <label><input type="checkbox" class="fx-check" value="CORN"> Corn</label>
+        <label><input type="checkbox" class="fx-check" value="FEEDER_CATTLE"> Feeder Cattle</label>
+        <label><input type="checkbox" class="fx-check" value="LIVE_CATTLE"> Live Cattle</label>
+        <label><input type="checkbox" class="fx-check" value="RBOB_GASOLINE"> RBOB Gasoline</label>
         <label><input type="checkbox" class="fx-check" value="BTC-USD" checked> BTC-USD</label>
+        <p class="input-note"><strong>Futures note:</strong> Contract rolls are accommodated so that changes caused solely by moving from one contract month to another are not treated as investment returns.</p>
       </div>
 
       <div class="selector-card">
@@ -107,20 +116,7 @@ Changes:
           <button type="button" data-target="equity" data-action="none">Clear all</button>
         </div>
         <div class="preset-label">Presets</div>
-        <div id="presetButtons" class="preset-buttons">
-          <button type="button" class="preset-button" data-preset="original">⭐ Original</button>
-          <button type="button" class="preset-button" data-preset="world">🌍 World Indices</button>
-          <button type="button" class="preset-button" data-preset="macro">📊 Macro</button>
-          <button type="button" class="preset-button" data-preset="ai">🤖 AI Ecosystem</button>
-          <button type="button" class="preset-button" data-preset="healthcare">⚕️ Healthcare</button>
-          <button type="button" class="preset-button" data-preset="energy">⚡ Energy</button>
-          <button type="button" class="preset-button" data-preset="financials">🏦 Financials</button>
-          <button type="button" class="preset-button" data-preset="defensive">🛡️ Defensive</button>
-          <button type="button" class="preset-button" data-preset="crypto">₿ Crypto</button>
-		  <button type="button" class="preset-button" data-preset="worldtop10">💥 World Top 10</button>
-		  <button type="button" class="preset-button" data-preset="benchmarks">┬─┬ Benchmarks</button>
-		  <button type="button" class="preset-button" data-preset="topetfs">📈 Top ETFs</button>
-        </div>
+        <div id="presetButtons" class="preset-buttons"></div>
         <textarea id="equitySymbols"></textarea>
         <div class="input-note">Enter Yahoo symbols separated by commas or spaces. Maximum 20 total assets. Indices and other non-equity Yahoo codes remain in the risk matrix but are excluded from Portfolio Holdings.</div>
       </div>
@@ -530,28 +526,35 @@ const VOL_X = LEFT - 22;
 const MAX_ASSETS = 20;
 const MAX_INTERNAL_ASSETS = MAX_ASSETS + 1;
 const BETA_BENCHMARK = "SPY";
-const DEFAULT_EQUITIES = "AAPL, AMZN, NVDA, MSTR, GS, CAT, UNH, AMGN, V, HD, IBM";
+let DEFAULT_EQUITIES = "";
+let YAHOO_PRESETS = {};
+let RISK_SNAP_SECURITY_META = {};
+const RISK_SNAP_CONFIG_ENDPOINT = "https://surface-203178530029.northamerica-northeast2.run.app/risksnap_config";
 
-const YAHOO_PRESETS = {
-  original: DEFAULT_EQUITIES,
-  world: "^GSPC, ^NDX, ^DJI, ^RUT, ^GSPTSE, ^FTSE, ^GDAXI, ^FCHI, ^N225, ^HSI, ^KS11",
-  macro: "DX-Y.NYB, EURUSD=X, GC=F, CL=F, BTC-USD, ^VIX, ^GSPC, ^NDX",
-  ai: "NVDA, MSFT, GOOG, AMZN, META, AMD, AVGO, TSM, ORCL, PLTR",
-  healthcare: "UNH, LLY, JNJ, ABBV, AMGN, MRK, ISRG, ABT, TMO, PFE,NBIX",
-  energy: "XOM, CVX, COP, SLB, EOG, OXY, CNQ, SU, ENB, TRP",
-  financials: "JPM, BAC, WFC, C, GS, MS, BLK, SCHW, RY, TD",
-  defensive: "PG, KO, PEP, WMT, COST, MCD, CL, GIS, KMB, MDLZ",
-  crypto: "BTC-USD, ETH-USD, MSTR, COIN, MARA, RIOT, CLSK, HUT, CIFR",
-  worldtop10: "NVDA,AAPL,GOOG,MSFT,AMZN,TSM,AVGO,2222.SR,META,TSLA",
-  benchmarks: "SPY,QQQ,DIA,GWM,GLD,TLT,BTC-USD",
-  topetfs: "VOO,IVV,SPY,VTI,QQQ,VUG,VEA,IEFA,VTV,BND"
-  
-};
+async function loadRiskSnapConfig() {
+  const response = await fetch(RISK_SNAP_CONFIG_ENDPOINT);
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.error || response.statusText);
+  YAHOO_PRESETS = data.portfolio_presets || {};
+  RISK_SNAP_SECURITY_META = data.security_metadata || {};
+  const labels = data.preset_labels || {};
+  const keys = (data.preset_surfaces || {}).correlations || Object.keys(YAHOO_PRESETS);
+  const buttons = document.getElementById("presetButtons");
+  if (buttons) {
+    buttons.innerHTML = keys
+      .filter(key => YAHOO_PRESETS[key])
+      .map(key => `<button type="button" class="preset-button" data-preset="${key}">${labels[key] || key}</button>`)
+      .join("");
+  }
+  DEFAULT_EQUITIES = YAHOO_PRESETS.original || "";
+  FACTORY_DEFAULTS.equities = DEFAULT_EQUITIES;
+}
 
 const NON_HOLDING_SYMBOLS = new Set([
   "^VIX", "^GSPC", "S&P500", "^NDX", "NASDAQ", "^IXIC", "^DJI", "^RUT",
   "^GSPTSE", "^FTSE", "^GDAXI", "^FCHI", "^N225", "^HSI", "000001.SS",
-  "DX-Y.NYB", "EURUSD=X", "GC=F", "CL=F", "BTC-USD", "ETH-USD"
+  "DX-Y.NYB", "EURUSD=X", "GC=F", "CL=F", "BTC-USD", "ETH-USD",
+  "WHEAT", "CORN", "FEEDER_CATTLE", "LIVE_CATTLE", "GOLD", "RBOB_GASOLINE"
 ]);
 const STORAGE_KEY = "RiskSnapCorrelationSettings";
 const DEFAULTS_KEY = "RiskSnapCorrelationDefaults";
@@ -567,7 +570,7 @@ const USD_YIELD_ENDPOINT = "https://surface-203178530029.northamerica-northeast2
 const ROLLING_VISIBLE_POINTS = 20;
 const MATRIX_HISTORY_REQUEST_FRAMES = { 25: 250, 90: 250, 250: 250 };
 const SHARPE_RISK_FREE_RATE = 0.0411;
-const FACTORY_DEFAULTS = {
+let FACTORY_DEFAULTS = {
   period: "25 Day",
   fx: ["EURUSD", "GOLD", "BTC-USD"],
   yields: ["USD"],
@@ -592,7 +595,11 @@ let matrixHistoryPlayDelayMs = 250;
 let portfolioShares = {};
 let portfolioSecurities = [];
 let portfolioPrices = {};
-let portfolioCurrentPrices = {};
+let portfolioCurrentPrices = {};       // USD prices used for valuation/calculation
+let portfolioCurrentLocalPrices = {};  // native exchange prices used for display
+let portfolioCurrentCurrencies = {};
+let portfolioCurrentFxPairs = {};
+let portfolioCurrentFxRates = {};
 // Preserve the newest completed EOD prices independently of Matrix History,
 // whose final frame can lag the main correlation payload by one business day.
 let portfolioLatestEodPrices = {};
@@ -632,8 +639,6 @@ function updateMatrixHistoryTitle() {
 }
 
 updateMatrixHistoryTitle();
-loadStartupSettings();
-updateSaveDefaultsState();
 
 document.getElementById("corrPeriod").addEventListener("change", () => {
   updateMatrixHistoryTitle();
@@ -705,31 +710,29 @@ document.querySelectorAll(".fx-check,.yield-check").forEach(cb => cb.addEventLis
   updateSaveDefaultsState();
   scheduleCorrelationRefresh();
 }));
-document.querySelectorAll(".preset-button").forEach(button => {
-  button.addEventListener("click", () => {
-    const key = button.dataset.preset;
-    if (!YAHOO_PRESETS[key]) return;
-    activeYahooPreset = key;
-    document.getElementById("equitySymbols").value = YAHOO_PRESETS[key];
-    saveActiveSelection({ type: "preset", key });
+document.getElementById("presetButtons").addEventListener("click", event => {
+  const button = event.target.closest(".preset-button");
+  if (!button) return;
+  const key = button.dataset.preset;
+  if (!YAHOO_PRESETS[key]) return;
+  activeYahooPreset = key;
+  document.getElementById("equitySymbols").value = YAHOO_PRESETS[key];
+  saveActiveSelection({ type: "preset", key });
 
-    // A preset is a fresh ticker selection, not a loaded saved portfolio.
-    // Re-enable automatic equal weighting so shares are rebuilt from Book Cost
-    // as soon as the new prices arrive instead of carrying zero/old share values.
-    portfolioAutoEqualWeight = true;
-    portfolioShares = {};
-    const savedList = document.getElementById("portfolioSavedList");
-    if (savedList) savedList.value = "";
-    const portfolioName = document.getElementById("portfolioName");
-    if (portfolioName) portfolioName.value = "";
-    setPortfolioStorageStatus("Preset selected; shares will be equally distributed by Book Cost.");
+  // A preset is a fresh ticker selection, not a loaded saved portfolio.
+  portfolioAutoEqualWeight = true;
+  portfolioShares = {};
+  const savedList = document.getElementById("portfolioSavedList");
+  if (savedList) savedList.value = "";
+  const portfolioName = document.getElementById("portfolioName");
+  if (portfolioName) portfolioName.value = "";
+  setPortfolioStorageStatus("Preset selected; shares will be equally distributed by Book Cost.");
 
-    updatePresetHighlight();
-    saveCurrentSettings();
-    updateSaveDefaultsState();
-    setStatus(`Loaded preset: ${button.textContent.trim()}.`);
-    scheduleCorrelationRefresh();
-  });
+  updatePresetHighlight();
+  saveCurrentSettings();
+  updateSaveDefaultsState();
+  setStatus(`Loaded preset: ${button.textContent.trim()}.`);
+  scheduleCorrelationRefresh();
 });
 
 document.getElementById("equitySymbols").addEventListener("input", debounce(() => {
@@ -745,8 +748,6 @@ document.getElementById("equitySymbols").addEventListener("input", debounce(() =
 }, 350));
 
 loadLastPortfolioBookCost();
-refreshSavedPortfolioList();
-restoreActiveSelectionAndLoad();
 renderRollingStrip();
 resetMatrixHistoryPanel();
 function getCurrentSettings() {
@@ -1131,9 +1132,8 @@ async function fetchRollingMatrix(requestPayload, periodLabel) {
     // final frame can lag the main correlation payload by one or more days.
 
     applyMatrixHistoryRange(false);
-    // Once the history is available, initialize the page through the same
-    // Latest path used by the button. This supplies the preceding EOD frame
-    // after Ctrl+F5 and after loading a saved portfolio.
+    // Once history is available, return to the authoritative latest completed
+    // EOD from /correlations_data. Rolling history must not overwrite it.
     showLatestMatrixFrame();
     slider.disabled = false;
     latestBtn.disabled = false;
@@ -1211,6 +1211,10 @@ function normalizeMatrixFrame(frame, periodLabel) {
     matrix: frame.matrix || frame.correlation || [],
     volatility: frame.volatility || [],
     prices: frame.prices || [],
+    local_prices: frame.local_prices || [],
+    currencies: frame.currencies || [],
+    fx_pairs: frame.fx_pairs || [],
+    fx_rates: frame.fx_rates || [],
     ewma_returns: frame.ewma_returns || {},
     missing_ewma: frame.missing_ewma || [],
     ewma_as_of: frame.ewma_as_of || null,
@@ -1279,37 +1283,53 @@ window.addEventListener("resize", () => {
 function showLatestMatrixFrame() {
   pauseMatrixHistoryPlayback();
 
+  // "Latest" is always the authoritative latest completed EOD returned by
+  // /correlations_data. Matrix History may legitimately end on an older date,
+  // so it must never replace the current risk payload or latest EOD date.
+  const latestPayload = activePayload;
+
   if (matrixHistoryFrames.length) {
     const matrixSlider = document.getElementById("matrixHistorySlider");
     const marketIndex = matrixHistoryFrames.length - 1;
-    const marketFrame = matrixHistoryFrames[marketIndex];
-    const eodFrame = marketFrame;
-
     matrixSlider.value = marketIndex;
     matrixHistoryIndex = marketIndex;
-
-    // Latest uses the newest completed EOD frame for valuation and risk data.
-    document.getElementById("matrixHistoryDate").textContent = eodFrame.date
-      ? formatLongDate(eodFrame.date)
-      : "Latest matrix";
-    updateMatrixHistorySliderDate(marketFrame, marketIndex);
-    drawCorrelationChart(eodFrame);
-    updateSelectedPairStatsFromMatrixFrame(eodFrame);
-
-    portfolioViewMode = "current";
-    portfolioRiskPayload = eodFrame;
-    portfolioLatestEodPrices = pricesFromPayload(eodFrame);
-    portfolioLatestEodDate = String(eodFrame.date || "").slice(0, 10);
-    portfolioPrices = { ...portfolioCurrentPrices };
-    renderPortfolioTable();
-    renderPortfolioDividendHistory();
-    renderPortfolioMarketValueChart();
-  } else {
-    portfolioViewMode = "current";
-    if (activePayload) portfolioRiskPayload = activePayload;
-    portfolioPrices = { ...portfolioCurrentPrices };
-    renderPortfolioTable();
   }
+
+  portfolioViewMode = "current";
+
+  if (latestPayload) {
+    portfolioRiskPayload = latestPayload;
+    updateLatestEodPriceSource(latestPayload);
+    portfolioPrices = { ...portfolioCurrentPrices };
+
+    const latestDate = String(
+      latestPayload.date || latestPayload.as_of || latestPayload.ewma_as_of || latestPayload.risk_free_as_of || ""
+    ).slice(0, 10);
+
+    document.getElementById("matrixHistoryDate").textContent = latestDate
+      ? formatLongDate(latestDate)
+      : "Latest matrix";
+
+    const sliderLabel = document.getElementById("matrixHistorySliderDate");
+    if (sliderLabel) {
+      sliderLabel.textContent = latestDate ? formatCompactDate(latestDate) : "Latest";
+      if (matrixHistoryFrames.length) {
+        const slider = document.getElementById("matrixHistorySlider");
+        const labelHalf = (sliderLabel.offsetWidth || 70) / 2;
+        const sliderWidth = slider.clientWidth || 1;
+        sliderLabel.style.left = `${Math.max(labelHalf, sliderWidth - labelHalf)}px`;
+      }
+    }
+
+    drawCorrelationChart(latestPayload);
+    updateSelectedPairStatsFromMatrixFrame(latestPayload);
+  } else {
+    portfolioPrices = { ...portfolioCurrentPrices };
+  }
+
+  renderPortfolioTable();
+  renderPortfolioDividendHistory();
+  renderPortfolioMarketValueChart();
 
   // Keep the lower rolling-history slider synchronized at its newest window.
   const rollingSlider = document.getElementById("rollingSlider");
@@ -1470,11 +1490,19 @@ function normalizePayload(payload, periodLabel) {
     });
   }
   const prices = (payload.prices || []).slice(0, assets.length);
+  const localPrices = (payload.local_prices || payload.localPrices || []).slice(0, assets.length);
+  const currencies = (payload.currencies || []).slice(0, assets.length);
+  const fxPairs = (payload.fx_pairs || payload.fxPairs || []).slice(0, assets.length);
+  const fxRates = (payload.fx_rates || payload.fxRates || []).slice(0, assets.length);
   return {
     assets,
     matrix,
     volatility: volatility.slice(0, assets.length),
     prices,
+    local_prices: localPrices,
+    currencies,
+    fx_pairs: fxPairs,
+    fx_rates: fxRates,
     ewma_returns: payload.ewma_returns && typeof payload.ewma_returns === "object"
       ? { ...payload.ewma_returns }
       : {},
@@ -1549,11 +1577,37 @@ function initializePortfolio(payload, selectedEquities) {
   const eodPrices = pricesFromPayload(payload);
   updateLatestEodPriceSource(payload);
   const priorCurrentPrices = { ...portfolioCurrentPrices };
+  const priorCurrentLocalPrices = { ...portfolioCurrentLocalPrices };
+  const priorCurrentCurrencies = { ...portfolioCurrentCurrencies };
+  const priorCurrentFxPairs = { ...portfolioCurrentFxPairs };
+  const priorCurrentFxRates = { ...portfolioCurrentFxRates };
   portfolioCurrentPrices = { ...eodPrices };
+  portfolioCurrentLocalPrices = {};
+  portfolioCurrentCurrencies = {};
+  portfolioCurrentFxPairs = {};
+  portfolioCurrentFxRates = {};
+  (payload.assets || []).forEach((asset, i) => {
+    const local = Number((payload.local_prices || [])[i]);
+    const usd = Number((payload.prices || [])[i]);
+    const ccy = String((payload.currencies || [])[i] || "USD");
+    const pair = String((payload.fx_pairs || [])[i] || "");
+    const fx = Number((payload.fx_rates || [])[i]);
+    if (Number.isFinite(local) && local > 0) portfolioCurrentLocalPrices[asset] = local;
+    else if (Number.isFinite(usd) && usd > 0) portfolioCurrentLocalPrices[asset] = usd;
+    portfolioCurrentCurrencies[asset] = ccy;
+    if (pair) portfolioCurrentFxPairs[asset] = pair;
+    if (Number.isFinite(fx) && fx > 0) portfolioCurrentFxRates[asset] = fx;
+  });
   Object.keys(priorCurrentPrices).forEach(asset => {
     if (portfolioSecurities.includes(asset) && Number.isFinite(Number(priorCurrentPrices[asset]))) {
       portfolioCurrentPrices[asset] = Number(priorCurrentPrices[asset]);
     }
+  });
+  portfolioSecurities.forEach(asset => {
+    if (Number.isFinite(Number(priorCurrentLocalPrices[asset]))) portfolioCurrentLocalPrices[asset] = Number(priorCurrentLocalPrices[asset]);
+    if (priorCurrentCurrencies[asset]) portfolioCurrentCurrencies[asset] = priorCurrentCurrencies[asset];
+    if (priorCurrentFxPairs[asset]) portfolioCurrentFxPairs[asset] = priorCurrentFxPairs[asset];
+    if (Number.isFinite(Number(priorCurrentFxRates[asset]))) portfolioCurrentFxRates[asset] = Number(priorCurrentFxRates[asset]);
   });
   portfolioViewMode = "current";
   portfolioPrices = { ...portfolioCurrentPrices };
@@ -1651,16 +1705,27 @@ function riskPortfolioRows(payload) {
   }).filter(row => row.index >= 0 && Number.isFinite(row.price) && row.price > 0);
 }
 
-function parseLatestPriceResponse(data) {
+function parseObjectMap(data, key) {
+  const source = data && data[key];
   const result = {};
-  if (data && data.prices && !Array.isArray(data.prices) && typeof data.prices === "object") {
-    Object.entries(data.prices).forEach(([asset, value]) => {
+  if (!source || typeof source !== "object" || Array.isArray(source)) return result;
+  Object.entries(source).forEach(([asset, raw]) => {
+    result[normalizeDisplaySymbol(asset)] = raw;
+  });
+  return result;
+}
+
+function parseLatestPriceResponse(data, preferredKey = "prices") {
+  const result = {};
+  const preferred = data && data[preferredKey];
+  if (preferred && !Array.isArray(preferred) && typeof preferred === "object") {
+    Object.entries(preferred).forEach(([asset, value]) => {
       const price = Number(value && typeof value === "object" ? (value.price ?? value.regularMarketPrice) : value);
       if (Number.isFinite(price) && price > 0) result[normalizeDisplaySymbol(asset)] = price;
     });
   }
   const assets = data && Array.isArray(data.assets) ? data.assets : [];
-  const prices = data && Array.isArray(data.prices) ? data.prices : [];
+  const prices = data && Array.isArray(data[preferredKey]) ? data[preferredKey] : [];
   assets.forEach((asset, i) => {
     const price = Number(prices[i]);
     if (Number.isFinite(price) && price > 0) result[normalizeDisplaySymbol(asset)] = price;
@@ -1773,7 +1838,11 @@ async function refreshPortfolioPrices() {
     });
     const data = await response.json();
     if (!response.ok) throw new Error(data.message || data.error || response.statusText);
-    const downloaded = parseLatestPriceResponse(data);
+    const downloaded = parseLatestPriceResponse(data, "usd_prices");
+    const downloadedLocal = parseLatestPriceResponse(data, "prices");
+    const downloadedCurrencies = parseObjectMap(data, "currencies");
+    const downloadedFxPairs = parseObjectMap(data, "fx_pairs");
+    const downloadedFxRates = parseObjectMap(data, "fx_rates");
     const downloadedDividendYields = parseDividendYieldResponse(data);
     const downloadedMarketCaps = parsePositiveNumericMap(data, "market_caps", "marketCaps");
     const downloadedTrailingPes = parsePositiveNumericMap(data, "trailing_pes", "trailingPes");
@@ -1791,6 +1860,13 @@ async function refreshPortfolioPrices() {
       throw new Error("No current prices were returned.");
     }
     portfolioCurrentPrices = nextPrices;
+    portfolioCurrentLocalPrices = { ...portfolioCurrentLocalPrices, ...downloadedLocal };
+    portfolioCurrentCurrencies = { ...portfolioCurrentCurrencies, ...downloadedCurrencies };
+    portfolioCurrentFxPairs = { ...portfolioCurrentFxPairs, ...downloadedFxPairs };
+    Object.entries(downloadedFxRates).forEach(([asset, raw]) => {
+      const value = Number(raw);
+      if (Number.isFinite(value) && value > 0) portfolioCurrentFxRates[asset] = value;
+    });
     portfolioDividendYields = { ...portfolioDividendYields, ...downloadedDividendYields };
     portfolioMarketCaps = { ...portfolioMarketCaps, ...downloadedMarketCaps };
     portfolioTrailingPes = { ...portfolioTrailingPes, ...downloadedTrailingPes };
@@ -2437,6 +2513,26 @@ function updatePortfolioSummary(totalMarketValue) {
   }
 }
 
+function formatNativePrice(value, currency) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return "—";
+  const ccy = String(currency || "USD");
+  if (ccy === "USD") return formatMoney(n);
+  if (ccy === "GBp") return `GBp ${n.toLocaleString("en-CA",{minimumFractionDigits:2,maximumFractionDigits:2})}`;
+  return `${ccy} ${n.toLocaleString("en-CA",{minimumFractionDigits:2,maximumFractionDigits:2})}`;
+}
+
+function foreignPriceDisplay(localPrice, usdPrice, currency, fxPair, fxRate) {
+  const ccy = String(currency || "USD");
+  if (ccy === "USD" || !ccy) return formatMoney(usdPrice);
+  const localText = formatNativePrice(localPrice, ccy);
+  const usdText = Number.isFinite(Number(usdPrice)) ? `US${formatMoney(Number(usdPrice))}` : "USD —";
+  const fxText = fxPair && Number.isFinite(Number(fxRate))
+    ? `<div class="portfolio-fx-note">${fxPair} ${Number(fxRate).toFixed(4)}</div>`
+    : "";
+  return `${localText}<div class="portfolio-usd-equivalent">${usdText}</div>${fxText}`;
+}
+
 function renderPortfolioTable() {
   const body = document.getElementById("portfolioBody");
   const summary = document.getElementById("portfolioSummary");
@@ -2506,13 +2602,32 @@ function renderPortfolioTable() {
     const eodPrice = riskIndex >= 0 && portfolioRiskPayload && Array.isArray(portfolioRiskPayload.prices)
       ? Number(portfolioRiskPayload.prices[riskIndex])
       : NaN;
+    const eodLocalPrice = riskIndex >= 0 && Array.isArray(portfolioRiskPayload?.local_prices)
+      ? Number(portfolioRiskPayload.local_prices[riskIndex]) : eodPrice;
+    const eodCurrency = riskIndex >= 0 && Array.isArray(portfolioRiskPayload?.currencies)
+      ? String(portfolioRiskPayload.currencies[riskIndex] || "USD") : "USD";
+    const eodFxPair = riskIndex >= 0 && Array.isArray(portfolioRiskPayload?.fx_pairs)
+      ? String(portfolioRiskPayload.fx_pairs[riskIndex] || "") : "";
+    const eodFxRate = riskIndex >= 0 && Array.isArray(portfolioRiskPayload?.fx_rates)
+      ? Number(portfolioRiskPayload.fx_rates[riskIndex]) : NaN;
+
+    const marketLocalPrice = Number(portfolioCurrentLocalPrices[row.asset]);
+    const marketCurrency = String(portfolioCurrentCurrencies[row.asset] || eodCurrency || "USD");
+    const marketFxPair = String(portfolioCurrentFxPairs[row.asset] || eodFxPair || "");
+    const marketFxRate = Number(portfolioCurrentFxRates[row.asset]);
 
     const tr = document.createElement("tr");
     tr.innerHTML = `
       <td>${rowIndex + 1}. ${displayAsset(row.asset)}</td>
       <td><button type="button" class="portfolio-chart-button" data-asset="${row.asset}" title="View price chart" aria-label="View ${displayAsset(row.asset)} price chart">📈</button></td>
-      <td>${formatMoney(eodPrice)}</td>
-      <td>${formatMoney(row.price)}</td>
+      <td>${foreignPriceDisplay(eodLocalPrice, eodPrice, eodCurrency, eodFxPair, eodFxRate)}</td>
+      <td>${foreignPriceDisplay(
+        Number.isFinite(marketLocalPrice) ? marketLocalPrice : row.price,
+        row.price,
+        marketCurrency,
+        marketFxPair,
+        marketFxRate
+      )}</td>
       <td><input class="portfolio-shares" data-asset="${row.asset}" type="number" min="0" step="0.0001" value="${formatShares(row.shares)}"></td>
       <td>${formatMoney(row.marketValue)}</td>
       <td>${volatilityText}</td>
@@ -2565,6 +2680,17 @@ function jumpMatrixHistoryToDate(dateText) {
   if (panel) panel.scrollIntoView({ behavior: "smooth", block: "nearest" });
 }
 
+function formatChartPrice(value, currency = "USD") {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return "—";
+  const ccy = String(currency || "USD");
+  if (ccy === "USD") return formatMoney(n);
+  if (ccy === "GBp") {
+    return `GBp ${n.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}`;
+  }
+  return `${ccy} ${n.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}`;
+}
+
 function drawLineChart(container, rows, valueKey, options = {}) {
   if (!container) return;
   container.innerHTML = "";
@@ -2588,7 +2714,9 @@ function drawLineChart(container, rows, valueKey, options = {}) {
     const value = minValue + (maxValue - minValue) * i / 4;
     const yy = y(value);
     svg.appendChild(makeSvg("line", { x1: margin.left, y1: yy, x2: width - margin.right, y2: yy, class: "chart-grid" }));
-    const label = options.money ? formatMoney(value) : Number(value).toLocaleString(undefined, { maximumFractionDigits: 2 });
+    const label = options.currency
+      ? formatChartPrice(value, options.currency)
+      : (options.money ? formatMoney(value) : Number(value).toLocaleString(undefined, { maximumFractionDigits: 2 }));
     svg.appendChild(makeSvg("text", { x: margin.left - 8, y: yy + 4, class: "chart-label", "text-anchor": "end" }, label));
   }
   svg.appendChild(makeSvg("line", { x1: margin.left, y1: margin.top, x2: margin.left, y2: height - margin.bottom, class: "chart-axis" }));
@@ -2674,9 +2802,11 @@ function drawLineChart(container, rows, valueKey, options = {}) {
   svg.appendChild(overlay);
 
   const tooltip = document.getElementById("corrTooltip");
-  const formatValue = value => options.money
-    ? formatMoney(value)
-    : Number(value).toLocaleString(undefined, { maximumFractionDigits: 4 });
+  const formatValue = value => options.currency
+    ? formatChartPrice(value, options.currency)
+    : (options.money
+      ? formatMoney(value)
+      : Number(value).toLocaleString(undefined, { maximumFractionDigits: 4 }));
 
   overlay.addEventListener("mousemove", event => {
     const rect = svg.getBoundingClientRect();
@@ -2764,9 +2894,9 @@ async function currentChartPrice(symbol) {
   const cached = securityCurrentPriceCache.get(normalized);
   if (cached && Date.now() - cached.cachedAt < 60000) return cached;
 
-  if (Number.isFinite(Number(portfolioCurrentPrices[normalized])) && portfolioPriceTimestamp) {
+  if (Number.isFinite(Number(portfolioCurrentLocalPrices[normalized])) && portfolioPriceTimestamp) {
     const result = {
-      price: Number(portfolioCurrentPrices[normalized]),
+      price: Number(portfolioCurrentLocalPrices[normalized]),
       date: torontoDateKey(portfolioPriceTimestamp),
       cachedAt: Date.now()
     };
@@ -2828,6 +2958,8 @@ async function loadSecurityChart(symbol, range) {
     }
     const historyRows = Array.isArray(data.rows) ? data.rows : [];
     if (historyRows.length < 2) throw new Error("Not enough price history was returned.");
+    const chartCurrency = String(data.currency || portfolioCurrentCurrencies[symbol] || "USD");
+    title.textContent = `${displayAsset(symbol)} — ${rangeLabels[range] || "Price"} Price History (${chartCurrency})`;
     let rows = historyRows;
     try {
       const quote = await currentChartPrice(symbol);
@@ -2836,7 +2968,12 @@ async function loadSecurityChart(symbol, range) {
       console.warn(`Current chart price unavailable for ${symbol}:`, quoteError);
     }
     status.textContent = `${chartDateLabel(rows[0].date)} to ${chartDateLabel(rows[rows.length - 1].date)}`;
-    drawLineChart(chart, rows, "price", { money: true, valueLabel: "Price", heading: displayAsset(symbol), ariaLabel: `${symbol} price history` });
+    drawLineChart(chart, rows, "price", {
+      currency: chartCurrency,
+      valueLabel: "Price",
+      heading: displayAsset(symbol),
+      ariaLabel: `${symbol} price history in ${chartCurrency}`
+    });
   } catch (error) {
     status.textContent = `Chart unavailable: ${error.message}`;
   }
@@ -3047,6 +3184,28 @@ function updateSelectedPairStatsFromMatrixFrame(frame) {
     date: frame.date || ""
   };
   document.getElementById("rollingPair").textContent = rollingPairTitle(rollingContext);
+  syncRollingSliderToDate(frame.date || "");
+}
+
+function syncRollingSliderToDate(targetDate) {
+  if (!selectedRollingPair || !targetDate || !rollingRows.length) return;
+
+  const slider = document.getElementById("rollingSlider");
+  if (!slider) return;
+
+  // Put the Matrix History date at the right edge of the 20-point rolling strip.
+  // If an exact row is unavailable, use the latest rolling row on or before it.
+  let targetIndex = -1;
+  for (let i = 0; i < rollingRows.length; i += 1) {
+    const rowDate = String(rollingRows[i].date || "");
+    if (rowDate <= targetDate) targetIndex = i;
+    if (rowDate > targetDate) break;
+  }
+  if (targetIndex < 0) return;
+
+  const maxStart = Math.max(0, rollingRows.length - ROLLING_VISIBLE_POINTS);
+  slider.value = Math.max(0, Math.min(maxStart, targetIndex - ROLLING_VISIBLE_POINTS + 1));
+  renderRollingStrip();
 }
 
 function rollingPairTitle(context) {
@@ -3101,16 +3260,15 @@ async function fetchRollingCorrelation(assetA, assetB, corr, volA, volB, asOfDat
     if (!response.ok) throw new Error((data.messages || [response.statusText]).join(" "));
     const allRollingRows = data.rows || [];
 
-    // Keep the rolling-pair history within the same date range as Matrix History.
-    // When a historical matrix bubble is clicked, also stop at that selected date.
+    // Keep the rolling-pair history within the full Matrix History date range.
+    // A historical bubble click chooses the initial visible window only; it must
+    // not truncate the pair history, otherwise playback cannot advance past that date.
     const matrixStartDate = matrixHistoryFrames.length
       ? matrixHistoryFrames[0].date
       : "";
-    const matrixEndDate = asOfDate || (
-      matrixHistoryFrames.length
-        ? matrixHistoryFrames[matrixHistoryFrames.length - 1].date
-        : ""
-    );
+    const matrixEndDate = matrixHistoryFrames.length
+      ? matrixHistoryFrames[matrixHistoryFrames.length - 1].date
+      : (activePayload && activePayload.date ? activePayload.date : "");
 
     rollingRows = allRollingRows.filter(row => {
       const rowDate = String(row.date || "");
@@ -3479,12 +3637,24 @@ function loadPortfolio() {
   // symbols in the loaded portfolio. Otherwise loading a portfolio briefly (or,
   // after a transient quote failure, persistently) replaces Current Price with EOD.
   const retainedCurrentPrices = {};
+  const retainedLocalPrices = {};
+  const retainedCurrencies = {};
+  const retainedFxPairs = {};
+  const retainedFxRates = {};
   securities.forEach(asset => {
     const price = Number(portfolioCurrentPrices[asset]);
     if (Number.isFinite(price) && price > 0) retainedCurrentPrices[asset] = price;
+    if (Number.isFinite(Number(portfolioCurrentLocalPrices[asset]))) retainedLocalPrices[asset] = Number(portfolioCurrentLocalPrices[asset]);
+    if (portfolioCurrentCurrencies[asset]) retainedCurrencies[asset] = portfolioCurrentCurrencies[asset];
+    if (portfolioCurrentFxPairs[asset]) retainedFxPairs[asset] = portfolioCurrentFxPairs[asset];
+    if (Number.isFinite(Number(portfolioCurrentFxRates[asset]))) retainedFxRates[asset] = Number(portfolioCurrentFxRates[asset]);
   });
   portfolioRiskPayload = null;
   portfolioCurrentPrices = retainedCurrentPrices;
+  portfolioCurrentLocalPrices = retainedLocalPrices;
+  portfolioCurrentCurrencies = retainedCurrencies;
+  portfolioCurrentFxPairs = retainedFxPairs;
+  portfolioCurrentFxRates = retainedFxRates;
   portfolioPrices = { ...retainedCurrentPrices };
   portfolioLatestEodPrices = {};
   portfolioLatestEodDate = "";
@@ -3518,6 +3688,21 @@ function deletePortfolio() {
   refreshSavedPortfolioList();
   setPortfolioStorageStatus(`Deleted “${name}”.`);
 }
+
+async function initializeRiskSnapCorrelationsPage() {
+  try {
+    await loadRiskSnapConfig();
+  } catch (err) {
+    setStatus(`RiskSnap configuration unavailable: ${err.message || err}`);
+    return;
+  }
+  loadStartupSettings();
+  updateSaveDefaultsState();
+  refreshSavedPortfolioList();
+  restoreActiveSelectionAndLoad();
+}
+
+initializeRiskSnapCorrelationsPage();
 
 function debounce(fn, ms) { let t; return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), ms); }; }
 

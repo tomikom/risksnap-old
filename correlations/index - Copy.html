@@ -4,8 +4,10 @@ title: Correlations, Portfolios
 ---
 <!--
 RiskSnap Correlations
-Version: index(149)
+Version: index(150)
 Changes:
+- Pairwise rolling history now keeps the full Matrix History range and follows Matrix History playback/slider movement without truncating at the originally clicked date
+- Latest Risk Data now remains tied to the authoritative /correlations_data EOD even when Matrix History ends on an older date
 - Removed Market Cap and P/E columns from Portfolio Holdings; all other portfolio analytics retained
 - Added Top ETFs preset using 10 of the largest U.S.-listed ETFs by assets
 - Added latest Yahoo Market Cap and trailing P/E columns after Beta, labelled with the Yahoo market date
@@ -1123,9 +1125,8 @@ async function fetchRollingMatrix(requestPayload, periodLabel) {
     // final frame can lag the main correlation payload by one or more days.
 
     applyMatrixHistoryRange(false);
-    // Once the history is available, initialize the page through the same
-    // Latest path used by the button. This supplies the preceding EOD frame
-    // after Ctrl+F5 and after loading a saved portfolio.
+    // Once history is available, return to the authoritative latest completed
+    // EOD from /correlations_data. Rolling history must not overwrite it.
     showLatestMatrixFrame();
     slider.disabled = false;
     latestBtn.disabled = false;
@@ -1275,37 +1276,53 @@ window.addEventListener("resize", () => {
 function showLatestMatrixFrame() {
   pauseMatrixHistoryPlayback();
 
+  // "Latest" is always the authoritative latest completed EOD returned by
+  // /correlations_data. Matrix History may legitimately end on an older date,
+  // so it must never replace the current risk payload or latest EOD date.
+  const latestPayload = activePayload;
+
   if (matrixHistoryFrames.length) {
     const matrixSlider = document.getElementById("matrixHistorySlider");
     const marketIndex = matrixHistoryFrames.length - 1;
-    const marketFrame = matrixHistoryFrames[marketIndex];
-    const eodFrame = marketFrame;
-
     matrixSlider.value = marketIndex;
     matrixHistoryIndex = marketIndex;
-
-    // Latest uses the newest completed EOD frame for valuation and risk data.
-    document.getElementById("matrixHistoryDate").textContent = eodFrame.date
-      ? formatLongDate(eodFrame.date)
-      : "Latest matrix";
-    updateMatrixHistorySliderDate(marketFrame, marketIndex);
-    drawCorrelationChart(eodFrame);
-    updateSelectedPairStatsFromMatrixFrame(eodFrame);
-
-    portfolioViewMode = "current";
-    portfolioRiskPayload = eodFrame;
-    portfolioLatestEodPrices = pricesFromPayload(eodFrame);
-    portfolioLatestEodDate = String(eodFrame.date || "").slice(0, 10);
-    portfolioPrices = { ...portfolioCurrentPrices };
-    renderPortfolioTable();
-    renderPortfolioDividendHistory();
-    renderPortfolioMarketValueChart();
-  } else {
-    portfolioViewMode = "current";
-    if (activePayload) portfolioRiskPayload = activePayload;
-    portfolioPrices = { ...portfolioCurrentPrices };
-    renderPortfolioTable();
   }
+
+  portfolioViewMode = "current";
+
+  if (latestPayload) {
+    portfolioRiskPayload = latestPayload;
+    updateLatestEodPriceSource(latestPayload);
+    portfolioPrices = { ...portfolioCurrentPrices };
+
+    const latestDate = String(
+      latestPayload.date || latestPayload.as_of || latestPayload.ewma_as_of || latestPayload.risk_free_as_of || ""
+    ).slice(0, 10);
+
+    document.getElementById("matrixHistoryDate").textContent = latestDate
+      ? formatLongDate(latestDate)
+      : "Latest matrix";
+
+    const sliderLabel = document.getElementById("matrixHistorySliderDate");
+    if (sliderLabel) {
+      sliderLabel.textContent = latestDate ? formatCompactDate(latestDate) : "Latest";
+      if (matrixHistoryFrames.length) {
+        const slider = document.getElementById("matrixHistorySlider");
+        const labelHalf = (sliderLabel.offsetWidth || 70) / 2;
+        const sliderWidth = slider.clientWidth || 1;
+        sliderLabel.style.left = `${Math.max(labelHalf, sliderWidth - labelHalf)}px`;
+      }
+    }
+
+    drawCorrelationChart(latestPayload);
+    updateSelectedPairStatsFromMatrixFrame(latestPayload);
+  } else {
+    portfolioPrices = { ...portfolioCurrentPrices };
+  }
+
+  renderPortfolioTable();
+  renderPortfolioDividendHistory();
+  renderPortfolioMarketValueChart();
 
   // Keep the lower rolling-history slider synchronized at its newest window.
   const rollingSlider = document.getElementById("rollingSlider");
@@ -3160,6 +3177,28 @@ function updateSelectedPairStatsFromMatrixFrame(frame) {
     date: frame.date || ""
   };
   document.getElementById("rollingPair").textContent = rollingPairTitle(rollingContext);
+  syncRollingSliderToDate(frame.date || "");
+}
+
+function syncRollingSliderToDate(targetDate) {
+  if (!selectedRollingPair || !targetDate || !rollingRows.length) return;
+
+  const slider = document.getElementById("rollingSlider");
+  if (!slider) return;
+
+  // Put the Matrix History date at the right edge of the 20-point rolling strip.
+  // If an exact row is unavailable, use the latest rolling row on or before it.
+  let targetIndex = -1;
+  for (let i = 0; i < rollingRows.length; i += 1) {
+    const rowDate = String(rollingRows[i].date || "");
+    if (rowDate <= targetDate) targetIndex = i;
+    if (rowDate > targetDate) break;
+  }
+  if (targetIndex < 0) return;
+
+  const maxStart = Math.max(0, rollingRows.length - ROLLING_VISIBLE_POINTS);
+  slider.value = Math.max(0, Math.min(maxStart, targetIndex - ROLLING_VISIBLE_POINTS + 1));
+  renderRollingStrip();
 }
 
 function rollingPairTitle(context) {
@@ -3214,16 +3253,15 @@ async function fetchRollingCorrelation(assetA, assetB, corr, volA, volB, asOfDat
     if (!response.ok) throw new Error((data.messages || [response.statusText]).join(" "));
     const allRollingRows = data.rows || [];
 
-    // Keep the rolling-pair history within the same date range as Matrix History.
-    // When a historical matrix bubble is clicked, also stop at that selected date.
+    // Keep the rolling-pair history within the full Matrix History date range.
+    // A historical bubble click chooses the initial visible window only; it must
+    // not truncate the pair history, otherwise playback cannot advance past that date.
     const matrixStartDate = matrixHistoryFrames.length
       ? matrixHistoryFrames[0].date
       : "";
-    const matrixEndDate = asOfDate || (
-      matrixHistoryFrames.length
-        ? matrixHistoryFrames[matrixHistoryFrames.length - 1].date
-        : ""
-    );
+    const matrixEndDate = matrixHistoryFrames.length
+      ? matrixHistoryFrames[matrixHistoryFrames.length - 1].date
+      : (activePayload && activePayload.date ? activePayload.date : "");
 
     rollingRows = allRollingRows.filter(row => {
       const rowDate = String(row.date || "");
