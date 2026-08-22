@@ -580,14 +580,14 @@ const FUTURES_SPECS = {
   "NATURAL GAS":   { yahoo: "NG=F",  name: "Natural Gas", factor: 10000, contract: "10,000 MMBtu" },
   "SILVER":        { yahoo: "SIL=F", name: "Micro Silver", factor: 1000, contract: "1,000 troy oz" },
   "COPPER":        { yahoo: "HG=F",  name: "Copper", factor: 25000,   contract: "25,000 lb" },
-  "LIVE CATTLE":   { yahoo: "LE=F",  name: "Live Cattle", factor: 40000, contract: "40,000 lb" },
-  "FEEDER CATTLE": { yahoo: "GF=F",  name: "Feeder Cattle", factor: 50000, contract: "50,000 lb" },
-  "COFFEE":        { yahoo: "KC=F",  name: "Coffee", factor: 37500,    contract: "37,500 lb" },
+  "LIVE CATTLE":   { yahoo: "LE=F",  name: "Live Cattle", factor: 400, contract: "40,000 lb" },
+  "FEEDER CATTLE": { yahoo: "GF=F",  name: "Feeder Cattle", factor: 500, contract: "50,000 lb" },
+  "COFFEE":        { yahoo: "KC=F",  name: "Coffee", factor: 375,      contract: "37,500 lb" },
   "COCOA":         { yahoo: "CC=F",  name: "Cocoa", factor: 10,        contract: "10 metric tonnes" },
-  "COTTON":        { yahoo: "CT=F",  name: "Cotton", factor: 50000,    contract: "50,000 lb" },
-  "SUGAR #11":     { yahoo: "SB=F",  name: "Sugar #11", factor: 112000, contract: "112,000 lb" },
-  "ORANGE JUICE":  { yahoo: "OJ=F",  name: "Orange Juice", factor: 15000, contract: "15,000 lb" },
-  "LUMBER":        { yahoo: "LBS=F", name: "Lumber", factor: 27500,    contract: "27,500 board ft" }
+  "COTTON":        { yahoo: "CT=F",  name: "Cotton", factor: 500,      contract: "50,000 lb" },
+  "SUGAR #11":     { yahoo: "SB=F",  name: "Sugar #11", factor: 1120,  contract: "112,000 lb" },
+  "ORANGE JUICE":  { yahoo: "OJ=F",  name: "Orange Juice", factor: 150, contract: "15,000 lb" },
+  "LUMBER":        { yahoo: "LBS=F", name: "Lumber", factor: 27.5,     contract: "27,500 board ft" }
 };
 
 function futuresSpec(asset) {
@@ -605,28 +605,15 @@ function contractFactor(asset) {
   return spec ? Number(spec.factor) : 1;
 }
 
-function futuresUnitPrice(asset, price) {
+function holdingNotional(asset, price, units) {
   const spec = futuresSpec(asset);
   let p = Number(price);
-  if (!spec || !Number.isFinite(p)) return p;
-  const yahoo = normalizeDisplaySymbol(spec.yahoo);
-
-  // Yahoo quotes these contracts in cents per bushel or cents per pound.
-  if (["ZC=F", "ZS=F", "KE=F", "LE=F", "GF=F", "KC=F", "CT=F", "SB=F", "OJ=F"].includes(yahoo)) {
-    return p / 100;
-  }
-
-  // Lumber is quoted in dollars per 1,000 board feet.
-  if (yahoo === "LBS=F") return p / 1000;
-
-  // The remaining contracts are already quoted in dollars per displayed unit.
-  return p;
-}
-
-function holdingNotional(asset, price, units) {
-  const p = futuresUnitPrice(asset, price);
   const u = Number(units);
   if (!Number.isFinite(p) || !Number.isFinite(u)) return NaN;
+  if (spec) {
+    const yahoo = normalizeDisplaySymbol(spec.yahoo);
+    if (yahoo === "ZC=F" || yahoo === "ZS=F" || yahoo === "KE=F") p /= 100;
+  }
   return p * u * contractFactor(asset);
 }
 
@@ -640,16 +627,10 @@ function futuresPriceDisplay(asset, price) {
   const n = Number(price);
   if (!spec || !Number.isFinite(n)) return "—";
   const yahoo = normalizeDisplaySymbol(spec.yahoo);
-  const p = futuresUnitPrice(asset, n);
-
-  if (["ZC=F", "ZS=F", "KE=F"].includes(yahoo)) return `$${p.toFixed(4)}/bu`;
-  if (yahoo === "NG=F") return `$${p.toFixed(3)}/MMBtu`;
-  if (["HG=F", "LE=F", "GF=F", "KC=F", "CT=F", "SB=F", "OJ=F"].includes(yahoo)) return `$${p.toFixed(4)}/lb`;
-  if (yahoo === "MGC=F" || yahoo === "SIL=F") return `$${p.toFixed(2)}/troy oz`;
-  if (yahoo === "CL=F") return `$${p.toFixed(2)}/barrel`;
-  if (yahoo === "CC=F") return `$${p.toFixed(2)}/metric tonne`;
-  if (yahoo === "LBS=F") return `$${p.toFixed(4)}/board ft`;
-  return formatMoney(p);
+  if (yahoo === "ZC=F" || yahoo === "ZS=F" || yahoo === "KE=F") return `$${(n / 100).toFixed(4)}/bu`;
+  if (yahoo === "NG=F") return `$${n.toFixed(3)}/MMBtu`;
+  if (yahoo === "HG=F") return `$${n.toFixed(4)}/lb`;
+  return formatMoney(n);
 }
 
 function futuresSecurityDisplay(asset) {
