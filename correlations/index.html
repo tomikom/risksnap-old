@@ -6,8 +6,6 @@ title: Correlations, Portfolios
 RiskSnap Correlations
 Version: index(150)
 Changes:
-- Futures price inputs now expected in dollars per underlying unit; removed browser cents/100 and lumber/1000 conversions
-- Fixed EOD, historical, drawdown and risk-weight portfolio notionals to include futures contract sizes via holdingNotional()
 - Pairwise rolling history now keeps the full Matrix History range and follows Matrix History playback/slider movement without truncating at the originally clicked date
 - Latest Risk Data now remains tied to the authoritative /correlations_data EOD even when Matrix History ends on an older date
 - Removed Market Cap and P/E columns from Portfolio Holdings; all other portfolio analytics retained
@@ -608,11 +606,21 @@ function contractFactor(asset) {
 }
 
 function futuresUnitPrice(asset, price) {
-  // Futures prices supplied to the page are already normalized upstream to
-  // dollars per underlying unit (for example $/bu, $/lb, $/board ft).
-  // Contract size is still applied separately by holdingNotional().
-  const p = Number(price);
-  return Number.isFinite(p) ? p : p;
+  const spec = futuresSpec(asset);
+  let p = Number(price);
+  if (!spec || !Number.isFinite(p)) return p;
+  const yahoo = normalizeDisplaySymbol(spec.yahoo);
+
+  // Yahoo quotes these contracts in cents per bushel or cents per pound.
+  if (["ZC=F", "ZS=F", "KE=F", "LE=F", "GF=F", "KC=F", "CT=F", "SB=F", "OJ=F"].includes(yahoo)) {
+    return p / 100;
+  }
+
+  // Lumber is quoted in dollars per 1,000 board feet.
+  if (yahoo === "LBS=F") return p / 1000;
+
+  // The remaining contracts are already quoted in dollars per displayed unit.
+  return p;
 }
 
 function holdingNotional(asset, price, units) {
@@ -1808,9 +1816,11 @@ function currentPortfolioRows() {
       Number(portfolioPrices[asset]) > 0
     )
     .map(asset => {
-      // portfolioPrices is the normalized valuation price. Futures are already
-      // dollars per underlying unit, so do not substitute a separate local quote.
-      const price = Number(portfolioPrices[asset]);
+      let price = Number(portfolioPrices[asset]);
+      if (portfolioViewMode === "current" && isFuturesAsset(asset)) {
+        const nativeQuote = Number(portfolioCurrentLocalPrices[asset]);
+        if (Number.isFinite(nativeQuote) && nativeQuote > 0) price = nativeQuote;
+      }
       const shares = Math.max(0, Number(portfolioShares[asset]) || 0);
       return { asset, price, shares, marketValue: holdingNotional(asset, price, shares) };
     });
@@ -1822,7 +1832,7 @@ function riskPortfolioRows(payload) {
     const index = payload.assets.indexOf(asset);
     const price = index >= 0 ? Number(payload.prices[index]) : NaN;
     const shares = Math.max(0, Number(portfolioShares[asset]) || 0);
-    return { asset, index, price, shares, marketValue: holdingNotional(asset, price, shares) };
+    return { asset, index, price, shares, marketValue: price * shares };
   }).filter(row => row.index >= 0 && Number.isFinite(row.price) && row.price > 0);
 }
 
@@ -1971,14 +1981,8 @@ async function refreshPortfolioPrices() {
     const nextPrices = { ...portfolioCurrentPrices };
     const failed = [];
     portfolioSecurities.forEach(asset => {
-      // Equities use USD-normalized prices. Futures are USD contracts and Yahoo
-      // may label cents-quoted contracts as USX, so use the already-normalized
-      // /latest_prices "prices" value for futures.
-      const candidate = isFuturesAsset(asset)
-        ? Number(downloadedLocal[asset])
-        : Number(downloaded[asset]);
-      if (Number.isFinite(candidate) && candidate > 0) {
-        nextPrices[asset] = candidate;
+      if (Number.isFinite(Number(downloaded[asset])) && Number(downloaded[asset]) > 0) {
+        nextPrices[asset] = Number(downloaded[asset]);
       } else {
         failed.push(asset);
       }
@@ -2419,7 +2423,7 @@ function portfolioMarketValueForFrame(frame) {
     const price = Number(frame.prices[i]);
     const shares = Math.max(0, Number(portfolioShares[asset]) || 0);
     if (!Number.isFinite(price) || price <= 0) return;
-    total += holdingNotional(asset, price, shares);
+    total += price * shares;
     found = true;
   });
   return found ? total : null;
@@ -2489,16 +2493,27 @@ function selectedPortfolioDailyChange(totalMarketValue) {
     if (index <= 0) return null;
     previousValue = portfolioMarketValueForFrame(matrixHistoryFrames[index - 1]);
   } else {
-    // Current mode compares against the authoritative EOD risk payload itself.
-    // riskPortfolioRows() uses payload.prices (already normalized to $/unit)
-    // and holdingNotional(), so futures contract sizes are always included.
-    const eodRows = riskPortfolioRows(portfolioRiskPayload);
-    previousValue = eodRows.length
-      ? eodRows.reduce((sum, row) => sum + row.marketValue, 0)
-      : null;
+    // Current mode compares against the EOD prices shown in the holdings
+    // table. This map is populated only from the main correlation payload;
+    // Matrix History is deliberately excluded because it can lag.
+    let total = 0;
+    let found = false;
+    portfolioSecurities.forEach(asset => {
+      const price = Number(portfolioLatestEodPrices[asset]);
+      const shares = Math.max(0, Number(portfolioShares[asset]) || 0);
+      if (!Number.isFinite(price) || price <= 0) return;
+      total += price * shares;
+      found = true;
+    });
+    previousValue = found ? total : null;
 
+    // Fallbacks apply only during the short interval before the authoritative
+    // latest-EOD map has been populated.
     if (!Number.isFinite(previousValue) || previousValue <= 0) {
       previousValue = portfolioMarketValueForFrame(activePayload);
+    }
+    if (!Number.isFinite(previousValue) || previousValue <= 0) {
+      previousValue = portfolioMarketValueForFrame(portfolioRiskPayload);
     }
   }
 
@@ -2746,10 +2761,10 @@ function renderPortfolioTable() {
       <td>${rowIndex + 1}. ${isFuturesAsset(row.asset) ? futuresSecurityDisplay(row.asset) : displayAsset(row.asset)}</td>
       <td><button type="button" class="portfolio-chart-button" data-asset="${row.asset}" title="View price chart" aria-label="View ${displayAsset(row.asset)} price chart">📈</button></td>
       <td>${isFuturesAsset(row.asset)
-        ? futuresPriceDisplay(row.asset, eodPrice)
+        ? futuresPriceDisplay(row.asset, Number.isFinite(eodLocalPrice) ? eodLocalPrice : eodPrice)
         : foreignPriceDisplay(eodLocalPrice, eodPrice, eodCurrency, eodFxPair, eodFxRate)}</td>
       <td>${isFuturesAsset(row.asset)
-        ? futuresPriceDisplay(row.asset, row.price)
+        ? futuresPriceDisplay(row.asset, Number.isFinite(marketLocalPrice) ? marketLocalPrice : row.price)
         : foreignPriceDisplay(
             Number.isFinite(marketLocalPrice) ? marketLocalPrice : row.price,
             row.price,
