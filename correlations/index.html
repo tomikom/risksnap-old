@@ -6,6 +6,8 @@ title: Correlations, Portfolios
 RiskSnap Correlations
 Version: index(150)
 Changes:
+- Futures price inputs now expected in dollars per underlying unit; removed browser cents/100 and lumber/1000 conversions
+- Fixed EOD, historical, drawdown and risk-weight portfolio notionals to include futures contract sizes via holdingNotional()
 - Pairwise rolling history now keeps the full Matrix History range and follows Matrix History playback/slider movement without truncating at the originally clicked date
 - Latest Risk Data now remains tied to the authoritative /correlations_data EOD even when Matrix History ends on an older date
 - Removed Market Cap and P/E columns from Portfolio Holdings; all other portfolio analytics retained
@@ -606,21 +608,11 @@ function contractFactor(asset) {
 }
 
 function futuresUnitPrice(asset, price) {
-  const spec = futuresSpec(asset);
-  let p = Number(price);
-  if (!spec || !Number.isFinite(p)) return p;
-  const yahoo = normalizeDisplaySymbol(spec.yahoo);
-
-  // Yahoo quotes these contracts in cents per bushel or cents per pound.
-  if (["ZC=F", "ZS=F", "KE=F", "LE=F", "GF=F", "KC=F", "CT=F", "SB=F", "OJ=F"].includes(yahoo)) {
-    return p / 100;
-  }
-
-  // Lumber is quoted in dollars per 1,000 board feet.
-  if (yahoo === "LBS=F") return p / 1000;
-
-  // The remaining contracts are already quoted in dollars per displayed unit.
-  return p;
+  // Futures prices supplied to the page are already normalized upstream to
+  // dollars per underlying unit (for example $/bu, $/lb, $/board ft).
+  // Contract size is still applied separately by holdingNotional().
+  const p = Number(price);
+  return Number.isFinite(p) ? p : p;
 }
 
 function holdingNotional(asset, price, units) {
@@ -1832,7 +1824,7 @@ function riskPortfolioRows(payload) {
     const index = payload.assets.indexOf(asset);
     const price = index >= 0 ? Number(payload.prices[index]) : NaN;
     const shares = Math.max(0, Number(portfolioShares[asset]) || 0);
-    return { asset, index, price, shares, marketValue: price * shares };
+    return { asset, index, price, shares, marketValue: holdingNotional(asset, price, shares) };
   }).filter(row => row.index >= 0 && Number.isFinite(row.price) && row.price > 0);
 }
 
@@ -2423,7 +2415,7 @@ function portfolioMarketValueForFrame(frame) {
     const price = Number(frame.prices[i]);
     const shares = Math.max(0, Number(portfolioShares[asset]) || 0);
     if (!Number.isFinite(price) || price <= 0) return;
-    total += price * shares;
+    total += holdingNotional(asset, price, shares);
     found = true;
   });
   return found ? total : null;
@@ -2502,7 +2494,7 @@ function selectedPortfolioDailyChange(totalMarketValue) {
       const price = Number(portfolioLatestEodPrices[asset]);
       const shares = Math.max(0, Number(portfolioShares[asset]) || 0);
       if (!Number.isFinite(price) || price <= 0) return;
-      total += price * shares;
+      total += holdingNotional(asset, price, shares);
       found = true;
     });
     previousValue = found ? total : null;
