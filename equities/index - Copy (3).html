@@ -290,7 +290,6 @@ Version: Equities 3
 <script>
 const EQUITIES_ENDPOINT = "https://surface-203178530029.northamerica-northeast2.run.app/equity_info";
 const EQUITIES_HISTORY_ENDPOINT = "https://surface-203178530029.northamerica-northeast2.run.app/asset_history";
-const EQUITIES_LATEST_PRICES_ENDPOINT = "https://surface-203178530029.northamerica-northeast2.run.app/latest_prices";
 const UNUSUAL_MOVE_LOOKBACK = 25;
 const UNUSUAL_MOVE_THRESHOLD = 2.5;
 const equitiesMoveCache = new Map();
@@ -813,57 +812,14 @@ async function loadEquities() {
   button.disabled = true;
   setStatus(`Loading ${symbols.length} securit${symbols.length === 1 ? "y" : "ies"}...`);
   try {
-    const [infoResponse, latestResponse] = await Promise.all([
-      fetch(EQUITIES_ENDPOINT, {
-        method: "POST",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({symbols})
-      }),
-      fetch(EQUITIES_LATEST_PRICES_ENDPOINT, {
-        method: "POST",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({symbols})
-      })
-    ]);
-
-    const payload = await infoResponse.json().catch(() => ({}));
-    if (!infoResponse.ok) throw new Error(payload.error || `HTTP ${infoResponse.status}`);
-
-    // The Correlations/Portfolio page uses /latest_prices for Market Value.
-    // Overlay those already-normalized market prices on the descriptive
-    // /equity_info rows so both pages display the same market-price source.
-    let latestPayload = {};
-    if (latestResponse.ok) latestPayload = await latestResponse.json().catch(() => ({}));
-    const latestRows = Array.isArray(latestPayload) ? latestPayload
-      : (latestPayload.rows || latestPayload.prices || latestPayload.data || []);
-    const latestBySymbol = new Map();
-
-    if (Array.isArray(latestRows)) {
-      latestRows.forEach(item => {
-        const key = String(item && (item.symbol || item.asset || item.code) || "").trim().toUpperCase();
-        if (key) latestBySymbol.set(key, item);
-      });
-    } else if (latestRows && typeof latestRows === "object") {
-      Object.entries(latestRows).forEach(([key, value]) => {
-        latestBySymbol.set(String(key).trim().toUpperCase(),
-          value && typeof value === "object" ? value : {price:value});
-      });
-    }
-
-    const rows = (payload.rows || []).map(row => {
-      const symbol = String(row.symbol || "").trim().toUpperCase();
-      const latest = latestBySymbol.get(symbol);
-      if (!latest) return row;
-      const marketPrice = Number(latest.price ?? latest.market_price ?? latest.usd_price);
-      if (!Number.isFinite(marketPrice)) return row;
-      return {
-        ...row,
-        price: marketPrice,
-        usd_price: String(row.currency || "USD") === "USD" ? marketPrice : row.usd_price
-      };
+    const response = await fetch(EQUITIES_ENDPOINT, {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({symbols})
     });
-
-    renderRows(rows);
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(payload.error || `HTTP ${response.status}`);
+    renderRows(payload.rows || []);
     const failed = Array.isArray(payload.failed) ? payload.failed : [];
     const time = payload.timestamp ? new Date(payload.timestamp).toLocaleString() : "";
     setStatus(`Loaded ${Array.isArray(payload.rows) ? payload.rows.length : 0} securities${time ? ` — ${time}` : ""}${failed.length ? `; unavailable: ${failed.join(", ")}` : ""}.`);
