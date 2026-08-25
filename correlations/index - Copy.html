@@ -6,6 +6,7 @@ title: Correlations, Portfolios
 RiskSnap Correlations
 Version: index(150)
 Changes:
+- Corrected Yahoo cent-quoted futures EOD prices (including ZC=F corn) to dollars per unit and applied contract notional sizing to EOD portfolio values
 - Pairwise rolling history now keeps the full Matrix History range and follows Matrix History playback/slider movement without truncating at the originally clicked date
 - Latest Risk Data now remains tied to the authoritative /correlations_data EOD even when Matrix History ends on an older date
 - Removed Market Cap and P/E columns from Portfolio Holdings; all other portfolio analytics retained
@@ -607,19 +608,26 @@ function contractFactor(asset) {
 
 function futuresUnitPrice(asset, price) {
   const spec = futuresSpec(asset);
-  let p = Number(price);
+  const p = Number(price);
   if (!spec || !Number.isFinite(p)) return p;
-  const yahoo = normalizeDisplaySymbol(spec.yahoo);
 
-  // Yahoo quotes these contracts in cents per bushel or cents per pound.
+  // Live/current futures prices supplied to this page are already normalized
+  // to dollars per displayed unit by /latest_prices. Do not convert cents here.
+  return p;
+}
+
+function futuresEodUnitPrice(asset, price) {
+  const spec = futuresSpec(asset);
+  const p = Number(price);
+  if (!spec || !Number.isFinite(p)) return p;
+
+  // EOD correlation/history data retains Yahoo's native quotation convention.
+  // These contracts are quoted by Yahoo in cents per displayed unit, so convert
+  // cents to dollars for EOD display and all EOD notional-value calculations.
+  const yahoo = normalizeDisplaySymbol(spec.yahoo);
   if (["ZC=F", "ZS=F", "KE=F", "LE=F", "GF=F", "KC=F", "CT=F", "SB=F", "OJ=F"].includes(yahoo)) {
     return p / 100;
   }
-
-  // Lumber is quoted in dollars per 1,000 board feet.
-  if (yahoo === "LBS=F") return p / 1000;
-
-  // The remaining contracts are already quoted in dollars per displayed unit.
   return p;
 }
 
@@ -1830,9 +1838,10 @@ function riskPortfolioRows(payload) {
   if (!payload || !payload.assets || !payload.prices) return [];
   return portfolioSecurities.map(asset => {
     const index = payload.assets.indexOf(asset);
-    const price = index >= 0 ? Number(payload.prices[index]) : NaN;
+    const rawPrice = index >= 0 ? Number(payload.prices[index]) : NaN;
+    const price = isFuturesAsset(asset) ? futuresEodUnitPrice(asset, rawPrice) : rawPrice;
     const shares = Math.max(0, Number(portfolioShares[asset]) || 0);
-    return { asset, index, price, shares, marketValue: price * shares };
+    return { asset, index, price, shares, marketValue: holdingNotional(asset, price, shares) };
   }).filter(row => row.index >= 0 && Number.isFinite(row.price) && row.price > 0);
 }
 
@@ -2420,10 +2429,11 @@ function portfolioMarketValueForFrame(frame) {
   let found = false;
   frame.assets.forEach((asset, i) => {
     if (!portfolioSecurities.includes(asset)) return;
-    const price = Number(frame.prices[i]);
+    const rawPrice = Number(frame.prices[i]);
+    const price = isFuturesAsset(asset) ? futuresEodUnitPrice(asset, rawPrice) : rawPrice;
     const shares = Math.max(0, Number(portfolioShares[asset]) || 0);
     if (!Number.isFinite(price) || price <= 0) return;
-    total += price * shares;
+    total += holdingNotional(asset, price, shares);
     found = true;
   });
   return found ? total : null;
@@ -2499,10 +2509,11 @@ function selectedPortfolioDailyChange(totalMarketValue) {
     let total = 0;
     let found = false;
     portfolioSecurities.forEach(asset => {
-      const price = Number(portfolioLatestEodPrices[asset]);
+      const rawPrice = Number(portfolioLatestEodPrices[asset]);
+      const price = isFuturesAsset(asset) ? futuresEodUnitPrice(asset, rawPrice) : rawPrice;
       const shares = Math.max(0, Number(portfolioShares[asset]) || 0);
       if (!Number.isFinite(price) || price <= 0) return;
-      total += price * shares;
+      total += holdingNotional(asset, price, shares);
       found = true;
     });
     previousValue = found ? total : null;
@@ -2761,7 +2772,7 @@ function renderPortfolioTable() {
       <td>${rowIndex + 1}. ${isFuturesAsset(row.asset) ? futuresSecurityDisplay(row.asset) : displayAsset(row.asset)}</td>
       <td><button type="button" class="portfolio-chart-button" data-asset="${row.asset}" title="View price chart" aria-label="View ${displayAsset(row.asset)} price chart">📈</button></td>
       <td>${isFuturesAsset(row.asset)
-        ? futuresPriceDisplay(row.asset, Number.isFinite(eodLocalPrice) ? eodLocalPrice : eodPrice)
+        ? futuresPriceDisplay(row.asset, futuresEodUnitPrice(row.asset, Number.isFinite(eodLocalPrice) ? eodLocalPrice : eodPrice))
         : foreignPriceDisplay(eodLocalPrice, eodPrice, eodCurrency, eodFxPair, eodFxRate)}</td>
       <td>${isFuturesAsset(row.asset)
         ? futuresPriceDisplay(row.asset, Number.isFinite(marketLocalPrice) ? marketLocalPrice : row.price)
