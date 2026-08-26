@@ -534,13 +534,13 @@ function drawBreakevenInflationChart() {
 
     Plotly.newPlot("breakeven_inflation", [
         {x:s5.map(r=>r.Date),y:s5.map(r=>r.Breakeven5Y),type:"scatter",mode:"lines",name:"5Y breakeven",line:{width:2.2},connectgaps:false},
-        {x:s10.map(r=>r.Date),y:s10.map(r=>r.Breakeven10Y),type:"scatter",mode:"lines",name:"10Y breakeven (T10YIE)",line:{width:2.2},connectgaps:false},
+        {x:s10.map(r=>r.Date),y:s10.map(r=>r.Breakeven10Y),type:"scatter",mode:"lines",name:"10Y breakeven",line:{width:2.2},connectgaps:false},
         {x:f55.map(r=>r.Date),y:f55.map(r=>r.Forward5Y5Y),type:"scatter",mode:"lines",name:"5Y5Y forward",line:{width:2.2,dash:"dash"},connectgaps:false}
     ], {
-        title:{text:"U.S. market-implied inflation expectations (10Y breakeven = T10YIE) — "+label,x:0.03,xanchor:"left",font:{size:18}},
+        title:{text:"U.S. market-implied inflation expectations — "+label,x:0.03,xanchor:"left",font:{size:18}},
         margin:{l:68,r:24,t:58,b:72},paper_bgcolor:"white",plot_bgcolor:"white",hovermode:"x unified",
         legend:{orientation:"h",x:0.02,y:-0.18},
-        xaxis:{showgrid:true,gridcolor:"#edf1f7",zeroline:false,tickformat:"%b %d, %Y",hoverformat:"%b %d, %Y"},
+        xaxis:{showgrid:true,gridcolor:"#edf1f7",zeroline:false,tickformat:"%b %Y",hoverformat:"%b %Y"},
         yaxis:{title:"Expected inflation (%)",showgrid:true,gridcolor:"#edf1f7",zeroline:false,ticksuffix:"%"}
     }, plotlyConfig());
 }
