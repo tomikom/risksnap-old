@@ -60,9 +60,7 @@ title: Portfolio Optimization
     <strong>Sharpe:</strong>
     (weighted EWMA price return + weighted TTM dividend yield − 1Y USD risk-free rate)
     ÷ portfolio volatility.
-    Equities use whole shares. Futures use fractional contract equivalents for the optimized
-    exposure, with an editable whole-contract implementation check. Change the investment amount
-    to see how the contract equivalents scale.
+    Share counts use whole shares and convert local security prices to USD before allocation.
     <span id="optAsOf"></span>
   </div>
 
@@ -142,8 +140,6 @@ title: Portfolio Optimization
             <th>USD Price</th>
             <th>Target $</th>
             <th>Shares</th>
-            <th>Equivalent Contracts</th>
-            <th>Rounded Contracts</th>
             <th>Actual $</th>
             <th>EWMA Price Return</th>
             <th>TTM Div Yield</th>
@@ -283,14 +279,6 @@ h1 { color:white; text-align:center; background-color:#3A5FCD; }
 .opt-table th { background:#f4f6fa; font-weight:700; }
 .opt-table th:first-child, .opt-table td:first-child { text-align:left; }
 .opt-table tfoot td { font-weight:700; border-top:2px solid #999; }
-.opt-contract-input {
-  width:72px;
-  padding:3px 5px;
-  border:1px solid #aaa;
-  border-radius:4px;
-  text-align:right;
-  font:inherit;
-}
 .inspector-header {
   display:flex;
   justify-content:space-between;
@@ -346,21 +334,6 @@ const OPT_CONFIG_ENDPOINT = "https://surface-203178530029.northamerica-northeast
 let OPT_PRESETS = {};
 let OPT_SECURITY_META = {};
 
-const OPT_FUTURES = {
-  "MGC=F": {multiplier:10, unit:"troy oz"},
-  "SIL=F": {multiplier:1000, unit:"troy oz"},
-  "CL=F":  {multiplier:1000, unit:"barrels"},
-  "ZC=F":  {multiplier:5000, unit:"bushels"},
-  "ZS=F":  {multiplier:5000, unit:"bushels"},
-  "KE=F":  {multiplier:5000, unit:"bushels"},
-  "NG=F":  {multiplier:10000, unit:"MMBtu"},
-  "HG=F":  {multiplier:25000, unit:"lb"}
-};
-
-function futureSpec(asset) {
-  return OPT_FUTURES[String(asset || "").trim().toUpperCase()] || null;
-}
-
 async function loadOptimizationConfig() {
   const response = await fetch(OPT_CONFIG_ENDPOINT);
   const data = await response.json();
@@ -398,8 +371,7 @@ let optState = {
   maxSharpe: null,
   minVol: null,
   maxReturn: null,
-  inspected: null,
-  roundedContracts: {}
+  inspected: null
 };
 
 function parseSymbols(raw) {
@@ -679,66 +651,22 @@ function fmtMoney(value, digits=2) {
 function shareAllocation(sim) {
   const amount = Math.max(0, Number(optState.investmentAmount) || 0);
   const rows = optState.assets.map((asset,i) => {
-    const spec = futureSpec(asset);
-    const isFuture = !!spec;
     const localPrice = Number(optState.prices[asset]);
-
-    // RiskSnap's commodity history is already normalized into USD quote units
-    // (for example ZC=F is dollars/bushel, not Yahoo's USX cents quote).
-    const rawCurrency = String(optState.currencies[asset] || "USD").toUpperCase();
-    const currency = isFuture ? "USD" : rawCurrency;
-
-    const fxInfo = isFuture
-      ? {rate:1,displayRate:1,date:optState.asOf || "",source:"USD normalized futures quote"}
-      : (optState.fxToUsd[currency] || {rate:NaN,displayRate:NaN,date:"",source:"Unavailable"});
-
+    const currency = String(optState.currencies[asset] || "USD").toUpperCase();
+    const fxInfo = optState.fxToUsd[currency] || {rate:NaN,date:"",source:"Unavailable"};
     const fxToUsd = Number(fxInfo.rate);
     const fxDisplay = Number(fxInfo.displayRate);
     const backendUsdPrice = Number(optState.usdPrices[asset]);
-
-    const usdPrice = isFuture
-      ? localPrice
-      : (Number.isFinite(backendUsdPrice) && backendUsdPrice > 0
-          ? backendUsdPrice
-          : (Number.isFinite(localPrice) && Number.isFinite(fxToUsd) ? localPrice * fxToUsd : NaN));
-
+    const usdPrice = Number.isFinite(backendUsdPrice) && backendUsdPrice > 0
+      ? backendUsdPrice
+      : (Number.isFinite(localPrice) && Number.isFinite(fxToUsd) ? localPrice * fxToUsd : NaN);
     const targetValue = amount * sim.weights[i];
-
-    if (isFuture) {
-      const contractNotional = Number.isFinite(usdPrice) && usdPrice > 0
-        ? usdPrice * spec.multiplier
-        : NaN;
-      const equivalentContracts = Number.isFinite(contractNotional) && contractNotional > 0
-        ? targetValue / contractNotional
-        : NaN;
-
-      const overrideKey = `${sim.id}|${asset}`;
-      const override = Number(optState.roundedContracts[overrideKey]);
-      const roundedContracts = Number.isFinite(override)
-        ? Math.max(0, Math.trunc(override))
-        : (Number.isFinite(equivalentContracts) ? Math.max(0, Math.round(equivalentContracts)) : 0);
-
-      const actualValue = roundedContracts * (Number.isFinite(contractNotional) ? contractNotional : 0);
-
-      return {
-        asset,isFuture,spec,localPrice,currency,fxToUsd,fxDisplay,
-        fxDate:fxInfo.date,fxSource:fxInfo.source,usdPrice,targetValue,
-        shares:null,equivalentContracts,roundedContracts,contractNotional,actualValue
-      };
-    }
-
     const shares = Number.isFinite(usdPrice) && usdPrice > 0
-      ? Math.floor(targetValue / usdPrice)
-      : 0;
+      ? Math.floor(targetValue / usdPrice) : 0;
     const actualValue = shares * (Number.isFinite(usdPrice) ? usdPrice : 0);
-
-    return {
-      asset,isFuture,spec:null,localPrice,currency,fxToUsd,fxDisplay,
-      fxDate:fxInfo.date,fxSource:fxInfo.source,usdPrice,targetValue,
-      shares,equivalentContracts:null,roundedContracts:null,contractNotional:null,actualValue
-    };
+    return {asset,localPrice,currency,fxToUsd,fxDisplay,fxDate:fxInfo.date,fxSource:fxInfo.source,
+            usdPrice,targetValue,shares,actualValue};
   });
-
   const invested = rows.reduce((sum,row) => sum + row.actualValue,0);
   return {rows,invested,cash:amount-invested};
 }
@@ -1016,17 +944,7 @@ function inspectSimulation(id) {
       <td title="${escapeHtml(a.fxSource)} ${escapeHtml(a.fxDate)}">${Number.isFinite(a.fxDisplay) ? a.fxDisplay.toFixed(4) : "N/A"}</td>
       <td>${fmtMoney(a.usdPrice)}</td>
       <td>${fmtMoney(a.targetValue)}</td>
-      <td>${a.isFuture ? "—" : a.shares.toLocaleString()}</td>
-      <td title="${a.isFuture ? `Contract notional ${fmtMoney(a.contractNotional)} (${a.spec.multiplier.toLocaleString()} ${a.spec.unit})` : ""}">
-        ${a.isFuture && Number.isFinite(a.equivalentContracts) ? a.equivalentContracts.toFixed(4) : "—"}
-      </td>
-      <td>
-        ${a.isFuture
-          ? `<input class="opt-contract-input" type="number" min="0" step="1"
-              data-sim-id="${sim.id}" data-asset="${escapeHtml(asset)}"
-              value="${a.roundedContracts}">`
-          : "—"}
-      </td>
+      <td>${a.shares.toLocaleString()}</td>
       <td>${fmtMoney(a.actualValue)}</td>
       <td>${fmtPct(er,6)}</td>
       <td>${fmtPct(dy,6)}</td>
@@ -1040,31 +958,23 @@ function inspectSimulation(id) {
     <tr>
       <td>Total</td>
       <td>${fmtPct(sim.weights.reduce((a,b)=>a+b,0),6)}</td>
-      <td></td><td></td><td></td><td></td>
-      <td>${fmtMoney(optState.investmentAmount)}</td>
       <td></td><td></td><td></td>
+      <td></td>
+      <td>${fmtMoney(optState.investmentAmount)}</td>
+      <td></td>
       <td>${fmtMoney(allocation.invested)}</td>
-      <td></td><td></td>
+      <td></td>
+      <td></td>
       <td>${fmtPct(sim.priceReturn,6)}</td>
       <td>${fmtPct(sim.dividendYield,6)}</td>
       <td>${fmtNum(sim.variance,10)}</td>
     </tr>
     <tr>
-      <td>Cash / (over-allocation)</td>
-      <td colspan="9"></td>
+      <td>Cash remaining</td>
+      <td colspan="6"></td>
       <td>${fmtMoney(allocation.cash)}</td>
-      <td colspan="5"></td>
+      <td colspan="6"></td>
     </tr>`;
-
-  document.querySelectorAll(".opt-contract-input").forEach(input => {
-    input.addEventListener("change", event => {
-      const simId = Number(event.target.dataset.simId);
-      const asset = String(event.target.dataset.asset || "").toUpperCase();
-      const value = Math.max(0, Math.trunc(Number(event.target.value) || 0));
-      optState.roundedContracts[`${simId}|${asset}`] = value;
-      inspectSimulation(simId);
-    });
-  });
 
   document.getElementById("inspectFormula").textContent =
     `(${(sim.priceReturn*100).toFixed(6)}% + ${(sim.dividendYield*100).toFixed(6)}% − ${(optState.riskFree*100).toFixed(6)}%) ÷ ${(sim.volatility*100).toFixed(6)}% = ${sim.sharpe.toFixed(8)}`;
@@ -1094,18 +1004,13 @@ function downloadInspectedCsv() {
     ["Portfolio Volatility",sim.volatility],
     ["Sharpe Ratio",sim.sharpe],
     [],
-    ["Security","Weight","Local Price","Currency","USD FX","FX Date","USD Price","Target Value USD","Shares","Equivalent Contracts","Rounded Contracts","Contract Notional USD","Actual Value USD","EWMA Price Return","TTM Dividend Yield","Weighted Price Return","Weighted Dividend Yield","Variance Contribution"]
+    ["Security","Weight","Local Price","Currency","USD FX","FX Date","USD Price","Target Value USD","Shares","Actual Value USD","EWMA Price Return","TTM Dividend Yield","Weighted Price Return","Weighted Dividend Yield","Variance Contribution"]
   ];
   const allocation = shareAllocation(sim);
   optState.assets.forEach((asset,i) => {
     const w = sim.weights[i], er = Number(optState.ewma[asset] || 0), dy = Number(optState.dividends[asset] || 0);
     const a = allocation.rows[i];
-    rows.push([asset,w,a.localPrice,a.currency,a.fxDisplay,a.fxDate,a.usdPrice,a.targetValue,
-      a.isFuture ? "" : a.shares,
-      a.isFuture ? a.equivalentContracts : "",
-      a.isFuture ? a.roundedContracts : "",
-      a.isFuture ? a.contractNotional : "",
-      a.actualValue,er,dy,w*er,w*dy,sim.varianceContributions[i]]);
+    rows.push([asset,w,a.localPrice,a.currency,a.fxDisplay,a.fxDate,a.usdPrice,a.targetValue,a.shares,a.actualValue,er,dy,w*er,w*dy,sim.varianceContributions[i]]);
   });
   rows.push([]);
   rows.push(["Invested",allocation.invested]);
@@ -1213,7 +1118,6 @@ async function runOptimization() {
     // RiskSnap FX history. This lets foreign listings such as ASML.AS (EUR)
     // work without ticker-specific conversion code.
     const missingFxCurrencies = [...new Set(validAssets
-      .filter(asset => !futureSpec(asset))
       .map(asset => String(optState.currencies[asset] || "USD").toUpperCase())
       .filter(ccy => ccy !== "USD")
       .filter(ccy => !Number.isFinite(Number(optState.fxToUsd[ccy]?.rate))))];
@@ -1273,7 +1177,6 @@ document.getElementById("optPortfolio").addEventListener("change", event => {
 
 document.getElementById("optInvestmentAmount").addEventListener("change", event => {
   optState.investmentAmount = Math.max(0, Number(event.target.value) || 0);
-  optState.roundedContracts = {};
   if (optState.inspected) inspectSimulation(optState.inspected.id);
 });
 
