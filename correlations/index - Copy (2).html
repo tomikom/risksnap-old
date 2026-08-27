@@ -1836,15 +1836,9 @@ function currentPortfolioRows() {
     )
     .map(asset => {
       let price = Number(portfolioPrices[asset]);
-      if (isFuturesAsset(asset)) {
-        if (portfolioViewMode === "current") {
-          const nativeQuote = Number(portfolioCurrentLocalPrices[asset]);
-          if (Number.isFinite(nativeQuote) && nativeQuote > 0) price = nativeQuote;
-        } else {
-          // Matrix History retains Yahoo native futures quotations. Normalize the
-          // selected historical price before valuation (for example corn cents/bu -> $/bu).
-          price = futuresEodUnitPrice(asset, price);
-        }
+      if (portfolioViewMode === "current" && isFuturesAsset(asset)) {
+        const nativeQuote = Number(portfolioCurrentLocalPrices[asset]);
+        if (Number.isFinite(nativeQuote) && nativeQuote > 0) price = nativeQuote;
       }
       const shares = Math.max(0, Number(portfolioShares[asset]) || 0);
       return { asset, price, shares, marketValue: holdingNotional(asset, price, shares) };
@@ -2794,9 +2788,7 @@ function renderPortfolioTable() {
         ? futuresPriceDisplay(row.asset, futuresEodUnitPrice(row.asset, Number.isFinite(eodLocalPrice) ? eodLocalPrice : eodPrice))
         : foreignPriceDisplay(eodLocalPrice, eodPrice, eodCurrency, eodFxPair, eodFxRate)}</td>
       <td>${isFuturesAsset(row.asset)
-        ? futuresPriceDisplay(row.asset, portfolioViewMode === "historical"
-            ? row.price
-            : (Number.isFinite(marketLocalPrice) ? marketLocalPrice : row.price))
+        ? futuresPriceDisplay(row.asset, Number.isFinite(marketLocalPrice) ? marketLocalPrice : row.price)
         : foreignPriceDisplay(
             Number.isFinite(marketLocalPrice) ? marketLocalPrice : row.price,
             row.price,
