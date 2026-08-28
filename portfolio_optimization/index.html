@@ -1238,6 +1238,12 @@ async function runOptimization() {
     renderSummary();
     renderTopTable();
     renderChart();
+
+    // Default the detailed portfolio display to the optimizer's best Sharpe result.
+    // Simulation #0 remains available as the equal-weight verification reference.
+    if (optState.maxSharpe) {
+      inspectSimulation(optState.maxSharpe.id);
+    }
     document.getElementById("simulationInspector").hidden = false;
     inspectSimulation(0);
 

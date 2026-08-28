@@ -12,17 +12,7 @@ title: Portfolio Optimization
   <div class="optimization-controls">
     <div class="optimization-card">
       <label for="optPreset"><strong>Preset</strong></label>
-      <select id="optPreset">
-        <option value="">Select a preset</option>
-        <option value="original">Original</option>
-        <option value="ai">AI Ecosystem</option>
-        <option value="healthcare">Healthcare</option>
-        <option value="energy">Energy</option>
-        <option value="financials">Financials</option>
-        <option value="defensive">Defensive</option>
-        <option value="worldtop10">World Top 10</option>
-        <option value="topetfs">Top ETFs</option>
-      </select>
+      <select id="optPreset"><option value="">Select a preset</option></select>
     </div>
 
     <div class="optimization-card">
@@ -70,7 +60,9 @@ title: Portfolio Optimization
     <strong>Sharpe:</strong>
     (weighted EWMA price return + weighted TTM dividend yield − 1Y USD risk-free rate)
     ÷ portfolio volatility.
-    Share counts use whole shares and convert local security prices to USD before allocation.
+    Equities use whole shares. Futures use fractional contract equivalents for the optimized
+    exposure, with an editable whole-contract implementation check. Change the investment amount
+    to see how the contract equivalents scale.
     <span id="optAsOf"></span>
   </div>
 
@@ -99,7 +91,7 @@ title: Portfolio Optimization
 
   <div id="optChartPanel" class="opt-panel" hidden>
     <div class="opt-panel-title">Simulated Portfolios — Risk vs Total Return</div>
-    <div class="opt-chart-note">Click a point to inspect that simulation. The pink point marks the maximum-Sharpe portfolio. Only a sample of points is drawn when many simulations are run.</div>
+    <div class="opt-chart-note">Click a point to inspect that simulation. The light-blue point marks the maximum-Sharpe portfolio. Only a sample of points is drawn when many simulations are run.</div>
     <div id="optChart" class="opt-chart"></div>
   </div>
 
@@ -150,6 +142,8 @@ title: Portfolio Optimization
             <th>USD Price</th>
             <th>Target $</th>
             <th>Shares</th>
+            <th>Equivalent Contracts</th>
+            <th>Rounded Contracts</th>
             <th>Actual $</th>
             <th>EWMA Price Return</th>
             <th>TTM Div Yield</th>
@@ -277,7 +271,7 @@ h1 { color:white; text-align:center; background-color:#3A5FCD; }
 .opt-point { fill:#3A5FCD; fill-opacity:.32; cursor:pointer; }
 .opt-point:hover { fill-opacity:.85; }
 .opt-point-special { stroke:#111; stroke-width:1.2; fill-opacity:.9; }
-.opt-point-max-sharpe { fill:#d81b60; fill-opacity:1; stroke:#111; stroke-width:1.8; }
+.opt-point-max-sharpe { fill:#5bc0eb; fill-opacity:1; stroke:#111; stroke-width:1.8; }
 .opt-table-wrap { overflow-x:auto; }
 .opt-table { width:100%; border-collapse:collapse; font-size:12px; }
 .opt-table th, .opt-table td {
@@ -289,6 +283,14 @@ h1 { color:white; text-align:center; background-color:#3A5FCD; }
 .opt-table th { background:#f4f6fa; font-weight:700; }
 .opt-table th:first-child, .opt-table td:first-child { text-align:left; }
 .opt-table tfoot td { font-weight:700; border-top:2px solid #999; }
+.opt-contract-input {
+  width:72px;
+  padding:3px 5px;
+  border:1px solid #aaa;
+  border-radius:4px;
+  text-align:right;
+  font:inherit;
+}
 .inspector-header {
   display:flex;
   justify-content:space-between;
@@ -338,23 +340,44 @@ const OPT_CORRELATIONS_ENDPOINT = "https://surface-203178530029.northamerica-nor
 const OPT_LATEST_PRICES_ENDPOINT = "https://surface-203178530029.northamerica-northeast2.run.app/latest_prices";
 const OPT_USD_YIELD_ENDPOINT = "https://surface-203178530029.northamerica-northeast2.run.app/yield_history?country=USD&period=1y";
 const OPT_FX_HISTORY_ENDPOINT = "https://surface-203178530029.northamerica-northeast2.run.app/fx_history";
-const OPT_CURRENCY_FALLBACKS = {
-  "2222.SR":"SAR",
-  "CNQ":"USD","SU":"USD","RY":"USD","TD":"USD"
-};
 const OPT_PORTFOLIOS_KEY = "RiskSnapSavedPortfolios";
 const OPT_MAX_ASSETS = 20;
+const OPT_CONFIG_ENDPOINT = "https://surface-203178530029.northamerica-northeast2.run.app/risksnap_config";
+let OPT_PRESETS = {};
+let OPT_SECURITY_META = {};
 
-const OPT_PRESETS = {
-  original: "AAPL, AMZN, NVDA, MSTR, GS, CAT, UNH, AMGN, V, HD, IBM",
-  ai: "NVDA, MSFT, GOOG, AMZN, META, AMD, AVGO, TSM, ORCL, PLTR",
-  healthcare: "UNH, LLY, JNJ, ABBV, AMGN, MRK, ISRG, ABT, TMO, PFE, NBIX",
-  energy: "XOM, CVX, COP, SLB, EOG, OXY, CNQ, SU, ENB, TRP",
-  financials: "JPM, BAC, WFC, C, GS, MS, BLK, SCHW, RY, TD",
-  defensive: "PG, KO, PEP, WMT, COST, MCD, CL, GIS, KMB, MDLZ",
-  worldtop10: "NVDA, AAPL, GOOG, MSFT, AMZN, TSM, AVGO, 2222.SR, META, TSLA",
-  topetfs: "VOO, IVV, SPY, VTI, QQQ, VUG, VEA, IEFA, VTV, BND"
+const OPT_FUTURES = {
+  "MGC=F": {multiplier:10, unit:"troy oz"},
+  "SIL=F": {multiplier:1000, unit:"troy oz"},
+  "CL=F":  {multiplier:1000, unit:"barrels"},
+  "ZC=F":  {multiplier:5000, unit:"bushels"},
+  "ZS=F":  {multiplier:5000, unit:"bushels"},
+  "KE=F":  {multiplier:5000, unit:"bushels"},
+  "NG=F":  {multiplier:10000, unit:"MMBtu"},
+  "HG=F":  {multiplier:25000, unit:"lb"}
 };
+
+function futureSpec(asset) {
+  return OPT_FUTURES[String(asset || "").trim().toUpperCase()] || null;
+}
+
+async function loadOptimizationConfig() {
+  const response = await fetch(OPT_CONFIG_ENDPOINT);
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.error || response.statusText);
+  OPT_PRESETS = data.portfolio_presets || {};
+  OPT_SECURITY_META = data.security_metadata || {};
+  const labels = data.preset_labels || {};
+  const keys = (data.preset_surfaces || {}).optimization || Object.keys(OPT_PRESETS);
+  const select = document.getElementById("optPreset");
+  select.innerHTML = '<option value="">Select a preset</option>';
+  keys.filter(key => OPT_PRESETS[key]).forEach(key => {
+    const option = document.createElement("option");
+    option.value = key;
+    option.textContent = labels[key] || key;
+    select.appendChild(option);
+  });
+}
 
 let optState = {
   assets: [],
@@ -363,6 +386,7 @@ let optState = {
   ewma: {},
   dividends: {},
   prices: {},
+  usdPrices: {},
   currencies: {},
   fxToUsd: {},
   investmentAmount: 100000,
@@ -374,7 +398,8 @@ let optState = {
   maxSharpe: null,
   minVol: null,
   maxReturn: null,
-  inspected: null
+  inspected: null,
+  roundedContracts: {}
 };
 
 function parseSymbols(raw) {
@@ -530,11 +555,18 @@ function parseLatestSecurityData(data, assets) {
     });
   });
 
+  const topCurrencies = data && data.currencies && typeof data.currencies === "object" ? data.currencies : {};
+  const usdPrices = data && data.usd_prices && typeof data.usd_prices === "object" ? data.usd_prices : {};
+  const fxPairs = data && data.fx_pairs && typeof data.fx_pairs === "object" ? data.fx_pairs : {};
+  const fxRates = data && data.fx_rates && typeof data.fx_rates === "object" ? data.fx_rates : {};
+
   (assets || []).forEach(asset => {
-    if (!currencies[asset]) currencies[asset] = OPT_CURRENCY_FALLBACKS[asset] || "USD";
+    const ccy = topCurrencies[asset];
+    if (ccy) currencies[asset] = String(ccy);
+    if (!currencies[asset]) currencies[asset] = "USD";
   });
 
-  return {prices, currencies};
+  return {prices, currencies, usdPrices, fxPairs, fxRates};
 }
 
 function normalizeFxRows(data) {
@@ -584,7 +616,7 @@ function pickLatestFxValue(rows, keys, asOf) {
 
 async function loadCurrencyToUsd(currency, asOf) {
   const ccy = String(currency || "USD").toUpperCase();
-  if (ccy === "USD") return {rate:1,date:asOf || "",source:"USD"};
+  if (ccy === "USD") return {rate:1,displayRate:1,date:asOf || "",source:"USD"};
 
   // Existing RiskSnap FX endpoint is tried first using its normal history interface.
   // It may return one or several FX columns depending on the backend version.
@@ -592,22 +624,31 @@ async function loadCurrencyToUsd(currency, asOf) {
   // For SAR this asks specifically for USDSAR, whose Yahoo ticker is SAR=X.
   const inversePair = `USD${ccy}`;
   const directPair = `${ccy}USD`;
-  const preferredPair = ["JPY","CAD","CHF","SAR"].includes(ccy) ? inversePair : directPair;
+  const preferredPair = ["JPY","CAD","CHF","SAR","KRW","HKD","CNY","BRL","SEK","DKK"].includes(ccy) ? inversePair : directPair;
   const response = await fetch(`${OPT_FX_HISTORY_ENDPOINT}?period=1y&pair=${encodeURIComponent(preferredPair)}`);
   const data = await response.json();
   if (!response.ok) throw new Error(data.error || data.message || response.statusText);
   const rows = normalizeFxRows(data);
 
   // Convention handling:
-  // USDJPY / USDCAD / USDCHF / USDSAR = local currency per USD -> invert.
+  // USDJPY / USDCAD / USDCHF / USDSAR / USDKRW / USDHKD / USDCNY / USDBRL / USDSEK / USDDKK
+  // = local currency per USD -> invert.
   // EURUSD / GBPUSD / AUDUSD / NZDUSD = USD per local currency -> use directly.
   const direct = pickLatestFxValue(rows,
     [`${ccy}USD`, `${ccy}/USD`, `${ccy}=X`], asOf);
-  if (direct) return {rate:direct.value,date:direct.date,source:`${ccy}USD`};
+  if (direct) {
+    const quote4 = Math.round(direct.value * 10000) / 10000;
+    return {rate:quote4,displayRate:quote4,date:direct.date,source:`${ccy}USD`};
+  }
 
   const inverse = pickLatestFxValue(rows,
     [`USD${ccy}`, `USD/${ccy}`, `USD${ccy}=X`], asOf);
-  if (inverse) return {rate:1/inverse.value,date:inverse.date,source:`USD${ccy}`};
+  if (inverse) {
+    // Keep the market quote itself to 4 decimals for both verification and calculation.
+    // Example: USDSAR 3.641497 -> 3.6415; SAR->USD conversion uses 1 / 3.6415.
+    const quote4 = Math.round(inverse.value * 10000) / 10000;
+    return {rate:1/quote4,displayRate:quote4,date:inverse.date,source:`USD${ccy}`};
+  }
 
   // SAR is effectively pegged near 3.75 SAR per USD, but do not silently hard-code
   // a trading conversion. If RiskSnap does not provide USDSAR, report it as unavailable.
@@ -616,13 +657,13 @@ async function loadCurrencyToUsd(currency, asOf) {
 
 async function loadFxMap(currencies, asOf) {
   const unique = [...new Set(Object.values(currencies).map(x => String(x || "USD").toUpperCase()))];
-  const result = {USD:{rate:1,date:asOf || "",source:"USD"}};
+  const result = {USD:{rate:1,displayRate:1,date:asOf || "",source:"USD"}};
   await Promise.all(unique.filter(ccy => ccy !== "USD").map(async ccy => {
     try {
       result[ccy] = await loadCurrencyToUsd(ccy, asOf);
     } catch (err) {
       console.warn(`FX conversion unavailable for ${ccy}:`, err);
-      result[ccy] = {rate:NaN,date:"",source:"Unavailable"};
+      result[ccy] = {rate:NaN,displayRate:NaN,date:"",source:"Unavailable"};
     }
   }));
   return result;
@@ -638,19 +679,66 @@ function fmtMoney(value, digits=2) {
 function shareAllocation(sim) {
   const amount = Math.max(0, Number(optState.investmentAmount) || 0);
   const rows = optState.assets.map((asset,i) => {
+    const spec = futureSpec(asset);
+    const isFuture = !!spec;
     const localPrice = Number(optState.prices[asset]);
-    const currency = String(optState.currencies[asset] || "USD").toUpperCase();
-    const fxInfo = optState.fxToUsd[currency] || {rate:NaN,date:"",source:"Unavailable"};
+
+    // RiskSnap's commodity history is already normalized into USD quote units
+    // (for example ZC=F is dollars/bushel, not Yahoo's USX cents quote).
+    const rawCurrency = String(optState.currencies[asset] || "USD").toUpperCase();
+    const currency = isFuture ? "USD" : rawCurrency;
+
+    const fxInfo = isFuture
+      ? {rate:1,displayRate:1,date:optState.asOf || "",source:"USD normalized futures quote"}
+      : (optState.fxToUsd[currency] || {rate:NaN,displayRate:NaN,date:"",source:"Unavailable"});
+
     const fxToUsd = Number(fxInfo.rate);
-    const usdPrice = Number.isFinite(localPrice) && Number.isFinite(fxToUsd)
-      ? localPrice * fxToUsd : NaN;
+    const fxDisplay = Number(fxInfo.displayRate);
+    const backendUsdPrice = Number(optState.usdPrices[asset]);
+
+    const usdPrice = isFuture
+      ? localPrice
+      : (Number.isFinite(backendUsdPrice) && backendUsdPrice > 0
+          ? backendUsdPrice
+          : (Number.isFinite(localPrice) && Number.isFinite(fxToUsd) ? localPrice * fxToUsd : NaN));
+
     const targetValue = amount * sim.weights[i];
+
+    if (isFuture) {
+      const contractNotional = Number.isFinite(usdPrice) && usdPrice > 0
+        ? usdPrice * spec.multiplier
+        : NaN;
+      const equivalentContracts = Number.isFinite(contractNotional) && contractNotional > 0
+        ? targetValue / contractNotional
+        : NaN;
+
+      const overrideKey = `${sim.id}|${asset}`;
+      const override = Number(optState.roundedContracts[overrideKey]);
+      const roundedContracts = Number.isFinite(override)
+        ? Math.max(0, Math.trunc(override))
+        : (Number.isFinite(equivalentContracts) ? Math.max(0, Math.round(equivalentContracts)) : 0);
+
+      const actualValue = roundedContracts * (Number.isFinite(contractNotional) ? contractNotional : 0);
+
+      return {
+        asset,isFuture,spec,localPrice,currency,fxToUsd,fxDisplay,
+        fxDate:fxInfo.date,fxSource:fxInfo.source,usdPrice,targetValue,
+        shares:null,equivalentContracts,roundedContracts,contractNotional,actualValue
+      };
+    }
+
     const shares = Number.isFinite(usdPrice) && usdPrice > 0
-      ? Math.floor(targetValue / usdPrice) : 0;
+      ? Math.floor(targetValue / usdPrice)
+      : 0;
     const actualValue = shares * (Number.isFinite(usdPrice) ? usdPrice : 0);
-    return {asset,localPrice,currency,fxToUsd,fxDate:fxInfo.date,fxSource:fxInfo.source,
-            usdPrice,targetValue,shares,actualValue};
+
+    return {
+      asset,isFuture,spec:null,localPrice,currency,fxToUsd,fxDisplay,
+      fxDate:fxInfo.date,fxSource:fxInfo.source,usdPrice,targetValue,
+      shares,equivalentContracts:null,roundedContracts:null,contractNotional:null,actualValue
+    };
   });
+
   const invested = rows.reduce((sum,row) => sum + row.actualValue,0);
   return {rows,invested,cash:amount-invested};
 }
@@ -925,10 +1013,20 @@ function inspectSimulation(id) {
       <td>${fmtPct(w,6)}</td>
       <td>${Number.isFinite(a.localPrice) ? a.localPrice.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:4}) : "N/A"}</td>
       <td>${escapeHtml(a.currency)}</td>
-      <td title="${escapeHtml(a.fxSource)} ${escapeHtml(a.fxDate)}">${Number.isFinite(a.fxToUsd) ? a.fxToUsd.toFixed(6) : "N/A"}</td>
+      <td title="${escapeHtml(a.fxSource)} ${escapeHtml(a.fxDate)}">${Number.isFinite(a.fxDisplay) ? a.fxDisplay.toFixed(4) : "N/A"}</td>
       <td>${fmtMoney(a.usdPrice)}</td>
       <td>${fmtMoney(a.targetValue)}</td>
-      <td>${a.shares.toLocaleString()}</td>
+      <td>${a.isFuture ? "—" : a.shares.toLocaleString()}</td>
+      <td title="${a.isFuture ? `Contract notional ${fmtMoney(a.contractNotional)} (${a.spec.multiplier.toLocaleString()} ${a.spec.unit})` : ""}">
+        ${a.isFuture && Number.isFinite(a.equivalentContracts) ? a.equivalentContracts.toFixed(4) : "—"}
+      </td>
+      <td>
+        ${a.isFuture
+          ? `<input class="opt-contract-input" type="number" min="0" step="1"
+              data-sim-id="${sim.id}" data-asset="${escapeHtml(asset)}"
+              value="${a.roundedContracts}">`
+          : "—"}
+      </td>
       <td>${fmtMoney(a.actualValue)}</td>
       <td>${fmtPct(er,6)}</td>
       <td>${fmtPct(dy,6)}</td>
@@ -942,23 +1040,31 @@ function inspectSimulation(id) {
     <tr>
       <td>Total</td>
       <td>${fmtPct(sim.weights.reduce((a,b)=>a+b,0),6)}</td>
-      <td></td><td></td><td></td>
-      <td></td>
+      <td></td><td></td><td></td><td></td>
       <td>${fmtMoney(optState.investmentAmount)}</td>
-      <td></td>
+      <td></td><td></td><td></td>
       <td>${fmtMoney(allocation.invested)}</td>
-      <td></td>
-      <td></td>
+      <td></td><td></td>
       <td>${fmtPct(sim.priceReturn,6)}</td>
       <td>${fmtPct(sim.dividendYield,6)}</td>
       <td>${fmtNum(sim.variance,10)}</td>
     </tr>
     <tr>
-      <td>Cash remaining</td>
-      <td colspan="6"></td>
+      <td>Cash / (over-allocation)</td>
+      <td colspan="9"></td>
       <td>${fmtMoney(allocation.cash)}</td>
-      <td colspan="6"></td>
+      <td colspan="5"></td>
     </tr>`;
+
+  document.querySelectorAll(".opt-contract-input").forEach(input => {
+    input.addEventListener("change", event => {
+      const simId = Number(event.target.dataset.simId);
+      const asset = String(event.target.dataset.asset || "").toUpperCase();
+      const value = Math.max(0, Math.trunc(Number(event.target.value) || 0));
+      optState.roundedContracts[`${simId}|${asset}`] = value;
+      inspectSimulation(simId);
+    });
+  });
 
   document.getElementById("inspectFormula").textContent =
     `(${(sim.priceReturn*100).toFixed(6)}% + ${(sim.dividendYield*100).toFixed(6)}% − ${(optState.riskFree*100).toFixed(6)}%) ÷ ${(sim.volatility*100).toFixed(6)}% = ${sim.sharpe.toFixed(8)}`;
@@ -988,13 +1094,18 @@ function downloadInspectedCsv() {
     ["Portfolio Volatility",sim.volatility],
     ["Sharpe Ratio",sim.sharpe],
     [],
-    ["Security","Weight","Local Price","Currency","USD FX","FX Date","USD Price","Target Value USD","Shares","Actual Value USD","EWMA Price Return","TTM Dividend Yield","Weighted Price Return","Weighted Dividend Yield","Variance Contribution"]
+    ["Security","Weight","Local Price","Currency","USD FX","FX Date","USD Price","Target Value USD","Shares","Equivalent Contracts","Rounded Contracts","Contract Notional USD","Actual Value USD","EWMA Price Return","TTM Dividend Yield","Weighted Price Return","Weighted Dividend Yield","Variance Contribution"]
   ];
   const allocation = shareAllocation(sim);
   optState.assets.forEach((asset,i) => {
     const w = sim.weights[i], er = Number(optState.ewma[asset] || 0), dy = Number(optState.dividends[asset] || 0);
     const a = allocation.rows[i];
-    rows.push([asset,w,a.localPrice,a.currency,a.fxToUsd,a.fxDate,a.usdPrice,a.targetValue,a.shares,a.actualValue,er,dy,w*er,w*dy,sim.varianceContributions[i]]);
+    rows.push([asset,w,a.localPrice,a.currency,a.fxDisplay,a.fxDate,a.usdPrice,a.targetValue,
+      a.isFuture ? "" : a.shares,
+      a.isFuture ? a.equivalentContracts : "",
+      a.isFuture ? a.roundedContracts : "",
+      a.isFuture ? a.contractNotional : "",
+      a.actualValue,er,dy,w*er,w*dy,sim.varianceContributions[i]]);
   });
   rows.push([]);
   rows.push(["Invested",allocation.invested]);
@@ -1075,13 +1186,46 @@ async function runOptimization() {
     optState.dividends = parseDividendYields(priceResult);
     const securityData = parseLatestSecurityData(priceResult, validAssets);
     optState.prices = securityData.prices;
+    optState.usdPrices = securityData.usdPrices || {};
     optState.currencies = securityData.currencies;
     optState.investmentAmount = investmentAmount;
     validAssets.forEach(asset => {
       if (!Number.isFinite(Number(optState.dividends[asset]))) optState.dividends[asset] = 0;
     });
-    setStatus("Loading currency conversions...");
-    optState.fxToUsd = await loadFxMap(optState.currencies, normalized.asOf);
+    setStatus("Applying currency conversions...");
+    optState.fxToUsd = {};
+    validAssets.forEach(asset => {
+      const currency = String(optState.currencies[asset] || "USD").toUpperCase();
+      const local = Number(optState.prices[asset]);
+      const usd = Number(optState.usdPrices[asset]);
+      const displayRate = Number(securityData.fxRates && securityData.fxRates[asset]);
+      const pair = String(securityData.fxPairs && securityData.fxPairs[asset] || (currency === "USD" ? "USD" : ""));
+      const rate = Number.isFinite(local) && local > 0 && Number.isFinite(usd) ? usd / local : (currency === "USD" ? 1 : NaN);
+      optState.fxToUsd[currency] = {
+        rate,
+        displayRate: Number.isFinite(displayRate) ? displayRate : (currency === "USD" ? 1 : NaN),
+        date: normalized.asOf,
+        source: pair || "RiskSnap"
+      };
+    });
+
+    // If latest_prices did not supply a usable USD conversion, fall back to
+    // RiskSnap FX history. This lets foreign listings such as ASML.AS (EUR)
+    // work without ticker-specific conversion code.
+    const missingFxCurrencies = [...new Set(validAssets
+      .filter(asset => !futureSpec(asset))
+      .map(asset => String(optState.currencies[asset] || "USD").toUpperCase())
+      .filter(ccy => ccy !== "USD")
+      .filter(ccy => !Number.isFinite(Number(optState.fxToUsd[ccy]?.rate))))];
+
+    if (missingFxCurrencies.length) {
+      const fallbackCurrencies = Object.fromEntries(missingFxCurrencies.map((ccy,i) => [`fx${i}`,ccy]));
+      const fallbackFx = await loadFxMap(fallbackCurrencies, normalized.asOf);
+      missingFxCurrencies.forEach(ccy => {
+        const info = fallbackFx[ccy];
+        if (info && Number.isFinite(Number(info.rate))) optState.fxToUsd[ccy] = info;
+      });
+    }
     optState.riskFree = rfResult.rate;
     optState.riskFreeAsOf = rfResult.date || normalized.riskFreeAsOf;
 
@@ -1094,6 +1238,12 @@ async function runOptimization() {
     renderSummary();
     renderTopTable();
     renderChart();
+
+    // Default the detailed portfolio display to the optimizer's best Sharpe result.
+    // Simulation #0 remains available as the equal-weight verification reference.
+    if (optState.maxSharpe) {
+      inspectSimulation(optState.maxSharpe.id);
+    }
     document.getElementById("simulationInspector").hidden = false;
     inspectSimulation(0);
 
@@ -1129,6 +1279,7 @@ document.getElementById("optPortfolio").addEventListener("change", event => {
 
 document.getElementById("optInvestmentAmount").addEventListener("change", event => {
   optState.investmentAmount = Math.max(0, Number(event.target.value) || 0);
+  optState.roundedContracts = {};
   if (optState.inspected) inspectSimulation(optState.inspected.id);
 });
 
@@ -1145,5 +1296,14 @@ document.getElementById("inspectMinVol").addEventListener("click", () => optStat
 document.getElementById("inspectMaxReturn").addEventListener("click", () => optState.maxReturn && inspectSimulation(optState.maxReturn.id));
 document.getElementById("inspectEqualWeight").addEventListener("click", () => optState.equalWeight && inspectSimulation(optState.equalWeight.id));
 
-refreshPortfolioSelector();
+async function initializeOptimizationPage() {
+  try {
+    await loadOptimizationConfig();
+  } catch (err) {
+    setStatus(`RiskSnap configuration unavailable: ${err.message || err}`);
+    return;
+  }
+  refreshPortfolioSelector();
+}
+initializeOptimizationPage();
 </script>
