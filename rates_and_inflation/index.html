@@ -596,12 +596,52 @@ async function loadYieldCharts() {
 }
 
 function plotlyConfig() {
-    return { responsive: true, displaylogo: false, modeBarButtonsToRemove: ["lasso2d", "select2d"] };
+    return {
+        responsive: true,
+        displaylogo: false,
+        scrollZoom: false,
+        doubleClick: "reset",
+        modeBarButtonsToRemove: ["lasso2d", "select2d"],
+        modeBarButtonsToAdd: ["zoomIn2d", "zoomOut2d", "resetScale2d"]
+    };
+}
+
+function installMobileChartGuards() {
+    const chartIds = [
+        "yield_all_tenors",
+        "yield_curve_latest",
+        "yield_history",
+        "yield_spread",
+        "yield_table_chart",
+        "breakeven_inflation",
+        "treasury_tga",
+        "treasury_issuance",
+        "treasury_net_borrowing",
+        "treasury_foreign_demand"
+    ];
+
+    chartIds.forEach(id => {
+        const el = document.getElementById(id);
+        if (!el) return;
+
+        // A one-finger swipe should scroll the page on phones instead of
+        // repeatedly zooming or stretching the Plotly chart.
+        el.style.touchAction = "pan-y";
+
+        // Double-tap / double-click restores the original Plotly ranges.
+        el.addEventListener("dblclick", function() {
+            if (window.Plotly) Plotly.relayout(el, {
+                "xaxis.autorange": true,
+                "yaxis.autorange": true
+            });
+        });
+    });
 }
 
 window.addEventListener("load", function() {
     setupCountrySelect();
     loadSelectedCountry(true);
     loadBreakevenInflation(true);
+    installMobileChartGuards();
 });
 </script>

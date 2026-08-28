@@ -87,6 +87,13 @@ tr:nth-child(even) { background-color: #dddddd; }
 
 <div class="yield-card yield-wide-card" style="margin-top:18px;">
     <div id="breakeven_inflation" class="yield-chart"></div>
+</div>
+
+<div class="yield-card yield-wide-card">
+    <div id="treasury_tga" class="yield-chart"></div>
+</div>
+
+<div class="yield-card yield-wide-card">
     <div id="treasury_issuance" class="yield-chart"></div>
 </div>
 
@@ -99,7 +106,7 @@ tr:nth-child(even) { background-color: #dddddd; }
 </div>
 
 <p class="yield-note">
-USD data source: RiskSnap Cloud Run using public Treasury/FRED data. Treasury gross issuance is from Treasury auction data; net borrowing from the public is from the Monthly Treasury Statement. The 10Y Inflation Expectations series is the market-implied average inflation rate expected over the next 10 years.
+USD data source: RiskSnap Cloud Run using public Treasury/FRED data. Treasury General Account (TGA) is FRED WTREGEN, the weekly average balance of the U.S. Treasury General Account at the Federal Reserve. Treasury gross issuance is from Treasury auction data; net borrowing from the public is from the Monthly Treasury Statement. The 10Y Inflation Expectations series is the market-implied average inflation rate expected over the next 10 years.
 </p>
 
 <details class="yield-note" style="margin-top:10px;">
@@ -452,6 +459,7 @@ async function loadSelectedCountry(forceReload = false) {
         }
         drawYieldCharts();
         loadTreasuryPressure(forceReload);
+        loadBreakevenInflation(forceReload);
     } catch (err) {
         console.warn("Could not load", country.code, err);
         status.textContent = "Could not load " + country.name + " yield data from Cloud Run.";
@@ -461,6 +469,7 @@ async function loadSelectedCountry(forceReload = false) {
 
 
 let treasuryIssuanceRows = [];
+let treasuryTgaRows = [];
 let treasuryForeignRows = [];
 let breakevenRows = [];
 let breakevenLoadedRange = null;
@@ -468,6 +477,19 @@ let treasuryPressureLoadedRange = null;
 
 function drawTreasuryPressureCharts() {
     const label = "last 10Y";
+    if (treasuryTgaRows.length) {
+        const tga=treasuryTgaRows.filter(r=>Number.isFinite(r.TGA));
+        if (tga.length) {
+            Plotly.newPlot("treasury_tga", [
+                {x:tga.map(r=>r.Date),y:tga.map(r=>r.TGA/1000),type:"scatter",mode:"lines",name:"TGA",line:{width:2.6},hovertemplate:"%{x}<br>TGA: $%{y:,.1f}bn<extra></extra>"}
+            ], {
+                title:{text:"U.S. Treasury General Account (TGA / WTREGEN) — " + label,x:0.03,xanchor:"left",font:{size:18}},
+                margin:{l:74,r:24,t:58,b:58},paper_bgcolor:"white",plot_bgcolor:"white",hovermode:"x unified",
+                xaxis:{showgrid:true,gridcolor:"#edf1f7",zeroline:false,tickformat:"%b %d, %Y",hoverformat:"%b %d, %Y"},
+                yaxis:{title:"$ billions",showgrid:true,gridcolor:"#edf1f7",zeroline:true,zerolinecolor:"#999",tickformat:",.0f"}
+            }, plotlyConfig());
+        }
+    }
     if (treasuryIssuanceRows.length) {
         const traces = [
             {x: treasuryIssuanceRows.map(r=>r.Date), y: treasuryIssuanceRows.map(r=>r.Bills/1e9), type:"bar", name:"Bills", hovertemplate:"%{x}<br>Bills: $%{y:,.1f}bn<extra></extra>"},
@@ -510,13 +532,14 @@ function drawTreasuryPressureCharts() {
 }
 
 async function loadTreasuryPressure(forceReload=false) {
-    if (!forceReload && treasuryPressureLoadedRange===TREASURY_PRESSURE_RANGE && (treasuryIssuanceRows.length || treasuryForeignRows.length)) { drawTreasuryPressureCharts();
+    if (!forceReload && treasuryPressureLoadedRange===TREASURY_PRESSURE_RANGE && (treasuryIssuanceRows.length || treasuryTgaRows.length || treasuryForeignRows.length)) { drawTreasuryPressureCharts();
         loadBreakevenInflation(); return; }
     try {
         const response=await fetch(TREASURY_PRESSURE_API_URL+"?period="+encodeURIComponent(TREASURY_PRESSURE_RANGE),{cache:"no-store"});
         if(!response.ok) throw new Error("HTTP "+response.status);
         const payload=await response.json();
         treasuryIssuanceRows=(payload.issuance_rows||[]).map(r=>({Date:r.Date,Bills:Number(r.Bills||0),Notes:Number(r.Notes||0),Bonds:Number(r.Bonds||0)}));
+        treasuryTgaRows=(payload.tga_rows||[]).map(r=>({Date:r.Date,TGA:r.TGA==null?null:Number(r.TGA)}));
         treasuryForeignRows=(payload.foreign_rows||[]).map(r=>({Date:r.Date,BorrowingFromPublic:r.BorrowingFromPublic==null?null:Number(r.BorrowingFromPublic),ForeignTreasuryHoldings:r.ForeignTreasuryHoldings==null?null:Number(r.ForeignTreasuryHoldings),ForeignTreasuryNetPurchases:r.ForeignTreasuryNetPurchases==null?null:Number(r.ForeignTreasuryNetPurchases)}));
         treasuryPressureLoadedRange=TREASURY_PRESSURE_RANGE;
         drawTreasuryPressureCharts();
@@ -533,13 +556,13 @@ function drawBreakevenInflationChart() {
 
     Plotly.newPlot("breakeven_inflation", [
         {x:s5.map(r=>r.Date),y:s5.map(r=>r.Breakeven5Y),type:"scatter",mode:"lines",name:"5Y breakeven",line:{width:2.2},connectgaps:false},
-        {x:s10.map(r=>r.Date),y:s10.map(r=>r.Breakeven10Y),type:"scatter",mode:"lines",name:"10Y breakeven",line:{width:2.2},connectgaps:false},
+        {x:s10.map(r=>r.Date),y:s10.map(r=>r.Breakeven10Y),type:"scatter",mode:"lines",name:"10Y breakeven (T10YIE)",line:{width:2.2},connectgaps:false},
         {x:f55.map(r=>r.Date),y:f55.map(r=>r.Forward5Y5Y),type:"scatter",mode:"lines",name:"5Y5Y forward",line:{width:2.2,dash:"dash"},connectgaps:false}
     ], {
-        title:{text:"U.S. market-implied inflation expectations — "+label,x:0.03,xanchor:"left",font:{size:18}},
+        title:{text:"U.S. market-implied inflation expectations (10Y breakeven = T10YIE) — "+label,x:0.03,xanchor:"left",font:{size:18}},
         margin:{l:68,r:24,t:58,b:72},paper_bgcolor:"white",plot_bgcolor:"white",hovermode:"x unified",
         legend:{orientation:"h",x:0.02,y:-0.18},
-        xaxis:{showgrid:true,gridcolor:"#edf1f7",zeroline:false,tickformat:"%b %Y",hoverformat:"%b %Y"},
+        xaxis:{showgrid:true,gridcolor:"#edf1f7",zeroline:false,tickformat:"%b %d, %Y",hoverformat:"%b %d, %Y"},
         yaxis:{title:"Expected inflation (%)",showgrid:true,gridcolor:"#edf1f7",zeroline:false,ticksuffix:"%"}
     }, plotlyConfig());
 }
@@ -573,11 +596,52 @@ async function loadYieldCharts() {
 }
 
 function plotlyConfig() {
-    return { responsive: true, displaylogo: false, modeBarButtonsToRemove: ["lasso2d", "select2d"] };
+    return {
+        responsive: true,
+        displaylogo: false,
+        scrollZoom: false,
+        doubleClick: "reset",
+        modeBarButtonsToRemove: ["lasso2d", "select2d"],
+        modeBarButtonsToAdd: ["zoomIn2d", "zoomOut2d", "resetScale2d"]
+    };
+}
+
+function installMobileChartGuards() {
+    const chartIds = [
+        "yield_all_tenors",
+        "yield_curve_latest",
+        "yield_history",
+        "yield_spread",
+        "yield_table_chart",
+        "breakeven_inflation",
+        "treasury_tga",
+        "treasury_issuance",
+        "treasury_net_borrowing",
+        "treasury_foreign_demand"
+    ];
+
+    chartIds.forEach(id => {
+        const el = document.getElementById(id);
+        if (!el) return;
+
+        // A one-finger swipe should scroll the page on phones instead of
+        // repeatedly zooming or stretching the Plotly chart.
+        el.style.touchAction = "pan-y";
+
+        // Double-tap / double-click restores the original Plotly ranges.
+        el.addEventListener("dblclick", function() {
+            if (window.Plotly) Plotly.relayout(el, {
+                "xaxis.autorange": true,
+                "yaxis.autorange": true
+            });
+        });
+    });
 }
 
 window.addEventListener("load", function() {
     setupCountrySelect();
     loadSelectedCountry(true);
+    loadBreakevenInflation(true);
+    installMobileChartGuards();
 });
 </script>
