@@ -106,7 +106,7 @@ Foreign exchange is the largest and most liquid financial market in the world.  
 .fx-controls button.active,.fx-instrument-controls button.active{background:#f59e0b;font-weight:bold}
 .fx-status{background:#f6f8fc;border-left:5px solid #3A5FCD;padding:10px 12px;margin:10px 0 16px;color:#333}
 .fx-card{background:white;border:1px solid #d9e0ef;border-radius:16px;box-shadow:0 4px 16px rgba(20,35,75,.10);padding:10px}
-.fx-chart{width:100%;height:500px}
+.fx-chart{width:100%;height:500px;touch-action:pan-y;-webkit-user-select:none;user-select:none}
 .fx-note{margin-top:12px;color:#555;font-size:14px}
 @media(max-width:850px){.fx-chart{height:380px}}
 </style>
@@ -114,6 +114,26 @@ Foreign exchange is the largest and most liquid financial market in the world.  
 <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
 <script>
 const FX_API_URL="https://surface-203178530029.northamerica-northeast2.run.app/fx_history";
+
+const FX_TOUCH_DEVICE =
+  /iPhone|iPad|iPod/i.test(navigator.userAgent) ||
+  (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+
+function fxPlotlyConfig() {
+  return {
+    responsive: true,
+    displaylogo: false,
+    displayModeBar: FX_TOUCH_DEVICE ? true : "hover",
+    scrollZoom: false,
+    doubleClick: "reset",
+    modeBarButtonsToRemove: ["lasso2d", "select2d", "pan2d"]
+  };
+}
+
+function fxSafeLayout(layout) {
+  if (FX_TOUCH_DEVICE) layout.dragmode = false;
+  return layout;
+}
 let fxRange="1y", selectedFxInstrument="EURUSD";
 const fxBrowserCache=new Map();
 const fxPairs=[
@@ -139,7 +159,7 @@ function clean(item){
  return{x,y}
 }
 function placeholder(title,msg){
- Plotly.newPlot("fx_SELECTED",[],{title:{text:title,x:.03},annotations:[{text:msg,showarrow:false,xref:"paper",yref:"paper",x:.5,y:.5}],xaxis:{visible:false},yaxis:{visible:false},paper_bgcolor:"white",plot_bgcolor:"white"},{responsive:true,displaylogo:false})
+ Plotly.newPlot("fx_SELECTED",[],fxSafeLayout({title:{text:title,x:.03},annotations:[{text:msg,showarrow:false,xref:"paper",yref:"paper",x:.5,y:.5}],xaxis:{visible:false},yaxis:{visible:false},paper_bgcolor:"white",plot_bgcolor:"white"}),fxPlotlyConfig())
 }
 function drawSingle(item){
  const p=fxPairs.find(x=>x.key===item.pair); if(!p)return;
@@ -163,7 +183,7 @@ function drawCombined(items){
    const q=clean(item); if(!q.x.length)return; const base=Number(q.y[0]); if(!base)return;
    traces.push({x:q.x,y:q.y.map(v=>Number(v)/base*100),type:"scatter",mode:"lines",line:{width:p.key==="GOLD"?3.5:2.2,color:p.color},name:p.label,hovertemplate:"%{x}<br>Index: %{y:.2f}<extra>"+p.label+"</extra>"})
  });
- Plotly.newPlot("fx_SELECTED",traces,{title:{text:"FX rates and Gold normalized to 100",x:.03},paper_bgcolor:"white",plot_bgcolor:"white",hovermode:"x unified",legend:{orientation:"h",x:.02,y:-.18},xaxis:{showgrid:true,gridcolor:"#edf1f7"},yaxis:{title:"Index, first date = 100",showgrid:true,gridcolor:"#edf1f7"}},{responsive:true,displaylogo:false})
+ Plotly.newPlot("fx_SELECTED",traces,fxSafeLayout({title:{text:"FX rates and Gold normalized to 100",x:.03},paper_bgcolor:"white",plot_bgcolor:"white",hovermode:"x unified",legend:{orientation:"h",x:.02,y:-.18},xaxis:{showgrid:true,gridcolor:"#edf1f7"},yaxis:{title:"Index, first date = 100",showgrid:true,gridcolor:"#edf1f7"}}),fxPlotlyConfig())
 }
 async function fetchOne(pair,force){
  if(!force&&fxBrowserCache.has(key(pair)))return fxBrowserCache.get(key(pair));
@@ -252,6 +272,9 @@ economic growth, inflation, monetary policy, capital flows and geopolitical deve
 .fx-chart {
     width: 100%;
     height: 390px;
+    touch-action: pan-y;
+    -webkit-user-select: none;
+    user-select: none;
 }
 .fx-combined-card {
     margin-bottom: 18px;
@@ -404,13 +427,9 @@ function drawFxCombinedChart(series) {
         }
     };
 
-    const config = {
-        responsive: true,
-        displaylogo: false,
-        modeBarButtonsToRemove: ["lasso2d", "select2d"]
-    };
+    const config = fxPlotlyConfig();
 
-    Plotly.newPlot("fx_COMBINED", traces, layout, config);
+    Plotly.newPlot("fx_COMBINED", traces, fxSafeLayout(layout), config);
 }
 
 function drawFxPlaceholder(pair, message) {
@@ -428,7 +447,7 @@ function drawFxPlaceholder(pair, message) {
         xaxis: { visible: false },
         yaxis: { visible: false }
     };
-    Plotly.newPlot(pair.div, [], layout, { responsive: true, displaylogo: false });
+    Plotly.newPlot(pair.div, [], fxSafeLayout(layout), fxPlotlyConfig());
 }
 
 function cleanFxPoints(item) {
@@ -508,13 +527,9 @@ function drawFxChart(item) {
         }
     };
 
-    const config = {
-        responsive: true,
-        displaylogo: false,
-        modeBarButtonsToRemove: ["lasso2d", "select2d"]
-    };
+    const config = fxPlotlyConfig();
 
-    Plotly.newPlot(pair.div, [trace], layout, config);
+    Plotly.newPlot(pair.div, [trace], fxSafeLayout(layout), config);
 }
 
 function drawOilChart(item) {
@@ -576,13 +591,9 @@ function drawOilChart(item) {
         }
     };
 
-    const config = {
-        responsive: true,
-        displaylogo: false,
-        modeBarButtonsToRemove: ["lasso2d", "select2d"]
-    };
+    const config = fxPlotlyConfig();
 
-    Plotly.newPlot(pair.div, [trace], layout, config);
+    Plotly.newPlot(pair.div, [trace], fxSafeLayout(layout), config);
 }
 
 function updateOilSourceNote(payload) {
@@ -616,7 +627,7 @@ async function loadFxCharts() {
             xaxis: { visible: false },
             yaxis: { visible: false }
         };
-        Plotly.newPlot("fx_COMBINED", [], placeholderLayout, { responsive: true, displaylogo: false });
+        Plotly.newPlot("fx_COMBINED", [], fxSafeLayout(placeholderLayout), fxPlotlyConfig());
 
         fxPairs.forEach(p => {
             const layout = {
@@ -631,7 +642,7 @@ async function loadFxCharts() {
                 xaxis: { visible: false },
                 yaxis: { visible: false }
             };
-            Plotly.newPlot(p.div, [], layout, { responsive: true, displaylogo: false });
+            Plotly.newPlot(p.div, [], fxSafeLayout(layout), fxPlotlyConfig());
         });
         drawFxPlaceholder(oilPair, "Cloud Run URL not configured");
         return;
