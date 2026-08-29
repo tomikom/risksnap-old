@@ -7,7 +7,6 @@ RiskSnap Correlations
 Version: index(150)
 Changes:
 - Added Beta vs T10YIE beside Beta vs SPY; SPY remains a normal portfolio holding when selected, while an unselected SPY is loaded only as an internal beta benchmark; T10YIE is silently included as an internal benchmark when not selected and uses its daily change as the inflation factor
-- Corrected TTM dividend yield for all non-USD equities by keeping the dividend/price ratio in the security's native currency; FX conversion is not applied to the yield ratio
 - Corrected Yahoo cent-quoted futures EOD prices (including ZC=F corn) to dollars per unit and applied contract notional sizing to EOD portfolio values
 - Pairwise rolling history now keeps the full Matrix History range and follows Matrix History playback/slider movement without truncating at the originally clicked date
 - Latest Risk Data now remains tied to the authoritative /correlations_data EOD even when Matrix History ends on an older date
@@ -2105,7 +2104,7 @@ function splitAdjustmentBetween(splits, eventDate, asOfDate) {
   }, 1);
 }
 
-function historicalDividendDetail(asset, asOfDate, eodPrice, dividendYieldPrice = eodPrice) {
+function historicalDividendDetail(asset, asOfDate, eodPrice) {
   const series = portfolioDividendHistory[asset] || {};
   const startDate = isoDateMinusDays(asOfDate, 365);
   const events = (series.dividends || []).filter(row => row.date > startDate && row.date <= asOfDate).map(row => {
@@ -2115,12 +2114,7 @@ function historicalDividendDetail(asset, asOfDate, eodPrice, dividendYieldPrice 
     return { date: row.date, rawAmount, splitFactor, adjustedAmount };
   }).filter(row => Number.isFinite(row.adjustedAmount));
   const ttmDividend = events.reduce((sum, row) => sum + row.adjustedAmount, 0);
-
-  // Dividend yield is a dimensionless ratio. Yahoo dividend cash amounts are in
-  // the security's native currency, so divide by the native/local EOD price.
-  // Do not mix a local-currency dividend with an FX-converted USD EOD price.
-  const yieldPrice = Number(dividendYieldPrice);
-  const yieldValue = Number.isFinite(yieldPrice) && yieldPrice > 0 ? ttmDividend / yieldPrice : null;
+  const yieldValue = Number.isFinite(Number(eodPrice)) && Number(eodPrice) > 0 ? ttmDividend / Number(eodPrice) : null;
   return { asset, asOfDate, startDate, eodPrice: Number(eodPrice), events, ttmDividend, yield: yieldValue };
 }
 
@@ -2128,11 +2122,9 @@ function dividendDetailForAsset(asset) {
   const asOfDate = selectedPortfolioEodDate();
   const riskAssets = portfolioRiskPayload?.assets || [];
   const index = riskAssets.indexOf(asset);
-  const usdPrice = index >= 0 ? Number(portfolioRiskPayload?.prices?.[index]) : NaN;
-  const localPrice = index >= 0 ? Number(portfolioRiskPayload?.local_prices?.[index]) : NaN;
-  const dividendYieldPrice = Number.isFinite(localPrice) && localPrice > 0 ? localPrice : usdPrice;
+  const price = index >= 0 ? Number(portfolioRiskPayload?.prices?.[index]) : NaN;
   if (!asOfDate || !portfolioDividendHistory[asset]) return null;
-  return historicalDividendDetail(asset, asOfDate, usdPrice, dividendYieldPrice);
+  return historicalDividendDetail(asset, asOfDate, price);
 }
 
 function effectiveDividendYield(asset) {
