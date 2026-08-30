@@ -594,7 +594,7 @@ function drawEquitiesPriceChart(rows, symbol) {
   svg.appendChild(hoverLine); svg.appendChild(hoverPoint);
   const overlay=eqSvg("rect",{x:margin.left,y:margin.top,width:iw,height:ih,class:"eq-chart-overlay"});
   svg.appendChild(overlay);
-  const tip=document.createElement("div"); tip.className="eq-chart-tooltip"; container.appendChild(tip);
+  const tip=document.createElement("div"); tip.className="eq-chart-tooltip";
   overlay.addEventListener("mousemove",event=>{
     const rect=svg.getBoundingClientRect();
     const sx=width/rect.width;
@@ -605,13 +605,20 @@ function drawEquitiesPriceChart(rows, symbol) {
     hoverPoint.setAttribute("cx",xx); hoverPoint.setAttribute("cy",yy); hoverPoint.setAttribute("visibility","visible");
     tip.innerHTML=`<strong>${escapeHtml(symbol)}</strong><br>${escapeHtml(eqChartDateLabel(row.date))}<br>${escapeHtml(row.price.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}))}`;
     tip.style.display="block";
-    const cx=(xx/width)*container.clientWidth;
-    const cy=(yy/height)*container.clientWidth;
-    tip.style.left=`${Math.min(container.clientWidth-tip.offsetWidth-5,cx+10)}px`;
-    tip.style.top=`${Math.max(3,cy-tip.offsetHeight-8)}px`;
+    const containerRect=container.getBoundingClientRect();
+    const cx=(rect.left-containerRect.left)+(xx/width)*rect.width;
+    const cy=(rect.top-containerRect.top)+(yy/height)*rect.height;
+    const preferredLeft=cx+10;
+    const left=preferredLeft+tip.offsetWidth<=container.clientWidth-5
+      ? preferredLeft
+      : cx-tip.offsetWidth-10;
+    const top=Math.max(3,Math.min(container.clientHeight-tip.offsetHeight-3,cy-tip.offsetHeight/2));
+    tip.style.left=`${Math.max(5,left)}px`;
+    tip.style.top=`${top}px`;
   });
   overlay.addEventListener("mouseleave",()=>{ hoverLine.setAttribute("visibility","hidden"); hoverPoint.setAttribute("visibility","hidden"); tip.style.display="none"; });
   container.appendChild(svg);
+  container.appendChild(tip);
   return true;
 }
 
