@@ -256,7 +256,7 @@ Changes:
   <div id="matrixHistoryPanel" class="matrix-history-panel">
     <div class="matrix-history-header">
       <div>
-        <div id="matrixHistoryTitle" class="matrix-history-title">Matrix History</div>
+        <div id="matrixHistoryTitle" class="matrix-history-title">Backtesting &amp; Matrix History</div>
         <div id="matrixHistoryDate" class="matrix-history-date">Latest matrix</div>
       </div>
       <div class="matrix-history-actions">
@@ -276,7 +276,7 @@ Changes:
     </div>
     <div id="matrixPortfolioSummary" class="matrix-portfolio-summary"></div>
     <div id="matrixHistoryStatus" class="matrix-history-status">Loading matrix history...</div>
-    <div class="matrix-history-note">250 consecutive daily matrices are shown. Each matrix uses the selected correlation period.</div>
+    <div class="matrix-history-note">Review how the selected portfolio, risk measures, and correlation matrix would have appeared at each historical EOD date. Portfolio quantities remain fixed; this is a historical replay, not a transaction-cost-adjusted trading-strategy backtest. 250 consecutive daily matrices are shown, each using the selected correlation period.</div>
     <div class="matrix-history-slider-row">
       <div id="matrixHistorySliderDate" class="matrix-history-slider-date">Latest</div>
       <input id="matrixHistorySlider" type="range" min="0" max="0" value="0" aria-label="Correlation matrix history slider">
@@ -751,7 +751,7 @@ document.getElementById("scaleReadout").textContent = BUBBLE_SCALE;
 function updateMatrixHistoryTitle() {
   const period = document.getElementById("corrPeriod").value;
   const title = document.getElementById("matrixHistoryTitle");
-  if (title) title.textContent = "Matrix History";
+  if (title) title.textContent = "Backtesting & Matrix History";
 }
 
 updateMatrixHistoryTitle();
