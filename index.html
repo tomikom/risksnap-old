@@ -126,12 +126,16 @@ layout: home-template
 }
 .rs-visual-banner a {
     display: flex !important;
+    position: static !important;
+    float: none !important;
+    flex: none !important;
     align-items: center;
     justify-content: center;
-    min-width: 0;
+    min-width: 0 !important;
     width: auto !important;
     max-width: none !important;
     height: 100% !important;
+    box-sizing: border-box !important;
     overflow: hidden;
     padding: 7px 4px;
     background: #fff;
@@ -145,7 +149,7 @@ layout: home-template
 .rs-visual-banner a:focus-visible { outline: 3px solid #2f77d0; outline-offset: -3px; }
 .rs-visual-banner svg {
     display: block !important;
-    width: 100% !important;
+    width: auto !important;
     max-width: 100% !important;
     height: 100% !important;
     max-height: 136px !important;
