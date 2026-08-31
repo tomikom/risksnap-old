@@ -48,7 +48,7 @@ body {
     margin: 0 auto;
     width: 100%;
     max-width: 100%;
-    overflow-x: hidden;
+    overflow-x: auto;
 }
 
 .page-content {
@@ -56,7 +56,7 @@ body {
     max-width: 100%;
     min-width: 0;
     display: block;
-    overflow-x: hidden;
+    overflow-x: visible;
 }
 
 .text-section {
