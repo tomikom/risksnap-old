@@ -1,10 +1,141 @@
 ---
 layout: home-template
 ---
-<div class ="image-section">
-   
+<div class ="image-section rs-hero-section">
+  <!-- One stationary banner. Each illustration is an independent link. -->
+  <nav class="rs-visual-banner" aria-label="RiskSnap analytical tools">
+    <a class="rs-visual-banner__logo" href="/" aria-label="RiskSnap home">
+      <svg viewBox="0 0 250 120" role="img" aria-labelledby="rs-logo-title">
+        <title id="rs-logo-title">RiskSnap</title>
+        <rect x="5" y="8" width="240" height="104" rx="3" fill="#fff" stroke="#2f6bc5" stroke-width="4"/>
+        <text x="18" y="72" font-family="Arial, Helvetica, sans-serif" font-size="57" font-weight="700" letter-spacing="-5">
+          <tspan fill="#2f6bc5">Ri</tspan><tspan fill="#222">S</tspan><tspan fill="#2f6bc5">K</tspan>
+        </text>
+        <text x="92" y="101" font-family="Arial, Helvetica, sans-serif" font-size="45" font-weight="700" letter-spacing="-3">
+          <tspan fill="#333">S</tspan><tspan fill="#18a64a">na</tspan><tspan fill="#2f6bc5">p</tspan>
+        </text>
+      </svg>
+    </a>
+
+    <a class="rs-visual-banner__panel" href="/correlations/" aria-label="Open Correlations">
+      <svg viewBox="0 0 260 150" role="img" aria-labelledby="rs-corr-title">
+        <title id="rs-corr-title">Correlations</title>
+        <g stroke="#e7edf4" stroke-width="1">
+          <path d="M18 12V137M64 12V137M110 12V137M156 12V137M202 12V137M248 12V137"/>
+          <path d="M18 12H248M18 43H248M18 74H248M18 105H248M18 137H248"/>
+        </g>
+        <g fill="#4f91e8" fill-opacity=".78" stroke="#2f77d0" stroke-width="1">
+          <circle cx="46" cy="42" r="13"/><circle cx="79" cy="37" r="22"/><circle cx="114" cy="56" r="10"/>
+          <circle cx="62" cy="80" r="18"/><circle cx="104" cy="91" r="14"/><circle cx="154" cy="44" r="12"/>
+          <circle cx="189" cy="61" r="20"/><circle cx="221" cy="39" r="25"/><circle cx="164" cy="105" r="17"/>
+          <circle cx="211" cy="111" r="29"/><circle cx="126" cy="120" r="6"/>
+        </g>
+        <g fill="#f5a04c" fill-opacity=".78" stroke="#e78325" stroke-width="1">
+          <circle cx="25" cy="25" r="7"/><circle cx="137" cy="31" r="5"/><circle cx="171" cy="22" r="9"/>
+          <circle cx="235" cy="83" r="6"/><circle cx="182" cy="125" r="12"/><circle cx="94" cy="24" r="4"/>
+        </g>
+      </svg>
+    </a>
+
+    <a class="rs-visual-banner__panel" href="/surface/" aria-label="Open Volatility Surface">
+      <svg viewBox="0 0 280 150" role="img" aria-labelledby="rs-surface-title">
+        <title id="rs-surface-title">Volatility Surface</title>
+        <defs>
+          <linearGradient id="rs-surface-fill" x1="0" y1="1" x2="1" y2="0">
+            <stop offset="0" stop-color="#173f9c"/><stop offset=".34" stop-color="#f0b05d"/>
+            <stop offset=".72" stop-color="#db6a42"/><stop offset="1" stop-color="#9d0710"/>
+          </linearGradient>
+        </defs>
+        <g transform="translate(12 3)">
+          <path d="M25 124L123 143L250 101L150 84Z" fill="#f8fafc" stroke="#dce4ed"/>
+          <path d="M25 124C63 83 86 53 124 48C163 43 202 75 250 56L250 101C202 117 165 91 126 96C86 101 58 132 25 124Z" fill="url(#rs-surface-fill)" fill-opacity=".93" stroke="#9f4938" stroke-width="1.5"/>
+          <g fill="none" stroke="#fff" stroke-opacity=".5" stroke-width="1">
+            <path d="M51 111C86 79 105 61 139 60C175 58 205 79 238 64"/>
+            <path d="M77 105C106 78 124 71 153 70C181 69 205 83 226 75"/>
+            <path d="M104 99C128 84 146 81 169 82C190 83 205 88 214 85"/>
+            <path d="M66 105L66 129M105 82L105 125M145 59L145 114M184 61L184 102M223 61L223 95"/>
+          </g>
+          <path d="M25 124L123 143L250 101M25 124L25 28M25 124L150 84" fill="none" stroke="#8b9bad" stroke-width="1"/>
+        </g>
+      </svg>
+    </a>
+
+    <a class="rs-visual-banner__panel" href="/portfolio_optimization/" aria-label="Open Portfolio Optimization">
+      <svg viewBox="0 0 270 150" role="img" aria-labelledby="rs-frontier-title">
+        <title id="rs-frontier-title">Portfolio Optimization</title>
+        <g stroke="#e7edf4" stroke-width="1"><path d="M22 16V133H255"/><path d="M22 105H255M22 77H255M22 49H255"/></g>
+        <g fill="#7aa8ed" fill-opacity=".48">
+          <circle cx="57" cy="115" r="3"/><circle cx="72" cy="108" r="3"/><circle cx="83" cy="111" r="3"/>
+          <circle cx="91" cy="96" r="3"/><circle cx="106" cy="103" r="3"/><circle cx="115" cy="86" r="3"/>
+          <circle cx="127" cy="92" r="3"/><circle cx="139" cy="74" r="3"/><circle cx="150" cy="81" r="3"/>
+          <circle cx="162" cy="62" r="3"/><circle cx="178" cy="71" r="3"/><circle cx="190" cy="49" r="3"/>
+          <circle cx="205" cy="59" r="3"/><circle cx="219" cy="36" r="3"/><circle cx="235" cy="48" r="3"/>
+          <circle cx="103" cy="116" r="3"/><circle cx="144" cy="106" r="3"/><circle cx="185" cy="91" r="3"/>
+        </g>
+        <path d="M47 120C77 111 100 96 123 80C153 59 180 48 222 31" fill="none" stroke="#ef7c31" stroke-width="3" stroke-linecap="round"/>
+        <circle cx="160" cy="56" r="7" fill="#2f77d0" stroke="#173f70" stroke-width="2"/>
+        <path d="M153 64L163 54L172 60" fill="none" stroke="#18a64a" stroke-width="2"/>
+      </svg>
+    </a>
+
+    <a class="rs-visual-banner__panel rs-visual-banner__tree" href="/structuredproducts/" aria-label="Open Structured Products">
+      <svg viewBox="0 0 300 150" role="img" aria-labelledby="rs-tree-title">
+        <title id="rs-tree-title">Structured Products</title>
+        <defs><linearGradient id="rs-rainbow" x1="0" y1="0" x2="1" y2="0"><stop stop-color="#f04b3e"/><stop offset=".25" stop-color="#ff9c31"/><stop offset=".5" stop-color="#18c958"/><stop offset=".72" stop-color="#23a7e8"/><stop offset="1" stop-color="#c739e8"/></linearGradient></defs>
+        <g transform="translate(6 4)" fill="none" stroke="url(#rs-rainbow)" stroke-width="1.4" stroke-linejoin="round">
+          <path d="M142 10L99 40L153 40L190 40L225 40"/>
+          <path d="M99 40L63 72L111 72L153 72L190 72M153 40L111 72M190 40L153 72L190 72L225 72L255 72M225 40L190 72"/>
+          <path d="M63 72L31 106L74 106L111 106L153 106M111 72L74 106M153 72L111 106L153 106L190 106L225 106M190 72L153 106M225 72L190 106L225 106L255 106L282 106M255 72L225 106"/>
+          <path d="M31 106L9 137L46 137L74 137L111 137M74 106L46 137M111 106L74 137L111 137L153 137L190 137M153 106L111 137M190 106L153 137L190 137L225 137L255 137M225 106L190 137M255 106L225 137L255 137L282 137"/>
+        </g>
+      </svg>
+    </a>
+  </nav>
+
 <!-- new -->
 <style>
+
+.rs-hero-section {
+    height: auto !important;
+    min-height: 0 !important;
+    padding: 0 !important;
+    background: #fff !important;
+    overflow-x: auto;
+}
+.rs-visual-banner {
+    display: grid;
+    grid-template-columns: minmax(145px, .82fr) repeat(4, minmax(175px, 1fr));
+    align-items: stretch;
+    width: 100%;
+    min-width: 880px;
+    height: clamp(132px, 12vw, 178px);
+    overflow: hidden;
+    border: 1px solid #e3e9f0;
+    border-radius: 8px;
+    background: #fff;
+}
+.rs-visual-banner a {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 0;
+    padding: 7px 4px;
+    background: #fff;
+    text-decoration: none;
+    transition: background-color .18s ease, transform .18s ease;
+}
+.rs-visual-banner a + a { border-left: 1px solid #edf1f5; }
+.rs-visual-banner a:hover,
+.rs-visual-banner a:focus-visible { background: #f5f9ff; }
+.rs-visual-banner a:hover svg { transform: translateY(-2px); }
+.rs-visual-banner a:focus-visible { outline: 3px solid #2f77d0; outline-offset: -3px; }
+.rs-visual-banner svg { display: block; width: 100%; max-height: 100%; transition: transform .18s ease; }
+.rs-visual-banner__logo svg { max-width: 205px; }
+@media (max-width: 700px) {
+    .rs-hero-section { scrollbar-width: thin; }
+    .rs-visual-banner { height: 124px; min-width: 760px; border-radius: 5px; }
+    .rs-visual-banner a { padding: 5px 3px; }
+}
 
 #myImg {
     border-radius: 5px;
