@@ -157,9 +157,18 @@ layout: home-template
 }
 .rs-visual-banner__logo svg { max-width: 205px !important; }
 @media (max-width: 700px) {
-    .rs-hero-section { overflow-x: auto !important; scrollbar-width: thin; }
-    .rs-visual-banner { height: 124px; min-width: 760px; border-radius: 5px; }
-    .rs-visual-banner a { padding: 5px 3px; }
+    .rs-hero-section { overflow: hidden !important; }
+    .rs-visual-banner {
+        width: 100% !important;
+        min-width: 0 !important;
+        height: clamp(72px, 15vw, 124px) !important;
+        grid-template-columns: minmax(0, 17fr) repeat(4, minmax(0, 20.75fr)) !important;
+        border-radius: 5px;
+    }
+    .rs-visual-banner a {
+        min-width: 0 !important;
+        padding: 3px 2px;
+    }
 }
 
 #myImg {
@@ -281,6 +290,9 @@ div.c {
 .column {
     float: left;
     padding: 10px;
+    min-width: 0;
+    max-width: 100%;
+    overflow-wrap: break-word;
  <!--   height: 300px; /* Should be removed. Only for demonstration */-->
 }
 
@@ -302,9 +314,18 @@ div.c {
 
 </div>
        
-<div class="text-section"> 
+<div class="text-section rs-market-section-wrap"> 
 
 <!-- RiskSnap global-markets panel: stationary by design; no automatic rotation. -->
+<style>
+.rs-market-section-wrap {
+  margin-left: 3vw !important;
+  width: 97vw !important;
+  max-width: 97vw !important;
+  min-width: 0 !important;
+  box-sizing: border-box !important;
+}
+</style>
 <section class="rs-global-markets" aria-labelledby="rs-global-markets-title">
   <div class="rs-global-markets__heading">
     <div>
@@ -326,6 +347,14 @@ div.c {
   background: #f8fbff;
   color: #172536;
   font-family: Arial, Helvetica, sans-serif;
+}
+.row {
+    width: 100%;
+    max-width: 100%;
+}
+.column img {
+    max-width: 100%;
+    height: auto;
 }
 .rs-global-markets__heading {
   display: flex;
