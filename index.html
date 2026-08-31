@@ -157,9 +157,18 @@ layout: home-template
 }
 .rs-visual-banner__logo svg { max-width: 205px !important; }
 @media (max-width: 700px) {
-    .rs-hero-section { overflow-x: auto !important; scrollbar-width: thin; }
-    .rs-visual-banner { height: 124px; min-width: 760px; border-radius: 5px; }
-    .rs-visual-banner a { padding: 5px 3px; }
+    .rs-hero-section { overflow: hidden !important; }
+    .rs-visual-banner {
+        width: 100% !important;
+        min-width: 0 !important;
+        height: clamp(72px, 15vw, 124px) !important;
+        grid-template-columns: minmax(0, 17fr) repeat(4, minmax(0, 20.75fr)) !important;
+        border-radius: 5px;
+    }
+    .rs-visual-banner a {
+        min-width: 0 !important;
+        padding: 3px 2px;
+    }
 }
 
 #myImg {
