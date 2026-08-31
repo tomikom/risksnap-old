@@ -290,6 +290,9 @@ div.c {
 .column {
     float: left;
     padding: 10px;
+    min-width: 0;
+    max-width: 100%;
+    overflow-wrap: break-word;
  <!--   height: 300px; /* Should be removed. Only for demonstration */-->
 }
 
@@ -335,6 +338,14 @@ div.c {
   background: #f8fbff;
   color: #172536;
   font-family: Arial, Helvetica, sans-serif;
+}
+.row {
+    width: 100%;
+    max-width: 100%;
+}
+.column img {
+    max-width: 100%;
+    height: auto;
 }
 .rs-global-markets__heading {
   display: flex;

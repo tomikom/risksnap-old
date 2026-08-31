@@ -47,16 +47,11 @@
 body {
     margin: 0 auto;
     width: 100%;
-    max-width: 100%;
-    overflow-x: hidden;
 }
 
 .page-content {
     width: 100%;
-    max-width: 100%;
-    min-width: 0;
-    display: block;
-    overflow-x: hidden;
+    display: table;
 }
 
 .text-section {
