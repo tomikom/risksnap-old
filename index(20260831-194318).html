@@ -96,29 +96,43 @@ layout: home-template
 <style>
 
 .rs-hero-section {
+    display: block !important;
+    position: static !important;
+    float: none !important;
+    width: 100% !important;
+    max-width: 100% !important;
     height: auto !important;
     min-height: 0 !important;
+    margin: 0 !important;
     padding: 0 !important;
     background: #fff !important;
-    overflow-x: auto;
+    overflow: hidden !important;
+    transform: none !important;
+    animation: none !important;
 }
 .rs-visual-banner {
-    display: grid;
-    grid-template-columns: minmax(145px, .82fr) repeat(4, minmax(175px, 1fr));
+    display: grid !important;
+    grid-template-columns: minmax(0, 17fr) repeat(4, minmax(0, 20.75fr)) !important;
     align-items: stretch;
+    box-sizing: border-box;
     width: 100%;
-    min-width: 880px;
-    height: clamp(132px, 12vw, 178px);
+    max-width: 100%;
+    min-width: 0;
+    height: clamp(105px, 9vw, 150px) !important;
     overflow: hidden;
     border: 1px solid #e3e9f0;
     border-radius: 8px;
     background: #fff;
 }
 .rs-visual-banner a {
-    display: flex;
+    display: flex !important;
     align-items: center;
     justify-content: center;
     min-width: 0;
+    width: auto !important;
+    max-width: none !important;
+    height: 100% !important;
+    overflow: hidden;
     padding: 7px 4px;
     background: #fff;
     text-decoration: none;
@@ -129,10 +143,17 @@ layout: home-template
 .rs-visual-banner a:focus-visible { background: #f5f9ff; }
 .rs-visual-banner a:hover svg { transform: translateY(-2px); }
 .rs-visual-banner a:focus-visible { outline: 3px solid #2f77d0; outline-offset: -3px; }
-.rs-visual-banner svg { display: block; width: 100%; max-height: 100%; transition: transform .18s ease; }
-.rs-visual-banner__logo svg { max-width: 205px; }
+.rs-visual-banner svg {
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: 100% !important;
+    max-height: 136px !important;
+    transition: transform .18s ease;
+}
+.rs-visual-banner__logo svg { max-width: 205px !important; }
 @media (max-width: 700px) {
-    .rs-hero-section { scrollbar-width: thin; }
+    .rs-hero-section { overflow-x: auto !important; scrollbar-width: thin; }
     .rs-visual-banner { height: 124px; min-width: 760px; border-radius: 5px; }
     .rs-visual-banner a { padding: 5px 3px; }
 }
