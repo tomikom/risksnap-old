@@ -75,6 +75,16 @@ layout: stockselection-template
     background: #eef2f8;
 }
 .overall { font-weight: bold; }
+.sector-view { margin-top: 20px; padding: 13px; border: 1px solid #dfe5ec; border-radius: 8px; background: #fffdf8; }
+.sector-view h4 { margin: 0 0 4px; color: #4e452f; }
+.sector-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.sector-table th,.sector-table td { padding: 7px 8px; border-bottom: 1px solid #e6e2d8; text-align: right; }
+.sector-table th { background: #f6f1e5; color: #504833; }
+.sector-table th:first-child,.sector-table td:first-child,.sector-table th:nth-child(3),.sector-table td:nth-child(3) { text-align: left; }
+.sector-label { display: inline-block; min-width: 54px; padding: 3px 7px; border-radius: 10px; text-align: center; font-size: 10px; font-weight: bold; }
+.sector-label.strong { background: #e4f4e9; color: #19693a; }
+.sector-label.neutral { background: #eef2f6; color: #52657a; }
+.sector-label.weak { background: #f9e8e5; color: #9a3f35; }
 .details {
     margin-top: 18px;
     border-top: 1px solid #ddd;
@@ -110,6 +120,13 @@ layout: stockselection-template
 .backtest-controls { display: flex; gap: 10px; align-items: end; flex-wrap: wrap; margin: 12px 0; }
 .backtest-controls label { color: #52657a; font-size: 11px; font-weight: bold; }
 .backtest-controls select { display: block; margin-top: 4px; padding: 7px 9px; border: 1px solid #aeb9c7; border-radius: 4px; background: white; }
+.universe-details { margin: 10px 0 4px; border: 1px solid #e0e6ee; border-radius: 6px; background: white; }
+.universe-details summary { padding: 9px 10px; color: #31577f; cursor: pointer; font-size: 12px; font-weight: bold; }
+.universe-table-wrap { max-height: 260px; overflow: auto; border-top: 1px solid #e7ebf0; }
+.universe-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+.universe-table th,.universe-table td { padding: 6px 8px; border-bottom: 1px solid #edf1f5; text-align: left; }
+.universe-table th { position: sticky; top: 0; background: #f3f6fa; color: #42566d; }
+.universe-table th:last-child,.universe-table td:last-child { text-align: right; }
 .backtest-grid { display: grid; grid-template-columns: repeat(5,minmax(115px,1fr)); gap: 8px; }
 .backtest-metric { padding: 9px; border: 1px solid #e0e6ee; border-radius: 6px; background: white; }
 .backtest-metric small { display: block; min-height: 26px; color: #66778b; font-size: 10px; line-height: 1.25; }
@@ -163,9 +180,30 @@ layout: stockselection-template
         </table>
     </div>
 
+    <section class="sector-view" aria-labelledby="sectorViewTitle">
+        <h4 id="sectorViewTitle">Sector View</h4>
+        <p class="stock-intro">Relative sector standing based on the average scores of eligible constituent stocks. Strong and Weak identify the top and bottom thirds of this universe.</p>
+        <div class="score-table-wrap">
+            <table class="sector-table">
+                <thead><tr><th>Sector</th><th>Sector score</th><th>Standing</th><th>Quality</th><th>Growth</th><th>Momentum</th><th>Risk</th><th>Stocks</th></tr></thead>
+                <tbody id="sectorBody"></tbody>
+            </table>
+        </div>
+        <p class="prototype-warning">Illustrative sector results; small sectors may contain only one or two prototype stocks.</p>
+    </section>
+
     <section class="backtest" aria-labelledby="backtestTitle">
         <h4 id="backtestTitle">Selection Backtest: Ranked vs Random</h4>
         <p class="stock-intro">Compare an equal-weight portfolio of the highest Overall scores with random portfolios drawn from the same investable universe.</p>
+        <details class="universe-details">
+            <summary>View illustrative selection universe (15 stocks)</summary>
+            <div class="universe-table-wrap">
+                <table class="universe-table">
+                    <thead><tr><th>Symbol</th><th>Company</th><th>Sector</th><th>Overall</th></tr></thead>
+                    <tbody id="universeBody"></tbody>
+                </table>
+            </div>
+        </details>
         <div class="backtest-controls">
             <label>Stocks per portfolio
                 <select id="portfolioSize"><option>3</option><option selected>5</option><option>10</option></select>
@@ -235,6 +273,35 @@ const demo = {
 
 function overall(q,g,m,r) {
     return Math.round(q*.30 + g*.25 + m*.25 + r*.20);
+}
+
+function populateUniverse() {
+    const body=document.getElementById("universeBody");
+    if (!body) return;
+    body.innerHTML=Object.entries(demo)
+        .sort((a,b)=>overall(b[1][1],b[1][2],b[1][3],b[1][4])-overall(a[1][1],a[1][2],a[1][3],a[1][4]))
+        .map(([symbol,d])=>`<tr><td>${symbol}</td><td>${d[0]}</td><td>${d[5]}</td><td>${overall(d[1],d[2],d[3],d[4])}</td></tr>`)
+        .join("");
+}
+
+function populateSectors() {
+    const body=document.getElementById("sectorBody");
+    if (!body) return;
+    const groups={};
+    Object.entries(demo).forEach(([symbol,d])=>{
+        const sector=d[5];
+        if (!groups[sector]) groups[sector]={symbols:[],quality:0,growth:0,momentum:0,risk:0};
+        const g=groups[sector]; g.symbols.push(symbol); g.quality+=d[1]; g.growth+=d[2]; g.momentum+=d[3]; g.risk+=d[4];
+    });
+    const sectors=Object.entries(groups).map(([name,g])=>{
+        const n=g.symbols.length,q=g.quality/n,gr=g.growth/n,m=g.momentum/n,r=g.risk/n;
+        return {name,n,q,gr,m,r,score:q*.30+gr*.25+m*.25+r*.20};
+    }).sort((a,b)=>b.score-a.score);
+    const third=Math.max(1,Math.floor(sectors.length/3));
+    body.innerHTML=sectors.map((s,index)=>{
+        const standing=index<third?"Strong":index>=sectors.length-third?"Weak":"Neutral";
+        return `<tr><td>${s.name}</td><td><span class="score overall">${Math.round(s.score)}</span></td><td><span class="sector-label ${standing.toLowerCase()}">${standing}</span></td><td>${Math.round(s.q)}</td><td>${Math.round(s.gr)}</td><td>${Math.round(s.m)}</td><td>${Math.round(s.r)}</td><td>${s.n}</td></tr>`;
+    }).join("");
 }
 
 function analyzeStocks() {
@@ -385,6 +452,6 @@ function runBacktest() {
     drawDistribution(trials.map(x=>x.return),ranked.return);
 }
 
-document.addEventListener("DOMContentLoaded", () => { analyzeStocks(); runBacktest(); });
+document.addEventListener("DOMContentLoaded", () => { analyzeStocks(); populateSectors(); populateUniverse(); runBacktest(); });
 </script>
 </div><!-- text-section -->
