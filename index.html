@@ -496,6 +496,26 @@ div.c {
   text-decoration: none;
 }
 .rs-market-card__news:hover { text-decoration: underline; }
+.rs-market-card__links {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+}
+.rs-market-card__links .rs-market-card__news { margin-top: 0; }
+.rs-market-card__chart {
+  display: inline-block;
+  padding: 3px 7px;
+  border: 1px solid #9aa8c4;
+  border-radius: 4px;
+  background: #fff;
+  color: #244b9b;
+  font: inherit;
+  font-size: 10px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.rs-market-card__chart:hover { background: #f0f4ff; border-color: #7188c7; }
 .rs-global-markets__note { margin-top: 4px; font-size: 9px; }
 @media (max-width: 560px) {
   .rs-global-markets { padding: 8px; }
@@ -539,7 +559,7 @@ div.c {
     <p class="rs-market-card__level">&mdash;</p><p class="rs-market-card__change is-flat">Latest change unavailable</p>
     <div class="rs-market-card__details"><div><span class="rs-market-card__label">Exchange capitalization</span><span class="rs-market-card__detail">Exchange cap ${safe(market.size)}</span></div></div>
     <p class="rs-market-card__access"><strong>Broker access:</strong> ${safe(market.access)}</p>
-    <a class="rs-market-card__news" href="https://news.google.com/search?q=${encodeURIComponent(`${market.name} ${market.place} stock market`)}" target="_blank" rel="noopener noreferrer">Related news <span aria-hidden="true">↗</span></a>
+    <div class="rs-market-card__links"><button type="button" class="rs-market-card__chart" data-rs-chart-symbol="${safe(market.symbol)}" data-rs-chart-name="${safe(market.name)}">Chart</button><a class="rs-market-card__news" href="https://news.google.com/search?q=${encodeURIComponent(`${market.name} ${market.place} stock market`)}" target="_blank" rel="noopener noreferrer">Related news <span aria-hidden="true">↗</span></a></div>
   </article>`;
   grid.innerHTML = markets.map(card).join("");
 
@@ -612,11 +632,47 @@ div.c {
   <p class="rs-global-markets__note">* “Latest” uses the newest RiskSnap quote. COMEX gold is the active Globex futures contract; its change is versus the prior futures close. Bitcoin trades 24/7. PPI and geopolitical risk are periodic releases.</p>
 </section>
 
+<div id="rsMarketChartPanel" class="rs-market-chart-panel" hidden>
+  <div class="rs-market-chart-header">
+    <div>
+      <div id="rsMarketChartTitle" class="rs-market-chart-title">Market Price History</div>
+      <div id="rsMarketChartStatus" class="rs-market-chart-status"></div>
+    </div>
+    <div class="rs-market-chart-actions">
+      <button type="button" class="rs-market-chart-range" data-range="3m">3M</button>
+      <button type="button" class="rs-market-chart-range" data-range="6m">6M</button>
+      <button type="button" class="rs-market-chart-range is-active" data-range="1y">1Y</button>
+      <button type="button" class="rs-market-chart-range" data-range="3y">3Y</button>
+      <button id="rsMarketChartClose" type="button">Close</button>
+    </div>
+  </div>
+  <div id="rsMarketPriceChart" class="rs-market-price-chart"></div>
+</div>
+
 <style>
 .rs-market-indicators { background: #fffaf0; border-color: #eadfc9; }
 .rs-market-indicators h2 { color: #74531c; }
 .rs-market-indicators .rs-market-card { border-color: #eadfc9; }
 .rs-indicator-unit { color: #617186; font-size: 10px; font-weight: 400; }
+.rs-market-chart-panel { margin: -6px 0 16px; border: 1px solid #d8e1ec; border-radius: 10px; padding: 10px; background: #fff; font-family: Arial, Helvetica, sans-serif; }
+.rs-market-chart-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; flex-wrap: wrap; margin-bottom: 6px; }
+.rs-market-chart-title { color: #172536; font-size: 17px; font-weight: 700; }
+.rs-market-chart-status { min-height: 1em; margin-top: 2px; color: #617186; font-size: 12px; }
+.rs-market-chart-actions { display: flex; gap: 5px; flex-wrap: wrap; }
+.rs-market-chart-actions button { padding: 4px 8px; border: 1px solid #aaa; border-radius: 4px; background: #fff; cursor: pointer; }
+.rs-market-chart-actions button:hover { background: #f0f4ff; border-color: #7188c7; }
+.rs-market-chart-actions button.is-active { background: #dce7ff; border-color: #3A5FCD; }
+.rs-market-price-chart { position: relative; width: 100%; min-height: 260px; overflow: hidden; background: #fff; }
+.rs-market-price-chart svg { display: block; width: 100%; height: auto; }
+.rs-chart-axis { stroke: #aaa; stroke-width: 1; }
+.rs-chart-grid { stroke: #e9e9e9; stroke-width: 1; }
+.rs-chart-line { fill: none; stroke: #3A5FCD; stroke-width: 2; }
+.rs-chart-label { fill: #555; font-size: 11px; }
+.rs-chart-hover-line { stroke: #777; stroke-width: 1; stroke-dasharray: 3 3; pointer-events: none; }
+.rs-chart-hover-point { fill: #fff; stroke: #3A5FCD; stroke-width: 2; pointer-events: none; }
+.rs-chart-overlay { fill: transparent; cursor: crosshair; }
+.rs-chart-tooltip { position: absolute; display: none; pointer-events: none; background: #fff; border: 1px solid #aaa; border-radius: 4px; padding: 5px 7px; font-size: 11px; box-shadow: 0 1px 4px rgba(0,0,0,.12); z-index: 5; white-space: nowrap; }
+@media (max-width: 600px) { .rs-market-chart-actions { width: 100%; } }
 </style>
 
 <script>
@@ -643,7 +699,7 @@ div.c {
     <div class="rs-market-card__top"><h3>${safe(item.name)}</h3><span class="rs-market-card__state">${item.type === "periodic" ? "Periodic" : (item.state || "Waiting")}</span></div>
     <p class="rs-market-card__level">${item.value ? safe(item.value) : "&mdash;"}</p>
     <p class="rs-market-card__change is-flat">${item.detail ? safe(item.detail) : "Latest change unavailable"}</p>
-    <a class="rs-market-card__news" href="https://news.google.com/search?q=${encodeURIComponent(item.news)}" target="_blank" rel="noopener noreferrer">Related news <span aria-hidden="true">↗</span></a>
+    <div class="rs-market-card__links">${item.type !== "periodic" ? `<button type="button" class="rs-market-card__chart" data-rs-chart-symbol="${safe(item.symbol)}" data-rs-chart-name="${safe(item.name)}">Chart</button>` : ""}<a class="rs-market-card__news" href="https://news.google.com/search?q=${encodeURIComponent(item.news)}" target="_blank" rel="noopener noreferrer">Related news <span aria-hidden="true">↗</span></a></div>
   </article>`).join("");
 
   function updateMarket(item, latestPrices, previousCloses, changes, changePercents, timestamp) {
@@ -709,6 +765,133 @@ div.c {
   }
   window.addEventListener("risksnap-refresh-markets", loadIndicators);
   loadIndicators();
+})();
+</script>
+
+<script>
+(function () {
+  const endpoint = "https://surface-203178530029.northamerica-northeast2.run.app/asset_history";
+  const panel = document.getElementById("rsMarketChartPanel");
+  const title = document.getElementById("rsMarketChartTitle");
+  const status = document.getElementById("rsMarketChartStatus");
+  const container = document.getElementById("rsMarketPriceChart");
+  if (!panel || !title || !status || !container) return;
+
+  let selectedSymbol = "";
+  let selectedName = "";
+  let selectedRange = "1y";
+  const cache = new Map();
+  const safe = value => String(value == null ? "" : value).replace(/[&<>"']/g, character => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;"
+  })[character]);
+  const svgNode = (name, attrs = {}, text = "") => {
+    const node = document.createElementNS("http://www.w3.org/2000/svg", name);
+    Object.entries(attrs).forEach(([key, value]) => node.setAttribute(key, value));
+    if (text !== "") node.textContent = text;
+    return node;
+  };
+  const dateLabel = value => {
+    const date = new Date(`${value}T00:00:00`);
+    return Number.isNaN(date.getTime()) ? String(value || "") : date.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "2-digit" });
+  };
+
+  function draw(rows, label) {
+    container.innerHTML = "";
+    const clean = (rows || []).map(row => ({ date: String(row.date || row.Date || ""), price: Number(row.price ?? row.value ?? row.Breakeven10Y) }))
+      .filter(row => row.date && Number.isFinite(row.price))
+      .sort((a, b) => a.date.localeCompare(b.date));
+    if (clean.length < 2) return false;
+    const width = 920, height = 280, margin = { left: 72, right: 22, top: 18, bottom: 42 };
+    const iw = width - margin.left - margin.right, ih = height - margin.top - margin.bottom;
+    let lo = Math.min(...clean.map(row => row.price)), hi = Math.max(...clean.map(row => row.price));
+    if (lo === hi) { lo -= Math.abs(lo * .01) || 1; hi += Math.abs(hi * .01) || 1; }
+    const pad = (hi - lo) * .06 || 1; lo -= pad; hi += pad;
+    const x = index => margin.left + (index / (clean.length - 1)) * iw;
+    const y = value => margin.top + (hi - value) / (hi - lo) * ih;
+    const svg = svgNode("svg", { viewBox: `0 0 ${width} ${height}`, role: "img", "aria-label": `${label} history` });
+    for (let i = 0; i <= 4; i++) {
+      const value = lo + (hi - lo) * i / 4, yy = y(value);
+      svg.appendChild(svgNode("line", { x1: margin.left, y1: yy, x2: width - margin.right, y2: yy, class: "rs-chart-grid" }));
+      svg.appendChild(svgNode("text", { x: margin.left - 8, y: yy + 4, class: "rs-chart-label", "text-anchor": "end" }, value.toLocaleString(undefined, { maximumFractionDigits: 2 })));
+    }
+    svg.appendChild(svgNode("line", { x1: margin.left, y1: margin.top, x2: margin.left, y2: height - margin.bottom, class: "rs-chart-axis" }));
+    svg.appendChild(svgNode("line", { x1: margin.left, y1: height - margin.bottom, x2: width - margin.right, y2: height - margin.bottom, class: "rs-chart-axis" }));
+    [0, Math.floor((clean.length - 1) / 2), clean.length - 1].forEach(index => {
+      svg.appendChild(svgNode("text", { x: x(index), y: height - 15, class: "rs-chart-label", "text-anchor": index === 0 ? "start" : (index === clean.length - 1 ? "end" : "middle") }, dateLabel(clean[index].date)));
+    });
+    svg.appendChild(svgNode("path", { d: clean.map((row, index) => `${index ? "L" : "M"}${x(index).toFixed(2)},${y(row.price).toFixed(2)}`).join(" "), class: "rs-chart-line" }));
+    const hoverLine = svgNode("line", { x1: 0, y1: margin.top, x2: 0, y2: height - margin.bottom, class: "rs-chart-hover-line", visibility: "hidden" });
+    const hoverPoint = svgNode("circle", { cx: 0, cy: 0, r: 4, class: "rs-chart-hover-point", visibility: "hidden" });
+    const overlay = svgNode("rect", { x: margin.left, y: margin.top, width: iw, height: ih, class: "rs-chart-overlay" });
+    svg.appendChild(hoverLine); svg.appendChild(hoverPoint); svg.appendChild(overlay);
+    const tip = document.createElement("div"); tip.className = "rs-chart-tooltip";
+    overlay.addEventListener("mousemove", event => {
+      const rect = svg.getBoundingClientRect(), scaleX = width / rect.width;
+      const px = (event.clientX - rect.left) * scaleX;
+      const index = Math.max(0, Math.min(clean.length - 1, Math.round(((px - margin.left) / iw) * (clean.length - 1))));
+      const row = clean[index], xx = x(index), yy = y(row.price);
+      hoverLine.setAttribute("x1", xx); hoverLine.setAttribute("x2", xx); hoverLine.setAttribute("visibility", "visible");
+      hoverPoint.setAttribute("cx", xx); hoverPoint.setAttribute("cy", yy); hoverPoint.setAttribute("visibility", "visible");
+      tip.innerHTML = `<strong>${safe(label)}</strong><br>${safe(dateLabel(row.date))}<br>${safe(row.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }))}`;
+      tip.style.display = "block";
+      const chartRect = container.getBoundingClientRect();
+      const cx = (rect.left - chartRect.left) + (xx / width) * rect.width;
+      const cy = (rect.top - chartRect.top) + (yy / height) * rect.height;
+      tip.style.left = `${Math.max(5, cx + 10 + tip.offsetWidth <= container.clientWidth - 5 ? cx + 10 : cx - tip.offsetWidth - 10)}px`;
+      tip.style.top = `${Math.max(3, Math.min(container.clientHeight - tip.offsetHeight - 3, cy - tip.offsetHeight / 2))}px`;
+    });
+    overlay.addEventListener("mouseleave", () => {
+      hoverLine.setAttribute("visibility", "hidden"); hoverPoint.setAttribute("visibility", "hidden"); tip.style.display = "none";
+    });
+    container.appendChild(svg); container.appendChild(tip);
+    return true;
+  }
+
+  async function loadChart() {
+    title.textContent = `${selectedName || selectedSymbol} History`;
+    status.textContent = "Loading…";
+    container.innerHTML = "";
+    const key = `${selectedSymbol}|${selectedRange}`;
+    try {
+      let rows = cache.get(key);
+      if (!rows) {
+        const isBreakeven = selectedSymbol === "T10YIE";
+        const response = isBreakeven
+          ? await fetch(`https://surface-203178530029.northamerica-northeast2.run.app/breakeven_inflation?period=${selectedRange === "3y" ? "3y" : "1y"}`)
+          : await fetch(endpoint, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ symbol: selectedSymbol, range: selectedRange }) });
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(payload.error || `HTTP ${response.status}`);
+        rows = Array.isArray(payload) ? payload : (payload.rows || payload.history || payload.data || []);
+        if (isBreakeven && selectedRange === "3m") rows = rows.slice(-66);
+        if (isBreakeven && selectedRange === "6m") rows = rows.slice(-130);
+        cache.set(key, rows);
+      }
+      const ok = draw(rows, selectedName || selectedSymbol);
+      const clean = (rows || []).filter(row => row && (row.date || row.Date) && Number.isFinite(Number(row.price ?? row.value ?? row.Breakeven10Y)));
+      status.textContent = ok && clean.length ? `${dateLabel(clean[0].date || clean[0].Date)} to ${dateLabel(clean[clean.length - 1].date || clean[clean.length - 1].Date)} · ${clean.length} EOD observations` : "No usable history returned.";
+    } catch (error) {
+      status.textContent = `Chart unavailable: ${error.message}`;
+    }
+  }
+
+  document.addEventListener("click", event => {
+    const button = event.target.closest("[data-rs-chart-symbol]");
+    if (!button) return;
+    selectedSymbol = String(button.dataset.rsChartSymbol || "").trim().toUpperCase();
+    selectedName = String(button.dataset.rsChartName || selectedSymbol).trim();
+    if (!selectedSymbol) return;
+    panel.hidden = false;
+    panel.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    loadChart();
+  });
+  document.getElementById("rsMarketChartClose").addEventListener("click", () => { panel.hidden = true; });
+  document.querySelectorAll(".rs-market-chart-range").forEach(button => {
+    button.addEventListener("click", async () => {
+      selectedRange = button.dataset.range || "1y";
+      document.querySelectorAll(".rs-market-chart-range").forEach(item => item.classList.toggle("is-active", item === button));
+      if (selectedSymbol) await loadChart();
+    });
+  });
 })();
 </script>
 
