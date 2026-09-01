@@ -267,6 +267,27 @@ table, th, td {
 .pic:hover + .picbig{
 	width:700px;
 }
+
+/* The concentration chart starts in the left panel but enlarges as an
+   overlay across the panels to its right. */
+.concentration-panel {
+    position: relative;
+    z-index: 20;
+    overflow: visible;
+}
+.concentration-picbig {
+    position: absolute;
+    top: 70px;
+    left: 110px;
+    float: none;
+    max-width: none;
+    height: auto;
+    z-index: 1000;
+    background: #ffffff;
+}
+.concentration-pic:hover + .concentration-picbig {
+    width: 700px;
+}
 </style>
 <style>
 div.a {
@@ -694,7 +715,14 @@ div.c {
 
 <p>
 <div class="row">
-<div class="column left" style="background-color:#E5F1FF;">
+<div class="column left concentration-panel" style="background-color:#E5F1FF;">
+<h2>Concentration Risk</h2>
+<p><img class="pic concentration-pic" src="./images/asset-managers-pie-chart.png" alt="Concentration" align="left">
+<img class="picbig concentration-picbig" src="./images/asset-managers-pie-chart.png" alt="Concentration"><span class="in-line-header">Concentration</span>There are several layers of concentration . Crypto attracts headlines, principally MSTR and Michael Saylor. The MAG  Seven and other AI  companies are  highly visible. Less discussed is the concentration among the asset managers investing  on behalf of funds and other clients.
+Unlike exchange-traded securities, these underlying positions are not continuously visible. ETF holdings and mutual-fund net asset values are generally published regularly, while many others  are disclosed only periodically. The three large non-bank managers are BlackRock, Vanguard and Fidelity overseeing US$33.5 trillion in asset. Also in the chart are  bank affiliated managers: State Street, J.P. Morgan and Goldman Sachs who collectively oversee US$15 trillion . These figures are extraordinary. Although the assets largely belong to clients—and bank depositors are not directly exposed—the scale raises an important question: have some asset managers become systemically important, or even too big to fail?
+</p><p>During the 2008 financial crisis, Bank of America and other major financial institutions were considered too important to permit a collapse. The Bush administration responded with the US$700 billion Troubled Asset Relief Program (TARP). Asset managers are structurally different from banks, but their enormous size of holdings could still amplify market stress if there was an exit at the same time.</p>
+<p>The Treasury has now enlarged its long-term bond-buyback operations.. Scott Bessent, Treasury Secretary indicated a buy back possibly up to $1 Trillion of long term bonds?  Would the purchases be sufficient during a severe, concentrated sell-off? 31-Aug-2026</p>
+
     <h2>Regulators Review Nasdaq</h2>
     <p><b>The Bank for International Settlements(BIS), Quarterly Review December 16, 2018<sup>*</sup></b>, published a scathing rebuke of Nasdaq comparing the Aas default [see RiskSnap’s analysis to the right] to the Lehman default.  “Lehman had derivative portfolios at a number of CCPs across the world, and with one exception, these were settled within weeks of the default, September 15, 2008, without exhausting the collateral Lehman had provided”.  In contrast, the auctioning of Aas’s position “resulted in a loss of E114 million in excess of the collateral Aas had provided”.<p>
 	<h4>JPMorgan's Excessive Collateral</h4>

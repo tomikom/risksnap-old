@@ -1,10 +1,175 @@
 ---
 layout: home-template
 ---
-<div class ="image-section">
-   
+<div class ="image-section rs-hero-section">
+  <!-- One stationary banner. Each illustration is an independent link. -->
+  <nav class="rs-visual-banner" aria-label="RiskSnap analytical tools">
+    <a class="rs-visual-banner__logo" href="/" aria-label="RiskSnap home">
+      <svg viewBox="0 0 250 120" role="img" aria-labelledby="rs-logo-title">
+        <title id="rs-logo-title">RiskSnap</title>
+        <rect x="5" y="8" width="240" height="104" rx="3" fill="#fff" stroke="#2f6bc5" stroke-width="4"/>
+        <text x="18" y="72" font-family="Arial, Helvetica, sans-serif" font-size="57" font-weight="700" letter-spacing="-5">
+          <tspan fill="#2f6bc5">Ri</tspan><tspan fill="#222">S</tspan><tspan fill="#2f6bc5">K</tspan>
+        </text>
+        <text x="92" y="101" font-family="Arial, Helvetica, sans-serif" font-size="45" font-weight="700" letter-spacing="-3">
+          <tspan fill="#333">S</tspan><tspan fill="#18a64a">na</tspan><tspan fill="#2f6bc5">p</tspan>
+        </text>
+      </svg>
+    </a>
+
+    <a class="rs-visual-banner__panel" href="/correlations/" aria-label="Open Correlations">
+      <svg viewBox="0 0 260 150" role="img" aria-labelledby="rs-corr-title">
+        <title id="rs-corr-title">Correlations</title>
+        <g stroke="#e7edf4" stroke-width="1">
+          <path d="M18 12V137M64 12V137M110 12V137M156 12V137M202 12V137M248 12V137"/>
+          <path d="M18 12H248M18 43H248M18 74H248M18 105H248M18 137H248"/>
+        </g>
+        <g fill="#4f91e8" fill-opacity=".78" stroke="#2f77d0" stroke-width="1">
+          <circle cx="46" cy="42" r="13"/><circle cx="79" cy="37" r="22"/><circle cx="114" cy="56" r="10"/>
+          <circle cx="62" cy="80" r="18"/><circle cx="104" cy="91" r="14"/><circle cx="154" cy="44" r="12"/>
+          <circle cx="189" cy="61" r="20"/><circle cx="221" cy="39" r="25"/><circle cx="164" cy="105" r="17"/>
+          <circle cx="211" cy="111" r="29"/><circle cx="126" cy="120" r="6"/>
+        </g>
+        <g fill="#f5a04c" fill-opacity=".78" stroke="#e78325" stroke-width="1">
+          <circle cx="25" cy="25" r="7"/><circle cx="137" cy="31" r="5"/><circle cx="171" cy="22" r="9"/>
+          <circle cx="235" cy="83" r="6"/><circle cx="182" cy="125" r="12"/><circle cx="94" cy="24" r="4"/>
+        </g>
+      </svg>
+    </a>
+
+    <a class="rs-visual-banner__panel" href="/surface/" aria-label="Open Volatility Surface">
+      <svg viewBox="0 0 280 150" role="img" aria-labelledby="rs-surface-title">
+        <title id="rs-surface-title">Volatility Surface</title>
+        <defs>
+          <linearGradient id="rs-surface-fill" x1="0" y1="1" x2="1" y2="0">
+            <stop offset="0" stop-color="#173f9c"/><stop offset=".34" stop-color="#f0b05d"/>
+            <stop offset=".72" stop-color="#db6a42"/><stop offset="1" stop-color="#9d0710"/>
+          </linearGradient>
+        </defs>
+        <g transform="translate(12 3)">
+          <path d="M25 124L123 143L250 101L150 84Z" fill="#f8fafc" stroke="#dce4ed"/>
+          <path d="M25 124C63 83 86 53 124 48C163 43 202 75 250 56L250 101C202 117 165 91 126 96C86 101 58 132 25 124Z" fill="url(#rs-surface-fill)" fill-opacity=".93" stroke="#9f4938" stroke-width="1.5"/>
+          <g fill="none" stroke="#fff" stroke-opacity=".5" stroke-width="1">
+            <path d="M51 111C86 79 105 61 139 60C175 58 205 79 238 64"/>
+            <path d="M77 105C106 78 124 71 153 70C181 69 205 83 226 75"/>
+            <path d="M104 99C128 84 146 81 169 82C190 83 205 88 214 85"/>
+            <path d="M66 105L66 129M105 82L105 125M145 59L145 114M184 61L184 102M223 61L223 95"/>
+          </g>
+          <path d="M25 124L123 143L250 101M25 124L25 28M25 124L150 84" fill="none" stroke="#8b9bad" stroke-width="1"/>
+        </g>
+      </svg>
+    </a>
+
+    <a class="rs-visual-banner__panel" href="/portfolio_optimization/" aria-label="Open Portfolio Optimization">
+      <svg viewBox="0 0 270 150" role="img" aria-labelledby="rs-frontier-title">
+        <title id="rs-frontier-title">Portfolio Optimization</title>
+        <g stroke="#e7edf4" stroke-width="1"><path d="M22 16V133H255"/><path d="M22 105H255M22 77H255M22 49H255"/></g>
+        <g fill="#7aa8ed" fill-opacity=".48">
+          <circle cx="57" cy="115" r="3"/><circle cx="72" cy="108" r="3"/><circle cx="83" cy="111" r="3"/>
+          <circle cx="91" cy="96" r="3"/><circle cx="106" cy="103" r="3"/><circle cx="115" cy="86" r="3"/>
+          <circle cx="127" cy="92" r="3"/><circle cx="139" cy="74" r="3"/><circle cx="150" cy="81" r="3"/>
+          <circle cx="162" cy="62" r="3"/><circle cx="178" cy="71" r="3"/><circle cx="190" cy="49" r="3"/>
+          <circle cx="205" cy="59" r="3"/><circle cx="219" cy="36" r="3"/><circle cx="235" cy="48" r="3"/>
+          <circle cx="103" cy="116" r="3"/><circle cx="144" cy="106" r="3"/><circle cx="185" cy="91" r="3"/>
+        </g>
+        <path d="M47 120C77 111 100 96 123 80C153 59 180 48 222 31" fill="none" stroke="#ef7c31" stroke-width="3" stroke-linecap="round"/>
+        <circle cx="160" cy="56" r="7" fill="#2f77d0" stroke="#173f70" stroke-width="2"/>
+        <path d="M153 64L163 54L172 60" fill="none" stroke="#18a64a" stroke-width="2"/>
+      </svg>
+    </a>
+
+    <a class="rs-visual-banner__panel rs-visual-banner__tree" href="/structuredproducts/" aria-label="Open Structured Products">
+      <svg viewBox="0 0 300 150" role="img" aria-labelledby="rs-tree-title">
+        <title id="rs-tree-title">Structured Products</title>
+        <defs><linearGradient id="rs-rainbow" x1="0" y1="0" x2="1" y2="0"><stop stop-color="#f04b3e"/><stop offset=".25" stop-color="#ff9c31"/><stop offset=".5" stop-color="#18c958"/><stop offset=".72" stop-color="#23a7e8"/><stop offset="1" stop-color="#c739e8"/></linearGradient></defs>
+        <g transform="translate(6 4)" fill="none" stroke="url(#rs-rainbow)" stroke-width="1.4" stroke-linejoin="round">
+          <path d="M142 10L99 40L153 40L190 40L225 40"/>
+          <path d="M99 40L63 72L111 72L153 72L190 72M153 40L111 72M190 40L153 72L190 72L225 72L255 72M225 40L190 72"/>
+          <path d="M63 72L31 106L74 106L111 106L153 106M111 72L74 106M153 72L111 106L153 106L190 106L225 106M190 72L153 106M225 72L190 106L225 106L255 106L282 106M255 72L225 106"/>
+          <path d="M31 106L9 137L46 137L74 137L111 137M74 106L46 137M111 106L74 137L111 137L153 137L190 137M153 106L111 137M190 106L153 137L190 137L225 137L255 137M225 106L190 137M255 106L225 137L255 137L282 137"/>
+        </g>
+      </svg>
+    </a>
+  </nav>
+
 <!-- new -->
 <style>
+
+.rs-hero-section {
+    display: block !important;
+    position: static !important;
+    float: none !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #fff !important;
+    overflow: hidden !important;
+    transform: none !important;
+    animation: none !important;
+}
+.rs-visual-banner {
+    display: grid !important;
+    grid-template-columns: minmax(0, 17fr) repeat(4, minmax(0, 20.75fr)) !important;
+    align-items: stretch;
+    box-sizing: border-box;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    height: clamp(105px, 9vw, 150px) !important;
+    overflow: hidden;
+    border: 1px solid #e3e9f0;
+    border-radius: 8px;
+    background: #fff;
+}
+.rs-visual-banner a {
+    display: flex !important;
+    position: static !important;
+    float: none !important;
+    flex: none !important;
+    align-items: center;
+    justify-content: center;
+    min-width: 0 !important;
+    width: auto !important;
+    max-width: none !important;
+    height: 100% !important;
+    box-sizing: border-box !important;
+    overflow: hidden;
+    padding: 7px 4px;
+    background: #fff;
+    text-decoration: none;
+    transition: background-color .18s ease, transform .18s ease;
+}
+.rs-visual-banner a + a { border-left: 1px solid #edf1f5; }
+.rs-visual-banner a:hover,
+.rs-visual-banner a:focus-visible { background: #f5f9ff; }
+.rs-visual-banner a:hover svg { transform: translateY(-2px); }
+.rs-visual-banner a:focus-visible { outline: 3px solid #2f77d0; outline-offset: -3px; }
+.rs-visual-banner svg {
+    display: block !important;
+    width: auto !important;
+    max-width: 100% !important;
+    height: 100% !important;
+    max-height: 136px !important;
+    transition: transform .18s ease;
+}
+.rs-visual-banner__logo svg { max-width: 205px !important; }
+@media (max-width: 700px) {
+    .rs-hero-section { overflow: hidden !important; }
+    .rs-visual-banner {
+        width: 100% !important;
+        min-width: 0 !important;
+        height: clamp(72px, 15vw, 124px) !important;
+        grid-template-columns: minmax(0, 17fr) repeat(4, minmax(0, 20.75fr)) !important;
+        border-radius: 5px;
+    }
+    .rs-visual-banner a {
+        min-width: 0 !important;
+        padding: 3px 2px;
+    }
+}
 
 #myImg {
     border-radius: 5px;
@@ -125,6 +290,9 @@ div.c {
 .column {
     float: left;
     padding: 10px;
+    min-width: 0;
+    max-width: 100%;
+    overflow-wrap: break-word;
  <!--   height: 300px; /* Should be removed. Only for demonstration */-->
 }
 
@@ -146,19 +314,28 @@ div.c {
 
 </div>
        
-<div class="text-section"> 
+<div class="text-section rs-market-section-wrap"> 
 
 <!-- RiskSnap global-markets panel: stationary by design; no automatic rotation. -->
+<style>
+.rs-market-section-wrap {
+  margin-left: 3vw !important;
+  width: 97vw !important;
+  max-width: 97vw !important;
+  min-width: 0 !important;
+  box-sizing: border-box !important;
+}
+</style>
 <section class="rs-global-markets" aria-labelledby="rs-global-markets-title">
   <div class="rs-global-markets__heading">
     <div>
       <p class="rs-global-markets__eyebrow">Global market snapshot</p>
-      <h2 id="rs-global-markets-title">Major equity markets</h2>
+      <h2 id="rs-global-markets-title">Equity markets</h2>
     </div>
-    <p id="rs-global-markets-status" class="rs-global-markets__status" aria-live="polite">Loading latest readings&hellip;</p>
+    <div class="rs-global-markets__actions"><p id="rs-global-markets-status" class="rs-global-markets__status" aria-live="polite">Loading latest readings&hellip;</p><button id="rs-markets-refresh" class="rs-markets-refresh" type="button">Refresh</button></div>
   </div>
   <div id="rs-global-markets-grid" class="rs-global-markets__grid"></div>
-  <p class="rs-global-markets__note">* <span id="rs-global-markets-date">Date loading</span>. Market caps are approximate U.S.-dollar equivalents and are not intraday values.</p>
+  <p class="rs-global-markets__note">* <span id="rs-global-markets-date">Date loading</span>. <sup>&dagger;</sup>Exchange capitalization is domestic equity market capitalization in U.S. dollars from the <a href="https://focus.world-exchanges.org/issue/july-2026/market-statistics" target="_blank" rel="noopener">World Federation of Exchanges</a> (May 2026); it is not the capitalization of the displayed benchmark index. U.S. benchmark cards overlap and must not be added together.</p>
 </section>
 
 <style>
@@ -170,6 +347,18 @@ div.c {
   background: #f8fbff;
   color: #172536;
   font-family: Arial, Helvetica, sans-serif;
+}
+.row {
+    width: 100%;
+    max-width: 100%;
+}
+@media (max-width: 700px) {
+    .row {
+        display: block;
+        width: 1200px;
+        max-width: none;
+        overflow: visible;
+    }
 }
 .rs-global-markets__heading {
   display: flex;
@@ -192,6 +381,19 @@ div.c {
   color: #617186;
   font-size: 12px;
 }
+.rs-global-markets__actions { display: flex; align-items: center; gap: 9px; }
+.rs-markets-refresh {
+  padding: 5px 10px;
+  border: 1px solid #aebdce;
+  border-radius: 6px;
+  background: #fff;
+  color: #244d78;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 700;
+}
+.rs-markets-refresh:hover { background: #eef5fc; }
+.rs-markets-refresh:disabled { cursor: wait; opacity: .6; }
 .rs-global-markets__grid {
   display: flex;
   gap: 7px;
@@ -238,15 +440,15 @@ div.c {
   white-space: nowrap;
 }
 .rs-market-card__level {
-  margin: 7px 0 1px;
-  font-size: 17px;
-  font-weight: 700;
+  margin: 6px 0 1px;
+  font-size: 14px;
+  font-weight: 600;
   font-variant-numeric: tabular-nums;
 }
 .rs-market-card__change {
   min-height: 15px;
   margin: 0;
-  font-size: 12px;
+  font-size: 16px;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
@@ -288,17 +490,23 @@ div.c {
 <script>
 (function () {
   const markets = [
-    { place: "United States", name: "Dow Jones", symbol: "^DJI", size: "US$19.0T", locale: "en-US" },
-    { place: "United States", name: "S&P 500", symbol: "^GSPC", size: "US$52.8T", locale: "en-US" },
-    { place: "United States", name: "Nasdaq Composite", symbol: "^IXIC", size: "US$34.0T", locale: "en-US" },
-    { place: "Canada", name: "S&P/TSX Composite", symbol: "^GSPTSE", size: "US$2.9T", locale: "en-CA" },
-    { place: "United Kingdom", name: "FTSE 100", symbol: "^FTSE", size: "US$2.8T", locale: "en-GB" },
-    { place: "Germany", name: "DAX", symbol: "^GDAXI", size: "US$2.5T", locale: "de-DE" },
-    { place: "Japan", name: "Nikkei 225", symbol: "^N225", size: "US$5.8T", locale: "ja-JP" },
-    { place: "Hong Kong", name: "Hang Seng", symbol: "^HSI", size: "US$3.3T", locale: "en-HK" },
-    { place: "Australia", name: "S&P/ASX 200", symbol: "^AXJO", size: "US$2.0T", locale: "en-AU" },
-    { place: "Dubai", name: "DFM General Index", symbol: "DFMGI.AE", size: "US$267B", locale: "en-AE" },
-    { place: "Saudi Arabia", name: "Tadawul All Share", symbol: "^TASI.SR", size: "US$2.52T", locale: "en-SA" }
+    { place: "United States", name: "Dow Jones", symbol: "^DJI", size: "NYSE US$32.41T†", locale: "en-US" },
+    { place: "United States", name: "S&P 500", symbol: "^GSPC", size: "NYSE + Nasdaq US$76.15T†", locale: "en-US" },
+    { place: "United States", name: "Nasdaq Composite", symbol: "^IXIC", size: "Nasdaq US$43.74T†", locale: "en-US" },
+    { place: "Canada", name: "S&P/TSX Composite", symbol: "^GSPTSE", size: "TMX US$5.00T†", locale: "en-CA" },
+    { place: "United Kingdom", name: "FTSE 100", symbol: "^FTSE", size: "WFE not reported†", locale: "en-GB" },
+    { place: "Germany", name: "DAX", symbol: "^GDAXI", size: "Deutsche Börse US$2.88T†", locale: "de-DE" },
+    { place: "Japan", name: "Nikkei 225", symbol: "^N225", size: "JPX US$8.67T†", locale: "ja-JP" },
+    { place: "Hong Kong", name: "Hang Seng", symbol: "^HSI", size: "HKEX US$6.00T†", locale: "en-HK" },
+    { place: "China", name: "Shanghai Composite", symbol: "000001.SS", size: "SSE US$9.84T†", locale: "zh-CN" },
+    { place: "India", name: "Nifty 50", symbol: "^NSEI", size: "NSE US$4.91T†", locale: "en-IN" },
+    { place: "South Korea", name: "KOSPI", symbol: "^KS11", size: "KRX US$4.95T†", locale: "ko-KR" },
+    { place: "Taiwan", name: "TWSE Weighted", symbol: "^TWII", size: "TWSE US$4.56T†", locale: "zh-TW" },
+    { place: "Brazil", name: "Bovespa", symbol: "^BVSP", size: "B3 US$0.96T†", locale: "pt-BR" },
+    { place: "Switzerland", name: "SMI", symbol: "^SSMI", size: "SIX US$2.61T†", locale: "de-CH" },
+    { place: "Australia", name: "S&P/ASX 200", symbol: "^AXJO", size: "ASX US$2.19T†", locale: "en-AU" },
+    { place: "Dubai", name: "DFM General Index", symbol: "DFMGI.AE", size: "DFM US$0.24T†", locale: "en-AE" },
+    { place: "Saudi Arabia", name: "Tadawul All Share", symbol: "^TASI.SR", size: "Saudi Exchange US$2.63T†", locale: "en-SA" }
   ];
   const grid = document.getElementById("rs-global-markets-grid");
   const status = document.getElementById("rs-global-markets-status");
@@ -312,83 +520,83 @@ div.c {
   const card = market => `<article class="rs-market-card" data-symbol="${safe(market.symbol)}">
     <div class="rs-market-card__top"><div><p class="rs-market-card__place">${safe(market.place)}</p><h3>${safe(market.name)}</h3></div><span class="rs-market-card__state">Waiting</span></div>
     <p class="rs-market-card__level">&mdash;</p><p class="rs-market-card__change is-flat">Latest change unavailable</p>
-    <div class="rs-market-card__details"><div><span class="rs-market-card__label">Approx. market cap</span><span class="rs-market-card__detail">Cap ${safe(market.size)}</span></div></div>
+    <div class="rs-market-card__details"><div><span class="rs-market-card__label">Exchange capitalization</span><span class="rs-market-card__detail">Exchange cap ${safe(market.size)}</span></div></div>
   </article>`;
   grid.innerHTML = markets.map(card).join("");
 
   async function loadMarkets() {
+    const refreshButton = document.getElementById("rs-markets-refresh");
+    if (refreshButton) refreshButton.disabled = true;
+    status.textContent = "Refreshing market readings…";
+    const symbols = markets.map(market => market.symbol);
+    let latest = {};
     try {
-      const response = await fetch("https://surface-203178530029.northamerica-northeast2.run.app/rolling_matrix", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          lookback: 25,
-          fx_gold_oil: [],
-          yields: [],
-          equities: markets.map(market => market.symbol).join(","),
-          frames: 2
-        })
+      const response = await fetch("https://surface-203178530029.northamerica-northeast2.run.app/latest_prices", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ symbols })
       });
-      const payload = await response.json();
-      if (!response.ok) throw new Error(payload.error || "Market data unavailable");
-      const frames = Array.isArray(payload.frames) ? payload.frames : [];
-      const currentFrame = frames[frames.length - 1] || {};
-      const previousFrame = frames[frames.length - 2] || {};
-      const assets = Array.isArray(currentFrame.assets) ? currentFrame.assets : (Array.isArray(payload.assets) ? payload.assets : []);
-      const currentPrices = Array.isArray(currentFrame.prices) ? currentFrame.prices : [];
-      const previousPrices = Array.isArray(previousFrame.prices) ? previousFrame.prices : [];
+      latest = await response.json();
+    } catch (error) {
+      latest = {};
+    }
+      const latestPrices = latest && latest.prices && typeof latest.prices === "object" ? latest.prices : {};
+      const previousCloses = latest && latest.previous_closes && typeof latest.previous_closes === "object" ? latest.previous_closes : {};
+      const changes = latest && latest.changes && typeof latest.changes === "object" ? latest.changes : {};
+      const changePercents = latest && latest.change_percents && typeof latest.change_percents === "object" ? latest.change_percents : {};
       let loaded = 0;
 
       markets.forEach(market => {
         const element = grid.querySelector(`[data-symbol="${CSS.escape(market.symbol)}"]`);
-        const index = assets.indexOf(market.symbol);
-        const current = index >= 0 ? Number(currentPrices[index]) : NaN;
-        const previous = index >= 0 ? Number(previousPrices[index]) : NaN;
+        const current = Number(latestPrices[market.symbol]);
+        const previous = Number(previousCloses[market.symbol]);
         if (!Number.isFinite(current)) {
           element.querySelector(".rs-market-card__state").textContent = "Unavailable";
           return;
         }
         loaded += 1;
-        const change = Number.isFinite(previous) ? current - previous : NaN;
-        const percent = Number.isFinite(change) && previous ? change / previous * 100 : NaN;
+        const suppliedChange = Number(changes[market.symbol]);
+        const suppliedPercent = Number(changePercents[market.symbol]);
+        const change = Number.isFinite(suppliedChange) ? suppliedChange : (Number.isFinite(previous) ? current - previous : NaN);
+        const percent = Number.isFinite(suppliedPercent) ? suppliedPercent : (Number.isFinite(change) && previous ? change / previous * 100 : NaN);
         const changeElement = element.querySelector(".rs-market-card__change");
         element.querySelector(".rs-market-card__level").textContent = number(current);
         if (Number.isFinite(change)) {
           const sign = change > 0 ? "+" : "";
           changeElement.textContent = `${sign}${number(change)}  (${sign}${percent.toFixed(2)}%)`;
           changeElement.className = `rs-market-card__change ${change > 0 ? "is-up" : change < 0 ? "is-down" : "is-flat"}`;
+        } else {
+          changeElement.textContent = "Latest quote";
+          changeElement.className = "rs-market-card__change is-flat";
         }
-        element.querySelector(".rs-market-card__state").textContent = "EOD*";
+        element.querySelector(".rs-market-card__state").textContent = "Latest*";
       });
 
-      dateFootnote.textContent = currentFrame.date ? `As of ${currentFrame.date}` : "Date unavailable";
+      dateFootnote.textContent = latest.timestamp ? `Latest request ${new Date(latest.timestamp).toLocaleString()}; changes versus prior regular-market close` : "Date unavailable";
       status.textContent = loaded ? `${loaded} of ${markets.length} markets updated` : "Market readings are temporarily unavailable";
-    } catch (error) {
-      grid.querySelectorAll(".rs-market-card").forEach(element => {
-        element.querySelector(".rs-market-card__state").textContent = "Unavailable";
-      });
-      dateFootnote.textContent = "Date unavailable";
-      status.textContent = "Market readings are temporarily unavailable";
-    }
+      if (refreshButton) refreshButton.disabled = false;
   }
 
+  document.getElementById("rs-markets-refresh")?.addEventListener("click", function () {
+    window.dispatchEvent(new Event("risksnap-refresh-markets"));
+  });
+  window.addEventListener("risksnap-refresh-markets", loadMarkets);
   loadMarkets();
 })();
 </script>
 
-<section class="rs-global-markets rs-major-indicators" aria-labelledby="rs-major-indicators-title">
+<section class="rs-global-markets rs-market-indicators" aria-labelledby="rs-market-indicators-title">
   <div class="rs-global-markets__heading">
-    <h2 id="rs-major-indicators-title">Major market indicators</h2>
-    <p id="rs-major-indicators-status" class="rs-global-markets__status" aria-live="polite">Loading latest readings&hellip;</p>
+    <h2 id="rs-market-indicators-title">Market indicators</h2>
+    <p id="rs-market-indicators-status" class="rs-global-markets__status" aria-live="polite">Loading latest readings&hellip;</p>
   </div>
-  <div id="rs-major-indicators-grid" class="rs-global-markets__grid"></div>
-  <p class="rs-global-markets__note">* Market readings use the latest available EOD date. PPI and geopolitical risk are periodic releases and show their own dates.</p>
+  <div id="rs-market-indicators-grid" class="rs-global-markets__grid"></div>
+  <p class="rs-global-markets__note">* “Latest” uses the newest RiskSnap quote. COMEX gold is the active Globex futures contract; its change is versus the prior futures close. Bitcoin trades 24/7. PPI and geopolitical risk are periodic releases.</p>
 </section>
 
 <style>
-.rs-major-indicators { background: #fffaf0; border-color: #eadfc9; }
-.rs-major-indicators h2 { color: #74531c; }
-.rs-major-indicators .rs-market-card { border-color: #eadfc9; }
+.rs-market-indicators { background: #fffaf0; border-color: #eadfc9; }
+.rs-market-indicators h2 { color: #74531c; }
+.rs-market-indicators .rs-market-card { border-color: #eadfc9; }
 .rs-indicator-unit { color: #617186; font-size: 10px; font-weight: 400; }
 </style>
 
@@ -397,46 +605,51 @@ div.c {
   const indicators = [
     { name: "U.S. 10-Year Yield", symbol: "^TNX", type: "market", scale: .1, suffix: "%" },
     { name: "WTI Crude", symbol: "CL=F", type: "market", prefix: "$", suffix: "/bbl" },
-    { name: "Gold", symbol: "GC=F", type: "market", prefix: "$", suffix: "/oz" },
+    { name: "Gold — COMEX", symbol: "GC=F", type: "market", prefix: "$", suffix: "/oz", state: "Globex*" },
+    { name: "Bitcoin", symbol: "BTC-USD", type: "market", prefix: "$", suffix: "" },
     { name: "U.S. Dollar Index", symbol: "DX-Y.NYB", type: "market" },
     { name: "VIX", symbol: "^VIX", type: "market" },
     { name: "10Y Breakeven", symbol: "T10YIE", type: "breakeven", suffix: "%" },
     { name: "U.S. PPI", symbol: "PPI", type: "periodic", value: "4.7%", detail: "YoY • Jul 2026" },
     { name: "Global AI-GPR", symbol: "GPR", type: "periodic", value: "Daily index", detail: "Through Jul 31, 2026" }
   ];
-  const grid = document.getElementById("rs-major-indicators-grid");
-  const status = document.getElementById("rs-major-indicators-status");
+  const grid = document.getElementById("rs-market-indicators-grid");
+  const status = document.getElementById("rs-market-indicators-status");
   if (!grid || !status) return;
   const safe = value => String(value == null ? "" : value).replace(/[&<>"']/g, character => ({
     "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;"
   })[character]);
   const format = (value, digits=2) => Number(value).toLocaleString(undefined, { maximumFractionDigits: digits, minimumFractionDigits: digits });
   grid.innerHTML = indicators.map(item => `<article class="rs-market-card" data-indicator="${safe(item.symbol)}">
-    <div class="rs-market-card__top"><h3>${safe(item.name)}</h3><span class="rs-market-card__state">${item.type === "periodic" ? "Periodic" : "Waiting"}</span></div>
+    <div class="rs-market-card__top"><h3>${safe(item.name)}</h3><span class="rs-market-card__state">${item.type === "periodic" ? "Periodic" : (item.state || "Waiting")}</span></div>
     <p class="rs-market-card__level">${item.value ? safe(item.value) : "&mdash;"}</p>
     <p class="rs-market-card__change is-flat">${item.detail ? safe(item.detail) : "Latest change unavailable"}</p>
   </article>`).join("");
 
-  function updateMarket(item, assets, currentPrices, previousPrices, date) {
+  function updateMarket(item, latestPrices, previousCloses, changes, changePercents, timestamp) {
     const element = grid.querySelector(`[data-indicator="${CSS.escape(item.symbol)}"]`);
-    const index = assets.indexOf(item.symbol);
-    const rawCurrent = index >= 0 ? Number(currentPrices[index]) : NaN;
-    const rawPrevious = index >= 0 ? Number(previousPrices[index]) : NaN;
+    const rawCurrent = Number(latestPrices && latestPrices[item.symbol]);
+    const rawPrevious = Number(previousCloses && previousCloses[item.symbol]);
     if (!Number.isFinite(rawCurrent)) { element.querySelector(".rs-market-card__state").textContent = "Unavailable"; return false; }
     const scale = item.scale || 1;
     const current = rawCurrent * scale;
     const previous = rawPrevious * scale;
-    const change = current - previous;
-    const percent = previous ? change / previous * 100 : NaN;
+    const suppliedChange = Number(changes && changes[item.symbol]);
+    const suppliedPercent = Number(changePercents && changePercents[item.symbol]);
+    const change = Number.isFinite(suppliedChange) ? suppliedChange * scale : (Number.isFinite(previous) ? current - previous : NaN);
+    const percent = Number.isFinite(suppliedPercent) ? suppliedPercent : (previous ? change / previous * 100 : NaN);
     const sign = change > 0 ? "+" : "";
     element.querySelector(".rs-market-card__level").innerHTML = `${safe(item.prefix || "")}${format(current)} <span class="rs-indicator-unit">${safe(item.suffix || "")}</span>`;
     const changeElement = element.querySelector(".rs-market-card__change");
     if (Number.isFinite(change)) {
-      changeElement.textContent = `${sign}${format(change)} (${sign}${percent.toFixed(2)}%)`;
+      changeElement.textContent = `Δ ${sign}${format(change)} (${sign}${percent.toFixed(2)}%)`;
       changeElement.className = `rs-market-card__change ${change > 0 ? "is-up" : change < 0 ? "is-down" : "is-flat"}`;
+    } else {
+      changeElement.textContent = "Latest quote";
+      changeElement.className = "rs-market-card__change is-flat";
     }
-    element.querySelector(".rs-market-card__state").textContent = "EOD*";
-    element.title = date ? `As of ${date}` : "Latest EOD reading";
+    element.querySelector(".rs-market-card__state").textContent = item.symbol === "BTC-USD" ? "24/7" : (item.symbol === "GC=F" ? "Globex*" : "Latest*");
+    element.title = timestamp ? `Latest request ${new Date(timestamp).toLocaleString()}` : "Latest quote";
     return true;
   }
 
@@ -444,19 +657,15 @@ div.c {
     let loaded = 2;
     const marketItems = indicators.filter(item => item.type === "market");
     try {
-      const [marketResponse, breakevenResponse] = await Promise.all([
-        fetch("https://surface-203178530029.northamerica-northeast2.run.app/rolling_matrix", {
+      const [latestResponse, breakevenResponse] = await Promise.all([
+        fetch("https://surface-203178530029.northamerica-northeast2.run.app/latest_prices", {
           method: "POST", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ lookback: 25, fx_gold_oil: [], yields: [], equities: marketItems.map(item => item.symbol).join(","), frames: 2 })
+          body: JSON.stringify({ symbols: marketItems.map(item => item.symbol) })
         }),
         fetch("https://surface-203178530029.northamerica-northeast2.run.app/breakeven_inflation?period=1y")
       ]);
-      const marketPayload = await marketResponse.json();
-      const frames = Array.isArray(marketPayload.frames) ? marketPayload.frames : [];
-      const currentFrame = frames[frames.length - 1] || {};
-      const previousFrame = frames[frames.length - 2] || {};
-      const assets = currentFrame.assets || marketPayload.assets || [];
-      marketItems.forEach(item => { if (updateMarket(item, assets, currentFrame.prices || [], previousFrame.prices || [], currentFrame.date)) loaded += 1; });
+      const latestPayload = await latestResponse.json();
+      marketItems.forEach(item => { if (updateMarket(item, latestPayload.prices || {}, latestPayload.previous_closes || {}, latestPayload.changes || {}, latestPayload.change_percents || {}, latestPayload.timestamp)) loaded += 1; });
 
       if (breakevenResponse.ok) {
         const breakeven = await breakevenResponse.json();
@@ -478,6 +687,7 @@ div.c {
       status.textContent = "Some indicator readings are temporarily unavailable";
     }
   }
+  window.addEventListener("risksnap-refresh-markets", loadIndicators);
   loadIndicators();
 })();
 </script>
@@ -4015,4 +4225,5 @@ span.onclick = function() {
 
 
 </div> <!-- text-section -->
+
 
