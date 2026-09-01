@@ -1,0 +1,457 @@
+---
+layout: stockselection-template
+---
+<div class="text-section">
+<style>
+* { box-sizing: border-box; }
+
+.stock-select-wrap {
+    max-width: 1180px;
+    margin: 0 auto;
+    font-family: Arial, Helvetica, sans-serif;
+    color: #222;
+}
+.stock-select-wrap h3 { margin-bottom: 6px; }
+.stock-intro {
+    margin: 0 0 16px 0;
+    color: #555;
+    font-size: 14px;
+}
+.stock-controls {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+    margin-bottom: 12px;
+}
+#stockSymbols {
+    flex: 1 1 620px;
+    min-width: 260px;
+    padding: 9px 10px;
+    border: 1px solid #aaa;
+    border-radius: 4px;
+    font-size: 15px;
+}
+.stock-btn {
+    padding: 9px 16px;
+    border: 0;
+    border-radius: 4px;
+    background: #3A5FCD;
+    color: white;
+    cursor: pointer;
+    font-size: 14px;
+}
+.stock-btn.secondary { background: #666; }
+.stock-note {
+    font-size: 12px;
+    color: #666;
+    margin: 7px 0 16px;
+}
+.score-table-wrap { overflow-x: auto; }
+#scoreTable {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+}
+#scoreTable th, #scoreTable td {
+    border-bottom: 1px solid #ddd;
+    padding: 9px 8px;
+    text-align: right;
+    white-space: nowrap;
+}
+#scoreTable th {
+    background: #f2f4f8;
+    cursor: pointer;
+    color: #333;
+}
+#scoreTable th:first-child, #scoreTable td:first-child,
+#scoreTable th:nth-child(2), #scoreTable td:nth-child(2) { text-align: left; }
+.score {
+    display: inline-block;
+    min-width: 38px;
+    text-align: center;
+    border-radius: 12px;
+    padding: 3px 7px;
+    background: #eef2f8;
+}
+.overall { font-weight: bold; }
+.sector-view { margin-top: 20px; padding: 13px; border: 1px solid #dfe5ec; border-radius: 8px; background: #fffdf8; }
+.sector-view h4 { margin: 0 0 4px; color: #4e452f; }
+.sector-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.sector-table th,.sector-table td { padding: 7px 8px; border-bottom: 1px solid #e6e2d8; text-align: right; }
+.sector-table th { background: #f6f1e5; color: #504833; }
+.sector-table th:first-child,.sector-table td:first-child,.sector-table th:nth-child(3),.sector-table td:nth-child(3) { text-align: left; }
+.sector-label { display: inline-block; min-width: 54px; padding: 3px 7px; border-radius: 10px; text-align: center; font-size: 10px; font-weight: bold; }
+.sector-label.strong { background: #e4f4e9; color: #19693a; }
+.sector-label.neutral { background: #eef2f6; color: #52657a; }
+.sector-label.weak { background: #f9e8e5; color: #9a3f35; }
+.details {
+    margin-top: 18px;
+    border-top: 1px solid #ddd;
+    padding-top: 12px;
+}
+.details summary {
+    cursor: pointer;
+    font-weight: bold;
+    margin: 8px 0;
+}
+.formula {
+    font-family: Consolas, "Courier New", monospace;
+    font-size: 12px;
+    background: #f7f7f7;
+    padding: 8px;
+    border-radius: 4px;
+    overflow-x: auto;
+}
+.status {
+    min-height: 20px;
+    margin: 8px 0;
+    font-size: 13px;
+    color: #555;
+}
+.backtest {
+    margin-top: 22px;
+    padding: 14px;
+    border: 1px solid #d9e1ec;
+    border-radius: 8px;
+    background: #fafcff;
+}
+.backtest h4 { margin: 0 0 5px; color: #263b57; }
+.backtest-controls { display: flex; gap: 10px; align-items: end; flex-wrap: wrap; margin: 12px 0; }
+.backtest-controls label { color: #52657a; font-size: 11px; font-weight: bold; }
+.backtest-controls select { display: block; margin-top: 4px; padding: 7px 9px; border: 1px solid #aeb9c7; border-radius: 4px; background: white; }
+.universe-details { margin: 10px 0 4px; border: 1px solid #e0e6ee; border-radius: 6px; background: white; }
+.universe-details summary { padding: 9px 10px; color: #31577f; cursor: pointer; font-size: 12px; font-weight: bold; }
+.universe-table-wrap { max-height: 260px; overflow: auto; border-top: 1px solid #e7ebf0; }
+.universe-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+.universe-table th,.universe-table td { padding: 6px 8px; border-bottom: 1px solid #edf1f5; text-align: left; }
+.universe-table th { position: sticky; top: 0; background: #f3f6fa; color: #42566d; }
+.universe-table th:last-child,.universe-table td:last-child { text-align: right; }
+.backtest-grid { display: grid; grid-template-columns: repeat(5,minmax(115px,1fr)); gap: 8px; }
+.backtest-metric { padding: 9px; border: 1px solid #e0e6ee; border-radius: 6px; background: white; }
+.backtest-metric small { display: block; min-height: 26px; color: #66778b; font-size: 10px; line-height: 1.25; }
+.backtest-metric strong { display: block; margin-top: 3px; color: #203247; font-size: 18px; }
+.backtest-holdings { margin: 10px 0 4px; color: #3f5268; font-size: 11px; line-height: 1.4; }
+.distribution-wrap { margin-top: 10px; padding: 8px; border: 1px solid #e0e6ee; border-radius: 6px; background: white; }
+#distributionChart { display: block; width: 100%; height: 210px; }
+.backtest-table { width: 100%; margin-top: 12px; border-collapse: collapse; font-size: 11px; }
+.backtest-table th,.backtest-table td { padding: 6px; border-bottom: 1px solid #e4e9ef; text-align: right; }
+.backtest-table th:first-child,.backtest-table td:first-child { text-align: left; }
+.prototype-warning { margin: 8px 0 0; color: #8a5a16; font-size: 10px; }
+@media (max-width: 600px) {
+    #scoreTable { font-size: 12px; }
+    #scoreTable th, #scoreTable td { padding: 7px 5px; }
+    .backtest-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
+}
+</style>
+
+<div class="stock-select-wrap">
+    <h3>Stock Selection</h3>
+    <p class="stock-intro">Compare global equities using Yahoo-supported symbols. Higher scores are better.</p>
+
+    <div class="stock-controls">
+        <input id="stockSymbols" type="text"
+               value="MSFT, GOOGL, RY.TO, ASML.AS, 7203.T"
+               placeholder="Enter Yahoo symbols, separated by commas or spaces">
+        <button class="stock-btn" onclick="analyzeStocks()">Analyze</button>
+        <button class="stock-btn secondary" onclick="resetStocks()">Reset</button>
+    </div>
+
+    <div class="stock-note">
+        First-shot scoring: Quality 30% + Growth 25% + Momentum 25% + Risk 20%.
+        Investability is treated as a screening gate rather than part of the score.
+    </div>
+    <div id="status" class="status"></div>
+
+    <div class="score-table-wrap">
+        <table id="scoreTable">
+            <thead>
+                <tr>
+                    <th onclick="sortTable(0,false)">Symbol</th>
+                    <th onclick="sortTable(1,false)">Company</th>
+                    <th onclick="sortTable(2,true)">Quality</th>
+                    <th onclick="sortTable(3,true)">Growth</th>
+                    <th onclick="sortTable(4,true)">Momentum</th>
+                    <th onclick="sortTable(5,true)">Risk</th>
+                    <th onclick="sortTable(6,true)">Overall</th>
+                </tr>
+            </thead>
+            <tbody id="scoreBody"></tbody>
+        </table>
+    </div>
+
+    <section class="sector-view" aria-labelledby="sectorViewTitle">
+        <h4 id="sectorViewTitle">Sector View</h4>
+        <p class="stock-intro">Relative sector standing based on the average scores of eligible constituent stocks. Strong and Weak identify the top and bottom thirds of this universe.</p>
+        <div class="score-table-wrap">
+            <table class="sector-table">
+                <thead><tr><th>Sector</th><th>Sector score</th><th>Standing</th><th>Quality</th><th>Growth</th><th>Momentum</th><th>Risk</th><th>Stocks</th></tr></thead>
+                <tbody id="sectorBody"></tbody>
+            </table>
+        </div>
+        <p class="prototype-warning">Illustrative sector results; small sectors may contain only one or two prototype stocks.</p>
+    </section>
+
+    <section class="backtest" aria-labelledby="backtestTitle">
+        <h4 id="backtestTitle">Selection Backtest: Ranked vs Random</h4>
+        <p class="stock-intro">Compare an equal-weight portfolio of the highest Overall scores with random portfolios drawn from the same investable universe.</p>
+        <details class="universe-details">
+            <summary>View illustrative selection universe (15 stocks)</summary>
+            <div class="universe-table-wrap">
+                <table class="universe-table">
+                    <thead><tr><th>Symbol</th><th>Company</th><th>Sector</th><th>Overall</th></tr></thead>
+                    <tbody id="universeBody"></tbody>
+                </table>
+            </div>
+        </details>
+        <div class="backtest-controls">
+            <label>Stocks per portfolio
+                <select id="portfolioSize"><option>3</option><option selected>5</option><option>10</option></select>
+            </label>
+            <label>Random portfolios
+                <select id="simulationCount"><option>100</option><option>500</option><option selected>1000</option></select>
+            </label>
+            <button class="stock-btn" type="button" onclick="runBacktest()">Run comparison</button>
+        </div>
+        <div class="backtest-grid">
+            <div class="backtest-metric"><small>Ranked portfolio return</small><strong id="rankedReturn">—</strong></div>
+            <div class="backtest-metric"><small>Random-return percentile</small><strong id="returnPercentile">—</strong></div>
+            <div class="backtest-metric"><small>Annualized volatility</small><strong id="rankedVol">—</strong></div>
+            <div class="backtest-metric"><small>Maximum drawdown</small><strong id="rankedDrawdown">—</strong></div>
+            <div class="backtest-metric"><small>Diversification score</small><strong id="diversificationScore">—</strong></div>
+        </div>
+        <p id="rankedHoldings" class="backtest-holdings"></p>
+        <div class="distribution-wrap">
+            <svg id="distributionChart" viewBox="0 0 900 210" role="img" aria-label="Distribution of random portfolio returns with ranked portfolio marker"></svg>
+        </div>
+        <table class="backtest-table">
+            <thead><tr><th>Portfolio</th><th>Return</th><th>Volatility</th><th>Max drawdown</th><th>Diversification ratio</th></tr></thead>
+            <tbody id="backtestBody"></tbody>
+        </table>
+        <p class="prototype-warning">Prototype only: scores and forward returns are simulated to demonstrate the comparison. Live results will require point-in-time fundamentals, adjusted prices and dividends.</p>
+    </section>
+
+    <div class="details">
+        <details>
+            <summary>How Momentum is measured</summary>
+            <p>Momentum combines 6-month and 12-month price performance, excluding the most recent month, and adjusts each return for volatility.</p>
+            <div class="formula">
+6M = Price[-21] / Price[-147] - 1
+12M = Price[-21] / Price[-273] - 1
+Risk-adjusted momentum = 50% × (6M / Volatility) + 50% × (12M / Volatility)
+            </div>
+        </details>
+        <details>
+            <summary>How Risk is measured</summary>
+            <p>Risk is intended to use 250-day volatility, beta to SPY and maximum drawdown. The score is reversed so that 100 means more stable/lower risk.</p>
+        </details>
+        <details>
+            <summary>Quality and Growth</summary>
+            <p>Quality will use profitability, margins, free cash flow and leverage. Growth will use revenue, earnings and free-cash-flow growth. Scores are percentile rankings within the stocks analyzed.</p>
+        </details>
+    </div>
+</div>
+
+<script>
+const demo = {
+ "MSFT":   ["Microsoft",92,83,76,81,"Technology",1.05,.00048,.0105],
+ "GOOGL":  ["Alphabet",90,85,72,82,"Technology",1.02,.00046,.0110],
+ "RY.TO":  ["Royal Bank of Canada",86,60,70,88,"Financials",.72,.00030,.0075],
+ "ASML.AS":["ASML",88,82,65,67,"Technology",1.18,.00043,.0140],
+ "7203.T": ["Toyota Motor",82,66,71,79,"Industrials",.83,.00031,.0090],
+ "JNJ":    ["Johnson & Johnson",87,52,58,91,"Healthcare",.55,.00024,.0068],
+ "XOM":    ["Exxon Mobil",80,56,74,72,"Energy",.78,.00034,.0105],
+ "NESN.SW":["Nestlé",84,48,55,92,"Consumer Staples",.48,.00022,.0062],
+ "BHP.AX": ["BHP Group",78,58,68,70,"Materials",.82,.00032,.0115],
+ "SAP.DE": ["SAP",86,76,69,78,"Technology",.92,.00039,.0095],
+ "TD.TO":  ["Toronto-Dominion Bank",81,55,61,82,"Financials",.76,.00027,.0080],
+ "NVO":    ["Novo Nordisk",89,88,63,66,"Healthcare",.88,.00042,.0130],
+ "WMT":    ["Walmart",85,61,73,89,"Consumer Staples",.52,.00030,.0070],
+ "CAT":    ["Caterpillar",79,64,75,69,"Industrials",.96,.00037,.0110],
+ "ENB.TO": ["Enbridge",76,45,59,90,"Energy",.50,.00023,.0068]
+};
+
+function overall(q,g,m,r) {
+    return Math.round(q*.30 + g*.25 + m*.25 + r*.20);
+}
+
+function populateUniverse() {
+    const body=document.getElementById("universeBody");
+    if (!body) return;
+    body.innerHTML=Object.entries(demo)
+        .sort((a,b)=>overall(b[1][1],b[1][2],b[1][3],b[1][4])-overall(a[1][1],a[1][2],a[1][3],a[1][4]))
+        .map(([symbol,d])=>`<tr><td>${symbol}</td><td>${d[0]}</td><td>${d[5]}</td><td>${overall(d[1],d[2],d[3],d[4])}</td></tr>`)
+        .join("");
+}
+
+function populateSectors() {
+    const body=document.getElementById("sectorBody");
+    if (!body) return;
+    const groups={};
+    Object.entries(demo).forEach(([symbol,d])=>{
+        const sector=d[5];
+        if (!groups[sector]) groups[sector]={symbols:[],quality:0,growth:0,momentum:0,risk:0};
+        const g=groups[sector]; g.symbols.push(symbol); g.quality+=d[1]; g.growth+=d[2]; g.momentum+=d[3]; g.risk+=d[4];
+    });
+    const sectors=Object.entries(groups).map(([name,g])=>{
+        const n=g.symbols.length,q=g.quality/n,gr=g.growth/n,m=g.momentum/n,r=g.risk/n;
+        return {name,n,q,gr,m,r,score:q*.30+gr*.25+m*.25+r*.20};
+    }).sort((a,b)=>b.score-a.score);
+    const third=Math.max(1,Math.floor(sectors.length/3));
+    body.innerHTML=sectors.map((s,index)=>{
+        const standing=index<third?"Strong":index>=sectors.length-third?"Weak":"Neutral";
+        return `<tr><td>${s.name}</td><td><span class="score overall">${Math.round(s.score)}</span></td><td><span class="sector-label ${standing.toLowerCase()}">${standing}</span></td><td>${Math.round(s.q)}</td><td>${Math.round(s.gr)}</td><td>${Math.round(s.m)}</td><td>${Math.round(s.r)}</td><td>${s.n}</td></tr>`;
+    }).join("");
+}
+
+function analyzeStocks() {
+    const raw = document.getElementById("stockSymbols").value.trim();
+    const symbols = [...new Set(raw.split(/[\s,]+/).filter(Boolean).map(s => s.toUpperCase()))];
+    const body = document.getElementById("scoreBody");
+    body.innerHTML = "";
+    if (!symbols.length) {
+        document.getElementById("status").textContent = "Enter at least one Yahoo symbol.";
+        return;
+    }
+
+    let demoCount = 0;
+    symbols.forEach(sym => {
+        const d = demo[sym];
+        const tr = document.createElement("tr");
+        if (d) {
+            demoCount++;
+            const o = overall(d[1],d[2],d[3],d[4]);
+            tr.innerHTML = `<td>${sym}</td><td>${d[0]}</td>
+                <td><span class="score">${d[1]}</span></td>
+                <td><span class="score">${d[2]}</span></td>
+                <td><span class="score">${d[3]}</span></td>
+                <td><span class="score">${d[4]}</span></td>
+                <td><span class="score overall">${o}</span></td>`;
+        } else {
+            tr.innerHTML = `<td>${sym}</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td>`;
+        }
+        body.appendChild(tr);
+    });
+
+    document.getElementById("status").textContent =
+        demoCount === symbols.length
+        ? "Display prototype — scores below are illustrative, not live calculations yet."
+        : `Display prototype — ${demoCount} symbol(s) have illustrative scores. Other symbols are ready for the live data connection.`;
+}
+
+function resetStocks() {
+    document.getElementById("stockSymbols").value = "MSFT, GOOGL, RY.TO, ASML.AS, 7203.T";
+    analyzeStocks();
+}
+
+function sortTable(col, numeric) {
+    const body = document.getElementById("scoreBody");
+    const rows = Array.from(body.rows);
+    const current = body.dataset.sortCol == col ? body.dataset.sortDir : "asc";
+    const dir = current === "desc" ? "asc" : "desc";
+    rows.sort((a,b) => {
+        let av = a.cells[col].innerText.replace("—","");
+        let bv = b.cells[col].innerText.replace("—","");
+        if (numeric) { av = parseFloat(av) || -Infinity; bv = parseFloat(bv) || -Infinity; }
+        if (av < bv) return dir === "asc" ? -1 : 1;
+        if (av > bv) return dir === "asc" ? 1 : -1;
+        return 0;
+    });
+    rows.forEach(r => body.appendChild(r));
+    body.dataset.sortCol = col;
+    body.dataset.sortDir = dir;
+}
+
+function seededRandom(seed) {
+    return function() {
+        seed |= 0; seed = seed + 0x6D2B79F5 | 0;
+        let t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+        t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+        return ((t ^ t >>> 14) >>> 0) / 4294967296;
+    };
+}
+function normal(random) {
+    const u = Math.max(random(),1e-12), v = Math.max(random(),1e-12);
+    return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);
+}
+function standardDeviation(values) {
+    const mean = values.reduce((a,b)=>a+b,0)/values.length;
+    return Math.sqrt(values.reduce((sum,x)=>sum+(x-mean)**2,0)/Math.max(1,values.length-1));
+}
+function buildPrototypeReturns() {
+    const random = seededRandom(20260901);
+    const days = 250;
+    const market = Array.from({length:days},()=>normal(random)*.0075);
+    const sectors = [...new Set(Object.values(demo).map(d=>d[5]))];
+    const sectorReturns = Object.fromEntries(sectors.map(sector=>[sector,Array.from({length:days},()=>normal(random)*.0055)]));
+    const result = {};
+    Object.entries(demo).forEach(([symbol,d]) => {
+        result[symbol] = market.map((m,day)=>d[7] + d[6]*m + .45*sectorReturns[d[5]][day] + normal(random)*d[8]);
+    });
+    return result;
+}
+const prototypeReturns = buildPrototypeReturns();
+
+function portfolioMetrics(symbols) {
+    const daily = prototypeReturns[symbols[0]].map((_,day)=>symbols.reduce((sum,s)=>sum+prototypeReturns[s][day],0)/symbols.length);
+    let wealth = 1, peak = 1, maxDrawdown = 0;
+    daily.forEach(r => { wealth *= 1+r; peak = Math.max(peak,wealth); maxDrawdown = Math.min(maxDrawdown,wealth/peak-1); });
+    const vol = standardDeviation(daily)*Math.sqrt(252);
+    const averageStandaloneVol = symbols.reduce((sum,s)=>sum+standardDeviation(prototypeReturns[s])*Math.sqrt(252),0)/symbols.length;
+    return { symbols, return:wealth-1, vol, drawdown:maxDrawdown, diversification:averageStandaloneVol/vol };
+}
+function randomPortfolio(symbols,size,random) {
+    const copy = symbols.slice();
+    for (let i=copy.length-1;i>0;i--) { const j=Math.floor(random()*(i+1)); [copy[i],copy[j]]=[copy[j],copy[i]]; }
+    return copy.slice(0,size);
+}
+function percentile(values,value) {
+    return Math.round(100*values.filter(x=>x<=value).length/values.length);
+}
+function pct(value) { return `${value>=0?"":"−"}${Math.abs(value*100).toFixed(1)}%`; }
+function ratio(value) { return `${value.toFixed(2)}×`; }
+function row(label,m) {
+    return `<tr><td>${label}</td><td>${pct(m.return)}</td><td>${pct(m.vol)}</td><td>${pct(m.drawdown)}</td><td>${ratio(m.diversification)}</td></tr>`;
+}
+function drawDistribution(values,ranked) {
+    const svg = document.getElementById("distributionChart");
+    const width=900,height=210,left=52,right=20,top=22,bottom=38,bins=18;
+    let min=Math.min(...values,ranked),max=Math.max(...values,ranked);
+    if (max===min) { min-=.01; max+=.01; }
+    const counts=Array(bins).fill(0);
+    values.forEach(v=>counts[Math.min(bins-1,Math.floor((v-min)/(max-min)*bins))]++);
+    const innerW=width-left-right,innerH=height-top-bottom,maxCount=Math.max(...counts);
+    const bars=counts.map((count,i)=>{
+        const x=left+i*innerW/bins+2,w=innerW/bins-4,h=count/maxCount*innerH,y=top+innerH-h;
+        return `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${w.toFixed(1)}" height="${h.toFixed(1)}" rx="2" fill="#9cb8dd"/>`;
+    }).join("");
+    const markerX=left+(ranked-min)/(max-min)*innerW;
+    svg.innerHTML = `<title>Random portfolio return distribution</title>
+      <text x="${left}" y="14" font-size="12" fill="#41566f">Random portfolio returns; orange line is the ranked portfolio</text>
+      <line x1="${left}" y1="${top+innerH}" x2="${width-right}" y2="${top+innerH}" stroke="#9ba8b6"/>${bars}
+      <line x1="${markerX.toFixed(1)}" y1="${top}" x2="${markerX.toFixed(1)}" y2="${top+innerH}" stroke="#ef7c31" stroke-width="4"/>
+      <text x="${left}" y="${height-10}" font-size="11" fill="#617186">${pct(min)}</text>
+      <text x="${width-right}" y="${height-10}" text-anchor="end" font-size="11" fill="#617186">${pct(max)}</text>
+      <text x="${width/2}" y="${height-10}" text-anchor="middle" font-size="11" fill="#617186">250-day total return</text>`;
+}
+function runBacktest() {
+    const universe=Object.keys(demo), size=Math.min(Number(document.getElementById("portfolioSize").value),universe.length);
+    const simulations=Number(document.getElementById("simulationCount").value);
+    const rankedSymbols=universe.slice().sort((a,b)=>overall(demo[b][1],demo[b][2],demo[b][3],demo[b][4])-overall(demo[a][1],demo[a][2],demo[a][3],demo[a][4])).slice(0,size);
+    const ranked=portfolioMetrics(rankedSymbols), random=seededRandom(73129+size+simulations);
+    const trials=Array.from({length:simulations},()=>portfolioMetrics(randomPortfolio(universe,size,random)));
+    const byReturn=trials.slice().sort((a,b)=>a.return-b.return);
+    const median=byReturn[Math.floor(byReturn.length/2)], worst=byReturn[0], best=byReturn[byReturn.length-1];
+    document.getElementById("rankedReturn").textContent=pct(ranked.return);
+    document.getElementById("returnPercentile").textContent=`${percentile(trials.map(x=>x.return),ranked.return)}th`;
+    document.getElementById("rankedVol").textContent=pct(ranked.vol);
+    document.getElementById("rankedDrawdown").textContent=pct(ranked.drawdown);
+    document.getElementById("diversificationScore").textContent=percentile(trials.map(x=>x.diversification),ranked.diversification);
+    document.getElementById("rankedHoldings").textContent=`Ranked equal-weight holdings (${(100/size).toFixed(size===3?1:0)}% each): ${rankedSymbols.join(", ")}`;
+    document.getElementById("backtestBody").innerHTML=row("Top-ranked",ranked)+row("Median random",median)+row("Best random return",best)+row("Worst random return",worst);
+    drawDistribution(trials.map(x=>x.return),ranked.return);
+}
+
+document.addEventListener("DOMContentLoaded", () => { analyzeStocks(); populateSectors(); populateUniverse(); runBacktest(); });
+</script>
+</div><!-- text-section -->
