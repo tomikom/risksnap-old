@@ -4,21 +4,33 @@ layout: home-template
 <div class ="image-section rs-hero-section">
   <!-- One stationary banner. Each illustration is an independent link. -->
   <nav class="rs-visual-banner" aria-label="RiskSnap analytical tools">
+    <div class="rs-visual-banner__tile">
     <a class="rs-visual-banner__panel" href="/correlations/" aria-label="Open Correlations">
       <img class="rs-visual-banner__image rs-visual-banner__correlations-image" src="./images/Correlations.png" alt="RiskSnap correlation matrix">
+      <span class="rs-visual-banner__copy"><strong>Correlations</strong><small>See what really diversifies</small></span>
     </a>
+    </div>
 
+    <div class="rs-visual-banner__tile">
     <a class="rs-visual-banner__panel" href="/surface/" aria-label="Open Volatility Surface">
       <img class="rs-visual-banner__image rs-visual-banner__surface-image" src="./images/Surface_Equity_SPY.png" alt="RiskSnap SPY volatility surface">
+      <span class="rs-visual-banner__copy"><strong>Volatility Surface</strong><small>Explore market-implied risk</small></span>
     </a>
+    </div>
 
+    <div class="rs-visual-banner__tile">
     <a class="rs-visual-banner__panel" href="/portfolio_optimization/" aria-label="Open Portfolio Optimization">
       <img class="rs-visual-banner__image rs-visual-banner__portfolio-image" src="./images/portfolio-optimization.png" alt="RiskSnap simulated portfolios risk versus total return chart">
+      <span class="rs-visual-banner__copy"><strong>Portfolio Optimization</strong><small>Test allocations and risk</small></span>
     </a>
+    </div>
 
+    <div class="rs-visual-banner__tile">
     <a class="rs-visual-banner__panel rs-visual-banner__tree" href="/structuredproducts/" aria-label="Open Structured Products">
       <img class="rs-visual-banner__image rs-visual-banner__tree-image" src="./images/quadrinomial-tree-transparent.png" alt="Transparent quadrinomial structured-products tree">
+      <span class="rs-visual-banner__copy"><strong>Structured Products</strong><small>Understand nonlinear payoffs</small></span>
     </a>
+    </div>
     <div class="rs-visual-banner__placeholder" aria-hidden="true"></div>
   </nav>
 
@@ -48,13 +60,20 @@ layout: home-template
     width: 100%;
     max-width: 100%;
     min-width: 0;
-    height: clamp(105px, 9vw, 150px) !important;
+    min-height: 178px !important;
     overflow: hidden;
     border: 1px solid #e3e9f0;
     border-radius: 8px;
     background: #fff;
 }
-.rs-visual-banner a {
+.rs-visual-banner__tile {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    border-left: 1px solid #edf1f5;
+}
+.rs-visual-banner__tile:first-child { border-left: 0; }
+.rs-visual-banner a.rs-visual-banner__panel {
     display: flex !important;
     position: static !important;
     float: none !important;
@@ -67,12 +86,12 @@ layout: home-template
     height: 100% !important;
     box-sizing: border-box !important;
     overflow: hidden;
-    padding: 7px 4px;
+    padding: 7px 7px 2px;
+    flex-direction: column;
     background: #fff;
     text-decoration: none;
     transition: background-color .18s ease, transform .18s ease;
 }
-.rs-visual-banner a + a,
 .rs-visual-banner__placeholder { border-left: 1px solid #edf1f5; }
 .rs-visual-banner__placeholder {
     min-width: 0;
@@ -80,11 +99,10 @@ layout: home-template
     box-sizing: border-box;
     background: #fff;
 }
-.rs-visual-banner a:hover,
-.rs-visual-banner a:focus-visible { background: #f5f9ff; }
-.rs-visual-banner a:hover svg { transform: translateY(-2px); }
-.rs-visual-banner a:hover .rs-visual-banner__image { transform: translateY(-2px); }
-.rs-visual-banner a:focus-visible { outline: 3px solid #2f77d0; outline-offset: -3px; }
+.rs-visual-banner a.rs-visual-banner__panel:hover,
+.rs-visual-banner a.rs-visual-banner__panel:focus-visible { background: #f5f9ff; }
+.rs-visual-banner a.rs-visual-banner__panel:hover .rs-visual-banner__image { transform: translateY(-2px); }
+.rs-visual-banner a:focus-visible { outline: 2px solid #2f77d0; outline-offset: -2px; }
 .rs-visual-banner svg {
     display: block !important;
     width: auto !important;
@@ -96,9 +114,9 @@ layout: home-template
 .rs-visual-banner__image {
     display: block !important;
     width: 100% !important;
-    height: 100% !important;
+    height: 112px !important;
     max-width: 100% !important;
-    max-height: 136px !important;
+    max-height: 112px !important;
     object-fit: contain;
     transition: transform .18s ease;
 }
@@ -106,19 +124,32 @@ layout: home-template
 .rs-visual-banner__correlations-image { object-position: center 45%; }
 .rs-visual-banner__surface-image { object-position: center 43%; }
 .rs-visual-banner__tree-image { object-fit: contain; padding: 4px 0; box-sizing: border-box; }
+.rs-visual-banner__copy {
+    display: block;
+    width: 100%;
+    text-align: center;
+    line-height: 1.18;
+    color: #203247;
+}
+.rs-visual-banner__copy strong { display: block; font-size: 14px; font-weight: 600; }
+.rs-visual-banner__copy small { display: block; margin-top: 3px; font-size: 11px; font-weight: 400; color: #617186; }
 @media (max-width: 700px) {
     .rs-hero-section { overflow: hidden !important; }
     .rs-visual-banner {
         width: 100% !important;
         min-width: 0 !important;
-        height: clamp(72px, 15vw, 124px) !important;
+        min-height: 124px !important;
         grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
         border-radius: 5px;
     }
-    .rs-visual-banner a {
+    .rs-visual-banner a.rs-visual-banner__panel {
         min-width: 0 !important;
-        padding: 3px 2px;
+        height: 100% !important;
+        padding: 3px 2px 1px;
     }
+    .rs-visual-banner__image { height: 70px !important; max-height: 70px !important; }
+    .rs-visual-banner__copy strong { font-size: 10px; }
+    .rs-visual-banner__copy small { font-size: 8px; margin-top: 2px; }
 }
 
 #myImg {
@@ -450,6 +481,21 @@ div.c {
 }
 .rs-global-markets__note { margin-top: 10px; }
 .rs-market-card__details > div + div::before { content: "• "; color: #9aa7b5; }
+.rs-market-card__access {
+  margin: 5px 0 0;
+  color: #52657a;
+  font-size: 9px;
+  line-height: 1.3;
+}
+.rs-market-card__access strong { color: #33465c; font-weight: 700; }
+.rs-market-card__news {
+  display: inline-block;
+  margin-top: 6px;
+  color: #2f69ad;
+  font-size: 10px;
+  text-decoration: none;
+}
+.rs-market-card__news:hover { text-decoration: underline; }
 .rs-global-markets__note { margin-top: 4px; font-size: 9px; }
 @media (max-width: 560px) {
   .rs-global-markets { padding: 8px; }
@@ -461,23 +507,23 @@ div.c {
 <script>
 (function () {
   const markets = [
-    { place: "United States", name: "Dow Jones", symbol: "^DJI", size: "NYSE US$32.41T†", locale: "en-US" },
-    { place: "United States", name: "S&P 500", symbol: "^GSPC", size: "NYSE + Nasdaq US$76.15T†", locale: "en-US" },
-    { place: "United States", name: "Nasdaq Composite", symbol: "^IXIC", size: "Nasdaq US$43.74T†", locale: "en-US" },
-    { place: "Canada", name: "S&P/TSX Composite", symbol: "^GSPTSE", size: "TMX US$5.00T†", locale: "en-CA" },
-    { place: "United Kingdom", name: "FTSE 100", symbol: "^FTSE", size: "WFE not reported†", locale: "en-GB" },
-    { place: "Germany", name: "DAX", symbol: "^GDAXI", size: "Deutsche Börse US$2.88T†", locale: "de-DE" },
-    { place: "Japan", name: "Nikkei 225", symbol: "^N225", size: "JPX US$8.67T†", locale: "ja-JP" },
-    { place: "Hong Kong", name: "Hang Seng", symbol: "^HSI", size: "HKEX US$6.00T†", locale: "en-HK" },
-    { place: "China", name: "Shanghai Composite", symbol: "000001.SS", size: "SSE US$9.84T†", locale: "zh-CN" },
-    { place: "India", name: "Nifty 50", symbol: "^NSEI", size: "NSE US$4.91T†", locale: "en-IN" },
-    { place: "South Korea", name: "KOSPI", symbol: "^KS11", size: "KRX US$4.95T†", locale: "ko-KR" },
-    { place: "Taiwan", name: "TWSE Weighted", symbol: "^TWII", size: "TWSE US$4.56T†", locale: "zh-TW" },
-    { place: "Brazil", name: "Bovespa", symbol: "^BVSP", size: "B3 US$0.96T†", locale: "pt-BR" },
-    { place: "Switzerland", name: "SMI", symbol: "^SSMI", size: "SIX US$2.61T†", locale: "de-CH" },
-    { place: "Australia", name: "S&P/ASX 200", symbol: "^AXJO", size: "ASX US$2.19T†", locale: "en-AU" },
-    { place: "Dubai", name: "DFM General Index", symbol: "DFMGI.AE", size: "DFM US$0.24T†", locale: "en-AE" },
-    { place: "Saudi Arabia", name: "Tadawul All Share", symbol: "^TASI.SR", size: "Saudi Exchange US$2.63T†", locale: "en-SA" }
+    { place: "United States", name: "Dow Jones", symbol: "^DJI", size: "NYSE US$32.41T†", locale: "en-US", access: "Widely available" },
+    { place: "United States", name: "S&P 500", symbol: "^GSPC", size: "NYSE + Nasdaq US$76.15T†", locale: "en-US", access: "Widely available" },
+    { place: "United States", name: "Nasdaq Composite", symbol: "^IXIC", size: "Nasdaq US$43.74T†", locale: "en-US", access: "Widely available" },
+    { place: "Canada", name: "S&P/TSX Composite", symbol: "^GSPTSE", size: "TMX US$5.00T†", locale: "en-CA", access: "Widely available" },
+    { place: "United Kingdom", name: "FTSE 100", symbol: "^FTSE", size: "WFE not reported†", locale: "en-GB", access: "Widely available" },
+    { place: "Germany", name: "DAX", symbol: "^GDAXI", size: "Deutsche Börse US$2.88T†", locale: "de-DE", access: "Widely available" },
+    { place: "Japan", name: "Nikkei 225", symbol: "^N225", size: "JPX US$8.67T†", locale: "ja-JP", access: "Widely available" },
+    { place: "Hong Kong", name: "Hang Seng", symbol: "^HSI", size: "HKEX US$6.00T†", locale: "en-HK", access: "Widely available" },
+    { place: "China", name: "Shanghai Composite", symbol: "000001.SS", size: "SSE US$9.84T†", locale: "zh-CN", access: "Eligible securities via Stock Connect" },
+    { place: "India", name: "Nifty 50", symbol: "^NSEI", size: "NSE US$4.91T†", locale: "en-IN", access: "Special registration; limited retail access" },
+    { place: "South Korea", name: "KOSPI", symbol: "^KS11", size: "KRX US$4.95T†", locale: "ko-KR", access: "International broker availability varies" },
+    { place: "Taiwan", name: "TWSE Weighted", symbol: "^TWII", size: "TWSE US$4.56T†", locale: "zh-TW", access: "Local registration or arrangements may apply" },
+    { place: "Brazil", name: "Bovespa", symbol: "^BVSP", size: "B3 US$0.96T†", locale: "pt-BR", access: "Local representative and custody may apply" },
+    { place: "Switzerland", name: "SMI", symbol: "^SSMI", size: "SIX US$2.61T†", locale: "de-CH", access: "Widely available" },
+    { place: "Australia", name: "S&P/ASX 200", symbol: "^AXJO", size: "ASX US$2.19T†", locale: "en-AU", access: "Widely available" },
+    { place: "Dubai", name: "DFM General Index", symbol: "DFMGI.AE", size: "DFM US$0.24T†", locale: "en-AE", access: "Participating broker; local onboarding may apply" },
+    { place: "Saudi Arabia", name: "Tadawul All Share", symbol: "^TASI.SR", size: "Saudi Exchange US$2.63T†", locale: "en-SA", access: "Participating broker; local onboarding may apply" }
   ];
   const grid = document.getElementById("rs-global-markets-grid");
   const status = document.getElementById("rs-global-markets-status");
@@ -492,6 +538,8 @@ div.c {
     <div class="rs-market-card__top"><div><p class="rs-market-card__place">${safe(market.place)}</p><h3>${safe(market.name)}</h3></div><span class="rs-market-card__state">Waiting</span></div>
     <p class="rs-market-card__level">&mdash;</p><p class="rs-market-card__change is-flat">Latest change unavailable</p>
     <div class="rs-market-card__details"><div><span class="rs-market-card__label">Exchange capitalization</span><span class="rs-market-card__detail">Exchange cap ${safe(market.size)}</span></div></div>
+    <p class="rs-market-card__access"><strong>Broker access:</strong> ${safe(market.access)}</p>
+    <a class="rs-market-card__news" href="https://news.google.com/search?q=${encodeURIComponent(`${market.name} ${market.place} stock market`)}" target="_blank" rel="noopener noreferrer">Related news <span aria-hidden="true">↗</span></a>
   </article>`;
   grid.innerHTML = markets.map(card).join("");
 
@@ -574,15 +622,15 @@ div.c {
 <script>
 (function () {
   const indicators = [
-    { name: "U.S. 10-Year Yield", symbol: "^TNX", type: "market", scale: .1, suffix: "%" },
-    { name: "WTI Crude", symbol: "CL=F", type: "market", prefix: "$", suffix: "/bbl" },
-    { name: "Gold — COMEX", symbol: "GC=F", type: "market", prefix: "$", suffix: "/oz", state: "Globex*" },
-    { name: "Bitcoin", symbol: "BTC-USD", type: "market", prefix: "$", suffix: "" },
-    { name: "U.S. Dollar Index", symbol: "DX-Y.NYB", type: "market" },
-    { name: "VIX", symbol: "^VIX", type: "market" },
-    { name: "10Y Breakeven", symbol: "T10YIE", type: "breakeven", suffix: "%" },
-    { name: "U.S. PPI", symbol: "PPI", type: "periodic", value: "4.7%", detail: "YoY • Jul 2026" },
-    { name: "Global AI-GPR", symbol: "GPR", type: "periodic", value: "Daily index", detail: "Through Jul 31, 2026" }
+    { name: "U.S. 10-Year Yield", symbol: "^TNX", type: "market", scale: .1, suffix: "%", news: "U.S. 10-year Treasury yield bond market" },
+    { name: "WTI Crude", symbol: "CL=F", type: "market", prefix: "$", suffix: "/bbl", news: "WTI crude oil supply OPEC market" },
+    { name: "Gold — COMEX", symbol: "GC=F", type: "market", prefix: "$", suffix: "/oz", state: "Globex*", news: "COMEX gold price market" },
+    { name: "Bitcoin", symbol: "BTC-USD", type: "market", prefix: "$", suffix: "", news: "Bitcoin cryptocurrency market" },
+    { name: "U.S. Dollar Index", symbol: "DX-Y.NYB", type: "market", news: "U.S. dollar currency market" },
+    { name: "VIX", symbol: "^VIX", type: "market", news: "VIX volatility index stock market" },
+    { name: "10Y Breakeven", symbol: "T10YIE", type: "breakeven", suffix: "%", news: "U.S. 10-year breakeven inflation" },
+    { name: "U.S. PPI", symbol: "PPI", type: "periodic", value: "4.7%", detail: "YoY • Jul 2026", news: "U.S. producer price inflation PPI" },
+    { name: "Global AI-GPR", symbol: "GPR", type: "periodic", value: "Daily index", detail: "Through Jul 31, 2026", news: "global geopolitical risk index" }
   ];
   const grid = document.getElementById("rs-market-indicators-grid");
   const status = document.getElementById("rs-market-indicators-status");
@@ -595,6 +643,7 @@ div.c {
     <div class="rs-market-card__top"><h3>${safe(item.name)}</h3><span class="rs-market-card__state">${item.type === "periodic" ? "Periodic" : (item.state || "Waiting")}</span></div>
     <p class="rs-market-card__level">${item.value ? safe(item.value) : "&mdash;"}</p>
     <p class="rs-market-card__change is-flat">${item.detail ? safe(item.detail) : "Latest change unavailable"}</p>
+    <a class="rs-market-card__news" href="https://news.google.com/search?q=${encodeURIComponent(item.news)}" target="_blank" rel="noopener noreferrer">Related news <span aria-hidden="true">↗</span></a>
   </article>`).join("");
 
   function updateMarket(item, latestPrices, previousCloses, changes, changePercents, timestamp) {
