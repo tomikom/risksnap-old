@@ -68,7 +68,7 @@ tr:nth-child(even) {
 
 
 </p>
-Foreign exchange is the largest and most liquid financial market in the world. According to the BIS Global FX trading hit $9.6 trillion per day in April 2025. The gold market is large, global and highly liquid, the gold.org estimate that physical gold holdings by investors and central banks are worth approximately US$12.6tn as of Q4 2025. The oil market is the world's most important commodity market. Because oil touches every step of the supply chain—from farming fertilizers to retail delivery — fluctuations in oil prices directly affect global inflation rates and overall economic growth.
+Foreign exchange is the largest and most liquid financial market in the world.  Holdings of gold are estimated to be about US$12.6tn (Q4 2025 – gold.org).  The oil market is the world’s most important commodity market.
 
 
 
@@ -79,6 +79,7 @@ Foreign exchange is the largest and most liquid financial market in the world. A
   <button data-pair="GBPUSD" onclick="selectFxInstrument('GBPUSD')">GBP/USD</button>
   <button data-pair="USDCHF" onclick="selectFxInstrument('USDCHF')">USD/CHF</button>
   <button data-pair="USDCAD" onclick="selectFxInstrument('USDCAD')">USD/CAD</button>
+  <button data-pair="USDSAR" onclick="selectFxInstrument('USDSAR')">USD/SAR</button>
   <button data-pair="GOLD" onclick="selectFxInstrument('GOLD')">Gold</button>
   <button data-pair="OIL" onclick="selectFxInstrument('OIL')">Oil</button>
   <button data-pair="COMBINED" onclick="selectFxInstrument('COMBINED')">Combined FX + Gold</button>
@@ -94,6 +95,11 @@ Foreign exchange is the largest and most liquid financial market in the world. A
 </div>
 
 <div id="fxStatus" class="fx-status">Loading EUR/USD...</div>
+<div id="fxMobileZoomControls" class="fx-mobile-zoom-controls">
+  <button type="button" onclick="fxMobileZoom(0.8)">Zoom +</button>
+  <button type="button" onclick="fxMobileZoom(1.25)">Zoom −</button>
+  <button type="button" onclick="fxMobileReset()">Reset</button>
+</div>
 <div class="fx-card"><div id="fx_SELECTED" class="fx-chart"></div></div>
 
 <p class="fx-note">Data source: Yahoo Finance via the RiskSnap Cloud Run FX endpoint.</p>
@@ -107,12 +113,64 @@ Foreign exchange is the largest and most liquid financial market in the world. A
 .fx-card{background:white;border:1px solid #d9e0ef;border-radius:16px;box-shadow:0 4px 16px rgba(20,35,75,.10);padding:10px}
 .fx-chart{width:100%;height:500px}
 .fx-note{margin-top:12px;color:#555;font-size:14px}
-@media(max-width:850px){.fx-chart{height:380px}}
+.fx-mobile-zoom-controls{display:none;gap:8px;margin:8px 0 10px}
+.fx-mobile-zoom-controls button{background:#3A5FCD;color:#fff;border:0;border-radius:999px;padding:8px 14px;font-size:14px;cursor:pointer}
+@media(max-width:850px){
+  .fx-chart{height:380px;touch-action:pan-y pinch-zoom}
+  .fx-mobile-zoom-controls{display:flex}
+}
 </style>
 
 <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
 <script>
 const FX_API_URL="https://surface-203178530029.northamerica-northeast2.run.app/fx_history";
+
+const FX_MOBILE_TOUCH =
+  /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) ||
+  (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+
+function fxPlotConfig() {
+  return {
+    responsive:true,
+    displaylogo:false,
+    scrollZoom:false,
+    doubleClick:"reset",
+    modeBarButtonsToRemove:["lasso2d","select2d","pan2d"]
+  };
+}
+
+function fxMobileReset() {
+  const gd = document.getElementById("fx_SELECTED");
+  if (!gd || !gd.layout) return;
+  Plotly.relayout(gd, {
+    "xaxis.autorange": true,
+    "yaxis.autorange": true
+  });
+}
+
+function fxMobileZoom(scale) {
+  const gd = document.getElementById("fx_SELECTED");
+  if (!gd || !gd.layout || !gd._fullLayout) return;
+
+  const xa = gd._fullLayout.xaxis;
+  const ya = gd._fullLayout.yaxis;
+  if (!xa || !ya || !xa.range || !ya.range) return;
+
+  function scaledRange(range, factor, isDate) {
+    let a = isDate ? new Date(range[0]).getTime() : Number(range[0]);
+    let b = isDate ? new Date(range[1]).getTime() : Number(range[1]);
+    if (!Number.isFinite(a) || !Number.isFinite(b)) return range;
+    const mid = (a + b) / 2;
+    const half = (b - a) * factor / 2;
+    const r = [mid - half, mid + half];
+    return isDate ? r.map(v => new Date(v).toISOString()) : r;
+  }
+
+  Plotly.relayout(gd, {
+    "xaxis.range": scaledRange(xa.range, scale, xa.type === "date"),
+    "yaxis.range": scaledRange(ya.range, scale, false)
+  });
+}
 let fxRange="1y", selectedFxInstrument="EURUSD";
 const fxBrowserCache=new Map();
 const fxPairs=[
@@ -121,6 +179,7 @@ const fxPairs=[
  {key:"GBPUSD",label:"GBP/USD",ticker:"GBPUSD=X",color:"#2ca02c"},
  {key:"USDCHF",label:"USD/CHF",ticker:"CHF=X",color:"#d62728"},
  {key:"USDCAD",label:"USD/CAD",ticker:"CAD=X",color:"#9467bd"},
+ {key:"USDSAR",label:"USD/SAR",ticker:"SAR=X",color:"#17becf"},
  {key:"GOLD",label:"Gold",ticker:"GC=F",color:"#DAA520"},
  {key:"OIL",label:"WTI Crude Oil",ticker:"CL=F",color:"#8B4513"}
 ];
@@ -137,7 +196,7 @@ function clean(item){
  return{x,y}
 }
 function placeholder(title,msg){
- Plotly.newPlot("fx_SELECTED",[],{title:{text:title,x:.03},annotations:[{text:msg,showarrow:false,xref:"paper",yref:"paper",x:.5,y:.5}],xaxis:{visible:false},yaxis:{visible:false},paper_bgcolor:"white",plot_bgcolor:"white"},{responsive:true,displaylogo:false})
+ Plotly.newPlot("fx_SELECTED",[],{title:{text:title,x:.03},annotations:[{text:msg,showarrow:false,xref:"paper",yref:"paper",x:.5,y:.5}],xaxis:{visible:false,fixedrange:true},yaxis:{visible:false,fixedrange:true},paper_bgcolor:"white",plot_bgcolor:"white"},fxPlotConfig())
 }
 function drawSingle(item){
  const p=fxPairs.find(x=>x.key===item.pair); if(!p)return;
@@ -150,9 +209,9 @@ function drawSingle(item){
  }],{
    title:{text:`${p.label} (${p.ticker}) — ${prefix}${q.y[q.y.length-1].toFixed(dec)} as of ${q.x[q.x.length-1]}`,x:.03},
    margin:{l:65,r:24,t:62,b:52},paper_bgcolor:"white",plot_bgcolor:"white",hovermode:"x unified",
-   xaxis:{showgrid:true,gridcolor:"#edf1f7",tickformat:"%b %d, %Y",hoverformat:"%b %d, %Y"},
-   yaxis:{title:oil?"US$/barrel":(gold?"US$/ounce":"Spot rate"),showgrid:true,gridcolor:"#edf1f7"}
- },{responsive:true,displaylogo:false,modeBarButtonsToRemove:["lasso2d","select2d"]})
+   xaxis:{showgrid:true,gridcolor:"#edf1f7",tickformat:"%b %d, %Y",hoverformat:"%b %d, %Y",fixedrange:true},
+   yaxis:{title:oil?"US$/barrel":(gold?"US$/ounce":"Spot rate"),showgrid:true,gridcolor:"#edf1f7",fixedrange:true}
+ },fxPlotConfig())
 }
 function drawCombined(items){
  const traces=[];
@@ -161,7 +220,7 @@ function drawCombined(items){
    const q=clean(item); if(!q.x.length)return; const base=Number(q.y[0]); if(!base)return;
    traces.push({x:q.x,y:q.y.map(v=>Number(v)/base*100),type:"scatter",mode:"lines",line:{width:p.key==="GOLD"?3.5:2.2,color:p.color},name:p.label,hovertemplate:"%{x}<br>Index: %{y:.2f}<extra>"+p.label+"</extra>"})
  });
- Plotly.newPlot("fx_SELECTED",traces,{title:{text:"FX rates and Gold normalized to 100",x:.03},paper_bgcolor:"white",plot_bgcolor:"white",hovermode:"x unified",legend:{orientation:"h",x:.02,y:-.18},xaxis:{showgrid:true,gridcolor:"#edf1f7"},yaxis:{title:"Index, first date = 100",showgrid:true,gridcolor:"#edf1f7"}},{responsive:true,displaylogo:false})
+ Plotly.newPlot("fx_SELECTED",traces,{title:{text:"FX rates and Gold normalized to 100",x:.03},paper_bgcolor:"white",plot_bgcolor:"white",hovermode:"x unified",legend:{orientation:"h",x:.02,y:-.18},xaxis:{showgrid:true,gridcolor:"#edf1f7",fixedrange:true},yaxis:{title:"Index, first date = 100",showgrid:true,gridcolor:"#edf1f7",fixedrange:true}},fxPlotConfig())
 }
 async function fetchOne(pair,force){
  if(!force&&fxBrowserCache.has(key(pair)))return fxBrowserCache.get(key(pair));
@@ -295,6 +354,7 @@ const fxPairs = [
     { key: "GBPUSD", label: "GBP/USD", ticker: "GBPUSD=X", div: "fx_GBPUSD", color: "#2ca02c" },
     { key: "USDCHF", label: "USD/CHF", ticker: "CHF=X",    div: "fx_USDCHF", color: "#d62728" },
     { key: "USDCAD", label: "USD/CAD", ticker: "CAD=X",    div: "fx_USDCAD", color: "#9467bd" },
+    { key: "USDSAR", label: "USD/SAR", ticker: "SAR=X",    div: "fx_USDSAR", color: "#17becf" },
     { key: "GOLD", label: "Gold", ticker: "GC=F", div: "fx_GOLD", color: "#DAA520" }
 ];
 const oilPair = { key: "OIL", label: "WTI Crude Oil", ticker: "CL=F", div: "fx_OIL", color: "#8B4513" };

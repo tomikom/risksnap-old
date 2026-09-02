@@ -77,7 +77,7 @@ Foreign exchange is the largest and most liquid financial market in the world.  
   <button data-pair="EURUSD" onclick="selectFxInstrument('EURUSD')">EUR/USD</button>
   <button data-pair="USDJPY" onclick="selectFxInstrument('USDJPY')">USD/JPY</button>
   <button data-pair="GBPUSD" onclick="selectFxInstrument('GBPUSD')">GBP/USD</button>
-  <button data-pair="USDCHF" onclick="selectFxInstrument('USDCHF')">USD/CHF</button>
+  <button data-pair="USDCHF" onclick="selectFxInstrument('USDCHF')">CHF/USD</button>
   <button data-pair="USDCAD" onclick="selectFxInstrument('USDCAD')">USD/CAD</button>
   <button data-pair="USDSAR" onclick="selectFxInstrument('USDSAR')">USD/SAR</button>
   <button data-pair="GOLD" onclick="selectFxInstrument('GOLD')">Gold</button>
@@ -177,7 +177,7 @@ const fxPairs=[
  {key:"EURUSD",label:"EUR/USD",ticker:"EURUSD=X",color:"#1f77b4"},
  {key:"USDJPY",label:"USD/JPY",ticker:"JPY=X",color:"#ff7f0e"},
  {key:"GBPUSD",label:"GBP/USD",ticker:"GBPUSD=X",color:"#2ca02c"},
- {key:"USDCHF",label:"USD/CHF",ticker:"CHF=X",color:"#d62728"},
+ {key:"USDCHF",label:"CHF/USD",ticker:"CHF=X",color:"#d62728",invert:true},
  {key:"USDCAD",label:"USD/CAD",ticker:"CAD=X",color:"#9467bd"},
  {key:"USDSAR",label:"USD/SAR",ticker:"SAR=X",color:"#17becf"},
  {key:"GOLD",label:"Gold",ticker:"GC=F",color:"#DAA520"},
@@ -201,13 +201,13 @@ function placeholder(title,msg){
 function drawSingle(item){
  const p=fxPairs.find(x=>x.key===item.pair); if(!p)return;
  if(item.error){placeholder(p.label,item.error);return}
- const q=clean(item); if(!q.x.length){placeholder(p.label,"No usable data returned");return}
+ const q=clean(item); if(p.invert)q.y=q.y.map(v=>v?1/v:NaN); if(!q.x.length){placeholder(p.label,"No usable data returned");return}
  const oil=p.key==="OIL",gold=p.key==="GOLD",dec=p.key==="USDJPY"?2:(oil||gold?2:4),prefix=(oil||gold)?"$":"";
  Plotly.newPlot("fx_SELECTED",[{
    x:q.x,y:q.y,type:"scatter",mode:"lines",line:{width:2.7,color:p.color},
    hovertemplate:`%{x}<br>${prefix}%{y:.${dec}f}<extra></extra>`,name:p.label
  }],{
-   title:{text:`${p.label} (${p.ticker}) — ${prefix}${q.y[q.y.length-1].toFixed(dec)} as of ${q.x[q.x.length-1]}`,x:.03},
+   title:{text:`${p.label}${p.invert?"":" ("+p.ticker+")"} — ${prefix}${q.y[q.y.length-1].toFixed(dec)} as of ${q.x[q.x.length-1]}`,x:.03},
    margin:{l:65,r:24,t:62,b:52},paper_bgcolor:"white",plot_bgcolor:"white",hovermode:"x unified",
    xaxis:{showgrid:true,gridcolor:"#edf1f7",tickformat:"%b %d, %Y",hoverformat:"%b %d, %Y",fixedrange:true},
    yaxis:{title:oil?"US$/barrel":(gold?"US$/ounce":"Spot rate"),showgrid:true,gridcolor:"#edf1f7",fixedrange:true}
@@ -217,7 +217,7 @@ function drawCombined(items){
  const traces=[];
  fxPairs.filter(p=>p.key!=="OIL").forEach(p=>{
    const item=items.find(x=>x.pair===p.key); if(!item||item.error)return;
-   const q=clean(item); if(!q.x.length)return; const base=Number(q.y[0]); if(!base)return;
+   const q=clean(item); if(p.invert)q.y=q.y.map(v=>v?1/v:NaN); if(!q.x.length)return; const base=Number(q.y[0]); if(!base)return;
    traces.push({x:q.x,y:q.y.map(v=>Number(v)/base*100),type:"scatter",mode:"lines",line:{width:p.key==="GOLD"?3.5:2.2,color:p.color},name:p.label,hovertemplate:"%{x}<br>Index: %{y:.2f}<extra>"+p.label+"</extra>"})
  });
  Plotly.newPlot("fx_SELECTED",traces,{title:{text:"FX rates and Gold normalized to 100",x:.03},paper_bgcolor:"white",plot_bgcolor:"white",hovermode:"x unified",legend:{orientation:"h",x:.02,y:-.18},xaxis:{showgrid:true,gridcolor:"#edf1f7",fixedrange:true},yaxis:{title:"Index, first date = 100",showgrid:true,gridcolor:"#edf1f7",fixedrange:true}},fxPlotConfig())
@@ -352,7 +352,7 @@ const fxPairs = [
     { key: "EURUSD", label: "EUR/USD", ticker: "EURUSD=X", div: "fx_EURUSD", color: "#1f77b4" },
     { key: "USDJPY", label: "USD/JPY", ticker: "JPY=X",    div: "fx_USDJPY", color: "#ff7f0e" },
     { key: "GBPUSD", label: "GBP/USD", ticker: "GBPUSD=X", div: "fx_GBPUSD", color: "#2ca02c" },
-    { key: "USDCHF", label: "USD/CHF", ticker: "CHF=X",    div: "fx_USDCHF", color: "#d62728" },
+    { key: "USDCHF", label: "CHF/USD", ticker: "CHF=X",    div: "fx_USDCHF", color: "#d62728", invert: true },
     { key: "USDCAD", label: "USD/CAD", ticker: "CAD=X",    div: "fx_USDCAD", color: "#9467bd" },
     { key: "USDSAR", label: "USD/SAR", ticker: "SAR=X",    div: "fx_USDSAR", color: "#17becf" },
     { key: "GOLD", label: "Gold", ticker: "GC=F", div: "fx_GOLD", color: "#DAA520" }
@@ -418,7 +418,7 @@ function drawFxCombinedChart(series) {
 
         const points = cleanFxPoints(item);
         const x = points.x;
-        const y = points.y;
+        const y = pair.invert ? points.y.map(v => v ? 1 / v : NaN) : points.y;
         if (!x.length || !y.length) return;
 
         const base = Number(y[0]);
@@ -521,7 +521,7 @@ function drawFxChart(item) {
 
     const points = cleanFxPoints(item);
     const x = points.x;
-    const y = points.y;
+    const y = pair.invert ? points.y.map(v => v ? 1 / v : NaN) : points.y;
 
     if (!x.length || !y.length) {
         drawFxPlaceholder(pair, "No usable data returned");
@@ -530,7 +530,7 @@ function drawFxChart(item) {
 
     const lastRate = Number(y[y.length - 1]);
     const lastDate = x[x.length - 1] || "";
-    const titleText = `${pair.label} (${pair.ticker}) — ${lastRate.toFixed(pair.key === "USDJPY" ? 2 : 4)} as of ${lastDate}`;
+    const titleText = `${pair.label}${pair.invert ? "" : ` (${pair.ticker})`} — ${lastRate.toFixed(pair.key === "USDJPY" ? 2 : 4)} as of ${lastDate}`;
 
     const trace = {
         x: x,
@@ -740,6 +740,5 @@ async function loadFxCharts() {
 
 window.addEventListener("load", loadFxCharts);
 </script>
-
 
 

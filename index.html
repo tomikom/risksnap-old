@@ -632,6 +632,79 @@ div.c {
   <p class="rs-global-markets__note">* “Latest” uses the newest RiskSnap quote. COMEX gold is the active Globex futures contract; its change is versus the prior futures close. Bitcoin trades 24/7. PPI and geopolitical risk are periodic releases.</p>
 </section>
 
+<section class="rs-global-markets rs-foreign-exchange" aria-labelledby="rs-foreign-exchange-title">
+  <div class="rs-global-markets__heading">
+    <h2 id="rs-foreign-exchange-title">Foreign exchange</h2>
+    <p id="rs-foreign-exchange-status" class="rs-global-markets__status" aria-live="polite">Loading latest rates&hellip;</p>
+  </div>
+  <div id="rs-foreign-exchange-grid" class="rs-global-markets__grid"></div>
+</section>
+
+<style>
+.rs-foreign-exchange { background: #f7fbf8; border-color: #d5e5da; }
+.rs-foreign-exchange h2 { color: #35654a; }
+.rs-foreign-exchange .rs-market-card { border-color: #d5e5da; }
+.rs-foreign-exchange .rs-market-card__level { margin: 2px 0 0; }
+.rs-fx-code { margin-right: 7px; color: #172536; font-size: 13px; font-weight: 700; }
+.rs-fx-rate { font-size: 14px; font-weight: 600; }
+</style>
+
+<script>
+(function () {
+  const currencies = [
+    { code: "EUR", emblem: "🏛️", symbol: "EURUSD=X", invert: false },
+    { code: "GBP", emblem: "🦁", symbol: "GBPUSD=X", invert: false },
+    { code: "CAD", emblem: "🍁", symbol: "CAD=X", invert: false },
+    { code: "JPY", emblem: "🌸", symbol: "JPY=X", invert: false },
+    { code: "CHF", emblem: "🏔️", symbol: "CHF=X", invert: true },
+    { code: "AUD", emblem: "🦘", symbol: "AUD=X", invert: false }
+  ];
+  const grid = document.getElementById("rs-foreign-exchange-grid");
+  const status = document.getElementById("rs-foreign-exchange-status");
+  if (!grid || !status) return;
+
+  const safe = value => String(value == null ? "" : value).replace(/[&<>"']/g, character => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;"
+  })[character]);
+  const formatRate = (code, value) => Number(value).toLocaleString(undefined, {
+    minimumFractionDigits: code === "JPY" ? 2 : 4,
+    maximumFractionDigits: code === "JPY" ? 2 : 4
+  });
+
+  grid.innerHTML = currencies.map(currency => `<article class="rs-market-card" data-fx-symbol="${safe(currency.symbol)}">
+    <p class="rs-market-card__level"><span class="rs-fx-code">${safe(currency.code)} ${safe(currency.emblem)}</span><span class="rs-fx-rate">&mdash;</span></p>
+  </article>`).join("");
+
+  async function loadForeignExchange() {
+    status.textContent = "Refreshing latest rates…";
+    try {
+      const response = await fetch("https://surface-203178530029.northamerica-northeast2.run.app/latest_prices", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ symbols: currencies.map(currency => currency.symbol) })
+      });
+      const payload = await response.json();
+      const prices = payload && payload.prices && typeof payload.prices === "object" ? payload.prices : {};
+      let loaded = 0;
+      currencies.forEach(currency => {
+        const raw = Number(prices[currency.symbol]);
+        const rate = currency.invert && raw ? 1 / raw : raw;
+        if (!Number.isFinite(rate)) return;
+        const element = grid.querySelector(`[data-fx-symbol="${CSS.escape(currency.symbol)}"] .rs-fx-rate`);
+        if (element) element.textContent = formatRate(currency.code, rate);
+        loaded += 1;
+      });
+      status.textContent = loaded ? `${loaded} of ${currencies.length} rates updated` : "Rates are temporarily unavailable";
+    } catch (error) {
+      status.textContent = "Rates are temporarily unavailable";
+    }
+  }
+
+  window.addEventListener("risksnap-refresh-markets", loadForeignExchange);
+  loadForeignExchange();
+})();
+</script>
+
 <div id="rsMarketChartPanel" class="rs-market-chart-panel" hidden>
   <div class="rs-market-chart-header">
     <div>
