@@ -181,7 +181,7 @@ title: Portfolio Optimization
     <div class="var-header">
       <div>
         <div class="opt-panel-title">Historical VaR and Expected Shortfall</div>
-        <div class="opt-chart-note">Today’s inspected portfolio is revalued using each historical daily percentage movement. Observations are equally weighted and plotted chronologically. The current data service supplies a maximum 250-day history; this will be extended to two years later.</div>
+        <div class="opt-chart-note">The inspected portfolio’s fixed holdings are marked to market on each historical date. Daily P&amp;L is the current MTM minus the previous MTM. Observations are equally weighted and plotted chronologically. The current data service supplies a maximum 250-day history; this will be extended to two years later.</div>
       </div>
       <button id="downloadVarCsv" type="button" disabled>Download VaR CSV</button>
     </div>
@@ -1200,8 +1200,17 @@ function historicalVarResults(sim) {
   optState.assets.forEach(asset => {
     const rows = Array.isArray(optState.history[asset]) ? optState.history[asset] : [];
     byAsset[asset] = new Map(rows
-      .filter(row => row && row.date && Number.isFinite(Number(row.log_return)))
-      .map(row => [String(row.date).slice(0,10), Math.expm1(Number(row.log_return))]));
+      .map(row => {
+        const date = String(row && row.date || "").slice(0,10);
+        const dailyReturn = Math.expm1(Number(row && row.log_return));
+        const price = Number(row && (
+          row.usd_price ?? row.usdPrice ?? row.adjusted_close ?? row.adj_close ??
+          row["Adj Close"] ?? row.price ?? row.close ?? row.value
+        ));
+        return {date,dailyReturn,price};
+      })
+      .filter(row => row.date && Number.isFinite(row.dailyReturn) && Number.isFinite(row.price) && row.price > 0)
+      .map(row => [row.date,row]));
   });
 
   const dateSets = optState.assets.map(asset => new Set(byAsset[asset].keys()));
@@ -1209,9 +1218,23 @@ function historicalVarResults(sim) {
     ? [...dateSets[0]].filter(date => dateSets.every(set => set.has(date))).sort()
     : [];
   const values = dates.map(date => {
-    const pnl = allocation.rows.reduce((sum,row) => sum + row.actualValue * byAsset[row.asset].get(date), 0);
-    return {date,pnl};
-  }).filter(row => Number.isFinite(row.pnl));
+    let previousMtm = 0;
+    let currentMtm = 0;
+    allocation.rows.forEach(row => {
+      const observation = byAsset[row.asset].get(date);
+      const currentPrice = Number(row.usdPrice);
+      const units = Number.isFinite(currentPrice) && currentPrice > 0 ? row.actualValue/currentPrice : NaN;
+      if (!Number.isFinite(units)) {
+        previousMtm = NaN;
+        currentMtm = NaN;
+        return;
+      }
+      currentMtm += units * observation.price;
+      previousMtm += units * observation.price/(1+observation.dailyReturn);
+    });
+    const pnl = currentMtm-previousMtm;
+    return {date,previousMtm,currentMtm,pnl};
+  }).filter(row => Number.isFinite(row.previousMtm) && Number.isFinite(row.currentMtm) && Number.isFinite(row.pnl));
 
   if (!values.length) return {values:[],varPnl:NaN,esPnl:NaN,tailCount:0,allocation};
   const sorted = values.map(row => row.pnl).sort((a,b) => a-b);
@@ -1261,21 +1284,28 @@ function renderHistoricalVar(sim) {
   const path=result.values.map((row,i)=>`${i?'L':'M'}${x(i).toFixed(2)},${y(row.pnl).toFixed(2)}`).join(" ");
   const breaches=result.values.map((row,i)=>row.pnl<=result.varPnl
     ? `<circle class="var-breach" cx="${x(i).toFixed(2)}" cy="${y(row.pnl).toFixed(2)}" r="4"><title>${escapeHtml(row.date)} | ${escapeHtml(fmtMoney(row.pnl))}</title></circle>` : "").join("");
-  host.innerHTML=`<svg viewBox="0 0 ${width} ${height}" role="img" aria-label="Chronological historical portfolio profit and loss with 99 percent VaR and Expected Shortfall">
+  host.innerHTML=`<svg viewBox="0 0 ${width} ${height}" role="img" aria-label="Chronological portfolio mark-to-market changes with 99 percent VaR and Expected Shortfall">
     ${grid}<line class="opt-axis" x1="${margin.left}" y1="${margin.top}" x2="${margin.left}" y2="${height-margin.bottom}"></line>
     <line class="opt-axis" x1="${margin.left}" y1="${height-margin.bottom}" x2="${width-margin.right}" y2="${height-margin.bottom}"></line>
     <line class="var-zero" x1="${margin.left}" y1="${y(0)}" x2="${width-margin.right}" y2="${y(0)}"></line>
     <line class="var-threshold" x1="${margin.left}" y1="${y(result.varPnl)}" x2="${width-margin.right}" y2="${y(result.varPnl)}"><title>99% HVaR ${escapeHtml(fmtMoney(result.varPnl))}</title></line>
     <line class="var-es" x1="${margin.left}" y1="${y(result.esPnl)}" x2="${width-margin.right}" y2="${y(result.esPnl)}"><title>Expected Shortfall ${escapeHtml(fmtMoney(result.esPnl))}</title></line>
     <path class="var-series" d="${path}"></path>${breaches}${ticks}
-    <text class="opt-axis-label" transform="translate(18 ${margin.top+innerH/2}) rotate(-90)" text-anchor="middle">Daily hypothetical P&amp;L (USD)</text>
+    <text class="opt-axis-label" transform="translate(18 ${margin.top+innerH/2}) rotate(-90)" text-anchor="middle">Daily MTM change (USD)</text>
   </svg>`;
 }
 
 function downloadVarCsv() {
   const result=optState.varResult;
   if (!result || !result.values.length) return;
-  const lines=[["Date","Hypothetical P&L USD","VaR breach"],...result.values.map(row=>[row.date,row.pnl,row.pnl<=result.varPnl?"Yes":"No"]),[],["99% HVaR",result.varPnl],["Expected Shortfall",result.esPnl],["Tail observations",result.tailCount]];
+  const lines=[
+    ["Date","Previous MTM USD","Current MTM USD","MTM Change / Historical P&L USD","VaR breach"],
+    ...result.values.map(row=>[
+      row.date,row.previousMtm.toFixed(2),row.currentMtm.toFixed(2),row.pnl.toFixed(2),
+      row.pnl<=result.varPnl?"Yes":"No"
+    ]),
+    [],["99% HVaR",result.varPnl],["Expected Shortfall",result.esPnl],["Tail observations",result.tailCount]
+  ];
   const blob=new Blob([lines.map(row=>row.map(csvCell).join(",")).join("\n")],{type:"text/csv;charset=utf-8"});
   const url=URL.createObjectURL(blob), a=document.createElement("a");
   a.href=url; a.download=`portfolio_var_${optState.inspected?.id ?? "simulation"}_${optState.asOf || "latest"}.csv`;
