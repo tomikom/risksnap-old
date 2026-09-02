@@ -220,6 +220,10 @@ h1 { color:white; text-align:center; background-color:#3A5FCD; }
 }
 .var-run-controls button:hover { background:#2f50b2; }
 .var-run-controls button:disabled { opacity:.55; cursor:default; }
+.var-portfolio-button {
+  border:0; background:none; color:#244fae; padding:0; font:inherit;
+  font-weight:700; text-decoration:underline; cursor:pointer;
+}
 .optimization-intro { margin:0 0 14px; }
 .optimization-controls {
   display:grid;
@@ -1099,7 +1103,7 @@ function renderChart() {
   });
 }
 
-function inspectSimulation(id) {
+function inspectSimulation(id, preserveVar=false) {
   const sim = id === "loaded"
     ? optState.loadedPortfolio
     : optState.simulations.find(x => x.id === Number(id));
@@ -1108,9 +1112,11 @@ function inspectSimulation(id) {
     return;
   }
   optState.inspected = sim;
-  optState.varResult = null;
-  document.getElementById("optVarPanel").hidden = true;
-  document.getElementById("downloadVarCsv").disabled = true;
+  if (!preserveVar) {
+    optState.varResult = null;
+    document.getElementById("optVarPanel").hidden = true;
+    document.getElementById("downloadVarCsv").disabled = true;
+  }
   document.getElementById("simulationInspector").hidden = false;
   if (sim.id !== "loaded") document.getElementById("inspectSimulationNumber").value = sim.id;
   document.getElementById("downloadSimulationCsv").disabled = false;
@@ -1261,12 +1267,14 @@ function renderHistoricalVar(sim) {
   const first = result.values[0].date;
   const last = result.values[result.values.length-1].date;
   document.getElementById("optVarSummary").innerHTML = `
-    <span><strong>${sim.id === "loaded" ? "Loaded portfolio" : "Simulation"}:</strong> ${sim.id === "loaded" ? escapeHtml(sim.label) : `#${sim.id}`}</span>
+    <span><strong>${sim.id === "loaded" ? "Loaded portfolio" : "Simulation"}:</strong> ${sim.id === "loaded" ? `<button id="viewVarPortfolio" class="var-portfolio-button" type="button">${escapeHtml(sim.label)}</button>` : `#${sim.id}`}</span>
     <span><strong>Period:</strong> ${escapeHtml(first)} to ${escapeHtml(last)}</span>
     <span><strong>Observations:</strong> ${result.values.length}</span>
     <span><strong>99% HVaR:</strong> ${fmtMoney(result.varPnl)}</span>
     <span><strong>Expected Shortfall:</strong> ${fmtMoney(result.esPnl)}</span>
     <span><strong>Tail observations:</strong> ${result.tailCount}</span>`;
+  const viewButton = document.getElementById("viewVarPortfolio");
+  if (viewButton) viewButton.addEventListener("click", () => inspectSimulation("loaded",true));
 
   const width=1000, height=350, margin={left:82,right:24,top:18,bottom:52};
   const innerW=width-margin.left-margin.right, innerH=height-margin.top-margin.bottom;
@@ -1304,7 +1312,17 @@ function downloadVarCsv() {
       row.date,row.previousMtm.toFixed(2),row.currentMtm.toFixed(2),row.pnl.toFixed(2),
       row.pnl<=result.varPnl?"Yes":"No"
     ]),
-    [],["99% HVaR",result.varPnl],["Expected Shortfall",result.esPnl],["Tail observations",result.tailCount]
+    [],["99% HVaR",result.varPnl],["Expected Shortfall",result.esPnl],["Tail observations",result.tailCount],
+    [],["Holdings used in MTM calculation"],
+    ["Security","Quantity","Quantity type","Local price","USD price","Current position value USD"],
+    ...result.allocation.rows.map(row=>[
+      row.asset,
+      row.isFuture ? row.roundedContracts : row.shares,
+      row.isFuture ? "Contracts" : "Shares",
+      Number.isFinite(row.localPrice) ? row.localPrice : "",
+      Number.isFinite(row.usdPrice) ? row.usdPrice : "",
+      row.actualValue.toFixed(2)
+    ])
   ];
   const blob=new Blob([lines.map(row=>row.map(csvCell).join(",")).join("\n")],{type:"text/csv;charset=utf-8"});
   const url=URL.createObjectURL(blob), a=document.createElement("a");
