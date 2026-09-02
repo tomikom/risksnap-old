@@ -1,10 +1,156 @@
 ---
 layout: home-template
 ---
-<div class ="image-section">
-   
+<div class ="image-section rs-hero-section">
+  <!-- One stationary banner. Each illustration is an independent link. -->
+  <nav class="rs-visual-banner" aria-label="RiskSnap analytical tools">
+    <div class="rs-visual-banner__tile">
+    <a class="rs-visual-banner__panel" href="/correlations/" aria-label="Open Correlations">
+      <img class="rs-visual-banner__image rs-visual-banner__correlations-image" src="./images/Correlations.png" alt="RiskSnap correlation matrix">
+      <span class="rs-visual-banner__copy"><strong>Correlations</strong><small>Diversification</small></span>
+    </a>
+    </div>
+
+    <div class="rs-visual-banner__tile">
+    <a class="rs-visual-banner__panel" href="/surface/" aria-label="Open Volatility Surface">
+      <img class="rs-visual-banner__image rs-visual-banner__surface-image" src="./images/Surface_Equity_SPY.png" alt="RiskSnap SPY volatility surface">
+      <span class="rs-visual-banner__copy"><strong>Volatility Surface</strong><small>Market-implied risk</small></span>
+    </a>
+    </div>
+
+    <div class="rs-visual-banner__tile">
+    <a class="rs-visual-banner__panel" href="/portfolio_optimization/" aria-label="Open Portfolio Optimization">
+      <img class="rs-visual-banner__image rs-visual-banner__portfolio-image" src="./images/portfolio-optimization.png" alt="RiskSnap simulated portfolios risk versus total return chart">
+      <span class="rs-visual-banner__copy"><strong>Portfolio Optimization</strong><small>Allocations and risk</small></span>
+    </a>
+    </div>
+
+    <div class="rs-visual-banner__tile">
+    <a class="rs-visual-banner__panel rs-visual-banner__tree" href="/structuredproducts/" aria-label="Open Structured Products">
+      <img class="rs-visual-banner__image rs-visual-banner__tree-image" src="./images/quadrinomial-tree-transparent.png" alt="Transparent quadrinomial structured-products tree">
+      <span class="rs-visual-banner__copy"><strong>Structured Products</strong><small>Non-linear payoffs</small></span>
+    </a>
+    </div>
+    <div class="rs-visual-banner__placeholder" aria-hidden="true"></div>
+  </nav>
+
 <!-- new -->
 <style>
+
+.rs-hero-section {
+    display: block !important;
+    position: static !important;
+    float: none !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #fff !important;
+    overflow: hidden !important;
+    transform: none !important;
+    animation: none !important;
+}
+.rs-visual-banner {
+    display: grid !important;
+    grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+    align-items: stretch;
+    box-sizing: border-box;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    min-height: 178px !important;
+    overflow: hidden;
+    border: 1px solid #e3e9f0;
+    border-radius: 8px;
+    background: #fff;
+}
+.rs-visual-banner__tile {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    border-left: 1px solid #edf1f5;
+}
+.rs-visual-banner__tile:first-child { border-left: 0; }
+.rs-visual-banner a.rs-visual-banner__panel {
+    display: flex !important;
+    position: static !important;
+    float: none !important;
+    flex: none !important;
+    align-items: center;
+    justify-content: center;
+    min-width: 0 !important;
+    width: auto !important;
+    max-width: none !important;
+    height: 100% !important;
+    box-sizing: border-box !important;
+    overflow: hidden;
+    padding: 7px 7px 2px;
+    flex-direction: column;
+    background: #fff;
+    text-decoration: none;
+    transition: background-color .18s ease, transform .18s ease;
+}
+.rs-visual-banner__placeholder { border-left: 1px solid #edf1f5; }
+.rs-visual-banner__placeholder {
+    min-width: 0;
+    height: 100%;
+    box-sizing: border-box;
+    background: #fff;
+}
+.rs-visual-banner a.rs-visual-banner__panel:hover,
+.rs-visual-banner a.rs-visual-banner__panel:focus-visible { background: #f5f9ff; }
+.rs-visual-banner a.rs-visual-banner__panel:hover .rs-visual-banner__image { transform: translateY(-2px); }
+.rs-visual-banner a:focus-visible { outline: 2px solid #2f77d0; outline-offset: -2px; }
+.rs-visual-banner svg {
+    display: block !important;
+    width: auto !important;
+    max-width: 100% !important;
+    height: 100% !important;
+    max-height: 136px !important;
+    transition: transform .18s ease;
+}
+.rs-visual-banner__image {
+    display: block !important;
+    width: 100% !important;
+    height: 112px !important;
+    max-width: 100% !important;
+    max-height: 112px !important;
+    object-fit: contain;
+    transition: transform .18s ease;
+}
+.rs-visual-banner__portfolio-image { object-fit: cover; object-position: 46% 51%; }
+.rs-visual-banner__correlations-image { object-position: center 45%; }
+.rs-visual-banner__surface-image { object-position: center 43%; }
+.rs-visual-banner__tree-image { object-fit: contain; padding: 4px 0; box-sizing: border-box; }
+.rs-visual-banner__copy {
+    display: block;
+    width: 100%;
+    text-align: center;
+    line-height: 1.18;
+    color: #203247;
+}
+.rs-visual-banner__copy strong { display: block; font-size: 14px; font-weight: 600; }
+.rs-visual-banner__copy small { display: block; margin-top: 3px; font-size: 11px; font-weight: 400; color: #617186; }
+@media (max-width: 700px) {
+    .rs-hero-section { overflow: hidden !important; }
+    .rs-visual-banner {
+        width: 100% !important;
+        min-width: 0 !important;
+        min-height: 124px !important;
+        grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+        border-radius: 5px;
+    }
+    .rs-visual-banner a.rs-visual-banner__panel {
+        min-width: 0 !important;
+        height: 100% !important;
+        padding: 3px 2px 1px;
+    }
+    .rs-visual-banner__image { height: 70px !important; max-height: 70px !important; }
+    .rs-visual-banner__copy strong { font-size: 10px; }
+    .rs-visual-banner__copy small { font-size: 8px; margin-top: 2px; }
+}
 
 #myImg {
     border-radius: 5px;
@@ -102,6 +248,27 @@ table, th, td {
 .pic:hover + .picbig{
 	width:700px;
 }
+
+/* The concentration chart starts in the left panel but enlarges as an
+   overlay across the panels to its right. */
+.concentration-panel {
+    position: relative;
+    z-index: 20;
+    overflow: visible;
+}
+.concentration-picbig {
+    position: absolute;
+    top: 70px;
+    left: 110px;
+    float: none;
+    max-width: none;
+    height: auto;
+    z-index: 1000;
+    background: #ffffff;
+}
+.concentration-pic:hover + .concentration-picbig {
+    width: 700px;
+}
 </style>
 <style>
 div.a {
@@ -125,6 +292,9 @@ div.c {
 .column {
     float: left;
     padding: 10px;
+    min-width: 0;
+    max-width: 100%;
+    overflow-wrap: break-word;
  <!--   height: 300px; /* Should be removed. Only for demonstration */-->
 }
 
@@ -146,11 +316,595 @@ div.c {
 
 </div>
        
-<div class="text-section"> 
+<div class="text-section rs-market-section-wrap"> 
+
+<!-- RiskSnap global-markets panel: stationary by design; no automatic rotation. -->
+<style>
+.rs-market-section-wrap {
+  margin-left: 3vw !important;
+  width: 97vw !important;
+  max-width: 97vw !important;
+  min-width: 0 !important;
+  box-sizing: border-box !important;
+}
+</style>
+<section class="rs-global-markets" aria-labelledby="rs-global-markets-title">
+  <div class="rs-global-markets__heading">
+    <div>
+      <p class="rs-global-markets__eyebrow">Global market snapshot</p>
+      <h2 id="rs-global-markets-title">Equity markets</h2>
+    </div>
+    <div class="rs-global-markets__actions"><p id="rs-global-markets-status" class="rs-global-markets__status" aria-live="polite">Loading latest readings&hellip;</p><button id="rs-markets-refresh" class="rs-markets-refresh" type="button">Refresh</button></div>
+  </div>
+  <div id="rs-global-markets-grid" class="rs-global-markets__grid"></div>
+  <p class="rs-global-markets__note">* <span id="rs-global-markets-date">Date loading</span>. <sup>&dagger;</sup>Exchange capitalization is domestic equity market capitalization in U.S. dollars from the <a href="https://focus.world-exchanges.org/issue/july-2026/market-statistics" target="_blank" rel="noopener">World Federation of Exchanges</a> (May 2026); it is not the capitalization of the displayed benchmark index. U.S. benchmark cards overlap and must not be added together.</p>
+</section>
+
+<style>
+.rs-global-markets {
+  margin: 8px 0 16px;
+  padding: 9px 10px;
+  border: 1px solid #d8e1ec;
+  border-radius: 12px;
+  background: #f8fbff;
+  color: #172536;
+  font-family: Arial, Helvetica, sans-serif;
+}
+.row {
+    width: 100%;
+    max-width: 100%;
+}
+@media (max-width: 700px) {
+    .row {
+        display: block;
+        width: 1200px;
+        max-width: none;
+        overflow: visible;
+    }
+}
+.rs-global-markets__heading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 7px;
+}
+.rs-global-markets__eyebrow {
+  display: none;
+}
+.rs-global-markets h2 {
+  margin: 0;
+  color: #173f70;
+  font-size: 17px;
+}
+.rs-global-markets__status,
+.rs-global-markets__note {
+  margin: 0;
+  color: #617186;
+  font-size: 12px;
+}
+.rs-global-markets__actions { display: flex; align-items: center; gap: 9px; }
+.rs-markets-refresh {
+  padding: 5px 10px;
+  border: 1px solid #aebdce;
+  border-radius: 6px;
+  background: #fff;
+  color: #244d78;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 700;
+}
+.rs-markets-refresh:hover { background: #eef5fc; }
+.rs-markets-refresh:disabled { cursor: wait; opacity: .6; }
+.rs-global-markets__grid {
+  display: flex;
+  gap: 7px;
+  overflow-x: auto;
+  padding-bottom: 3px;
+  scrollbar-width: thin;
+  scroll-snap-type: x proximity;
+}
+.rs-market-card {
+  flex: 1 0 154px;
+  min-width: 154px;
+  max-width: 205px;
+  padding: 8px 9px;
+  border: 1px solid #dce4ee;
+  border-radius: 9px;
+  background: #fff;
+  scroll-snap-align: start;
+}
+.rs-market-card__top {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+.rs-market-card__place {
+  margin: 0;
+  color: #617186;
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+.rs-market-card h3 {
+  margin: 2px 0 0;
+  color: #172536;
+  font-size: 13px;
+}
+.rs-market-card__state {
+  align-self: flex-start;
+  padding: 3px 6px;
+  border-radius: 999px;
+  background: #eef3f8;
+  color: #52657a;
+  font-size: 9px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.rs-market-card__level {
+  margin: 6px 0 1px;
+  font-size: 14px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.rs-market-card__change {
+  min-height: 15px;
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.rs-market-card__change.is-up { color: #147a43; }
+.rs-market-card__change.is-down { color: #b23b32; }
+.rs-market-card__change.is-flat { color: #617186; }
+.rs-market-card__details {
+  display: flex;
+  gap: 5px;
+  margin-top: 6px;
+  padding-top: 5px;
+  border-top: 1px solid #edf1f5;
+}
+.rs-market-card__label {
+  display: none;
+  color: #78879a;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: .03em;
+  text-transform: uppercase;
+}
+.rs-market-card__detail {
+  display: inline;
+  margin-top: 0;
+  color: #33465c;
+  font-size: 9px;
+  line-height: 1.3;
+}
+.rs-global-markets__note { margin-top: 10px; }
+.rs-market-card__details > div + div::before { content: "• "; color: #9aa7b5; }
+.rs-market-card__access {
+  margin: 5px 0 0;
+  color: #52657a;
+  font-size: 9px;
+  line-height: 1.3;
+}
+.rs-market-card__access strong { color: #33465c; font-weight: 700; }
+.rs-market-card__news {
+  display: inline-block;
+  margin-top: 6px;
+  color: #2f69ad;
+  font-size: 10px;
+  text-decoration: none;
+}
+.rs-market-card__news:hover { text-decoration: underline; }
+.rs-market-card__links {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+}
+.rs-market-card__links .rs-market-card__news { margin-top: 0; }
+.rs-market-card__chart {
+  display: inline-block;
+  padding: 3px 7px;
+  border: 1px solid #9aa8c4;
+  border-radius: 4px;
+  background: #fff;
+  color: #244b9b;
+  font: inherit;
+  font-size: 10px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.rs-market-card__chart:hover { background: #f0f4ff; border-color: #7188c7; }
+.rs-global-markets__note { margin-top: 4px; font-size: 9px; }
+@media (max-width: 560px) {
+  .rs-global-markets { padding: 8px; }
+  .rs-global-markets__heading { align-items: center; flex-direction: row; }
+  .rs-global-markets__status { display: none; }
+}
+</style>
+
+<script>
+(function () {
+  const markets = [
+    { place: "United States", name: "Dow Jones", symbol: "^DJI", size: "NYSE US$32.41T†", locale: "en-US", access: "Widely available" },
+    { place: "United States", name: "S&P 500", symbol: "^GSPC", size: "NYSE + Nasdaq US$76.15T†", locale: "en-US", access: "Widely available" },
+    { place: "United States", name: "Nasdaq Composite", symbol: "^IXIC", size: "Nasdaq US$43.74T†", locale: "en-US", access: "Widely available" },
+    { place: "Canada", name: "S&P/TSX Composite", symbol: "^GSPTSE", size: "TMX US$5.00T†", locale: "en-CA", access: "Widely available" },
+    { place: "United Kingdom", name: "FTSE 100", symbol: "^FTSE", size: "WFE not reported†", locale: "en-GB", access: "Widely available" },
+    { place: "Germany", name: "DAX", symbol: "^GDAXI", size: "Deutsche Börse US$2.88T†", locale: "de-DE", access: "Widely available" },
+    { place: "Japan", name: "Nikkei 225", symbol: "^N225", size: "JPX US$8.67T†", locale: "ja-JP", access: "Widely available" },
+    { place: "Hong Kong", name: "Hang Seng", symbol: "^HSI", size: "HKEX US$6.00T†", locale: "en-HK", access: "Widely available" },
+    { place: "China", name: "Shanghai Composite", symbol: "000001.SS", size: "SSE US$9.84T†", locale: "zh-CN", access: "Eligible securities via Stock Connect" },
+    { place: "India", name: "Nifty 50", symbol: "^NSEI", size: "NSE US$4.91T†", locale: "en-IN", access: "Special registration; limited retail access" },
+    { place: "South Korea", name: "KOSPI", symbol: "^KS11", size: "KRX US$4.95T†", locale: "ko-KR", access: "International broker availability varies" },
+    { place: "Taiwan", name: "TWSE Weighted", symbol: "^TWII", size: "TWSE US$4.56T†", locale: "zh-TW", access: "Local registration or arrangements may apply" },
+    { place: "Brazil", name: "Bovespa", symbol: "^BVSP", size: "B3 US$0.96T†", locale: "pt-BR", access: "Local representative and custody may apply" },
+    { place: "Switzerland", name: "SMI", symbol: "^SSMI", size: "SIX US$2.61T†", locale: "de-CH", access: "Widely available" },
+    { place: "Australia", name: "S&P/ASX 200", symbol: "^AXJO", size: "ASX US$2.19T†", locale: "en-AU", access: "Widely available" },
+    { place: "Dubai", name: "DFM General Index", symbol: "DFMGI.AE", size: "DFM US$0.24T†", locale: "en-AE", access: "Participating broker; local onboarding may apply" },
+    { place: "Saudi Arabia", name: "Tadawul All Share", symbol: "^TASI.SR", size: "Saudi Exchange US$2.63T†", locale: "en-SA", access: "Participating broker; local onboarding may apply" }
+  ];
+  const grid = document.getElementById("rs-global-markets-grid");
+  const status = document.getElementById("rs-global-markets-status");
+  const dateFootnote = document.getElementById("rs-global-markets-date");
+  if (!grid || !status || !dateFootnote) return;
+
+  const safe = value => String(value == null ? "" : value).replace(/[&<>"']/g, character => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;"
+  })[character]);
+  const number = value => Number(value).toLocaleString(undefined, { maximumFractionDigits: 2 });
+  const card = market => `<article class="rs-market-card" data-symbol="${safe(market.symbol)}">
+    <div class="rs-market-card__top"><div><p class="rs-market-card__place">${safe(market.place)}</p><h3>${safe(market.name)}</h3></div><span class="rs-market-card__state">Waiting</span></div>
+    <p class="rs-market-card__level">&mdash;</p><p class="rs-market-card__change is-flat">Latest change unavailable</p>
+    <div class="rs-market-card__details"><div><span class="rs-market-card__label">Exchange capitalization</span><span class="rs-market-card__detail">Exchange cap ${safe(market.size)}</span></div></div>
+    <p class="rs-market-card__access"><strong>Broker access:</strong> ${safe(market.access)}</p>
+    <div class="rs-market-card__links"><button type="button" class="rs-market-card__chart" data-rs-chart-symbol="${safe(market.symbol)}" data-rs-chart-name="${safe(market.name)}">Chart</button><a class="rs-market-card__news" href="https://news.google.com/search?q=${encodeURIComponent(`${market.name} ${market.place} stock market`)}" target="_blank" rel="noopener noreferrer">Related news <span aria-hidden="true">↗</span></a></div>
+  </article>`;
+  grid.innerHTML = markets.map(card).join("");
+
+  async function loadMarkets() {
+    const refreshButton = document.getElementById("rs-markets-refresh");
+    if (refreshButton) refreshButton.disabled = true;
+    status.textContent = "Refreshing market readings…";
+    const symbols = markets.map(market => market.symbol);
+    let latest = {};
+    try {
+      const response = await fetch("https://surface-203178530029.northamerica-northeast2.run.app/latest_prices", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ symbols })
+      });
+      latest = await response.json();
+    } catch (error) {
+      latest = {};
+    }
+      const latestPrices = latest && latest.prices && typeof latest.prices === "object" ? latest.prices : {};
+      const previousCloses = latest && latest.previous_closes && typeof latest.previous_closes === "object" ? latest.previous_closes : {};
+      const changes = latest && latest.changes && typeof latest.changes === "object" ? latest.changes : {};
+      const changePercents = latest && latest.change_percents && typeof latest.change_percents === "object" ? latest.change_percents : {};
+      let loaded = 0;
+
+      markets.forEach(market => {
+        const element = grid.querySelector(`[data-symbol="${CSS.escape(market.symbol)}"]`);
+        const current = Number(latestPrices[market.symbol]);
+        const previous = Number(previousCloses[market.symbol]);
+        if (!Number.isFinite(current)) {
+          element.querySelector(".rs-market-card__state").textContent = "Unavailable";
+          return;
+        }
+        loaded += 1;
+        const suppliedChange = Number(changes[market.symbol]);
+        const suppliedPercent = Number(changePercents[market.symbol]);
+        const change = Number.isFinite(suppliedChange) ? suppliedChange : (Number.isFinite(previous) ? current - previous : NaN);
+        const percent = Number.isFinite(suppliedPercent) ? suppliedPercent : (Number.isFinite(change) && previous ? change / previous * 100 : NaN);
+        const changeElement = element.querySelector(".rs-market-card__change");
+        element.querySelector(".rs-market-card__level").textContent = number(current);
+        if (Number.isFinite(change)) {
+          const sign = change > 0 ? "+" : "";
+          changeElement.textContent = `${sign}${number(change)}  (${sign}${percent.toFixed(2)}%)`;
+          changeElement.className = `rs-market-card__change ${change > 0 ? "is-up" : change < 0 ? "is-down" : "is-flat"}`;
+        } else {
+          changeElement.textContent = "Latest quote";
+          changeElement.className = "rs-market-card__change is-flat";
+        }
+        element.querySelector(".rs-market-card__state").textContent = "Latest*";
+      });
+
+      dateFootnote.textContent = latest.timestamp ? `Latest request ${new Date(latest.timestamp).toLocaleString()}; changes versus prior regular-market close` : "Date unavailable";
+      status.textContent = loaded ? `${loaded} of ${markets.length} markets updated` : "Market readings are temporarily unavailable";
+      if (refreshButton) refreshButton.disabled = false;
+  }
+
+  document.getElementById("rs-markets-refresh")?.addEventListener("click", function () {
+    window.dispatchEvent(new Event("risksnap-refresh-markets"));
+  });
+  window.addEventListener("risksnap-refresh-markets", loadMarkets);
+  loadMarkets();
+})();
+</script>
+
+<section class="rs-global-markets rs-market-indicators" aria-labelledby="rs-market-indicators-title">
+  <div class="rs-global-markets__heading">
+    <h2 id="rs-market-indicators-title">Market indicators</h2>
+    <p id="rs-market-indicators-status" class="rs-global-markets__status" aria-live="polite">Loading latest readings&hellip;</p>
+  </div>
+  <div id="rs-market-indicators-grid" class="rs-global-markets__grid"></div>
+  <p class="rs-global-markets__note">* “Latest” uses the newest RiskSnap quote. COMEX gold is the active Globex futures contract; its change is versus the prior futures close. Bitcoin trades 24/7. PPI and geopolitical risk are periodic releases.</p>
+</section>
+
+<div id="rsMarketChartPanel" class="rs-market-chart-panel" hidden>
+  <div class="rs-market-chart-header">
+    <div>
+      <div id="rsMarketChartTitle" class="rs-market-chart-title">Market Price History</div>
+      <div id="rsMarketChartStatus" class="rs-market-chart-status"></div>
+    </div>
+    <div class="rs-market-chart-actions">
+      <button type="button" class="rs-market-chart-range" data-range="3m">3M</button>
+      <button type="button" class="rs-market-chart-range" data-range="6m">6M</button>
+      <button type="button" class="rs-market-chart-range is-active" data-range="1y">1Y</button>
+      <button type="button" class="rs-market-chart-range" data-range="3y">3Y</button>
+      <button id="rsMarketChartClose" type="button">Close</button>
+    </div>
+  </div>
+  <div id="rsMarketPriceChart" class="rs-market-price-chart"></div>
+</div>
+
+<style>
+.rs-market-indicators { background: #fffaf0; border-color: #eadfc9; }
+.rs-market-indicators h2 { color: #74531c; }
+.rs-market-indicators .rs-market-card { border-color: #eadfc9; }
+.rs-indicator-unit { color: #617186; font-size: 10px; font-weight: 400; }
+.rs-market-chart-panel { margin: -6px 0 16px; border: 1px solid #d8e1ec; border-radius: 10px; padding: 10px; background: #fff; font-family: Arial, Helvetica, sans-serif; }
+.rs-market-chart-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; flex-wrap: wrap; margin-bottom: 6px; }
+.rs-market-chart-title { color: #172536; font-size: 17px; font-weight: 700; }
+.rs-market-chart-status { min-height: 1em; margin-top: 2px; color: #617186; font-size: 12px; }
+.rs-market-chart-actions { display: flex; gap: 5px; flex-wrap: wrap; }
+.rs-market-chart-actions button { padding: 4px 8px; border: 1px solid #aaa; border-radius: 4px; background: #fff; cursor: pointer; }
+.rs-market-chart-actions button:hover { background: #f0f4ff; border-color: #7188c7; }
+.rs-market-chart-actions button.is-active { background: #dce7ff; border-color: #3A5FCD; }
+.rs-market-price-chart { position: relative; width: 100%; min-height: 260px; overflow: hidden; background: #fff; }
+.rs-market-price-chart svg { display: block; width: 100%; height: auto; }
+.rs-chart-axis { stroke: #aaa; stroke-width: 1; }
+.rs-chart-grid { stroke: #e9e9e9; stroke-width: 1; }
+.rs-chart-line { fill: none; stroke: #3A5FCD; stroke-width: 2; }
+.rs-chart-label { fill: #555; font-size: 11px; }
+.rs-chart-hover-line { stroke: #777; stroke-width: 1; stroke-dasharray: 3 3; pointer-events: none; }
+.rs-chart-hover-point { fill: #fff; stroke: #3A5FCD; stroke-width: 2; pointer-events: none; }
+.rs-chart-overlay { fill: transparent; cursor: crosshair; }
+.rs-chart-tooltip { position: absolute; display: none; pointer-events: none; background: #fff; border: 1px solid #aaa; border-radius: 4px; padding: 5px 7px; font-size: 11px; box-shadow: 0 1px 4px rgba(0,0,0,.12); z-index: 5; white-space: nowrap; }
+@media (max-width: 600px) { .rs-market-chart-actions { width: 100%; } }
+</style>
+
+<script>
+(function () {
+  const indicators = [
+    { name: "U.S. 10-Year Yield", symbol: "^TNX", type: "market", suffix: "%", news: "U.S. 10-year Treasury yield bond market" },
+    { name: "WTI Crude", symbol: "CL=F", type: "market", prefix: "$", suffix: "/bbl", news: "WTI crude oil supply OPEC market" },
+    { name: "Gold — COMEX", symbol: "GC=F", type: "market", prefix: "$", suffix: "/oz", state: "Globex*", news: "COMEX gold price market" },
+    { name: "Bitcoin", symbol: "BTC-USD", type: "market", prefix: "$", suffix: "", news: "Bitcoin cryptocurrency market" },
+    { name: "U.S. Dollar Index", symbol: "DX-Y.NYB", type: "market", news: "U.S. dollar currency market" },
+    { name: "VIX", symbol: "^VIX", type: "market", news: "VIX volatility index stock market" },
+    { name: "10Y Breakeven", symbol: "T10YIE", type: "breakeven", suffix: "%", news: "U.S. 10-year breakeven inflation" },
+    { name: "U.S. PPI", symbol: "PPI", type: "periodic", value: "4.7%", detail: "YoY • Jul 2026", news: "U.S. producer price inflation PPI" },
+    { name: "Global AI-GPR", symbol: "GPR", type: "periodic", value: "Daily index", detail: "Through Jul 31, 2026", news: "global geopolitical risk index" }
+  ];
+  const grid = document.getElementById("rs-market-indicators-grid");
+  const status = document.getElementById("rs-market-indicators-status");
+  if (!grid || !status) return;
+  const safe = value => String(value == null ? "" : value).replace(/[&<>"']/g, character => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;"
+  })[character]);
+  const format = (value, digits=2) => Number(value).toLocaleString(undefined, { maximumFractionDigits: digits, minimumFractionDigits: digits });
+  grid.innerHTML = indicators.map(item => `<article class="rs-market-card" data-indicator="${safe(item.symbol)}">
+    <div class="rs-market-card__top"><h3>${safe(item.name)}</h3><span class="rs-market-card__state">${item.type === "periodic" ? "Periodic" : (item.state || "Waiting")}</span></div>
+    <p class="rs-market-card__level">${item.value ? safe(item.value) : "&mdash;"}</p>
+    <p class="rs-market-card__change is-flat">${item.detail ? safe(item.detail) : "Latest change unavailable"}</p>
+    <div class="rs-market-card__links">${item.type !== "periodic" ? `<button type="button" class="rs-market-card__chart" data-rs-chart-symbol="${safe(item.symbol)}" data-rs-chart-name="${safe(item.name)}">Chart</button>` : ""}<a class="rs-market-card__news" href="https://news.google.com/search?q=${encodeURIComponent(item.news)}" target="_blank" rel="noopener noreferrer">Related news <span aria-hidden="true">↗</span></a></div>
+  </article>`).join("");
+
+  function updateMarket(item, latestPrices, previousCloses, changes, changePercents, timestamp) {
+    const element = grid.querySelector(`[data-indicator="${CSS.escape(item.symbol)}"]`);
+    const rawCurrent = Number(latestPrices && latestPrices[item.symbol]);
+    const rawPrevious = Number(previousCloses && previousCloses[item.symbol]);
+    if (!Number.isFinite(rawCurrent)) { element.querySelector(".rs-market-card__state").textContent = "Unavailable"; return false; }
+    const scale = item.scale || 1;
+    const current = rawCurrent * scale;
+    const previous = rawPrevious * scale;
+    const suppliedChange = Number(changes && changes[item.symbol]);
+    const suppliedPercent = Number(changePercents && changePercents[item.symbol]);
+    const change = Number.isFinite(suppliedChange) ? suppliedChange * scale : (Number.isFinite(previous) ? current - previous : NaN);
+    const percent = Number.isFinite(suppliedPercent) ? suppliedPercent : (previous ? change / previous * 100 : NaN);
+    const sign = change > 0 ? "+" : "";
+    element.querySelector(".rs-market-card__level").innerHTML = `${safe(item.prefix || "")}${format(current)} <span class="rs-indicator-unit">${safe(item.suffix || "")}</span>`;
+    const changeElement = element.querySelector(".rs-market-card__change");
+    if (Number.isFinite(change)) {
+      changeElement.textContent = `Δ ${sign}${format(change)} (${sign}${percent.toFixed(2)}%)`;
+      changeElement.className = `rs-market-card__change ${change > 0 ? "is-up" : change < 0 ? "is-down" : "is-flat"}`;
+    } else {
+      changeElement.textContent = "Latest quote";
+      changeElement.className = "rs-market-card__change is-flat";
+    }
+    element.querySelector(".rs-market-card__state").textContent = item.symbol === "BTC-USD" ? "24/7" : (item.symbol === "GC=F" ? "Globex*" : "Latest*");
+    element.title = timestamp ? `Latest request ${new Date(timestamp).toLocaleString()}` : "Latest quote";
+    return true;
+  }
+
+  async function loadIndicators() {
+    let loaded = 2;
+    const marketItems = indicators.filter(item => item.type === "market");
+    try {
+      const [latestResponse, breakevenResponse] = await Promise.all([
+        fetch("https://surface-203178530029.northamerica-northeast2.run.app/latest_prices", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ symbols: marketItems.map(item => item.symbol) })
+        }),
+        fetch("https://surface-203178530029.northamerica-northeast2.run.app/breakeven_inflation?period=1y")
+      ]);
+      const latestPayload = await latestResponse.json();
+      marketItems.forEach(item => { if (updateMarket(item, latestPayload.prices || {}, latestPayload.previous_closes || {}, latestPayload.changes || {}, latestPayload.change_percents || {}, latestPayload.timestamp)) loaded += 1; });
+
+      if (breakevenResponse.ok) {
+        const breakeven = await breakevenResponse.json();
+        const rows = (breakeven.rows || []).filter(row => Number.isFinite(Number(row.Breakeven10Y)));
+        const latest = rows[rows.length - 1];
+        const prior = rows[rows.length - 2];
+        if (latest) {
+          const element = grid.querySelector('[data-indicator="T10YIE"]');
+          const value = Number(latest.Breakeven10Y), change = prior ? value - Number(prior.Breakeven10Y) : NaN;
+          element.querySelector(".rs-market-card__level").innerHTML = `${format(value)} <span class="rs-indicator-unit">%</span>`;
+          element.querySelector(".rs-market-card__change").textContent = Number.isFinite(change) ? `${change > 0 ? "+" : ""}${change.toFixed(2)} pts` : "Latest reading";
+          element.querySelector(".rs-market-card__state").textContent = "EOD*";
+          element.title = `As of ${latest.Date || "latest date"}`;
+          loaded += 1;
+        }
+      }
+      status.textContent = `${loaded} of ${indicators.length} indicators available`;
+    } catch (error) {
+      status.textContent = "Some indicator readings are temporarily unavailable";
+    }
+  }
+  window.addEventListener("risksnap-refresh-markets", loadIndicators);
+  loadIndicators();
+})();
+</script>
+
+<script>
+(function () {
+  const endpoint = "https://surface-203178530029.northamerica-northeast2.run.app/asset_history";
+  const panel = document.getElementById("rsMarketChartPanel");
+  const title = document.getElementById("rsMarketChartTitle");
+  const status = document.getElementById("rsMarketChartStatus");
+  const container = document.getElementById("rsMarketPriceChart");
+  if (!panel || !title || !status || !container) return;
+
+  let selectedSymbol = "";
+  let selectedName = "";
+  let selectedRange = "1y";
+  const cache = new Map();
+  const safe = value => String(value == null ? "" : value).replace(/[&<>"']/g, character => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;"
+  })[character]);
+  const svgNode = (name, attrs = {}, text = "") => {
+    const node = document.createElementNS("http://www.w3.org/2000/svg", name);
+    Object.entries(attrs).forEach(([key, value]) => node.setAttribute(key, value));
+    if (text !== "") node.textContent = text;
+    return node;
+  };
+  const dateLabel = value => {
+    const date = new Date(`${value}T00:00:00`);
+    return Number.isNaN(date.getTime()) ? String(value || "") : date.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "2-digit" });
+  };
+
+  function draw(rows, label) {
+    container.innerHTML = "";
+    const clean = (rows || []).map(row => ({ date: String(row.date || row.Date || ""), price: Number(row.price ?? row.value ?? row.Breakeven10Y) }))
+      .filter(row => row.date && Number.isFinite(row.price))
+      .sort((a, b) => a.date.localeCompare(b.date));
+    if (clean.length < 2) return false;
+    const width = 920, height = 280, margin = { left: 72, right: 22, top: 18, bottom: 42 };
+    const iw = width - margin.left - margin.right, ih = height - margin.top - margin.bottom;
+    let lo = Math.min(...clean.map(row => row.price)), hi = Math.max(...clean.map(row => row.price));
+    if (lo === hi) { lo -= Math.abs(lo * .01) || 1; hi += Math.abs(hi * .01) || 1; }
+    const pad = (hi - lo) * .06 || 1; lo -= pad; hi += pad;
+    const x = index => margin.left + (index / (clean.length - 1)) * iw;
+    const y = value => margin.top + (hi - value) / (hi - lo) * ih;
+    const svg = svgNode("svg", { viewBox: `0 0 ${width} ${height}`, role: "img", "aria-label": `${label} history` });
+    for (let i = 0; i <= 4; i++) {
+      const value = lo + (hi - lo) * i / 4, yy = y(value);
+      svg.appendChild(svgNode("line", { x1: margin.left, y1: yy, x2: width - margin.right, y2: yy, class: "rs-chart-grid" }));
+      svg.appendChild(svgNode("text", { x: margin.left - 8, y: yy + 4, class: "rs-chart-label", "text-anchor": "end" }, value.toLocaleString(undefined, { maximumFractionDigits: 2 })));
+    }
+    svg.appendChild(svgNode("line", { x1: margin.left, y1: margin.top, x2: margin.left, y2: height - margin.bottom, class: "rs-chart-axis" }));
+    svg.appendChild(svgNode("line", { x1: margin.left, y1: height - margin.bottom, x2: width - margin.right, y2: height - margin.bottom, class: "rs-chart-axis" }));
+    [0, Math.floor((clean.length - 1) / 2), clean.length - 1].forEach(index => {
+      svg.appendChild(svgNode("text", { x: x(index), y: height - 15, class: "rs-chart-label", "text-anchor": index === 0 ? "start" : (index === clean.length - 1 ? "end" : "middle") }, dateLabel(clean[index].date)));
+    });
+    svg.appendChild(svgNode("path", { d: clean.map((row, index) => `${index ? "L" : "M"}${x(index).toFixed(2)},${y(row.price).toFixed(2)}`).join(" "), class: "rs-chart-line" }));
+    const hoverLine = svgNode("line", { x1: 0, y1: margin.top, x2: 0, y2: height - margin.bottom, class: "rs-chart-hover-line", visibility: "hidden" });
+    const hoverPoint = svgNode("circle", { cx: 0, cy: 0, r: 4, class: "rs-chart-hover-point", visibility: "hidden" });
+    const overlay = svgNode("rect", { x: margin.left, y: margin.top, width: iw, height: ih, class: "rs-chart-overlay" });
+    svg.appendChild(hoverLine); svg.appendChild(hoverPoint); svg.appendChild(overlay);
+    const tip = document.createElement("div"); tip.className = "rs-chart-tooltip";
+    overlay.addEventListener("mousemove", event => {
+      const rect = svg.getBoundingClientRect(), scaleX = width / rect.width;
+      const px = (event.clientX - rect.left) * scaleX;
+      const index = Math.max(0, Math.min(clean.length - 1, Math.round(((px - margin.left) / iw) * (clean.length - 1))));
+      const row = clean[index], xx = x(index), yy = y(row.price);
+      hoverLine.setAttribute("x1", xx); hoverLine.setAttribute("x2", xx); hoverLine.setAttribute("visibility", "visible");
+      hoverPoint.setAttribute("cx", xx); hoverPoint.setAttribute("cy", yy); hoverPoint.setAttribute("visibility", "visible");
+      tip.innerHTML = `<strong>${safe(label)}</strong><br>${safe(dateLabel(row.date))}<br>${safe(row.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }))}`;
+      tip.style.display = "block";
+      const chartRect = container.getBoundingClientRect();
+      const cx = (rect.left - chartRect.left) + (xx / width) * rect.width;
+      const cy = (rect.top - chartRect.top) + (yy / height) * rect.height;
+      tip.style.left = `${Math.max(5, cx + 10 + tip.offsetWidth <= container.clientWidth - 5 ? cx + 10 : cx - tip.offsetWidth - 10)}px`;
+      tip.style.top = `${Math.max(3, Math.min(container.clientHeight - tip.offsetHeight - 3, cy - tip.offsetHeight / 2))}px`;
+    });
+    overlay.addEventListener("mouseleave", () => {
+      hoverLine.setAttribute("visibility", "hidden"); hoverPoint.setAttribute("visibility", "hidden"); tip.style.display = "none";
+    });
+    container.appendChild(svg); container.appendChild(tip);
+    return true;
+  }
+
+  async function loadChart() {
+    title.textContent = `${selectedName || selectedSymbol} History`;
+    status.textContent = "Loading…";
+    container.innerHTML = "";
+    const key = `${selectedSymbol}|${selectedRange}`;
+    try {
+      let rows = cache.get(key);
+      if (!rows) {
+        const isBreakeven = selectedSymbol === "T10YIE";
+        const response = isBreakeven
+          ? await fetch(`https://surface-203178530029.northamerica-northeast2.run.app/breakeven_inflation?period=${selectedRange === "3y" ? "3y" : "1y"}`)
+          : await fetch(endpoint, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ symbol: selectedSymbol, range: selectedRange }) });
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(payload.error || `HTTP ${response.status}`);
+        rows = Array.isArray(payload) ? payload : (payload.rows || payload.history || payload.data || []);
+        if (isBreakeven && selectedRange === "3m") rows = rows.slice(-66);
+        if (isBreakeven && selectedRange === "6m") rows = rows.slice(-130);
+        cache.set(key, rows);
+      }
+      const ok = draw(rows, selectedName || selectedSymbol);
+      const clean = (rows || []).filter(row => row && (row.date || row.Date) && Number.isFinite(Number(row.price ?? row.value ?? row.Breakeven10Y)));
+      status.textContent = ok && clean.length ? `${dateLabel(clean[0].date || clean[0].Date)} to ${dateLabel(clean[clean.length - 1].date || clean[clean.length - 1].Date)} · ${clean.length} EOD observations` : "No usable history returned.";
+    } catch (error) {
+      status.textContent = `Chart unavailable: ${error.message}`;
+    }
+  }
+
+  document.addEventListener("click", event => {
+    const button = event.target.closest("[data-rs-chart-symbol]");
+    if (!button) return;
+    selectedSymbol = String(button.dataset.rsChartSymbol || "").trim().toUpperCase();
+    selectedName = String(button.dataset.rsChartName || selectedSymbol).trim();
+    if (!selectedSymbol) return;
+    panel.hidden = false;
+    panel.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    loadChart();
+  });
+  document.getElementById("rsMarketChartClose").addEventListener("click", () => { panel.hidden = true; });
+  document.querySelectorAll(".rs-market-chart-range").forEach(button => {
+    button.addEventListener("click", async () => {
+      selectedRange = button.dataset.range || "1y";
+      document.querySelectorAll(".rs-market-chart-range").forEach(item => item.classList.toggle("is-active", item === button));
+      if (selectedSymbol) await loadChart();
+    });
+  });
+})();
+</script>
 
 <p>
 <div class="row">
-<div class="column left" style="background-color:#E5F1FF;">
+<div class="column left concentration-panel" style="background-color:#E5F1FF;">
+<h2>Concentration Risk</h2>
+<p><img class="pic concentration-pic" src="./images/asset-managers-pie-chart.png" alt="Concentration" align="left">
+<img class="picbig concentration-picbig" src="./images/asset-managers-pie-chart.png" alt="Concentration"><span class="in-line-header">Concentration</span>There are several layers of concentration . Crypto attracts headlines, principally MSTR and Michael Saylor. The MAG  Seven and other AI  companies are  highly visible. Less discussed is the concentration among the asset managers investing  on behalf of funds and other clients.
+Unlike exchange-traded securities, these underlying positions are not continuously visible. ETF holdings and mutual-fund net asset values are generally published regularly, while many others  are disclosed only periodically. The three large non-bank managers are BlackRock, Vanguard and Fidelity overseeing US$33.5 trillion in asset. Also in the chart are  bank affiliated managers: State Street, J.P. Morgan and Goldman Sachs who collectively oversee US$15 trillion . These figures are extraordinary. Although the assets largely belong to clients—and bank depositors are not directly exposed—the scale raises an important question: have some asset managers become systemically important, or even too big to fail?
+</p><p>During the 2008 financial crisis, Bank of America and other major financial institutions were considered too important to permit a collapse. The Bush administration responded with the US$700 billion Troubled Asset Relief Program (TARP). Asset managers are structurally different from banks, but their enormous size of holdings could still amplify market stress if there was an exit at the same time.</p>
+<p>The Treasury has now enlarged its long-term bond-buyback operations.. Scott Bessent, Treasury Secretary indicated a buy back possibly up to $1 Trillion of long term bonds?  Would the purchases be sufficient during a severe, concentrated sell-off? 31-Aug-2026</p>
+
     <h2>Regulators Review Nasdaq</h2>
     <p><b>The Bank for International Settlements(BIS), Quarterly Review December 16, 2018<sup>*</sup></b>, published a scathing rebuke of Nasdaq comparing the Aas default [see RiskSnap’s analysis to the right] to the Lehman default.  “Lehman had derivative portfolios at a number of CCPs across the world, and with one exception, these were settled within weeks of the default, September 15, 2008, without exhausting the collateral Lehman had provided”.  In contrast, the auctioning of Aas’s position “resulted in a loss of E114 million in excess of the collateral Aas had provided”.<p>
 	<h4>JPMorgan's Excessive Collateral</h4>
@@ -228,6 +982,15 @@ The same 99.2% confidence intervals as Nasdaq’s was used. According to regulat
     <p>
 
 <h3 class="three-col-header">Thoughts on Risk for the day</h3>
+<p>Aug 26, 2026</p>
+<p><b>Treasury's Higher-Yield Trap</b>
+<p><img class="pic" src="./marketriskfactors/images/Yield_Trap.png" alt="Yield Trap" >
+	<img class="picbig" src="./marketriskfactors/images/Yield_Trap.png" alt="Yield Trap" align="right" >Yield Trap
+<p>Higher Treasury yields should attract buyers, but the amount of debt that must be financed keeps growing. Large deficits require more issuance; greater supply and fiscal uncertainty make investors demand higher yields; and those higher yields increase the government’s interest expense, adding to future deficits and borrowing needs.
+
+The striking feature is that long-term yields have risen sharply while 10-year inflation expectations have remained near 2–2½%. This suggests that inflation expectations alone are not driving the move: higher real yields and term premium—the compensation investors require for holding long-duration government debt—are increasingly important.
+
+Treasury buybacks may improve liquidity or alter the maturity mix, but they do not eliminate the financing requirement. Higher yields are increasingly the price Treasury must pay to attract sufficient capital. The  <a href="https://www.risksnap.com/rates_and_inflation/">Rates and Inflation</a> page provides yields for various currencies plus relevant Federal Reserve Statistic </p>
 <p>Jul 16, 2026</p>
 <p><b>Impact of Correlations</b>
 <p>The  <a href="https://www.risksnap.com/correlations/">Correlations</a> page has a history slider that visualizes how relationships between various assets change throughout history.  For example,
@@ -3672,4 +4435,5 @@ span.onclick = function() {
 
 
 </div> <!-- text-section -->
+
 
