@@ -733,6 +733,9 @@ let portfolioPriceLastAttempt = null;
 let portfolioPriceRefreshSignature = "";
 let portfolioPriceRefreshInProgress = false;
 let activeYahooPreset = null;
+// True only while a fresh, unsaved selection is awaiting its one-time initial
+// allocation. Once units are displayed they remain fixed until the user edits,
+// loads, or explicitly saves a portfolio.
 let portfolioAutoEqualWeight = true;
 let usdOneYearRates = null;
 let usdOneYearRatesPromise = null;
@@ -783,7 +786,6 @@ document.getElementById("portfolioRefreshPrices").addEventListener("click", refr
 
 document.getElementById("portfolioBookValue").addEventListener("input", () => {
   saveLastPortfolioBookCost();
-  if (portfolioAutoEqualWeight) setEqualMarketValueShares();
   renderPortfolioTable();
 });
 document.getElementById("portfolioSave").addEventListener("click", savePortfolio);
@@ -1752,7 +1754,11 @@ function initializePortfolio(payload, selectedEquities, selectedCommodities = []
     if (!Number.isFinite(Number(portfolioShares[asset]))) portfolioShares[asset] = 0;
   });
 
-  if (portfolioAutoEqualWeight) setEqualMarketValueShares();
+  if (portfolioAutoEqualWeight) {
+    setEqualMarketValueShares();
+    portfolioAutoEqualWeight = false;
+    setPortfolioStorageStatus("Initial units set. Price and risk refreshes will not change them; click Save to retain them.");
+  }
   renderPortfolioTable();
   const signature = portfolioSecurities.join("|");
   if (signature && signature !== portfolioPriceRefreshSignature) {
@@ -2028,7 +2034,7 @@ async function refreshPortfolioPrices() {
     portfolioFundamentalDates = { ...portfolioFundamentalDates, ...downloadedFundamentalDates };
     portfolioPrices = { ...portfolioCurrentPrices };
     portfolioPriceTimestamp = latestPriceTimestampFromResponse(data);
-    if (portfolioAutoEqualWeight) setEqualMarketValueShares();
+    // A price refresh changes prices and market values only. Never alter units.
     renderPortfolioTable();
     updatePortfolioDataLabels();
     if (status) status.textContent = failed.length
@@ -3686,6 +3692,7 @@ function savePortfolio() {
   if (!name) {
     setPortfolioStorageStatus("Enter a portfolio name first.");
     if (nameInput) nameInput.focus();
+    return;
   }
 
   const holdings = {};

@@ -7,6 +7,7 @@ RiskSnap Correlations
 Version: index(150)
 Changes:
 - Added Beta vs T10YIE beside Beta vs SPY; SPY remains a normal portfolio holding when selected, while an unselected SPY is loaded only as an internal beta benchmark; T10YIE is silently included as an internal benchmark when not selected and uses its daily change as the inflation factor
+- Corrected TTM dividend yield for all non-USD equities by keeping the dividend/price ratio in the security's native currency; FX conversion is not applied to the yield ratio
 - Corrected Yahoo cent-quoted futures EOD prices (including ZC=F corn) to dollars per unit and applied contract notional sizing to EOD portfolio values
 - Pairwise rolling history now keeps the full Matrix History range and follows Matrix History playback/slider movement without truncating at the originally clicked date
 - Latest Risk Data now remains tied to the authoritative /correlations_data EOD even when Matrix History ends on an older date
@@ -56,7 +57,7 @@ Changes:
 
   <div id="correlationsSection" class="analytics-section-heading">Correlation Lens</div>
   <p><strong>Multi-Horizon Correlation Map.</strong> Correlations are calculated over selectable 25, 90, or 250 business-day horizons for a variety of assets. Historical volatilities are shown on the diagonal. Click play below to examine the relationship through time. For pairs, click on the bubble first.</p>
-<p class="input-note"><strong>Calendar note:</strong> RiskSnap currently uses a Monday-Friday analytical calendar. Some exchanges, including Saudi Arabia, trade Sunday-Thursday.</p>
+<p class="input-note"><strong>Calendar note:</strong> RiskSnap currently uses a Monday-Friday analytical calendar. Some exchanges, including Saudi Arabia, trade Sunday-Thursday. </p>
 
   <div class="corr-input-panel">
     <div class="corr-controls main-controls">
@@ -255,7 +256,7 @@ Changes:
   <div id="matrixHistoryPanel" class="matrix-history-panel">
     <div class="matrix-history-header">
       <div>
-        <div id="matrixHistoryTitle" class="matrix-history-title">Matrix History</div>
+        <div id="matrixHistoryTitle" class="matrix-history-title">Backtesting &amp; Matrix History</div>
         <div id="matrixHistoryDate" class="matrix-history-date">Latest matrix</div>
       </div>
       <div class="matrix-history-actions">
@@ -275,7 +276,7 @@ Changes:
     </div>
     <div id="matrixPortfolioSummary" class="matrix-portfolio-summary"></div>
     <div id="matrixHistoryStatus" class="matrix-history-status">Loading matrix history...</div>
-    <div class="matrix-history-note">250 consecutive daily matrices are shown. Each matrix uses the selected correlation period.</div>
+    <div class="matrix-history-note">Review how the selected portfolio, risk measures, and correlation matrix would have appeared at each historical EOD date. Portfolio quantities remain fixed; this is a historical replay, not a transaction-cost-adjusted trading-strategy backtest. 250 consecutive daily matrices are shown, each using the selected correlation period.</div>
     <div class="matrix-history-slider-row">
       <div id="matrixHistorySliderDate" class="matrix-history-slider-date">Latest</div>
       <input id="matrixHistorySlider" type="range" min="0" max="0" value="0" aria-label="Correlation matrix history slider">
@@ -750,7 +751,7 @@ document.getElementById("scaleReadout").textContent = BUBBLE_SCALE;
 function updateMatrixHistoryTitle() {
   const period = document.getElementById("corrPeriod").value;
   const title = document.getElementById("matrixHistoryTitle");
-  if (title) title.textContent = "Matrix History";
+  if (title) title.textContent = "Backtesting & Correlation Lens";
 }
 
 updateMatrixHistoryTitle();
@@ -2104,7 +2105,7 @@ function splitAdjustmentBetween(splits, eventDate, asOfDate) {
   }, 1);
 }
 
-function historicalDividendDetail(asset, asOfDate, eodPrice) {
+function historicalDividendDetail(asset, asOfDate, eodPrice, dividendYieldPrice = eodPrice) {
   const series = portfolioDividendHistory[asset] || {};
   const startDate = isoDateMinusDays(asOfDate, 365);
   const events = (series.dividends || []).filter(row => row.date > startDate && row.date <= asOfDate).map(row => {
@@ -2114,7 +2115,12 @@ function historicalDividendDetail(asset, asOfDate, eodPrice) {
     return { date: row.date, rawAmount, splitFactor, adjustedAmount };
   }).filter(row => Number.isFinite(row.adjustedAmount));
   const ttmDividend = events.reduce((sum, row) => sum + row.adjustedAmount, 0);
-  const yieldValue = Number.isFinite(Number(eodPrice)) && Number(eodPrice) > 0 ? ttmDividend / Number(eodPrice) : null;
+
+  // Dividend yield is a dimensionless ratio. Yahoo dividend cash amounts are in
+  // the security's native currency, so divide by the native/local EOD price.
+  // Do not mix a local-currency dividend with an FX-converted USD EOD price.
+  const yieldPrice = Number(dividendYieldPrice);
+  const yieldValue = Number.isFinite(yieldPrice) && yieldPrice > 0 ? ttmDividend / yieldPrice : null;
   return { asset, asOfDate, startDate, eodPrice: Number(eodPrice), events, ttmDividend, yield: yieldValue };
 }
 
@@ -2122,9 +2128,11 @@ function dividendDetailForAsset(asset) {
   const asOfDate = selectedPortfolioEodDate();
   const riskAssets = portfolioRiskPayload?.assets || [];
   const index = riskAssets.indexOf(asset);
-  const price = index >= 0 ? Number(portfolioRiskPayload?.prices?.[index]) : NaN;
+  const usdPrice = index >= 0 ? Number(portfolioRiskPayload?.prices?.[index]) : NaN;
+  const localPrice = index >= 0 ? Number(portfolioRiskPayload?.local_prices?.[index]) : NaN;
+  const dividendYieldPrice = Number.isFinite(localPrice) && localPrice > 0 ? localPrice : usdPrice;
   if (!asOfDate || !portfolioDividendHistory[asset]) return null;
-  return historicalDividendDetail(asset, asOfDate, price);
+  return historicalDividendDetail(asset, asOfDate, usdPrice, dividendYieldPrice);
 }
 
 function effectiveDividendYield(asset) {
