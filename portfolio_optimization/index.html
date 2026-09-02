@@ -3,6 +3,8 @@ layout: portfolio_optimization-template
 title: Portfolio Optimization
 ---
 <div class="text-section optimization-page">
+  <section class="optimization-section" aria-labelledby="portfolioSelectionHeading">
+  <h2 id="portfolioSelectionHeading" class="optimization-section-title">A. Portfolio Selection</h2>
   <p class="optimization-intro">
     Simulate long-only portfolios using RiskSnap's existing correlation, volatility,
     EWMA return, dividend-yield and 1-year USD risk-free data. Each simulation is numbered
@@ -167,7 +169,14 @@ title: Portfolio Optimization
       <div id="inspectFormula">—</div>
     </div>
   </div>
+  </section>
 
+  <section class="optimization-section risk-section" aria-labelledby="riskCalculationHeading">
+  <h2 id="riskCalculationHeading" class="optimization-section-title">B. Risk Calculation — VaR</h2>
+  <div class="var-run-controls">
+    <p class="optimization-section-note">Calculate Historical VaR and Expected Shortfall for the selected preset, saved portfolio, or inspected simulation.</p>
+    <button id="calculateVar" type="button">Calculate VaR</button>
+  </div>
   <div id="optVarPanel" class="opt-panel" hidden>
     <div class="var-header">
       <div>
@@ -180,12 +189,37 @@ title: Portfolio Optimization
     <div class="opt-chart-note">The solid red line is the 99% Historical VaR threshold. The dashed dark-red line is Expected Shortfall, the average of the worst 1% of observations. Red points are VaR breaches.</div>
     <div id="optVarChart" class="opt-var-chart"></div>
   </div>
+  </section>
 </div>
 
 <style>
 * { box-sizing:border-box; }
 h1 { color:white; text-align:center; background-color:#3A5FCD; }
 .optimization-page { background:#fff; color:#222; }
+.optimization-section {
+  border:1px solid #ccd5e5;
+  border-radius:8px;
+  padding:16px;
+  margin:0 0 20px;
+  background:#fff;
+}
+.optimization-section-title {
+  margin:0 0 14px;
+  padding:0 0 8px;
+  border-bottom:3px solid #3A5FCD;
+  color:#243f8f;
+  font-size:22px;
+  line-height:1.25;
+}
+.optimization-section-note { margin:0; color:#555; }
+.risk-section { background:#fbfcff; }
+.var-run-controls { display:flex; align-items:center; justify-content:space-between; gap:14px; flex-wrap:wrap; }
+.var-run-controls button {
+  cursor:pointer; border:1px solid #284ca8; border-radius:5px; background:#3A5FCD;
+  color:#fff; padding:8px 15px; font:inherit; font-weight:700;
+}
+.var-run-controls button:hover { background:#2f50b2; }
+.var-run-controls button:disabled { opacity:.55; cursor:default; }
 .optimization-intro { margin:0 0 14px; }
 .optimization-controls {
   display:grid;
@@ -1074,6 +1108,9 @@ function inspectSimulation(id) {
     return;
   }
   optState.inspected = sim;
+  optState.varResult = null;
+  document.getElementById("optVarPanel").hidden = true;
+  document.getElementById("downloadVarCsv").disabled = true;
   document.getElementById("simulationInspector").hidden = false;
   if (sim.id !== "loaded") document.getElementById("inspectSimulationNumber").value = sim.id;
   document.getElementById("downloadSimulationCsv").disabled = false;
@@ -1153,8 +1190,6 @@ function inspectSimulation(id) {
 
   document.getElementById("inspectFormula").textContent =
     `(${(sim.priceReturn*100).toFixed(6)}% + ${(sim.dividendYield*100).toFixed(6)}% − ${(optState.riskFree*100).toFixed(6)}%) ÷ ${(sim.volatility*100).toFixed(6)}% = ${sim.sharpe.toFixed(8)}`;
-
-  renderHistoricalVar(sim);
 
   document.getElementById("simulationInspector").scrollIntoView({behavior:"smooth",block:"start"});
 }
@@ -1298,8 +1333,8 @@ function downloadInspectedCsv() {
   URL.revokeObjectURL(url);
 }
 
-async function runOptimization() {
-  const button = document.getElementById("optRun");
+async function runOptimization(varOnly=false) {
+  const button = document.getElementById(varOnly ? "calculateVar" : "optRun");
   const requested = parseSymbols(document.getElementById("optSymbols").value);
   const lookback = Number(document.getElementById("optLookback").value) || 90;
   const count = Math.max(100, Math.min(50000, Number(document.getElementById("optSimulationCount").value) || 5000));
@@ -1312,7 +1347,7 @@ async function runOptimization() {
     setStatus("Enter at least one security.");
     return;
   }
-  if (maxWeightPct/100 < 1/requested.length - 1e-12) {
+  if (!varOnly && maxWeightPct/100 < 1/requested.length - 1e-12) {
     setStatus(`Maximum weight is too low. With ${requested.length} securities it must be at least ${(100/requested.length).toFixed(1)}%.`);
     return;
   }
@@ -1423,6 +1458,22 @@ async function runOptimization() {
     optState.riskFreeAsOf = rfResult.date || normalized.riskFreeAsOf;
     optState.loadedPortfolio = buildLoadedPortfolio(loadedSource);
 
+    if (varOnly) {
+      if (!optState.loadedPortfolio) {
+        optState.loadedPortfolio = portfolioMetrics(Array(validAssets.length).fill(1/validAssets.length), "loaded");
+        optState.loadedPortfolio.label = "Current symbols (equal weight)";
+        optState.loadedPortfolio.sourceType = "symbols";
+        optState.loadedPortfolio.investmentAmount = optState.investmentAmount;
+      }
+      optState.inspected = optState.loadedPortfolio;
+      renderHistoricalVar(optState.loadedPortfolio);
+      document.getElementById("optAsOf").textContent =
+        ` Risk data: ${optState.asOf || "latest"}; RF: ${optState.riskFreeAsOf || "latest"}.`;
+      setStatus(`VaR calculated for ${optState.loadedPortfolio.label}.`);
+      document.getElementById("optVarPanel").scrollIntoView({behavior:"smooth",block:"start"});
+      return;
+    }
+
     setStatus(`Running ${count.toLocaleString()} simulations...`);
     const result = runSimulations(count, seed, maxWeightPct);
     optState.simulations = result.simulations;
@@ -1452,10 +1503,27 @@ async function runOptimization() {
     );
   } catch (err) {
     console.error(err);
-    setStatus(`Optimization failed: ${err.message || err}`);
+    setStatus(`${varOnly ? "VaR calculation" : "Optimization"} failed: ${err.message || err}`);
   } finally {
     button.disabled = false;
   }
+}
+
+function calculateVarForCurrentSelection() {
+  const requested = parseSymbols(document.getElementById("optSymbols").value);
+  const sameAssets = requested.length === optState.assets.length &&
+    requested.every((asset,index) => asset === optState.assets[index]);
+
+  if (optState.inspected && sameAssets) {
+    renderHistoricalVar(optState.inspected);
+    const label = optState.inspected.id === "loaded"
+      ? optState.inspected.label
+      : `simulation #${optState.inspected.id}`;
+    setStatus(`VaR calculated for ${label}.`);
+    document.getElementById("optVarPanel").scrollIntoView({behavior:"smooth",block:"start"});
+    return;
+  }
+  runOptimization(true);
 }
 
 document.getElementById("optPreset").addEventListener("change", event => {
@@ -1463,6 +1531,9 @@ document.getElementById("optPreset").addEventListener("change", event => {
   if (!key || !OPT_PRESETS[key]) return;
   document.getElementById("optPortfolio").value = "";
   document.getElementById("optSymbols").value = OPT_PRESETS[key];
+  optState.inspected = null;
+  optState.loadedPortfolio = null;
+  document.getElementById("optVarPanel").hidden = true;
 });
 
 document.getElementById("optPortfolio").addEventListener("change", event => {
@@ -1470,6 +1541,15 @@ document.getElementById("optPortfolio").addEventListener("change", event => {
   if (!name) return;
   document.getElementById("optPreset").value = "";
   document.getElementById("optSymbols").value = symbolsFromPortfolio(name).join(", ");
+  optState.inspected = null;
+  optState.loadedPortfolio = null;
+  document.getElementById("optVarPanel").hidden = true;
+});
+
+document.getElementById("optSymbols").addEventListener("input", () => {
+  optState.inspected = null;
+  optState.loadedPortfolio = null;
+  document.getElementById("optVarPanel").hidden = true;
 });
 
 document.getElementById("optInvestmentAmount").addEventListener("change", event => {
@@ -1482,7 +1562,8 @@ document.getElementById("optInvestmentAmount").addEventListener("change", event 
   if (optState.inspected) inspectSimulation(optState.inspected.id);
 });
 
-document.getElementById("optRun").addEventListener("click", runOptimization);
+document.getElementById("optRun").addEventListener("click", () => runOptimization(false));
+document.getElementById("calculateVar").addEventListener("click", calculateVarForCurrentSelection);
 document.getElementById("inspectSimulationButton").addEventListener("click", () => {
   inspectSimulation(Number(document.getElementById("inspectSimulationNumber").value));
 });
