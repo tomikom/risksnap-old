@@ -162,19 +162,6 @@ title: Portfolio Optimization
       <div id="inspectFormula">—</div>
     </div>
   </div>
-
-  <div id="optVarPanel" class="opt-panel" hidden>
-    <div class="var-header">
-      <div>
-        <div class="opt-panel-title">Historical VaR and Expected Shortfall</div>
-        <div class="opt-chart-note">Today’s inspected portfolio is revalued using each historical daily percentage movement. Observations are equally weighted and plotted chronologically. The current data service supplies a maximum 250-day history; this will be extended to two years later.</div>
-      </div>
-      <button id="downloadVarCsv" type="button" disabled>Download VaR CSV</button>
-    </div>
-    <div id="optVarSummary" class="inspect-summary"></div>
-    <div class="opt-chart-note">The solid red line is the 99% Historical VaR threshold. The dashed dark-red line is Expected Shortfall, the average of the worst 1% of observations. Red points are VaR breaches.</div>
-    <div id="optVarChart" class="opt-var-chart"></div>
-  </div>
 </div>
 
 <style>
@@ -339,17 +326,6 @@ h1 { color:white; text-align:center; background-color:#3A5FCD; }
   font-size:12px;
   line-height:1.5;
 }
-.var-header { display:flex; justify-content:space-between; gap:12px; align-items:flex-start; flex-wrap:wrap; }
-.var-header button { cursor:pointer; border:1px solid #999; border-radius:4px; background:#fff; padding:5px 9px; }
-.var-header button:hover { background:#f0f4ff; border-color:#7188c7; }
-.var-header button:disabled { opacity:.55; cursor:default; }
-.opt-var-chart { width:100%; min-height:330px; overflow:hidden; }
-.opt-var-chart svg { display:block; width:100%; height:auto; background:#fff; }
-.var-series { fill:none; stroke:#145da0; stroke-width:1.25; }
-.var-zero { stroke:#777; stroke-width:1; }
-.var-threshold { stroke:#d7191c; stroke-width:2; }
-.var-es { stroke:#7f0000; stroke-width:1.7; stroke-dasharray:7 5; }
-.var-breach { fill:#d7191c; stroke:#fff; stroke-width:.6; }
 @media(max-width:980px) {
   .optimization-controls { grid-template-columns:1fr; }
   .optimization-summary { grid-template-columns:repeat(2,minmax(160px,1fr)); }
@@ -407,7 +383,6 @@ let optState = {
   assets: [],
   corr: [],
   vol: [],
-  history: {},
   ewma: {},
   dividends: {},
   prices: {},
@@ -523,7 +498,6 @@ function normalizeCorrelationPayload(data, requested) {
     vol,
     corr,
     ewma: data.ewma_returns && typeof data.ewma_returns === "object" ? data.ewma_returns : {},
-    history: data.volatility_input && typeof data.volatility_input === "object" ? data.volatility_input : {},
     asOf: String(data.date || data.as_of || data.ewma_as_of || "").slice(0,10),
     riskFree: Number(data.risk_free_rate),
     riskFreeAsOf: String(data.risk_free_as_of || "").slice(0,10)
@@ -1095,97 +1069,7 @@ function inspectSimulation(id) {
   document.getElementById("inspectFormula").textContent =
     `(${(sim.priceReturn*100).toFixed(6)}% + ${(sim.dividendYield*100).toFixed(6)}% − ${(optState.riskFree*100).toFixed(6)}%) ÷ ${(sim.volatility*100).toFixed(6)}% = ${sim.sharpe.toFixed(8)}`;
 
-  renderHistoricalVar(sim);
-
   document.getElementById("simulationInspector").scrollIntoView({behavior:"smooth",block:"start"});
-}
-
-function historicalVarResults(sim) {
-  const allocation = shareAllocation(sim);
-  const byAsset = {};
-  optState.assets.forEach(asset => {
-    const rows = Array.isArray(optState.history[asset]) ? optState.history[asset] : [];
-    byAsset[asset] = new Map(rows
-      .filter(row => row && row.date && Number.isFinite(Number(row.log_return)))
-      .map(row => [String(row.date).slice(0,10), Math.expm1(Number(row.log_return))]));
-  });
-
-  const dateSets = optState.assets.map(asset => new Set(byAsset[asset].keys()));
-  const dates = dateSets.length
-    ? [...dateSets[0]].filter(date => dateSets.every(set => set.has(date))).sort()
-    : [];
-  const values = dates.map(date => {
-    const pnl = allocation.rows.reduce((sum,row) => sum + row.actualValue * byAsset[row.asset].get(date), 0);
-    return {date,pnl};
-  }).filter(row => Number.isFinite(row.pnl));
-
-  if (!values.length) return {values:[],varPnl:NaN,esPnl:NaN,tailCount:0,allocation};
-  const sorted = values.map(row => row.pnl).sort((a,b) => a-b);
-  const tailCount = Math.max(1, Math.ceil(sorted.length * .01));
-  const varPnl = sorted[tailCount-1];
-  const esPnl = sorted.slice(0,tailCount).reduce((sum,value) => sum+value,0) / tailCount;
-  return {values,varPnl,esPnl,tailCount,allocation};
-}
-
-function renderHistoricalVar(sim) {
-  const panel = document.getElementById("optVarPanel");
-  const host = document.getElementById("optVarChart");
-  const result = historicalVarResults(sim);
-  optState.varResult = result;
-  panel.hidden = false;
-  document.getElementById("downloadVarCsv").disabled = !result.values.length;
-
-  if (!result.values.length) {
-    document.getElementById("optVarSummary").innerHTML = "<span>No common daily return history was available for this portfolio.</span>";
-    host.innerHTML = "";
-    return;
-  }
-
-  const first = result.values[0].date;
-  const last = result.values[result.values.length-1].date;
-  document.getElementById("optVarSummary").innerHTML = `
-    <span><strong>Simulation:</strong> #${sim.id}</span>
-    <span><strong>Period:</strong> ${escapeHtml(first)} to ${escapeHtml(last)}</span>
-    <span><strong>Observations:</strong> ${result.values.length}</span>
-    <span><strong>99% HVaR:</strong> ${fmtMoney(result.varPnl)}</span>
-    <span><strong>Expected Shortfall:</strong> ${fmtMoney(result.esPnl)}</span>
-    <span><strong>Tail observations:</strong> ${result.tailCount}</span>`;
-
-  const width=1000, height=350, margin={left:82,right:24,top:18,bottom:52};
-  const innerW=width-margin.left-margin.right, innerH=height-margin.top-margin.bottom;
-  const allY=result.values.map(row=>row.pnl).concat([0,result.varPnl,result.esPnl]);
-  let minY=Math.min(...allY), maxY=Math.max(...allY);
-  const pad=(maxY-minY)*.08 || 1; minY-=pad; maxY+=pad;
-  const x=i=>margin.left+(i/Math.max(1,result.values.length-1))*innerW;
-  const y=v=>margin.top+(maxY-v)/(maxY-minY)*innerH;
-  const grid=Array.from({length:5},(_,i)=>{
-    const value=minY+(maxY-minY)*i/4, yy=y(value);
-    return `<line class="opt-grid" x1="${margin.left}" y1="${yy}" x2="${width-margin.right}" y2="${yy}"></line><text class="opt-axis-label" x="${margin.left-8}" y="${yy+4}" text-anchor="end">${escapeHtml(fmtMoney(value,0))}</text>`;
-  }).join("");
-  const tickIndexes=[0,Math.floor((result.values.length-1)/2),result.values.length-1];
-  const ticks=tickIndexes.map((index,i)=>`<text class="opt-axis-label" x="${x(index)}" y="${height-18}" text-anchor="${i===0?'start':i===2?'end':'middle'}">${escapeHtml(result.values[index].date)}</text>`).join("");
-  const path=result.values.map((row,i)=>`${i?'L':'M'}${x(i).toFixed(2)},${y(row.pnl).toFixed(2)}`).join(" ");
-  const breaches=result.values.map((row,i)=>row.pnl<=result.varPnl
-    ? `<circle class="var-breach" cx="${x(i).toFixed(2)}" cy="${y(row.pnl).toFixed(2)}" r="4"><title>${escapeHtml(row.date)} | ${escapeHtml(fmtMoney(row.pnl))}</title></circle>` : "").join("");
-  host.innerHTML=`<svg viewBox="0 0 ${width} ${height}" role="img" aria-label="Chronological historical portfolio profit and loss with 99 percent VaR and Expected Shortfall">
-    ${grid}<line class="opt-axis" x1="${margin.left}" y1="${margin.top}" x2="${margin.left}" y2="${height-margin.bottom}"></line>
-    <line class="opt-axis" x1="${margin.left}" y1="${height-margin.bottom}" x2="${width-margin.right}" y2="${height-margin.bottom}"></line>
-    <line class="var-zero" x1="${margin.left}" y1="${y(0)}" x2="${width-margin.right}" y2="${y(0)}"></line>
-    <line class="var-threshold" x1="${margin.left}" y1="${y(result.varPnl)}" x2="${width-margin.right}" y2="${y(result.varPnl)}"><title>99% HVaR ${escapeHtml(fmtMoney(result.varPnl))}</title></line>
-    <line class="var-es" x1="${margin.left}" y1="${y(result.esPnl)}" x2="${width-margin.right}" y2="${y(result.esPnl)}"><title>Expected Shortfall ${escapeHtml(fmtMoney(result.esPnl))}</title></line>
-    <path class="var-series" d="${path}"></path>${breaches}${ticks}
-    <text class="opt-axis-label" transform="translate(18 ${margin.top+innerH/2}) rotate(-90)" text-anchor="middle">Daily hypothetical P&amp;L (USD)</text>
-  </svg>`;
-}
-
-function downloadVarCsv() {
-  const result=optState.varResult;
-  if (!result || !result.values.length) return;
-  const lines=[["Date","Hypothetical P&L USD","VaR breach"],...result.values.map(row=>[row.date,row.pnl,row.pnl<=result.varPnl?"Yes":"No"]),[],["99% HVaR",result.varPnl],["Expected Shortfall",result.esPnl],["Tail observations",result.tailCount]];
-  const blob=new Blob([lines.map(row=>row.map(csvCell).join(",")).join("\n")],{type:"text/csv;charset=utf-8"});
-  const url=URL.createObjectURL(blob), a=document.createElement("a");
-  a.href=url; a.download=`portfolio_var_${optState.inspected?.id ?? "simulation"}_${optState.asOf || "latest"}.csv`;
-  document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
 }
 
 function csvCell(value) {
@@ -1270,21 +1154,6 @@ async function runOptimization() {
 
     const normalized = normalizeCorrelationPayload(corrData, requested);
 
-    let varHistory = normalized.history;
-    if (lookback !== 250) {
-      setStatus("Loading 250-day history for VaR...");
-      const varResponse = await fetch(OPT_CORRELATIONS_ENDPOINT, {
-        method:"POST",
-        headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({lookback:250,fx_gold_oil:[],yields:[],equities:requested.join(", ")})
-      });
-      const varData = await varResponse.json();
-      if (!varResponse.ok || !Array.isArray(varData.assets) || !varData.assets.length) {
-        throw new Error((varData.messages || [varData.error || varResponse.statusText]).join(" "));
-      }
-      varHistory = normalizeCorrelationPayload(varData, requested).history;
-    }
-
     const validAssets = normalized.assets.filter((asset,i) =>
       Number.isFinite(normalized.vol[i]) &&
       normalized.vol[i] > 0 &&
@@ -1296,8 +1165,6 @@ async function runOptimization() {
     optState.assets = validAssets;
     optState.vol = indices.map(i => normalized.vol[i]);
     optState.corr = indices.map(i => indices.map(j => normalized.corr[i][j]));
-    optState.history = {};
-    validAssets.forEach(asset => optState.history[asset] = Array.isArray(varHistory[asset]) ? varHistory[asset] : []);
     optState.ewma = {};
     validAssets.forEach(asset => optState.ewma[asset] = Number(normalized.ewma[asset]));
     optState.asOf = normalized.asOf;
@@ -1423,7 +1290,6 @@ document.getElementById("inspectSimulationNumber").addEventListener("keydown", e
   if (event.key === "Enter") inspectSimulation(Number(event.target.value));
 });
 document.getElementById("downloadSimulationCsv").addEventListener("click", downloadInspectedCsv);
-document.getElementById("downloadVarCsv").addEventListener("click", downloadVarCsv);
 document.getElementById("inspectMaxSharpe").addEventListener("click", () => optState.maxSharpe && inspectSimulation(optState.maxSharpe.id));
 document.getElementById("inspectMinVol").addEventListener("click", () => optState.minVol && inspectSimulation(optState.minVol.id));
 document.getElementById("inspectMaxReturn").addEventListener("click", () => optState.maxReturn && inspectSimulation(optState.maxReturn.id));
