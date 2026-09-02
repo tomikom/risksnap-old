@@ -28,6 +28,19 @@
 			  nav .dropbtn {
 			    font-weight: 400 !important;
 			  }
+			  /* Slightly strengthen the visible navigation row without enlarging
+			     the home icon or the Risk dropdown contents. */
+			  nav > ul > li:not(:first-child) > .menufont,
+			  nav > ul > li > .dropbtn {
+			    font-size: 17px !important;
+			    font-weight: 600 !important;
+			  }
+			  @media (max-width: 700px) {
+			    nav > ul > li:not(:first-child) > .menufont,
+			    nav > ul > li > .dropbtn {
+			      font-size: 14px !important;
+			    }
+			  }
 			</style>
         <!-- Global site tag (gtag.js) - Google Analytics -->
         <script async src="https://www.googletagmanager.com/gtag/js?id=UA-111540481-1"></script>
