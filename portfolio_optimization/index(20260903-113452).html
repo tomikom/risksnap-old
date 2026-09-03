@@ -413,6 +413,7 @@ h1 { color:white; text-align:center; background-color:#3A5FCD; }
 .var-threshold { stroke:#d7191c; stroke-width:2; }
 .var-es { stroke:#7f0000; stroke-width:1.7; stroke-dasharray:7 5; }
 .var-breach { fill:#d7191c; stroke:#fff; stroke-width:.6; }
+.var-hover-point { fill:transparent; stroke:none; cursor:crosshair; }
 .stress-divider { border-top:2px solid #ccd5e5; margin:22px 0 14px; }
 .stress-header { display:flex; justify-content:space-between; gap:12px; align-items:flex-start; flex-wrap:wrap; }
 .stress-header button { cursor:pointer; border:1px solid #999; border-radius:4px; background:#fff; padding:5px 9px; }
@@ -424,6 +425,10 @@ h1 { color:white; text-align:center; background-color:#3A5FCD; }
 .stress-controls button:hover { background:#2f50b2; }
 .stress-controls button:disabled { opacity:.55; cursor:default; }
 .stress-scenario-note { color:#444; font-size:12px; line-height:1.45; margin:3px 0 5px; }
+.stress-scenario-table { width:100%; border-collapse:collapse; margin:8px 0 10px; background:#fff; }
+.stress-scenario-table th, .stress-scenario-table td { border:1px solid #d8deea; padding:7px 9px; text-align:left; vertical-align:top; }
+.stress-scenario-table th { background:#eef3fb; color:#243b68; }
+.stress-scenario-table td:nth-child(2) { white-space:nowrap; }
 .stress-excluded { margin:8px 0 2px; padding:8px 10px; border-left:3px solid #d29b20; background:#fff8e5; color:#54420f; font-size:12px; line-height:1.45; }
 @media(max-width:980px) {
   .optimization-controls { grid-template-columns:1fr; }
@@ -1351,6 +1356,11 @@ function renderHistoricalVar(sim) {
   const tickIndexes=[0,Math.floor((result.values.length-1)/2),result.values.length-1];
   const ticks=tickIndexes.map((index,i)=>`<text class="opt-axis-label" x="${x(index)}" y="${height-18}" text-anchor="${i===0?'start':i===2?'end':'middle'}">${escapeHtml(result.values[index].date)}</text>`).join("");
   const path=result.values.map((row,i)=>`${i?'L':'M'}${x(i).toFixed(2)},${y(row.pnl).toFixed(2)}`).join(" ");
+  const hoverPoints=result.values.map((row,i)=>{
+    const priorDate=row.previousDate || (i ? result.values[i-1].date : "Previous trading day");
+    const tooltip=`Prior: ${priorDate} | ${fmtMoney(row.previousMtm)}\nCurrent: ${row.date} | ${fmtMoney(row.currentMtm)}\nChange: ${fmtMoney(row.pnl)}`;
+    return `<circle class="var-hover-point" cx="${x(i).toFixed(2)}" cy="${y(row.pnl).toFixed(2)}" r="8"><title>${escapeHtml(tooltip)}</title></circle>`;
+  }).join("");
   const breaches=result.values.map((row,i)=>row.pnl<=result.varPnl
     ? `<circle class="var-breach" cx="${x(i).toFixed(2)}" cy="${y(row.pnl).toFixed(2)}" r="4"><title>${escapeHtml(row.date)} | ${escapeHtml(fmtMoney(row.pnl))}</title></circle>` : "").join("");
   host.innerHTML=`<svg viewBox="0 0 ${width} ${height}" role="img" aria-label="Chronological portfolio mark-to-market changes with 99 percent VaR and Expected Shortfall">
@@ -1359,7 +1369,7 @@ function renderHistoricalVar(sim) {
     <line class="var-zero" x1="${margin.left}" y1="${y(0)}" x2="${width-margin.right}" y2="${y(0)}"></line>
     <line class="var-threshold" x1="${margin.left}" y1="${y(result.varPnl)}" x2="${width-margin.right}" y2="${y(result.varPnl)}"><title>99% HVaR ${escapeHtml(fmtMoney(result.varPnl))}</title></line>
     <line class="var-es" x1="${margin.left}" y1="${y(result.esPnl)}" x2="${width-margin.right}" y2="${y(result.esPnl)}"><title>Expected Shortfall ${escapeHtml(fmtMoney(result.esPnl))}</title></line>
-    <path class="var-series" d="${path}"></path>${breaches}${ticks}
+    <path class="var-series" d="${path}"></path>${breaches}${hoverPoints}${ticks}
     <text class="opt-axis-label" transform="translate(18 ${margin.top+innerH/2}) rotate(-90)" text-anchor="middle">Daily MTM change (USD)</text>
   </svg>`;
 }
@@ -1370,14 +1380,23 @@ function stressToday() {
 
 function selectedStressScenario() {
   const id = document.getElementById("stressScenario").value;
-  const scenario = OPT_STRESS_SCENARIOS.find(item => item.id === id) || OPT_STRESS_SCENARIOS[0];
+  const scenario = OPT_STRESS_SCENARIOS.find(item => item.id === id);
+  if (!scenario) return null;
   return {...scenario,end:scenario.current ? stressToday() : scenario.end};
 }
 
 function updateStressScenarioNote() {
   const scenario = selectedStressScenario();
-  document.getElementById("stressScenarioNote").innerHTML =
-    `<strong>${escapeHtml(scenario.start)} to ${escapeHtml(scenario.end)}</strong> — ${escapeHtml(scenario.description)}`;
+  const note=document.getElementById("stressScenarioNote");
+  document.getElementById("calculateStress").disabled=!scenario;
+  if (!scenario) {
+    note.innerHTML=`<table class="stress-scenario-table"><thead><tr><th>Scenario</th><th>Date range</th><th>Short description</th></tr></thead><tbody>${OPT_STRESS_SCENARIOS.map(item=>{
+      const end=item.current ? "Current" : item.end;
+      return `<tr><td><strong>${escapeHtml(item.label)}</strong></td><td>${escapeHtml(item.start)} to ${escapeHtml(end)}</td><td>${escapeHtml(item.description)}</td></tr>`;
+    }).join("")}</tbody></table>`;
+    return;
+  }
+  note.innerHTML=`<strong>${escapeHtml(scenario.label)}</strong><br><strong>${escapeHtml(scenario.start)} to ${escapeHtml(scenario.end)}</strong> — ${escapeHtml(scenario.description)}`;
 }
 
 function resetStressResult() {
@@ -1410,6 +1429,7 @@ function stressVarResults(sim, data, scenario) {
 
   const values = mtmValues.slice(1).map((row,index) => ({
     date:row.date,
+    previousDate:mtmValues[index].date,
     previousMtm:mtmValues[index].mtm,
     currentMtm:row.mtm,
     pnl:row.mtm-mtmValues[index].mtm
@@ -1440,6 +1460,10 @@ function renderStressChart(result) {
   const tickIndexes=[0,Math.floor((result.values.length-1)/2),result.values.length-1];
   const ticks=tickIndexes.map((index,i)=>`<text class="opt-axis-label" x="${x(index)}" y="${height-18}" text-anchor="${i===0?'start':i===2?'end':'middle'}">${escapeHtml(result.values[index].date)}</text>`).join("");
   const path=result.values.map((row,i)=>`${i?'L':'M'}${x(i).toFixed(2)},${y(row.pnl).toFixed(2)}`).join(" ");
+  const hoverPoints=result.values.map((row,i)=>{
+    const tooltip=`Prior: ${row.previousDate} | ${fmtMoney(row.previousMtm)}\nCurrent: ${row.date} | ${fmtMoney(row.currentMtm)}\nChange: ${fmtMoney(row.pnl)}`;
+    return `<circle class="var-hover-point" cx="${x(i).toFixed(2)}" cy="${y(row.pnl).toFixed(2)}" r="8"><title>${escapeHtml(tooltip)}</title></circle>`;
+  }).join("");
   const breaches=result.values.map((row,i)=>row.pnl<=result.varPnl
     ? `<circle class="var-breach" cx="${x(i).toFixed(2)}" cy="${y(row.pnl).toFixed(2)}" r="4"><title>${escapeHtml(row.date)} | ${escapeHtml(fmtMoney(row.pnl))}</title></circle>` : "").join("");
   host.innerHTML=`<svg viewBox="0 0 ${width} ${height}" role="img" aria-label="Stress-period portfolio mark-to-market changes with 99 percent VaR and Expected Shortfall">
@@ -1448,7 +1472,7 @@ function renderStressChart(result) {
     <line class="var-zero" x1="${margin.left}" y1="${y(0)}" x2="${width-margin.right}" y2="${y(0)}"></line>
     <line class="var-threshold" x1="${margin.left}" y1="${y(result.varPnl)}" x2="${width-margin.right}" y2="${y(result.varPnl)}"><title>99% stress HVaR ${escapeHtml(fmtMoney(result.varPnl))}</title></line>
     <line class="var-es" x1="${margin.left}" y1="${y(result.esPnl)}" x2="${width-margin.right}" y2="${y(result.esPnl)}"><title>Stress Expected Shortfall ${escapeHtml(fmtMoney(result.esPnl))}</title></line>
-    <path class="var-series" d="${path}"></path>${breaches}${ticks}
+    <path class="var-series" d="${path}"></path>${breaches}${hoverPoints}${ticks}
     <text class="opt-axis-label" transform="translate(18 ${margin.top+innerH/2}) rotate(-90)" text-anchor="middle">Daily MTM change (USD)</text>
   </svg>`;
 }
@@ -1460,6 +1484,10 @@ async function calculateStressVar() {
     return;
   }
   const scenario = selectedStressScenario();
+  if (!scenario) {
+    document.getElementById("stressStatus").textContent = "Select a scenario first.";
+    return;
+  }
   const button = document.getElementById("calculateStress");
   button.disabled = true;
   resetStressResult();
@@ -1868,7 +1896,7 @@ document.getElementById("inspectLoadedPortfolio").addEventListener("click", () =
 
 async function initializeOptimizationPage() {
   const stressSelect=document.getElementById("stressScenario");
-  stressSelect.innerHTML=OPT_STRESS_SCENARIOS.map(item =>
+  stressSelect.innerHTML=`<option value="" selected>View all scenarios — select one</option>`+OPT_STRESS_SCENARIOS.map(item =>
     `<option value="${escapeHtml(item.id)}">${escapeHtml(item.label)}</option>`
   ).join("");
   updateStressScenarioNote();
