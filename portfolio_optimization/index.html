@@ -188,6 +188,26 @@ title: Portfolio Optimization
     <div id="optVarSummary" class="inspect-summary"></div>
     <div class="opt-chart-note">The solid red line is the 99% Historical VaR threshold. The dashed dark-red line is Expected Shortfall, the average of the worst 1% of observations. Red points are VaR breaches.</div>
     <div id="optVarChart" class="opt-var-chart"></div>
+
+    <div class="stress-divider"></div>
+    <div class="stress-header">
+      <div>
+        <div class="opt-panel-title">Historical Stress Period</div>
+        <div class="opt-chart-note">Apply the inspected portfolio’s fixed holdings to a selected market episode. Prices and FX are cleaned separately on calendar dates, forward-filled, converted to USD, and then reduced to Monday–Friday observations.</div>
+      </div>
+      <button id="downloadStressCsv" type="button" disabled>Download Stress CSV</button>
+    </div>
+    <div class="stress-controls">
+      <label for="stressScenario"><strong>Scenario</strong></label>
+      <select id="stressScenario"></select>
+      <button id="calculateStress" type="button">Calculate Stress VaR</button>
+    </div>
+    <div id="stressScenarioNote" class="stress-scenario-note"></div>
+    <div id="stressStatus" class="opt-status" aria-live="polite"></div>
+    <div id="stressSummary" class="inspect-summary" hidden></div>
+    <div class="opt-chart-note">The stress period has its own 99% Historical VaR and Expected Shortfall. Securities without data at the start of the period are omitted and identified below.</div>
+    <div id="stressVarChart" class="opt-var-chart"></div>
+    <div id="stressExcluded" class="stress-excluded" hidden></div>
   </div>
   </section>
 </div>
@@ -393,6 +413,18 @@ h1 { color:white; text-align:center; background-color:#3A5FCD; }
 .var-threshold { stroke:#d7191c; stroke-width:2; }
 .var-es { stroke:#7f0000; stroke-width:1.7; stroke-dasharray:7 5; }
 .var-breach { fill:#d7191c; stroke:#fff; stroke-width:.6; }
+.stress-divider { border-top:2px solid #ccd5e5; margin:22px 0 14px; }
+.stress-header { display:flex; justify-content:space-between; gap:12px; align-items:flex-start; flex-wrap:wrap; }
+.stress-header button { cursor:pointer; border:1px solid #999; border-radius:4px; background:#fff; padding:5px 9px; }
+.stress-header button:hover { background:#f0f4ff; border-color:#7188c7; }
+.stress-header button:disabled { opacity:.55; cursor:default; }
+.stress-controls { display:flex; align-items:center; gap:9px; flex-wrap:wrap; margin:11px 0 3px; }
+.stress-controls select { min-width:230px; padding:6px 8px; border:1px solid #aaa; border-radius:5px; background:#fff; font:inherit; }
+.stress-controls button { cursor:pointer; border:1px solid #284ca8; border-radius:5px; background:#3A5FCD; color:#fff; padding:7px 12px; font:inherit; font-weight:700; }
+.stress-controls button:hover { background:#2f50b2; }
+.stress-controls button:disabled { opacity:.55; cursor:default; }
+.stress-scenario-note { color:#444; font-size:12px; line-height:1.45; margin:3px 0 5px; }
+.stress-excluded { margin:8px 0 2px; padding:8px 10px; border-left:3px solid #d29b20; background:#fff8e5; color:#54420f; font-size:12px; line-height:1.45; }
 @media(max-width:980px) {
   .optimization-controls { grid-template-columns:1fr; }
   .optimization-summary { grid-template-columns:repeat(2,minmax(160px,1fr)); }
@@ -410,8 +442,36 @@ const OPT_FX_HISTORY_ENDPOINT = "https://surface-203178530029.northamerica-north
 const OPT_PORTFOLIOS_KEY = "RiskSnapSavedPortfolios";
 const OPT_MAX_ASSETS = 20;
 const OPT_CONFIG_ENDPOINT = "https://surface-203178530029.northamerica-northeast2.run.app/risksnap_config";
+const OPT_STRESS_ENDPOINT = "https://surface-203178530029.northamerica-northeast2.run.app/stress_history";
 let OPT_PRESETS = {};
 let OPT_SECURITY_META = {};
+
+const OPT_STRESS_SCENARIOS = [
+  {
+    id:"dotcom", label:"Dot-com collapse", start:"2000-03-10", end:"2002-10-10",
+    description:"Technology-bubble collapse from the Nasdaq peak to its eventual trough."
+  },
+  {
+    id:"gfc", label:"Global Financial Crisis", start:"2008-09-15", end:"2009-03-09",
+    description:"Lehman failure, credit-market seizure and the equity-market decline to the March 2009 low."
+  },
+  {
+    id:"covid", label:"COVID crash", start:"2020-02-19", end:"2020-04-30",
+    description:"Pandemic shutdowns, the rapid market collapse and the beginning of the recovery."
+  },
+  {
+    id:"rates2022", label:"2022 inflation/rate shock", start:"2022-01-03", end:"2022-10-14",
+    description:"High inflation and aggressive central-bank tightening across equities and bonds."
+  },
+  {
+    id:"tariffs2025", label:"2025 tariff shock — current", start:"2025-04-02", current:true,
+    description:"Market developments since the U.S. reciprocal-tariff announcement."
+  },
+  {
+    id:"iran2026", label:"2026 Iran/oil shock — current", start:"2026-02-27", current:true,
+    description:"Market and energy-price developments since the February 28 U.S.–Israel strikes on Iran; the range begins with the preceding market close."
+  }
+];
 
 const OPT_FUTURES = {
   "MGC=F": {multiplier:10, unit:"troy oz"},
@@ -468,7 +528,8 @@ let optState = {
   maxReturn: null,
   loadedPortfolio: null,
   inspected: null,
-  roundedContracts: {}
+  roundedContracts: {},
+  stressResult: null
 };
 
 function parseSymbols(raw) {
@@ -1303,6 +1364,176 @@ function renderHistoricalVar(sim) {
   </svg>`;
 }
 
+function stressToday() {
+  return new Date().toISOString().slice(0,10);
+}
+
+function selectedStressScenario() {
+  const id = document.getElementById("stressScenario").value;
+  const scenario = OPT_STRESS_SCENARIOS.find(item => item.id === id) || OPT_STRESS_SCENARIOS[0];
+  return {...scenario,end:scenario.current ? stressToday() : scenario.end};
+}
+
+function updateStressScenarioNote() {
+  const scenario = selectedStressScenario();
+  document.getElementById("stressScenarioNote").innerHTML =
+    `<strong>${escapeHtml(scenario.start)} to ${escapeHtml(scenario.end)}</strong> — ${escapeHtml(scenario.description)}`;
+}
+
+function resetStressResult() {
+  optState.stressResult = null;
+  document.getElementById("stressSummary").hidden = true;
+  document.getElementById("stressSummary").innerHTML = "";
+  document.getElementById("stressVarChart").innerHTML = "";
+  document.getElementById("stressExcluded").hidden = true;
+  document.getElementById("stressExcluded").innerHTML = "";
+  document.getElementById("downloadStressCsv").disabled = true;
+  document.getElementById("stressStatus").textContent = "";
+}
+
+function stressVarResults(sim, data, scenario) {
+  const allocation = shareAllocation(sim);
+  const available = new Set(Array.isArray(data.assets) ? data.assets : []);
+  const allocationRows = allocation.rows.filter(row => available.has(row.asset));
+  const dates = Array.isArray(data.dates) ? data.dates : [];
+  const mtmValues = dates.map((date,index) => {
+    let mtm = 0;
+    for (const row of allocationRows) {
+      const price = Number(data.prices_usd?.[row.asset]?.[index]);
+      const currentPrice = Number(row.usdPrice);
+      const units = currentPrice > 0 ? row.actualValue/currentPrice : NaN;
+      if (!Number.isFinite(price) || !Number.isFinite(units)) return {date,mtm:NaN};
+      mtm += units*price;
+    }
+    return {date,mtm};
+  }).filter(row => Number.isFinite(row.mtm));
+
+  const values = mtmValues.slice(1).map((row,index) => ({
+    date:row.date,
+    previousMtm:mtmValues[index].mtm,
+    currentMtm:row.mtm,
+    pnl:row.mtm-mtmValues[index].mtm
+  }));
+  if (!values.length || !allocationRows.length) {
+    return {values:[],varPnl:NaN,esPnl:NaN,tailCount:0,allocationRows,scenario,data};
+  }
+  const sorted = values.map(row => row.pnl).sort((a,b) => a-b);
+  const tailCount = Math.max(1,Math.ceil(sorted.length*.01));
+  const varPnl = sorted[tailCount-1];
+  const esPnl = sorted.slice(0,tailCount).reduce((sum,value) => sum+value,0)/tailCount;
+  return {values,varPnl,esPnl,tailCount,allocationRows,scenario,data};
+}
+
+function renderStressChart(result) {
+  const host = document.getElementById("stressVarChart");
+  const width=1000, height=350, margin={left:82,right:24,top:18,bottom:52};
+  const innerW=width-margin.left-margin.right, innerH=height-margin.top-margin.bottom;
+  const allY=result.values.map(row=>row.pnl).concat([0,result.varPnl,result.esPnl]);
+  let minY=Math.min(...allY), maxY=Math.max(...allY);
+  const pad=(maxY-minY)*.08 || 1; minY-=pad; maxY+=pad;
+  const x=i=>margin.left+(i/Math.max(1,result.values.length-1))*innerW;
+  const y=v=>margin.top+(maxY-v)/(maxY-minY)*innerH;
+  const grid=Array.from({length:5},(_,i)=>{
+    const value=minY+(maxY-minY)*i/4, yy=y(value);
+    return `<line class="opt-grid" x1="${margin.left}" y1="${yy}" x2="${width-margin.right}" y2="${yy}"></line><text class="opt-axis-label" x="${margin.left-8}" y="${yy+4}" text-anchor="end">${escapeHtml(fmtMoney(value,0))}</text>`;
+  }).join("");
+  const tickIndexes=[0,Math.floor((result.values.length-1)/2),result.values.length-1];
+  const ticks=tickIndexes.map((index,i)=>`<text class="opt-axis-label" x="${x(index)}" y="${height-18}" text-anchor="${i===0?'start':i===2?'end':'middle'}">${escapeHtml(result.values[index].date)}</text>`).join("");
+  const path=result.values.map((row,i)=>`${i?'L':'M'}${x(i).toFixed(2)},${y(row.pnl).toFixed(2)}`).join(" ");
+  const breaches=result.values.map((row,i)=>row.pnl<=result.varPnl
+    ? `<circle class="var-breach" cx="${x(i).toFixed(2)}" cy="${y(row.pnl).toFixed(2)}" r="4"><title>${escapeHtml(row.date)} | ${escapeHtml(fmtMoney(row.pnl))}</title></circle>` : "").join("");
+  host.innerHTML=`<svg viewBox="0 0 ${width} ${height}" role="img" aria-label="Stress-period portfolio mark-to-market changes with 99 percent VaR and Expected Shortfall">
+    ${grid}<line class="opt-axis" x1="${margin.left}" y1="${margin.top}" x2="${margin.left}" y2="${height-margin.bottom}"></line>
+    <line class="opt-axis" x1="${margin.left}" y1="${height-margin.bottom}" x2="${width-margin.right}" y2="${height-margin.bottom}"></line>
+    <line class="var-zero" x1="${margin.left}" y1="${y(0)}" x2="${width-margin.right}" y2="${y(0)}"></line>
+    <line class="var-threshold" x1="${margin.left}" y1="${y(result.varPnl)}" x2="${width-margin.right}" y2="${y(result.varPnl)}"><title>99% stress HVaR ${escapeHtml(fmtMoney(result.varPnl))}</title></line>
+    <line class="var-es" x1="${margin.left}" y1="${y(result.esPnl)}" x2="${width-margin.right}" y2="${y(result.esPnl)}"><title>Stress Expected Shortfall ${escapeHtml(fmtMoney(result.esPnl))}</title></line>
+    <path class="var-series" d="${path}"></path>${breaches}${ticks}
+    <text class="opt-axis-label" transform="translate(18 ${margin.top+innerH/2}) rotate(-90)" text-anchor="middle">Daily MTM change (USD)</text>
+  </svg>`;
+}
+
+async function calculateStressVar() {
+  const sim = optState.inspected;
+  if (!sim || !optState.assets.length) {
+    document.getElementById("stressStatus").textContent = "Calculate VaR or inspect a portfolio first.";
+    return;
+  }
+  const scenario = selectedStressScenario();
+  const button = document.getElementById("calculateStress");
+  button.disabled = true;
+  resetStressResult();
+  document.getElementById("stressStatus").textContent = "Loading and cleaning historical prices and FX...";
+  try {
+    const response = await fetch(OPT_STRESS_ENDPOINT,{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({symbols:optState.assets,start_date:scenario.start,end_date:scenario.end})
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || response.statusText);
+    const result = stressVarResults(sim,data,scenario);
+    optState.stressResult = result;
+
+    const excludedEntries = Object.entries(data.excluded || {});
+    const excludedHost = document.getElementById("stressExcluded");
+    if (excludedEntries.length) {
+      excludedHost.hidden = false;
+      excludedHost.innerHTML = `<strong>Omitted:</strong> ${excludedEntries.map(([asset,reason]) => `${escapeHtml(asset)} (${escapeHtml(reason)})`).join("; ")}`;
+    }
+    if (!result.values.length) {
+      document.getElementById("stressStatus").textContent = "No complete stress-period history was available for this portfolio.";
+      return;
+    }
+
+    const first=result.values[0].date, last=result.values[result.values.length-1].date;
+    const summary=document.getElementById("stressSummary");
+    summary.hidden=false;
+    summary.innerHTML=`
+      <span><strong>Scenario:</strong> ${escapeHtml(scenario.label)}</span>
+      <span><strong>Period:</strong> ${escapeHtml(first)} to ${escapeHtml(last)}</span>
+      <span><strong>Securities:</strong> ${result.allocationRows.length} of ${optState.assets.length}</span>
+      <span><strong>Observations:</strong> ${result.values.length}</span>
+      <span><strong>99% HVaR:</strong> ${fmtMoney(result.varPnl)}</span>
+      <span><strong>Expected Shortfall:</strong> ${fmtMoney(result.esPnl)}</span>
+      <span><strong>Tail observations:</strong> ${result.tailCount}</span>`;
+    renderStressChart(result);
+    document.getElementById("downloadStressCsv").disabled=false;
+    document.getElementById("stressStatus").textContent =
+      `Stress VaR calculated using ${result.allocationRows.length} ${result.allocationRows.length===1?'security':'securities'}.`;
+  } catch (err) {
+    console.error(err);
+    document.getElementById("stressStatus").textContent=`Stress calculation failed: ${err.message || err}`;
+  } finally {
+    button.disabled=false;
+  }
+}
+
+function downloadStressCsv() {
+  const result=optState.stressResult;
+  if (!result || !result.values.length) return;
+  const lines=[
+    ["Scenario",result.scenario.label],
+    ["Requested start",result.scenario.start],
+    ["Requested end",result.scenario.end],
+    ["Cleaning",result.data.cleaning || "RiskSnap calendar cleaning"],
+    [],
+    ["Date","Previous MTM USD","Current MTM USD","MTM Change / Historical P&L USD","VaR breach"],
+    ...result.values.map(row=>[row.date,row.previousMtm.toFixed(2),row.currentMtm.toFixed(2),row.pnl.toFixed(2),row.pnl<=result.varPnl?"Yes":"No"]),
+    [],["99% HVaR",result.varPnl],["Expected Shortfall",result.esPnl],["Tail observations",result.tailCount],
+    [],["Securities used"],
+    ["Security","Currency"],
+    ...result.allocationRows.map(row=>[row.asset,result.data.currencies?.[row.asset] || "USD"]),
+    [],["Omitted securities"],
+    ["Security","Reason"],
+    ...Object.entries(result.data.excluded || {})
+  ];
+  const blob=new Blob([lines.map(row=>row.map(csvCell).join(",")).join("\n")],{type:"text/csv;charset=utf-8"});
+  const url=URL.createObjectURL(blob), a=document.createElement("a");
+  a.href=url; a.download=`portfolio_stress_${result.scenario.id}_${result.scenario.end}.csv`;
+  document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+}
+
 function downloadVarCsv() {
   const result=optState.varResult;
   if (!result || !result.values.length) return;
@@ -1582,6 +1813,7 @@ document.getElementById("optPreset").addEventListener("change", event => {
   optState.inspected = null;
   optState.loadedPortfolio = null;
   document.getElementById("optVarPanel").hidden = true;
+  resetStressResult();
 });
 
 document.getElementById("optPortfolio").addEventListener("change", event => {
@@ -1592,12 +1824,14 @@ document.getElementById("optPortfolio").addEventListener("change", event => {
   optState.inspected = null;
   optState.loadedPortfolio = null;
   document.getElementById("optVarPanel").hidden = true;
+  resetStressResult();
 });
 
 document.getElementById("optSymbols").addEventListener("input", () => {
   optState.inspected = null;
   optState.loadedPortfolio = null;
   document.getElementById("optVarPanel").hidden = true;
+  resetStressResult();
 });
 
 document.getElementById("optInvestmentAmount").addEventListener("change", event => {
@@ -1620,6 +1854,12 @@ document.getElementById("inspectSimulationNumber").addEventListener("keydown", e
 });
 document.getElementById("downloadSimulationCsv").addEventListener("click", downloadInspectedCsv);
 document.getElementById("downloadVarCsv").addEventListener("click", downloadVarCsv);
+document.getElementById("stressScenario").addEventListener("change", () => {
+  updateStressScenarioNote();
+  resetStressResult();
+});
+document.getElementById("calculateStress").addEventListener("click", calculateStressVar);
+document.getElementById("downloadStressCsv").addEventListener("click", downloadStressCsv);
 document.getElementById("inspectMaxSharpe").addEventListener("click", () => optState.maxSharpe && inspectSimulation(optState.maxSharpe.id));
 document.getElementById("inspectMinVol").addEventListener("click", () => optState.minVol && inspectSimulation(optState.minVol.id));
 document.getElementById("inspectMaxReturn").addEventListener("click", () => optState.maxReturn && inspectSimulation(optState.maxReturn.id));
@@ -1627,6 +1867,11 @@ document.getElementById("inspectEqualWeight").addEventListener("click", () => op
 document.getElementById("inspectLoadedPortfolio").addEventListener("click", () => optState.loadedPortfolio && inspectSimulation("loaded"));
 
 async function initializeOptimizationPage() {
+  const stressSelect=document.getElementById("stressScenario");
+  stressSelect.innerHTML=OPT_STRESS_SCENARIOS.map(item =>
+    `<option value="${escapeHtml(item.id)}">${escapeHtml(item.label)}</option>`
+  ).join("");
+  updateStressScenarioNote();
   try {
     await loadOptimizationConfig();
   } catch (err) {
