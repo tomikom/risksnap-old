@@ -1480,15 +1480,20 @@ function renderStressChart(result) {
 }
 
 async function calculateStressVar() {
-  const sim = optState.inspected;
-  if (!sim || !optState.assets.length) {
-    document.getElementById("stressStatus").textContent = "Calculate VaR or inspect a portfolio first.";
-    return;
-  }
+  let sim = optState.inspected;
   const scenario = selectedStressScenario();
   if (!scenario) {
     document.getElementById("stressStatus").textContent = "Select a scenario first.";
     return;
+  }
+  if (!sim || !optState.assets.length) {
+    document.getElementById("stressStatus").textContent = "Loading the selected portfolio for stress VaR...";
+    await runOptimization(true, true);
+    sim = optState.inspected;
+    if (!sim || !optState.assets.length) {
+      document.getElementById("stressStatus").textContent = "The selected portfolio could not be loaded for stress VaR.";
+      return;
+    }
   }
   const button = document.getElementById("calculateStress");
   button.disabled = true;
@@ -1643,8 +1648,8 @@ function downloadInspectedCsv() {
   URL.revokeObjectURL(url);
 }
 
-async function runOptimization(varOnly=false) {
-  const button = document.getElementById(varOnly ? "calculateVar" : "optRun");
+async function runOptimization(varOnly=false, stressOnly=false) {
+  const button = document.getElementById(stressOnly ? "calculateStress" : (varOnly ? "calculateVar" : "optRun"));
   const requested = parseSymbols(document.getElementById("optSymbols").value);
   const lookback = Number(document.getElementById("optLookback").value) || 90;
   const count = Math.max(100, Math.min(50000, Number(document.getElementById("optSimulationCount").value) || 5000));
@@ -1776,6 +1781,10 @@ async function runOptimization(varOnly=false) {
         optState.loadedPortfolio.investmentAmount = optState.investmentAmount;
       }
       optState.inspected = optState.loadedPortfolio;
+      if (stressOnly) {
+        setStatus(`Portfolio loaded for stress VaR: ${optState.loadedPortfolio.label}.`);
+        return;
+      }
       renderHistoricalVar(optState.loadedPortfolio);
       document.getElementById("optAsOf").textContent =
         ` Risk data: ${optState.asOf || "latest"}; RF: ${optState.riskFreeAsOf || "latest"}.`;
