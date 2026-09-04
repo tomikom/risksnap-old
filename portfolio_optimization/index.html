@@ -201,6 +201,7 @@ title: Portfolio Optimization
       <label for="stressScenario"><strong>Scenario</strong></label>
       <select id="stressScenario"></select>
       <button id="calculateStress" type="button">Calculate Stress VaR</button>
+      <span id="stressScenarioPrompt" class="stress-scenario-prompt">Select scenario first</span>
     </div>
     <div id="stressScenarioNote" class="stress-scenario-note"></div>
     <div id="stressStatus" class="opt-status" aria-live="polite"></div>
@@ -424,6 +425,7 @@ h1 { color:white; text-align:center; background-color:#3A5FCD; }
 .stress-controls button { cursor:pointer; border:1px solid #284ca8; border-radius:5px; background:#3A5FCD; color:#fff; padding:7px 12px; font:inherit; font-weight:700; }
 .stress-controls button:hover { background:#2f50b2; }
 .stress-controls button:disabled { opacity:.55; cursor:default; }
+.stress-scenario-prompt { color:#8a5a00; font-size:12px; font-weight:700; }
 .stress-scenario-note { color:#444; font-size:12px; line-height:1.45; margin:3px 0 5px; }
 .stress-scenario-table { width:100%; border-collapse:collapse; margin:8px 0 10px; background:#fff; }
 .stress-scenario-table th, .stress-scenario-table td { border:1px solid #d8deea; padding:7px 9px; text-align:left; vertical-align:top; }
@@ -1389,9 +1391,8 @@ function selectedStressScenario() {
 function updateStressScenarioNote() {
   const scenario = selectedStressScenario();
   const note=document.getElementById("stressScenarioNote");
-  // Keep the action available before a scenario is selected. If needed, the
-  // click handler gives the user the specific "Select a scenario first" prompt.
-  document.getElementById("calculateStress").disabled=false;
+  document.getElementById("calculateStress").disabled=!scenario;
+  document.getElementById("stressScenarioPrompt").textContent=scenario ? "" : "Select scenario first";
   if (!scenario) {
     note.innerHTML=`<table class="stress-scenario-table"><thead><tr><th>Scenario</th><th>Date range</th><th>Short description</th></tr></thead><tbody>${OPT_STRESS_SCENARIOS.map(item=>{
       const end=item.eod ? "EOD" : item.end;
