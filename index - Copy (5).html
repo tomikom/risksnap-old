@@ -348,7 +348,6 @@ div.c {
     <div class="rs-global-markets__actions"><p id="rs-global-markets-status" class="rs-global-markets__status" aria-live="polite">Loading latest readings&hellip;</p><button id="rs-markets-refresh" class="rs-markets-refresh" type="button">Refresh</button></div>
   </div>
   <div id="rs-global-markets-grid" class="rs-global-markets__grid"></div>
-  <p class="rs-global-markets__note"><strong>Broker access note:</strong> Markets commonly accessible to retail investors through international brokers include the United States (NYSE and Nasdaq), Canada (TMX), United Kingdom (London Stock Exchange), Germany (Deutsche Börse), Japan (JPX), Hong Kong (HKEX), Switzerland (SIX) and Australia (ASX). Mainland China is generally accessed through eligible Stock Connect securities; India, South Korea, Taiwan, Brazil, Dubai and Saudi Arabia may require participating brokers, registration, custody arrangements or local onboarding. Availability varies by jurisdiction, security and account type.</p>
   <p class="rs-global-markets__note">* <span id="rs-global-markets-date">Date loading</span>. <sup>&dagger;</sup>Exchange capitalization is domestic equity market capitalization in U.S. dollars from the <a href="https://focus.world-exchanges.org/issue/july-2026/market-statistics" target="_blank" rel="noopener">World Federation of Exchanges</a> (May 2026); it is not the capitalization of the displayed benchmark index. U.S. benchmark cards overlap and must not be added together.</p>
 </section>
 
@@ -570,6 +569,7 @@ div.c {
     <div class="rs-market-card__top"><div><p class="rs-market-card__place">${safe(market.place)}</p><h3>${safe(market.name)}</h3></div><span class="rs-market-card__state">Waiting</span></div>
     <p class="rs-market-card__level">&mdash;</p><p class="rs-market-card__change is-flat">Latest change unavailable</p>
     <div class="rs-market-card__details"><div><span class="rs-market-card__label">Exchange capitalization</span><span class="rs-market-card__detail">Exchange cap ${safe(market.size)}</span></div></div>
+    <p class="rs-market-card__access"><strong>Broker access:</strong> ${safe(market.access)}</p>
     <div class="rs-market-card__links"><button type="button" class="rs-market-card__chart" data-rs-chart-symbol="${safe(market.symbol)}" data-rs-chart-name="${safe(market.name)}">Chart</button><a class="rs-market-card__news" href="https://news.google.com/search?q=${encodeURIComponent(`${market.name} ${market.place} stock market`)}" target="_blank" rel="noopener noreferrer">Related news <span aria-hidden="true">↗</span></a></div>
   </article>`;
   grid.innerHTML = markets.map(card).join("");
