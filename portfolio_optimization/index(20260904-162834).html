@@ -3,6 +3,8 @@ layout: portfolio_optimization-template
 title: Portfolio Optimization
 ---
 <div class="text-section optimization-page">
+  <section class="optimization-section" aria-labelledby="portfolioSelectionHeading">
+  <h2 id="portfolioSelectionHeading" class="optimization-section-title">A. Portfolio Selection</h2>
   <p class="optimization-intro">
     Simulate long-only portfolios using RiskSnap's existing correlation, volatility,
     EWMA return, dividend-yield and 1-year USD risk-free data. Each simulation is numbered
@@ -67,6 +69,11 @@ title: Portfolio Optimization
   </div>
 
   <div id="optSummary" class="optimization-summary" hidden>
+    <div id="loadedPortfolioMetric" class="opt-metric" hidden>
+      <div class="opt-metric-label">Loaded Portfolio</div>
+      <div id="loadedPortfolioValue" class="opt-metric-value">—</div>
+      <button id="inspectLoadedPortfolio" type="button">Inspect &amp; HVaR</button>
+    </div>
     <div class="opt-metric">
       <div class="opt-metric-label">Maximum Sharpe</div>
       <div id="maxSharpeValue" class="opt-metric-value">—</div>
@@ -117,8 +124,8 @@ title: Portfolio Optimization
   <div id="simulationInspector" class="opt-panel inspector-panel" hidden>
     <div class="inspector-header">
       <div>
-        <div class="opt-panel-title">Temporary Simulation Check</div>
-        <div class="opt-chart-note">Pull out any simulation to verify the Sharpe calculation independently.</div>
+        <div class="opt-panel-title">Portfolio and Simulation Check</div>
+        <div class="opt-chart-note">Inspect the loaded portfolio or pull out any simulation to verify its allocation and risk independently.</div>
       </div>
       <div class="inspector-controls">
         <label for="inspectSimulationNumber">Simulation #</label>
@@ -162,12 +169,81 @@ title: Portfolio Optimization
       <div id="inspectFormula">—</div>
     </div>
   </div>
+  </section>
+
+  <section class="optimization-section risk-section" aria-labelledby="riskCalculationHeading">
+  <h2 id="riskCalculationHeading" class="optimization-section-title">B. Risk Calculation — VaR</h2>
+  <div class="var-run-controls">
+    <p class="optimization-section-note">Calculate Historical VaR and Expected Shortfall for the selected preset, saved portfolio, or inspected simulation.</p>
+    <button id="calculateVar" type="button">Calculate VaR</button>
+  </div>
+  <div id="optVarPanel" class="opt-panel">
+    <div class="var-header">
+      <div>
+        <div class="opt-panel-title">Historical VaR and Expected Shortfall</div>
+        <div class="opt-chart-note">The inspected portfolio’s fixed holdings are marked to market on each historical date. Daily P&amp;L is the current MTM minus the previous MTM. Observations are equally weighted and plotted chronologically. The current data service supplies a maximum 250-day history; this will be extended to two years later.</div>
+      </div>
+      <button id="downloadVarCsv" type="button" disabled>Download VaR CSV</button>
+    </div>
+    <div id="optVarSummary" class="inspect-summary"></div>
+    <div class="opt-chart-note">The solid red line is the 99% Historical VaR threshold. The dashed dark-red line is Expected Shortfall, the average of the worst 1% of observations. Red points are VaR breaches.</div>
+    <div id="optVarChart" class="opt-var-chart"></div>
+
+    <div class="stress-divider"></div>
+    <div class="stress-header">
+      <div>
+        <div class="opt-panel-title">Historical Stress Period</div>
+        <div class="opt-chart-note">Apply the inspected portfolio’s fixed holdings to a selected market episode. Prices and FX are cleaned separately on calendar dates, forward-filled, converted to USD, and then reduced to Monday–Friday observations.</div>
+      </div>
+      <button id="downloadStressCsv" type="button" disabled>Download Stress CSV</button>
+    </div>
+    <div class="stress-controls">
+      <label for="stressScenario"><strong>Scenario</strong></label>
+      <select id="stressScenario"></select>
+      <button id="calculateStress" type="button">Calculate Stress VaR</button>
+    </div>
+    <div id="stressScenarioNote" class="stress-scenario-note"></div>
+    <div id="stressStatus" class="opt-status" aria-live="polite"></div>
+    <div id="stressSummary" class="inspect-summary" hidden></div>
+    <div class="opt-chart-note">The stress period has its own 99% Historical VaR and Expected Shortfall. Securities without data at the start of the period are omitted and identified below.</div>
+    <div id="stressVarChart" class="opt-var-chart"></div>
+    <div id="stressExcluded" class="stress-excluded" hidden></div>
+  </div>
+  </section>
 </div>
 
 <style>
 * { box-sizing:border-box; }
 h1 { color:white; text-align:center; background-color:#3A5FCD; }
 .optimization-page { background:#fff; color:#222; }
+.optimization-section {
+  border:1px solid #ccd5e5;
+  border-radius:8px;
+  padding:16px;
+  margin:0 0 20px;
+  background:#fff;
+}
+.optimization-section-title {
+  margin:0 0 14px;
+  padding:0 0 8px;
+  border-bottom:3px solid #3A5FCD;
+  color:#243f8f;
+  font-size:22px;
+  line-height:1.25;
+}
+.optimization-section-note { margin:0; color:#555; }
+.risk-section { background:#fbfcff; }
+.var-run-controls { display:flex; align-items:center; justify-content:space-between; gap:14px; flex-wrap:wrap; }
+.var-run-controls button {
+  cursor:pointer; border:1px solid #284ca8; border-radius:5px; background:#3A5FCD;
+  color:#fff; padding:8px 15px; font:inherit; font-weight:700;
+}
+.var-run-controls button:hover { background:#2f50b2; }
+.var-run-controls button:disabled { opacity:.55; cursor:default; }
+.var-portfolio-button {
+  border:0; background:none; color:#244fae; padding:0; font:inherit;
+  font-weight:700; text-decoration:underline; cursor:pointer;
+}
 .optimization-intro { margin:0 0 14px; }
 .optimization-controls {
   display:grid;
@@ -326,6 +402,34 @@ h1 { color:white; text-align:center; background-color:#3A5FCD; }
   font-size:12px;
   line-height:1.5;
 }
+.var-header { display:flex; justify-content:space-between; gap:12px; align-items:flex-start; flex-wrap:wrap; }
+.var-header button { cursor:pointer; border:1px solid #999; border-radius:4px; background:#fff; padding:5px 9px; }
+.var-header button:hover { background:#f0f4ff; border-color:#7188c7; }
+.var-header button:disabled { opacity:.55; cursor:default; }
+.opt-var-chart { width:100%; min-height:330px; overflow:hidden; }
+.opt-var-chart svg { display:block; width:100%; height:auto; background:#fff; }
+.var-series { fill:none; stroke:#145da0; stroke-width:1.25; }
+.var-zero { stroke:#777; stroke-width:1; }
+.var-threshold { stroke:#d7191c; stroke-width:2; }
+.var-es { stroke:#7f0000; stroke-width:1.7; stroke-dasharray:7 5; }
+.var-breach { fill:#d7191c; stroke:#fff; stroke-width:.6; }
+.var-hover-point { fill:transparent; stroke:none; cursor:crosshair; }
+.stress-divider { border-top:2px solid #ccd5e5; margin:22px 0 14px; }
+.stress-header { display:flex; justify-content:space-between; gap:12px; align-items:flex-start; flex-wrap:wrap; }
+.stress-header button { cursor:pointer; border:1px solid #999; border-radius:4px; background:#fff; padding:5px 9px; }
+.stress-header button:hover { background:#f0f4ff; border-color:#7188c7; }
+.stress-header button:disabled { opacity:.55; cursor:default; }
+.stress-controls { display:flex; align-items:center; gap:9px; flex-wrap:wrap; margin:11px 0 3px; }
+.stress-controls select { min-width:230px; padding:6px 8px; border:1px solid #aaa; border-radius:5px; background:#fff; font:inherit; }
+.stress-controls button { cursor:pointer; border:1px solid #284ca8; border-radius:5px; background:#3A5FCD; color:#fff; padding:7px 12px; font:inherit; font-weight:700; }
+.stress-controls button:hover { background:#2f50b2; }
+.stress-controls button:disabled { opacity:.55; cursor:default; }
+.stress-scenario-note { color:#444; font-size:12px; line-height:1.45; margin:3px 0 5px; }
+.stress-scenario-table { width:100%; border-collapse:collapse; margin:8px 0 10px; background:#fff; }
+.stress-scenario-table th, .stress-scenario-table td { border:1px solid #d8deea; padding:7px 9px; text-align:left; vertical-align:top; }
+.stress-scenario-table th { background:#eef3fb; color:#243b68; }
+.stress-scenario-table td:nth-child(2) { white-space:nowrap; }
+.stress-excluded { margin:8px 0 2px; padding:8px 10px; border-left:3px solid #d29b20; background:#fff8e5; color:#54420f; font-size:12px; line-height:1.45; }
 @media(max-width:980px) {
   .optimization-controls { grid-template-columns:1fr; }
   .optimization-summary { grid-template-columns:repeat(2,minmax(160px,1fr)); }
@@ -343,8 +447,36 @@ const OPT_FX_HISTORY_ENDPOINT = "https://surface-203178530029.northamerica-north
 const OPT_PORTFOLIOS_KEY = "RiskSnapSavedPortfolios";
 const OPT_MAX_ASSETS = 20;
 const OPT_CONFIG_ENDPOINT = "https://surface-203178530029.northamerica-northeast2.run.app/risksnap_config";
+const OPT_STRESS_ENDPOINT = "https://surface-203178530029.northamerica-northeast2.run.app/stress_history";
 let OPT_PRESETS = {};
 let OPT_SECURITY_META = {};
+
+const OPT_STRESS_SCENARIOS = [
+  {
+    id:"dotcom", label:"Dot-com collapse", start:"2000-03-10", end:"2002-10-10",
+    description:"Technology-bubble collapse from the Nasdaq peak to its eventual trough."
+  },
+  {
+    id:"gfc", label:"Global Financial Crisis", start:"2008-09-15", end:"2009-03-09",
+    description:"Lehman failure, credit-market seizure and the equity-market decline to the March 2009 low."
+  },
+  {
+    id:"covid", label:"COVID crash", start:"2020-02-19", end:"2020-04-30",
+    description:"Pandemic shutdowns, the rapid market collapse and the beginning of the recovery."
+  },
+  {
+    id:"rates2022", label:"2022 inflation/rate shock", start:"2022-01-03", end:"2022-10-14",
+    description:"High inflation and aggressive central-bank tightening across equities and bonds."
+  },
+  {
+    id:"tariffs2025", label:"2025 tariff shock — EOD", start:"2025-04-02", eod:true,
+    description:"Market developments since the U.S. reciprocal-tariff announcement."
+  },
+  {
+    id:"iran2026", label:"2026 Iran/oil shock — EOD", start:"2026-02-27", eod:true,
+    description:"Market and energy-price developments since the February 28 U.S.–Israel strikes on Iran; the range begins with the preceding market close."
+  }
+];
 
 const OPT_FUTURES = {
   "MGC=F": {multiplier:10, unit:"troy oz"},
@@ -383,6 +515,7 @@ let optState = {
   assets: [],
   corr: [],
   vol: [],
+  history: {},
   ewma: {},
   dividends: {},
   prices: {},
@@ -398,8 +531,10 @@ let optState = {
   maxSharpe: null,
   minVol: null,
   maxReturn: null,
+  loadedPortfolio: null,
   inspected: null,
-  roundedContracts: {}
+  roundedContracts: {},
+  stressResult: null
 };
 
 function parseSymbols(raw) {
@@ -430,6 +565,17 @@ function symbolsFromPortfolio(name) {
     .map(s => String(s || "").trim().toUpperCase())
     .filter(symbol => symbol && (Object.keys(shares).length === 0 || Number(shares[symbol]) > 0))
     .slice(0, OPT_MAX_ASSETS);
+}
+
+function selectedLoadedSource() {
+  const savedName = document.getElementById("optPortfolio").value;
+  if (savedName) return {type:"saved", name:savedName};
+  const presetKey = document.getElementById("optPreset").value;
+  if (presetKey) {
+    const option = document.getElementById("optPreset").selectedOptions[0];
+    return {type:"preset", name:(option && option.textContent) || presetKey};
+  }
+  return null;
 }
 
 function refreshPortfolioSelector() {
@@ -498,6 +644,7 @@ function normalizeCorrelationPayload(data, requested) {
     vol,
     corr,
     ewma: data.ewma_returns && typeof data.ewma_returns === "object" ? data.ewma_returns : {},
+    history: data.volatility_input && typeof data.volatility_input === "object" ? data.volatility_input : {},
     asOf: String(data.date || data.as_of || data.ewma_as_of || "").slice(0,10),
     riskFree: Number(data.risk_free_rate),
     riskFreeAsOf: String(data.risk_free_as_of || "").slice(0,10)
@@ -677,7 +824,7 @@ function fmtMoney(value, digits=2) {
 }
 
 function shareAllocation(sim) {
-  const amount = Math.max(0, Number(optState.investmentAmount) || 0);
+  const amount = Math.max(0, Number(sim.investmentAmount ?? optState.investmentAmount) || 0);
   const rows = optState.assets.map((asset,i) => {
     const spec = futureSpec(asset);
     const isFuture = !!spec;
@@ -702,21 +849,25 @@ function shareAllocation(sim) {
           ? backendUsdPrice
           : (Number.isFinite(localPrice) && Number.isFinite(fxToUsd) ? localPrice * fxToUsd : NaN));
 
+    const loadedQuantity = Number(sim.loadedQuantities && sim.loadedQuantities[asset]);
+    const hasLoadedQuantity = Number.isFinite(loadedQuantity) && loadedQuantity >= 0;
     const targetValue = amount * sim.weights[i];
 
     if (isFuture) {
       const contractNotional = Number.isFinite(usdPrice) && usdPrice > 0
         ? usdPrice * spec.multiplier
         : NaN;
-      const equivalentContracts = Number.isFinite(contractNotional) && contractNotional > 0
-        ? targetValue / contractNotional
-        : NaN;
+      const equivalentContracts = hasLoadedQuantity
+        ? loadedQuantity
+        : (Number.isFinite(contractNotional) && contractNotional > 0 ? targetValue / contractNotional : NaN);
 
       const overrideKey = `${sim.id}|${asset}`;
       const override = Number(optState.roundedContracts[overrideKey]);
-      const roundedContracts = Number.isFinite(override)
-        ? Math.max(0, Math.trunc(override))
-        : (Number.isFinite(equivalentContracts) ? Math.max(0, Math.round(equivalentContracts)) : 0);
+      const roundedContracts = hasLoadedQuantity
+        ? Math.max(0, Math.trunc(loadedQuantity))
+        : (Number.isFinite(override)
+            ? Math.max(0, Math.trunc(override))
+            : (Number.isFinite(equivalentContracts) ? Math.max(0, Math.round(equivalentContracts)) : 0));
 
       const actualValue = roundedContracts * (Number.isFinite(contractNotional) ? contractNotional : 0);
 
@@ -727,9 +878,9 @@ function shareAllocation(sim) {
       };
     }
 
-    const shares = Number.isFinite(usdPrice) && usdPrice > 0
-      ? Math.floor(targetValue / usdPrice)
-      : 0;
+    const shares = hasLoadedQuantity
+      ? loadedQuantity
+      : (Number.isFinite(usdPrice) && usdPrice > 0 ? Math.floor(targetValue / usdPrice) : 0);
     const actualValue = shares * (Number.isFinite(usdPrice) ? usdPrice : 0);
 
     return {
@@ -838,6 +989,37 @@ function portfolioMetrics(weights, id) {
   };
 }
 
+function buildLoadedPortfolio(source) {
+  if (!source || !optState.assets.length) return null;
+
+  if (source.type === "preset") {
+    const sim = portfolioMetrics(Array(optState.assets.length).fill(1/optState.assets.length), "loaded");
+    sim.label = `${source.name} (equal weight)`;
+    sim.sourceType = "preset";
+    sim.investmentAmount = optState.investmentAmount;
+    return sim;
+  }
+
+  const saved = readSavedPortfolios()[source.name];
+  const quantities = saved && saved.shares && typeof saved.shares === "object" ? saved.shares : {};
+  const values = optState.assets.map(asset => {
+    const quantity = Math.max(0, Number(quantities[asset]) || 0);
+    const usdPrice = Number(optState.usdPrices[asset]);
+    const localPrice = Number(optState.prices[asset]);
+    const price = Number.isFinite(usdPrice) && usdPrice > 0 ? usdPrice : localPrice;
+    const spec = futureSpec(asset);
+    return quantity * (Number.isFinite(price) ? price : 0) * (spec ? spec.multiplier : 1);
+  });
+  const total = values.reduce((sum,value) => sum+value,0);
+  if (!(total > 0)) return null;
+  const sim = portfolioMetrics(values.map(value => value/total), "loaded");
+  sim.label = source.name;
+  sim.sourceType = "saved";
+  sim.loadedQuantities = Object.fromEntries(optState.assets.map(asset => [asset,Math.max(0,Number(quantities[asset]) || 0)]));
+  sim.investmentAmount = total;
+  return sim;
+}
+
 function runSimulations(count, seed, maxWeightPct) {
   const rng = mulberry32(seed);
   const n = optState.assets.length;
@@ -880,6 +1062,11 @@ function renderSummary() {
   document.getElementById("equalWeightValue").textContent = optState.equalWeight
     ? `#0 · Sharpe ${fmtNum(optState.equalWeight.sharpe,3)}`
     : "N/A";
+  const loadedMetric = document.getElementById("loadedPortfolioMetric");
+  loadedMetric.hidden = !optState.loadedPortfolio;
+  document.getElementById("loadedPortfolioValue").textContent = optState.loadedPortfolio
+    ? `${optState.loadedPortfolio.label} · ${fmtMoney(optState.loadedPortfolio.investmentAmount,0)}`
+    : "—";
 }
 
 function renderTopTable() {
@@ -982,20 +1169,28 @@ function renderChart() {
   });
 }
 
-function inspectSimulation(id) {
-  const sim = optState.simulations.find(x => x.id === Number(id));
+function inspectSimulation(id, preserveVar=false) {
+  const sim = id === "loaded"
+    ? optState.loadedPortfolio
+    : optState.simulations.find(x => x.id === Number(id));
   if (!sim) {
-    setStatus(`Simulation #${id} was not found.`);
+    setStatus(id === "loaded" ? "No loaded portfolio is available." : `Simulation #${id} was not found.`);
     return;
   }
   optState.inspected = sim;
+  if (!preserveVar) {
+    optState.varResult = null;
+    document.getElementById("optVarSummary").innerHTML = "";
+    document.getElementById("optVarChart").innerHTML = "";
+    document.getElementById("downloadVarCsv").disabled = true;
+  }
   document.getElementById("simulationInspector").hidden = false;
-  document.getElementById("inspectSimulationNumber").value = sim.id;
+  if (sim.id !== "loaded") document.getElementById("inspectSimulationNumber").value = sim.id;
   document.getElementById("downloadSimulationCsv").disabled = false;
 
   document.getElementById("inspectSummary").innerHTML = `
-    <span><strong>Simulation:</strong> #${sim.id}</span>
-    <span><strong>Investment:</strong> ${fmtMoney(optState.investmentAmount,0)}</span>
+    <span><strong>${sim.id === "loaded" ? "Loaded portfolio" : "Simulation"}:</strong> ${sim.id === "loaded" ? escapeHtml(sim.label) : `#${sim.id}`}</span>
+    <span><strong>Investment:</strong> ${fmtMoney(sim.investmentAmount ?? optState.investmentAmount,0)}</span>
     <span><strong>Total Return:</strong> ${fmtPct(sim.totalReturn,4)}</span>
     <span><strong>Volatility:</strong> ${fmtPct(sim.volatility,4)}</span>
     <span><strong>Risk-Free:</strong> ${fmtPct(optState.riskFree,4)}</span>
@@ -1041,7 +1236,7 @@ function inspectSimulation(id) {
       <td>Total</td>
       <td>${fmtPct(sim.weights.reduce((a,b)=>a+b,0),6)}</td>
       <td></td><td></td><td></td><td></td>
-      <td>${fmtMoney(optState.investmentAmount)}</td>
+      <td>${fmtMoney(sim.investmentAmount ?? optState.investmentAmount)}</td>
       <td></td><td></td><td></td>
       <td>${fmtMoney(allocation.invested)}</td>
       <td></td><td></td>
@@ -1070,6 +1265,331 @@ function inspectSimulation(id) {
     `(${(sim.priceReturn*100).toFixed(6)}% + ${(sim.dividendYield*100).toFixed(6)}% − ${(optState.riskFree*100).toFixed(6)}%) ÷ ${(sim.volatility*100).toFixed(6)}% = ${sim.sharpe.toFixed(8)}`;
 
   document.getElementById("simulationInspector").scrollIntoView({behavior:"smooth",block:"start"});
+}
+
+function historicalVarResults(sim) {
+  const allocation = shareAllocation(sim);
+  const byAsset = {};
+  optState.assets.forEach(asset => {
+    const rows = Array.isArray(optState.history[asset]) ? optState.history[asset] : [];
+    byAsset[asset] = new Map(rows
+      .map(row => {
+        const date = String(row && row.date || "").slice(0,10);
+        const dailyReturn = Math.expm1(Number(row && row.log_return));
+        const price = Number(row && (
+          row.usd_price ?? row.usdPrice ?? row.adjusted_close ?? row.adj_close ??
+          row["Adj Close"] ?? row.price ?? row.close ?? row.value
+        ));
+        return {date,dailyReturn,price};
+      })
+      .filter(row => row.date && Number.isFinite(row.dailyReturn) && Number.isFinite(row.price) && row.price > 0)
+      .map(row => [row.date,row]));
+  });
+
+  const dateSets = optState.assets.map(asset => new Set(byAsset[asset].keys()));
+  const dates = dateSets.length
+    ? [...dateSets[0]].filter(date => dateSets.every(set => set.has(date))).sort()
+    : [];
+  const values = dates.map(date => {
+    let previousMtm = 0;
+    let currentMtm = 0;
+    allocation.rows.forEach(row => {
+      const observation = byAsset[row.asset].get(date);
+      const currentPrice = Number(row.usdPrice);
+      const units = Number.isFinite(currentPrice) && currentPrice > 0 ? row.actualValue/currentPrice : NaN;
+      if (!Number.isFinite(units)) {
+        previousMtm = NaN;
+        currentMtm = NaN;
+        return;
+      }
+      currentMtm += units * observation.price;
+      previousMtm += units * observation.price/(1+observation.dailyReturn);
+    });
+    const pnl = currentMtm-previousMtm;
+    return {date,previousMtm,currentMtm,pnl};
+  }).filter(row => Number.isFinite(row.previousMtm) && Number.isFinite(row.currentMtm) && Number.isFinite(row.pnl));
+
+  if (!values.length) return {values:[],varPnl:NaN,esPnl:NaN,tailCount:0,allocation};
+  const sorted = values.map(row => row.pnl).sort((a,b) => a-b);
+  const tailCount = Math.max(1, Math.ceil(sorted.length * .01));
+  const varPnl = sorted[tailCount-1];
+  const esPnl = sorted.slice(0,tailCount).reduce((sum,value) => sum+value,0) / tailCount;
+  return {values,varPnl,esPnl,tailCount,allocation};
+}
+
+function renderHistoricalVar(sim) {
+  const panel = document.getElementById("optVarPanel");
+  const host = document.getElementById("optVarChart");
+  const result = historicalVarResults(sim);
+  optState.varResult = result;
+  panel.hidden = false;
+  document.getElementById("downloadVarCsv").disabled = !result.values.length;
+
+  if (!result.values.length) {
+    document.getElementById("optVarSummary").innerHTML = "<span>No common daily return history was available for this portfolio.</span>";
+    host.innerHTML = "";
+    return;
+  }
+
+  const first = result.values[0].date;
+  const last = result.values[result.values.length-1].date;
+  document.getElementById("optVarSummary").innerHTML = `
+    <span><strong>${sim.id === "loaded" ? "Loaded portfolio" : "Simulation"}:</strong> ${sim.id === "loaded" ? `<button id="viewVarPortfolio" class="var-portfolio-button" type="button">${escapeHtml(sim.label)}</button>` : `#${sim.id}`}</span>
+    <span><strong>Period:</strong> ${escapeHtml(first)} to ${escapeHtml(last)}</span>
+    <span><strong>Observations:</strong> ${result.values.length}</span>
+    <span><strong>99% HVaR:</strong> ${fmtMoney(result.varPnl)}</span>
+    <span><strong>Expected Shortfall:</strong> ${fmtMoney(result.esPnl)}</span>
+    <span><strong>Tail observations:</strong> ${result.tailCount}</span>`;
+  const viewButton = document.getElementById("viewVarPortfolio");
+  if (viewButton) viewButton.addEventListener("click", () => inspectSimulation("loaded",true));
+
+  const width=1000, height=350, margin={left:82,right:24,top:18,bottom:52};
+  const innerW=width-margin.left-margin.right, innerH=height-margin.top-margin.bottom;
+  const allY=result.values.map(row=>row.pnl).concat([0,result.varPnl,result.esPnl]);
+  let minY=Math.min(...allY), maxY=Math.max(...allY);
+  const pad=(maxY-minY)*.08 || 1; minY-=pad; maxY+=pad;
+  const x=i=>margin.left+(i/Math.max(1,result.values.length-1))*innerW;
+  const y=v=>margin.top+(maxY-v)/(maxY-minY)*innerH;
+  const grid=Array.from({length:5},(_,i)=>{
+    const value=minY+(maxY-minY)*i/4, yy=y(value);
+    return `<line class="opt-grid" x1="${margin.left}" y1="${yy}" x2="${width-margin.right}" y2="${yy}"></line><text class="opt-axis-label" x="${margin.left-8}" y="${yy+4}" text-anchor="end">${escapeHtml(fmtMoney(value,0))}</text>`;
+  }).join("");
+  const tickIndexes=[0,Math.floor((result.values.length-1)/2),result.values.length-1];
+  const ticks=tickIndexes.map((index,i)=>`<text class="opt-axis-label" x="${x(index)}" y="${height-18}" text-anchor="${i===0?'start':i===2?'end':'middle'}">${escapeHtml(result.values[index].date)}</text>`).join("");
+  const path=result.values.map((row,i)=>`${i?'L':'M'}${x(i).toFixed(2)},${y(row.pnl).toFixed(2)}`).join(" ");
+  const hoverPoints=result.values.map((row,i)=>{
+    const priorDate=row.previousDate || (i ? result.values[i-1].date : "Previous trading day");
+    const tooltip=`Prior: ${priorDate} | ${fmtMoney(row.previousMtm)}\nCurrent: ${row.date} | ${fmtMoney(row.currentMtm)}\nChange: ${fmtMoney(row.pnl)}`;
+    return `<circle class="var-hover-point" cx="${x(i).toFixed(2)}" cy="${y(row.pnl).toFixed(2)}" r="8"><title>${escapeHtml(tooltip)}</title></circle>`;
+  }).join("");
+  const breaches=result.values.map((row,i)=>row.pnl<=result.varPnl
+    ? `<circle class="var-breach" cx="${x(i).toFixed(2)}" cy="${y(row.pnl).toFixed(2)}" r="4"><title>${escapeHtml(row.date)} | ${escapeHtml(fmtMoney(row.pnl))}</title></circle>` : "").join("");
+  host.innerHTML=`<svg viewBox="0 0 ${width} ${height}" role="img" aria-label="Chronological portfolio mark-to-market changes with 99 percent VaR and Expected Shortfall">
+    ${grid}<line class="opt-axis" x1="${margin.left}" y1="${margin.top}" x2="${margin.left}" y2="${height-margin.bottom}"></line>
+    <line class="opt-axis" x1="${margin.left}" y1="${height-margin.bottom}" x2="${width-margin.right}" y2="${height-margin.bottom}"></line>
+    <line class="var-zero" x1="${margin.left}" y1="${y(0)}" x2="${width-margin.right}" y2="${y(0)}"></line>
+    <line class="var-threshold" x1="${margin.left}" y1="${y(result.varPnl)}" x2="${width-margin.right}" y2="${y(result.varPnl)}"><title>99% HVaR ${escapeHtml(fmtMoney(result.varPnl))}</title></line>
+    <line class="var-es" x1="${margin.left}" y1="${y(result.esPnl)}" x2="${width-margin.right}" y2="${y(result.esPnl)}"><title>Expected Shortfall ${escapeHtml(fmtMoney(result.esPnl))}</title></line>
+    <path class="var-series" d="${path}"></path>${breaches}${hoverPoints}${ticks}
+    <text class="opt-axis-label" transform="translate(18 ${margin.top+innerH/2}) rotate(-90)" text-anchor="middle">Daily MTM change (USD)</text>
+  </svg>`;
+}
+
+function stressToday() {
+  return new Date().toISOString().slice(0,10);
+}
+
+function selectedStressScenario() {
+  const id = document.getElementById("stressScenario").value;
+  const scenario = OPT_STRESS_SCENARIOS.find(item => item.id === id);
+  if (!scenario) return null;
+  return {...scenario,end:scenario.eod ? stressToday() : scenario.end};
+}
+
+function updateStressScenarioNote() {
+  const scenario = selectedStressScenario();
+  const note=document.getElementById("stressScenarioNote");
+  document.getElementById("calculateStress").disabled=!scenario;
+  if (!scenario) {
+    note.innerHTML=`<table class="stress-scenario-table"><thead><tr><th>Scenario</th><th>Date range</th><th>Short description</th></tr></thead><tbody>${OPT_STRESS_SCENARIOS.map(item=>{
+      const end=item.eod ? "EOD" : item.end;
+      return `<tr><td><strong>${escapeHtml(item.label)}</strong></td><td>${escapeHtml(item.start)} to ${escapeHtml(end)}</td><td>${escapeHtml(item.description)}</td></tr>`;
+    }).join("")}</tbody></table>`;
+    return;
+  }
+  const endLabel=scenario.eod ? "latest completed EOD" : scenario.end;
+  note.innerHTML=`<strong>${escapeHtml(scenario.label)}</strong><br><strong>${escapeHtml(scenario.start)} to ${escapeHtml(endLabel)}</strong> — ${escapeHtml(scenario.description)}`;
+}
+
+function resetStressResult() {
+  optState.stressResult = null;
+  document.getElementById("stressSummary").hidden = true;
+  document.getElementById("stressSummary").innerHTML = "";
+  document.getElementById("stressVarChart").innerHTML = "";
+  document.getElementById("stressExcluded").hidden = true;
+  document.getElementById("stressExcluded").innerHTML = "";
+  document.getElementById("downloadStressCsv").disabled = true;
+  document.getElementById("stressStatus").textContent = "";
+}
+
+function stressVarResults(sim, data, scenario) {
+  const allocation = shareAllocation(sim);
+  const available = new Set(Array.isArray(data.assets) ? data.assets : []);
+  const allocationRows = allocation.rows.filter(row => available.has(row.asset));
+  const dates = Array.isArray(data.dates) ? data.dates : [];
+  const mtmValues = dates.map((date,index) => {
+    let mtm = 0;
+    for (const row of allocationRows) {
+      const price = Number(data.prices_usd?.[row.asset]?.[index]);
+      const currentPrice = Number(row.usdPrice);
+      const units = currentPrice > 0 ? row.actualValue/currentPrice : NaN;
+      if (!Number.isFinite(price) || !Number.isFinite(units)) return {date,mtm:NaN};
+      mtm += units*price;
+    }
+    return {date,mtm};
+  }).filter(row => Number.isFinite(row.mtm));
+
+  const values = mtmValues.slice(1).map((row,index) => ({
+    date:row.date,
+    previousDate:mtmValues[index].date,
+    previousMtm:mtmValues[index].mtm,
+    currentMtm:row.mtm,
+    pnl:row.mtm-mtmValues[index].mtm
+  }));
+  if (!values.length || !allocationRows.length) {
+    return {values:[],varPnl:NaN,esPnl:NaN,tailCount:0,allocationRows,scenario,data};
+  }
+  const sorted = values.map(row => row.pnl).sort((a,b) => a-b);
+  const tailCount = Math.max(1,Math.ceil(sorted.length*.01));
+  const varPnl = sorted[tailCount-1];
+  const esPnl = sorted.slice(0,tailCount).reduce((sum,value) => sum+value,0)/tailCount;
+  return {values,varPnl,esPnl,tailCount,allocationRows,scenario,data};
+}
+
+function renderStressChart(result) {
+  const host = document.getElementById("stressVarChart");
+  const width=1000, height=350, margin={left:82,right:24,top:18,bottom:52};
+  const innerW=width-margin.left-margin.right, innerH=height-margin.top-margin.bottom;
+  const allY=result.values.map(row=>row.pnl).concat([0,result.varPnl,result.esPnl]);
+  let minY=Math.min(...allY), maxY=Math.max(...allY);
+  const pad=(maxY-minY)*.08 || 1; minY-=pad; maxY+=pad;
+  const x=i=>margin.left+(i/Math.max(1,result.values.length-1))*innerW;
+  const y=v=>margin.top+(maxY-v)/(maxY-minY)*innerH;
+  const grid=Array.from({length:5},(_,i)=>{
+    const value=minY+(maxY-minY)*i/4, yy=y(value);
+    return `<line class="opt-grid" x1="${margin.left}" y1="${yy}" x2="${width-margin.right}" y2="${yy}"></line><text class="opt-axis-label" x="${margin.left-8}" y="${yy+4}" text-anchor="end">${escapeHtml(fmtMoney(value,0))}</text>`;
+  }).join("");
+  const tickIndexes=[0,Math.floor((result.values.length-1)/2),result.values.length-1];
+  const ticks=tickIndexes.map((index,i)=>`<text class="opt-axis-label" x="${x(index)}" y="${height-18}" text-anchor="${i===0?'start':i===2?'end':'middle'}">${escapeHtml(result.values[index].date)}</text>`).join("");
+  const path=result.values.map((row,i)=>`${i?'L':'M'}${x(i).toFixed(2)},${y(row.pnl).toFixed(2)}`).join(" ");
+  const hoverPoints=result.values.map((row,i)=>{
+    const tooltip=`Prior: ${row.previousDate} | ${fmtMoney(row.previousMtm)}\nCurrent: ${row.date} | ${fmtMoney(row.currentMtm)}\nChange: ${fmtMoney(row.pnl)}`;
+    return `<circle class="var-hover-point" cx="${x(i).toFixed(2)}" cy="${y(row.pnl).toFixed(2)}" r="8"><title>${escapeHtml(tooltip)}</title></circle>`;
+  }).join("");
+  const breaches=result.values.map((row,i)=>row.pnl<=result.varPnl
+    ? `<circle class="var-breach" cx="${x(i).toFixed(2)}" cy="${y(row.pnl).toFixed(2)}" r="4"><title>${escapeHtml(row.date)} | ${escapeHtml(fmtMoney(row.pnl))}</title></circle>` : "").join("");
+  host.innerHTML=`<svg viewBox="0 0 ${width} ${height}" role="img" aria-label="Stress-period portfolio mark-to-market changes with 99 percent VaR and Expected Shortfall">
+    ${grid}<line class="opt-axis" x1="${margin.left}" y1="${margin.top}" x2="${margin.left}" y2="${height-margin.bottom}"></line>
+    <line class="opt-axis" x1="${margin.left}" y1="${height-margin.bottom}" x2="${width-margin.right}" y2="${height-margin.bottom}"></line>
+    <line class="var-zero" x1="${margin.left}" y1="${y(0)}" x2="${width-margin.right}" y2="${y(0)}"></line>
+    <line class="var-threshold" x1="${margin.left}" y1="${y(result.varPnl)}" x2="${width-margin.right}" y2="${y(result.varPnl)}"><title>99% stress HVaR ${escapeHtml(fmtMoney(result.varPnl))}</title></line>
+    <line class="var-es" x1="${margin.left}" y1="${y(result.esPnl)}" x2="${width-margin.right}" y2="${y(result.esPnl)}"><title>Stress Expected Shortfall ${escapeHtml(fmtMoney(result.esPnl))}</title></line>
+    <path class="var-series" d="${path}"></path>${breaches}${hoverPoints}${ticks}
+    <text class="opt-axis-label" transform="translate(18 ${margin.top+innerH/2}) rotate(-90)" text-anchor="middle">Daily MTM change (USD)</text>
+  </svg>`;
+}
+
+async function calculateStressVar() {
+  const sim = optState.inspected;
+  if (!sim || !optState.assets.length) {
+    document.getElementById("stressStatus").textContent = "Calculate VaR or inspect a portfolio first.";
+    return;
+  }
+  const scenario = selectedStressScenario();
+  if (!scenario) {
+    document.getElementById("stressStatus").textContent = "Select a scenario first.";
+    return;
+  }
+  const button = document.getElementById("calculateStress");
+  button.disabled = true;
+  resetStressResult();
+  document.getElementById("stressStatus").textContent = "Loading and cleaning historical prices and FX...";
+  try {
+    const response = await fetch(OPT_STRESS_ENDPOINT,{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({symbols:optState.assets,start_date:scenario.start,end_date:scenario.end})
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || response.statusText);
+    const completedScenario = {...scenario,end:data.end_date || scenario.end};
+    const result = stressVarResults(sim,data,completedScenario);
+    optState.stressResult = result;
+
+    const excludedEntries = Object.entries(data.excluded || {});
+    const excludedHost = document.getElementById("stressExcluded");
+    if (excludedEntries.length) {
+      excludedHost.hidden = false;
+      excludedHost.innerHTML = `<strong>Omitted:</strong> ${excludedEntries.map(([asset,reason]) => `${escapeHtml(asset)} (${escapeHtml(reason)})`).join("; ")}`;
+    }
+    if (!result.values.length) {
+      document.getElementById("stressStatus").textContent = "No complete stress-period history was available for this portfolio.";
+      return;
+    }
+
+    const first=result.values[0].date, last=result.values[result.values.length-1].date;
+    const summary=document.getElementById("stressSummary");
+    summary.hidden=false;
+    summary.innerHTML=`
+      <span><strong>Scenario:</strong> ${escapeHtml(scenario.label)}</span>
+      <span><strong>Period:</strong> ${escapeHtml(first)} to ${escapeHtml(last)}</span>
+      <span><strong>Securities:</strong> ${result.allocationRows.length} of ${optState.assets.length}</span>
+      <span><strong>Observations:</strong> ${result.values.length}</span>
+      <span><strong>99% HVaR:</strong> ${fmtMoney(result.varPnl)}</span>
+      <span><strong>Expected Shortfall:</strong> ${fmtMoney(result.esPnl)}</span>
+      <span><strong>Tail observations:</strong> ${result.tailCount}</span>`;
+    renderStressChart(result);
+    document.getElementById("downloadStressCsv").disabled=false;
+    document.getElementById("stressStatus").textContent =
+      `Stress VaR calculated using ${result.allocationRows.length} ${result.allocationRows.length===1?'security':'securities'}.`;
+  } catch (err) {
+    console.error(err);
+    document.getElementById("stressStatus").textContent=`Stress calculation failed: ${err.message || err}`;
+  } finally {
+    button.disabled=false;
+  }
+}
+
+function downloadStressCsv() {
+  const result=optState.stressResult;
+  if (!result || !result.values.length) return;
+  const lines=[
+    ["Scenario",result.scenario.label],
+    ["Requested start",result.scenario.start],
+    ["Requested end",result.scenario.end],
+    ["Cleaning",result.data.cleaning || "RiskSnap calendar cleaning"],
+    [],
+    ["Date","Previous MTM USD","Current MTM USD","MTM Change / Historical P&L USD","VaR breach"],
+    ...result.values.map(row=>[row.date,row.previousMtm.toFixed(2),row.currentMtm.toFixed(2),row.pnl.toFixed(2),row.pnl<=result.varPnl?"Yes":"No"]),
+    [],["99% HVaR",result.varPnl],["Expected Shortfall",result.esPnl],["Tail observations",result.tailCount],
+    [],["Securities used"],
+    ["Security","Currency"],
+    ...result.allocationRows.map(row=>[row.asset,result.data.currencies?.[row.asset] || "USD"]),
+    [],["Omitted securities"],
+    ["Security","Reason"],
+    ...Object.entries(result.data.excluded || {})
+  ];
+  const blob=new Blob([lines.map(row=>row.map(csvCell).join(",")).join("\n")],{type:"text/csv;charset=utf-8"});
+  const url=URL.createObjectURL(blob), a=document.createElement("a");
+  a.href=url; a.download=`portfolio_stress_${result.scenario.id}_${result.scenario.end}.csv`;
+  document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+}
+
+function downloadVarCsv() {
+  const result=optState.varResult;
+  if (!result || !result.values.length) return;
+  const lines=[
+    ["Date","Previous MTM USD","Current MTM USD","MTM Change / Historical P&L USD","VaR breach"],
+    ...result.values.map(row=>[
+      row.date,row.previousMtm.toFixed(2),row.currentMtm.toFixed(2),row.pnl.toFixed(2),
+      row.pnl<=result.varPnl?"Yes":"No"
+    ]),
+    [],["99% HVaR",result.varPnl],["Expected Shortfall",result.esPnl],["Tail observations",result.tailCount],
+    [],["Holdings used in MTM calculation"],
+    ["Security","Quantity","Quantity type","Local price","USD price","Current position value USD"],
+    ...result.allocation.rows.map(row=>[
+      row.asset,
+      row.isFuture ? row.roundedContracts : row.shares,
+      row.isFuture ? "Contracts" : "Shares",
+      Number.isFinite(row.localPrice) ? row.localPrice : "",
+      Number.isFinite(row.usdPrice) ? row.usdPrice : "",
+      row.actualValue.toFixed(2)
+    ])
+  ];
+  const blob=new Blob([lines.map(row=>row.map(csvCell).join(",")).join("\n")],{type:"text/csv;charset=utf-8"});
+  const url=URL.createObjectURL(blob), a=document.createElement("a");
+  a.href=url; a.download=`portfolio_var_${optState.inspected?.id ?? "simulation"}_${optState.asOf || "latest"}.csv`;
+  document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
 }
 
 function csvCell(value) {
@@ -1123,20 +1643,21 @@ function downloadInspectedCsv() {
   URL.revokeObjectURL(url);
 }
 
-async function runOptimization() {
-  const button = document.getElementById("optRun");
+async function runOptimization(varOnly=false) {
+  const button = document.getElementById(varOnly ? "calculateVar" : "optRun");
   const requested = parseSymbols(document.getElementById("optSymbols").value);
   const lookback = Number(document.getElementById("optLookback").value) || 90;
   const count = Math.max(100, Math.min(50000, Number(document.getElementById("optSimulationCount").value) || 5000));
   const seed = Number(document.getElementById("optSeed").value) || 1;
   const maxWeightPct = Math.max(5, Math.min(100, Number(document.getElementById("optMaxWeight").value) || 100));
   const investmentAmount = Math.max(0, Number(document.getElementById("optInvestmentAmount").value) || 100000);
+  const loadedSource = selectedLoadedSource();
 
-  if (requested.length < 2) {
-    setStatus("Enter at least two securities.");
+  if (requested.length < 1) {
+    setStatus("Enter at least one security.");
     return;
   }
-  if (maxWeightPct/100 < 1/requested.length - 1e-12) {
+  if (!varOnly && maxWeightPct/100 < 1/requested.length - 1e-12) {
     setStatus(`Maximum weight is too low. With ${requested.length} securities it must be at least ${(100/requested.length).toFixed(1)}%.`);
     return;
   }
@@ -1154,17 +1675,34 @@ async function runOptimization() {
 
     const normalized = normalizeCorrelationPayload(corrData, requested);
 
+    let varHistory = normalized.history;
+    if (lookback !== 250) {
+      setStatus("Loading 250-day history for VaR...");
+      const varResponse = await fetch(OPT_CORRELATIONS_ENDPOINT, {
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({lookback:250,fx_gold_oil:[],yields:[],equities:requested.join(", ")})
+      });
+      const varData = await varResponse.json();
+      if (!varResponse.ok || !Array.isArray(varData.assets) || !varData.assets.length) {
+        throw new Error((varData.messages || [varData.error || varResponse.statusText]).join(" "));
+      }
+      varHistory = normalizeCorrelationPayload(varData, requested).history;
+    }
+
     const validAssets = normalized.assets.filter((asset,i) =>
       Number.isFinite(normalized.vol[i]) &&
       normalized.vol[i] > 0 &&
       Number.isFinite(Number(normalized.ewma[asset]))
     );
-    if (validAssets.length < 2) throw new Error("Fewer than two securities returned complete EWMA/volatility data.");
+    if (validAssets.length < 1) throw new Error("No securities returned complete EWMA/volatility data.");
 
     const indices = validAssets.map(asset => normalized.assets.indexOf(asset));
     optState.assets = validAssets;
     optState.vol = indices.map(i => normalized.vol[i]);
     optState.corr = indices.map(i => indices.map(j => normalized.corr[i][j]));
+    optState.history = {};
+    validAssets.forEach(asset => optState.history[asset] = Array.isArray(varHistory[asset]) ? varHistory[asset] : []);
     optState.ewma = {};
     validAssets.forEach(asset => optState.ewma[asset] = Number(normalized.ewma[asset]));
     optState.asOf = normalized.asOf;
@@ -1228,6 +1766,23 @@ async function runOptimization() {
     }
     optState.riskFree = rfResult.rate;
     optState.riskFreeAsOf = rfResult.date || normalized.riskFreeAsOf;
+    optState.loadedPortfolio = buildLoadedPortfolio(loadedSource);
+
+    if (varOnly) {
+      if (!optState.loadedPortfolio) {
+        optState.loadedPortfolio = portfolioMetrics(Array(validAssets.length).fill(1/validAssets.length), "loaded");
+        optState.loadedPortfolio.label = "Current symbols (equal weight)";
+        optState.loadedPortfolio.sourceType = "symbols";
+        optState.loadedPortfolio.investmentAmount = optState.investmentAmount;
+      }
+      optState.inspected = optState.loadedPortfolio;
+      renderHistoricalVar(optState.loadedPortfolio);
+      document.getElementById("optAsOf").textContent =
+        ` Risk data: ${optState.asOf || "latest"}; RF: ${optState.riskFreeAsOf || "latest"}.`;
+      setStatus(`VaR calculated for ${optState.loadedPortfolio.label}.`);
+      document.getElementById("optVarPanel").scrollIntoView({behavior:"smooth",block:"start"});
+      return;
+    }
 
     setStatus(`Running ${count.toLocaleString()} simulations...`);
     const result = runSimulations(count, seed, maxWeightPct);
@@ -1239,7 +1794,14 @@ async function runOptimization() {
     renderTopTable();
     renderChart();
     document.getElementById("simulationInspector").hidden = false;
-    inspectSimulation(0);
+
+    // A selected preset or saved portfolio keeps its own HVaR result. With no
+    // loaded source, show the maximum-Sharpe simulation as before.
+    if (optState.loadedPortfolio) {
+      inspectSimulation("loaded");
+    } else if (optState.maxSharpe) {
+      inspectSimulation(optState.maxSharpe.id);
+    }
 
     document.getElementById("optAsOf").textContent =
       ` Risk data: ${optState.asOf || "latest"}; RF: ${optState.riskFreeAsOf || "latest"}.`;
@@ -1251,10 +1813,27 @@ async function runOptimization() {
     );
   } catch (err) {
     console.error(err);
-    setStatus(`Optimization failed: ${err.message || err}`);
+    setStatus(`${varOnly ? "VaR calculation" : "Optimization"} failed: ${err.message || err}`);
   } finally {
     button.disabled = false;
   }
+}
+
+function calculateVarForCurrentSelection() {
+  const requested = parseSymbols(document.getElementById("optSymbols").value);
+  const sameAssets = requested.length === optState.assets.length &&
+    requested.every((asset,index) => asset === optState.assets[index]);
+
+  if (optState.inspected && sameAssets) {
+    renderHistoricalVar(optState.inspected);
+    const label = optState.inspected.id === "loaded"
+      ? optState.inspected.label
+      : `simulation #${optState.inspected.id}`;
+    setStatus(`VaR calculated for ${label}.`);
+    document.getElementById("optVarPanel").scrollIntoView({behavior:"smooth",block:"start"});
+    return;
+  }
+  runOptimization(true);
 }
 
 document.getElementById("optPreset").addEventListener("change", event => {
@@ -1262,6 +1841,11 @@ document.getElementById("optPreset").addEventListener("change", event => {
   if (!key || !OPT_PRESETS[key]) return;
   document.getElementById("optPortfolio").value = "";
   document.getElementById("optSymbols").value = OPT_PRESETS[key];
+  optState.inspected = null;
+  optState.loadedPortfolio = null;
+  document.getElementById("optVarSummary").innerHTML = "";
+  document.getElementById("optVarChart").innerHTML = "";
+  resetStressResult();
 });
 
 document.getElementById("optPortfolio").addEventListener("change", event => {
@@ -1269,15 +1853,33 @@ document.getElementById("optPortfolio").addEventListener("change", event => {
   if (!name) return;
   document.getElementById("optPreset").value = "";
   document.getElementById("optSymbols").value = symbolsFromPortfolio(name).join(", ");
+  optState.inspected = null;
+  optState.loadedPortfolio = null;
+  document.getElementById("optVarSummary").innerHTML = "";
+  document.getElementById("optVarChart").innerHTML = "";
+  resetStressResult();
+});
+
+document.getElementById("optSymbols").addEventListener("input", () => {
+  optState.inspected = null;
+  optState.loadedPortfolio = null;
+  document.getElementById("optVarSummary").innerHTML = "";
+  document.getElementById("optVarChart").innerHTML = "";
+  resetStressResult();
 });
 
 document.getElementById("optInvestmentAmount").addEventListener("change", event => {
   optState.investmentAmount = Math.max(0, Number(event.target.value) || 0);
+  if (optState.loadedPortfolio && optState.loadedPortfolio.sourceType === "preset") {
+    optState.loadedPortfolio.investmentAmount = optState.investmentAmount;
+    renderSummary();
+  }
   optState.roundedContracts = {};
   if (optState.inspected) inspectSimulation(optState.inspected.id);
 });
 
-document.getElementById("optRun").addEventListener("click", runOptimization);
+document.getElementById("optRun").addEventListener("click", () => runOptimization(false));
+document.getElementById("calculateVar").addEventListener("click", calculateVarForCurrentSelection);
 document.getElementById("inspectSimulationButton").addEventListener("click", () => {
   inspectSimulation(Number(document.getElementById("inspectSimulationNumber").value));
 });
@@ -1285,12 +1887,25 @@ document.getElementById("inspectSimulationNumber").addEventListener("keydown", e
   if (event.key === "Enter") inspectSimulation(Number(event.target.value));
 });
 document.getElementById("downloadSimulationCsv").addEventListener("click", downloadInspectedCsv);
+document.getElementById("downloadVarCsv").addEventListener("click", downloadVarCsv);
+document.getElementById("stressScenario").addEventListener("change", () => {
+  updateStressScenarioNote();
+  resetStressResult();
+});
+document.getElementById("calculateStress").addEventListener("click", calculateStressVar);
+document.getElementById("downloadStressCsv").addEventListener("click", downloadStressCsv);
 document.getElementById("inspectMaxSharpe").addEventListener("click", () => optState.maxSharpe && inspectSimulation(optState.maxSharpe.id));
 document.getElementById("inspectMinVol").addEventListener("click", () => optState.minVol && inspectSimulation(optState.minVol.id));
 document.getElementById("inspectMaxReturn").addEventListener("click", () => optState.maxReturn && inspectSimulation(optState.maxReturn.id));
 document.getElementById("inspectEqualWeight").addEventListener("click", () => optState.equalWeight && inspectSimulation(optState.equalWeight.id));
+document.getElementById("inspectLoadedPortfolio").addEventListener("click", () => optState.loadedPortfolio && inspectSimulation("loaded"));
 
 async function initializeOptimizationPage() {
+  const stressSelect=document.getElementById("stressScenario");
+  stressSelect.innerHTML=`<option value="" selected>View all scenarios — select one</option>`+OPT_STRESS_SCENARIOS.map(item =>
+    `<option value="${escapeHtml(item.id)}">${escapeHtml(item.label)}</option>`
+  ).join("");
+  updateStressScenarioNote();
   try {
     await loadOptimizationConfig();
   } catch (err) {

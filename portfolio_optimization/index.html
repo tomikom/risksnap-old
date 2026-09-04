@@ -177,7 +177,7 @@ title: Portfolio Optimization
     <p class="optimization-section-note">Calculate Historical VaR and Expected Shortfall for the selected preset, saved portfolio, or inspected simulation.</p>
     <button id="calculateVar" type="button">Calculate VaR</button>
   </div>
-  <div id="optVarPanel" class="opt-panel" hidden>
+  <div id="optVarPanel" class="opt-panel">
     <div class="var-header">
       <div>
         <div class="opt-panel-title">Historical VaR and Expected Shortfall</div>
@@ -469,11 +469,11 @@ const OPT_STRESS_SCENARIOS = [
     description:"High inflation and aggressive central-bank tightening across equities and bonds."
   },
   {
-    id:"tariffs2025", label:"2025 tariff shock — current", start:"2025-04-02", current:true,
+    id:"tariffs2025", label:"2025 tariff shock — EOD", start:"2025-04-02", eod:true,
     description:"Market developments since the U.S. reciprocal-tariff announcement."
   },
   {
-    id:"iran2026", label:"2026 Iran/oil shock — current", start:"2026-02-27", current:true,
+    id:"iran2026", label:"2026 Iran/oil shock — EOD", start:"2026-02-27", eod:true,
     description:"Market and energy-price developments since the February 28 U.S.–Israel strikes on Iran; the range begins with the preceding market close."
   }
 ];
@@ -1180,7 +1180,8 @@ function inspectSimulation(id, preserveVar=false) {
   optState.inspected = sim;
   if (!preserveVar) {
     optState.varResult = null;
-    document.getElementById("optVarPanel").hidden = true;
+    document.getElementById("optVarSummary").innerHTML = "";
+    document.getElementById("optVarChart").innerHTML = "";
     document.getElementById("downloadVarCsv").disabled = true;
   }
   document.getElementById("simulationInspector").hidden = false;
@@ -1382,7 +1383,7 @@ function selectedStressScenario() {
   const id = document.getElementById("stressScenario").value;
   const scenario = OPT_STRESS_SCENARIOS.find(item => item.id === id);
   if (!scenario) return null;
-  return {...scenario,end:scenario.current ? stressToday() : scenario.end};
+  return {...scenario,end:scenario.eod ? stressToday() : scenario.end};
 }
 
 function updateStressScenarioNote() {
@@ -1391,12 +1392,12 @@ function updateStressScenarioNote() {
   document.getElementById("calculateStress").disabled=!scenario;
   if (!scenario) {
     note.innerHTML=`<table class="stress-scenario-table"><thead><tr><th>Scenario</th><th>Date range</th><th>Short description</th></tr></thead><tbody>${OPT_STRESS_SCENARIOS.map(item=>{
-      const end=item.current ? "Current" : item.end;
+      const end=item.eod ? "EOD" : item.end;
       return `<tr><td><strong>${escapeHtml(item.label)}</strong></td><td>${escapeHtml(item.start)} to ${escapeHtml(end)}</td><td>${escapeHtml(item.description)}</td></tr>`;
     }).join("")}</tbody></table>`;
     return;
   }
-  const endLabel=scenario.current ? "latest completed EOD" : scenario.end;
+  const endLabel=scenario.eod ? "latest completed EOD" : scenario.end;
   note.innerHTML=`<strong>${escapeHtml(scenario.label)}</strong><br><strong>${escapeHtml(scenario.start)} to ${escapeHtml(endLabel)}</strong> — ${escapeHtml(scenario.description)}`;
 }
 
@@ -1501,7 +1502,8 @@ async function calculateStressVar() {
     });
     const data = await response.json();
     if (!response.ok) throw new Error(data.error || response.statusText);
-    const result = stressVarResults(sim,data,scenario);
+    const completedScenario = {...scenario,end:data.end_date || scenario.end};
+    const result = stressVarResults(sim,data,completedScenario);
     optState.stressResult = result;
 
     const excludedEntries = Object.entries(data.excluded || {});
@@ -1841,7 +1843,8 @@ document.getElementById("optPreset").addEventListener("change", event => {
   document.getElementById("optSymbols").value = OPT_PRESETS[key];
   optState.inspected = null;
   optState.loadedPortfolio = null;
-  document.getElementById("optVarPanel").hidden = true;
+  document.getElementById("optVarSummary").innerHTML = "";
+  document.getElementById("optVarChart").innerHTML = "";
   resetStressResult();
 });
 
@@ -1852,14 +1855,16 @@ document.getElementById("optPortfolio").addEventListener("change", event => {
   document.getElementById("optSymbols").value = symbolsFromPortfolio(name).join(", ");
   optState.inspected = null;
   optState.loadedPortfolio = null;
-  document.getElementById("optVarPanel").hidden = true;
+  document.getElementById("optVarSummary").innerHTML = "";
+  document.getElementById("optVarChart").innerHTML = "";
   resetStressResult();
 });
 
 document.getElementById("optSymbols").addEventListener("input", () => {
   optState.inspected = null;
   optState.loadedPortfolio = null;
-  document.getElementById("optVarPanel").hidden = true;
+  document.getElementById("optVarSummary").innerHTML = "";
+  document.getElementById("optVarChart").innerHTML = "";
   resetStressResult();
 });
 
