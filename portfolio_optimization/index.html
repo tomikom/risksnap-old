@@ -28,7 +28,7 @@ title: Portfolio Optimization
     <div class="optimization-card optimization-symbols-card">
       <label for="optSymbols"><strong>Symbols</strong></label>
       <textarea id="optSymbols" rows="2" spellcheck="false">NVDA, MSFT, GOOG, AMZN, META, AMD, AVGO, TSM, ORCL, PLTR</textarea>
-      <div class="opt-note">Maximum 20 securities. Yahoo symbols separated by commas or spaces.</div>
+      <div class="opt-note">Maximum 20 securities (incl futures). Yahoo symbols separated by commas or spaces.</div>
     </div>
   </div>
 
@@ -124,13 +124,14 @@ title: Portfolio Optimization
   <div id="simulationInspector" class="opt-panel inspector-panel" hidden>
     <div class="inspector-header">
       <div>
-        <div class="opt-panel-title">Portfolio and Simulation Check</div>
-        <div class="opt-chart-note">Inspect the loaded portfolio or pull out any simulation to verify its allocation and risk independently.</div>
+        <div class="opt-panel-title">Portfolio Holdings</div>
+        <div class="opt-chart-note">All risk calculations use the holdings shown below. Shares may be edited before calculating or saving.</div>
       </div>
       <div class="inspector-controls">
         <label for="inspectSimulationNumber">Simulation #</label>
         <input id="inspectSimulationNumber" type="number" min="0" step="1" value="0">
         <button id="inspectSimulationButton" type="button">Pull Simulation</button>
+        <button id="savePortfolio" type="button" disabled>Save Portfolio</button>
         <button id="downloadSimulationCsv" type="button" disabled>Download Simulation CSV</button>
       </div>
     </div>
@@ -206,7 +207,7 @@ title: Portfolio Optimization
     <div id="stressScenarioNote" class="stress-scenario-note"></div>
     <div id="stressStatus" class="opt-status" aria-live="polite"></div>
     <div id="stressSummary" class="inspect-summary" hidden></div>
-    <div class="opt-chart-note">The stress period has its own 99% Historical VaR and Expected Shortfall. Securities without data at the start of the period are omitted and identified below.</div>
+    <div class="opt-chart-note">Securities without data at the start of the period are omitted and identified below.</div>
     <div id="stressVarChart" class="opt-var-chart"></div>
     <div id="stressExcluded" class="stress-excluded" hidden></div>
   </div>
@@ -360,7 +361,8 @@ h1 { color:white; text-align:center; background-color:#3A5FCD; }
 .opt-table th { background:#f4f6fa; font-weight:700; }
 .opt-table th:first-child, .opt-table td:first-child { text-align:left; }
 .opt-table tfoot td { font-weight:700; border-top:2px solid #999; }
-.opt-contract-input {
+.opt-contract-input,
+.opt-share-input {
   width:72px;
   padding:3px 5px;
   border:1px solid #aaa;
@@ -538,6 +540,7 @@ let optState = {
   roundedContracts: {},
   stressResult: null
 };
+let holdingsRefreshTimer = null;
 
 function parseSymbols(raw) {
   const seen = new Set();
@@ -1022,6 +1025,56 @@ function buildLoadedPortfolio(source) {
   return sim;
 }
 
+function portfolioFromQuantities(quantities, label="Current holdings") {
+  const values = optState.assets.map(asset => {
+    const quantity = Math.max(0, Number(quantities?.[asset]) || 0);
+    const usdPrice = Number(optState.usdPrices[asset]);
+    const localPrice = Number(optState.prices[asset]);
+    const price = Number.isFinite(usdPrice) && usdPrice > 0 ? usdPrice : localPrice;
+    const spec = futureSpec(asset);
+    return quantity * (Number.isFinite(price) ? price : 0) * (spec ? spec.multiplier : 1);
+  });
+  const total = values.reduce((sum,value) => sum+value,0);
+  if (!(total > 0)) return null;
+  const sim = portfolioMetrics(values.map(value => value/total), "loaded");
+  sim.label = label;
+  sim.sourceType = "holdings";
+  sim.loadedQuantities = Object.fromEntries(optState.assets.map(asset => [asset,Math.max(0,Number(quantities?.[asset]) || 0)]));
+  sim.investmentAmount = total;
+  return sim;
+}
+
+function scheduleHoldingsRefresh(delay=350) {
+  clearTimeout(holdingsRefreshTimer);
+  holdingsRefreshTimer = setTimeout(() => runOptimization(true,true), delay);
+}
+
+function saveCurrentPortfolio() {
+  const sim = optState.inspected;
+  if (!sim || !optState.assets.length) return;
+  const allocation = shareAllocation(sim);
+  const suggested = sim.sourceType === "saved" ? sim.label : "";
+  const name = window.prompt("Portfolio name", suggested || "My Portfolio");
+  if (!name || !name.trim()) return;
+  const cleanName = name.trim();
+  const portfolios = readSavedPortfolios();
+  if (portfolios[cleanName] && cleanName !== suggested && !window.confirm(`Replace saved portfolio “${cleanName}”?`)) return;
+  portfolios[cleanName] = {
+    securities: allocation.rows.map(row => row.asset),
+    shares: Object.fromEntries(allocation.rows.map(row => [row.asset,row.isFuture ? row.roundedContracts : row.shares])),
+    investmentAmount: allocation.invested,
+    savedAt: new Date().toISOString()
+  };
+  localStorage.setItem(OPT_PORTFOLIOS_KEY, JSON.stringify(portfolios));
+  refreshPortfolioSelector();
+  document.getElementById("optPreset").value = "";
+  document.getElementById("optPortfolio").value = cleanName;
+  sim.label = cleanName;
+  sim.sourceType = "saved";
+  setStatus(`Saved portfolio: ${cleanName}.`);
+  inspectSimulation("loaded",true);
+}
+
 function runSimulations(count, seed, maxWeightPct) {
   const rng = mulberry32(seed);
   const n = optState.assets.length;
@@ -1171,7 +1224,7 @@ function renderChart() {
   });
 }
 
-function inspectSimulation(id, preserveVar=false) {
+function inspectSimulation(id, preserveVar=false, scrollToHoldings=true) {
   const sim = id === "loaded"
     ? optState.loadedPortfolio
     : optState.simulations.find(x => x.id === Number(id));
@@ -1189,6 +1242,7 @@ function inspectSimulation(id, preserveVar=false) {
   document.getElementById("simulationInspector").hidden = false;
   if (sim.id !== "loaded") document.getElementById("inspectSimulationNumber").value = sim.id;
   document.getElementById("downloadSimulationCsv").disabled = false;
+  document.getElementById("savePortfolio").disabled = false;
 
   document.getElementById("inspectSummary").innerHTML = `
     <span><strong>${sim.id === "loaded" ? "Loaded portfolio" : "Simulation"}:</strong> ${sim.id === "loaded" ? escapeHtml(sim.label) : `#${sim.id}`}</span>
@@ -1213,7 +1267,7 @@ function inspectSimulation(id, preserveVar=false) {
       <td title="${escapeHtml(a.fxSource)} ${escapeHtml(a.fxDate)}">${Number.isFinite(a.fxDisplay) ? a.fxDisplay.toFixed(4) : "N/A"}</td>
       <td>${fmtMoney(a.usdPrice)}</td>
       <td>${fmtMoney(a.targetValue)}</td>
-      <td>${a.isFuture ? "—" : a.shares.toLocaleString()}</td>
+      <td>${a.isFuture ? "—" : `<input class="opt-share-input" type="number" min="0" step="1" data-asset="${escapeHtml(asset)}" value="${a.shares}">`}</td>
       <td title="${a.isFuture ? `Contract notional ${fmtMoney(a.contractNotional)} (${a.spec.multiplier.toLocaleString()} ${a.spec.unit})` : ""}">
         ${a.isFuture && Number.isFinite(a.equivalentContracts) ? a.equivalentContracts.toFixed(4) : "—"}
       </td>
@@ -1263,10 +1317,28 @@ function inspectSimulation(id, preserveVar=false) {
     });
   });
 
+  document.querySelectorAll(".opt-share-input").forEach(input => {
+    input.addEventListener("change", event => {
+      const asset = event.target.dataset.asset;
+      const currentAllocation = shareAllocation(optState.inspected);
+      const quantities = Object.fromEntries(currentAllocation.rows.map(row => [
+        row.asset,
+        row.asset === asset ? Math.max(0,Math.floor(Number(event.target.value) || 0)) : (row.isFuture ? row.roundedContracts : row.shares)
+      ]));
+      const updated = portfolioFromQuantities(quantities, optState.inspected.label || "Current holdings");
+      if (!updated) return;
+      optState.loadedPortfolio = updated;
+      optState.inspected = updated;
+      resetStressResult();
+      inspectSimulation("loaded");
+      setStatus("Portfolio holdings updated. VaR will use the shares shown below.");
+    });
+  });
+
   document.getElementById("inspectFormula").textContent =
     `(${(sim.priceReturn*100).toFixed(6)}% + ${(sim.dividendYield*100).toFixed(6)}% − ${(optState.riskFree*100).toFixed(6)}%) ÷ ${(sim.volatility*100).toFixed(6)}% = ${sim.sharpe.toFixed(8)}`;
 
-  document.getElementById("simulationInspector").scrollIntoView({behavior:"smooth",block:"start"});
+  if (scrollToHoldings) document.getElementById("simulationInspector").scrollIntoView({behavior:"smooth",block:"start"});
 }
 
 function historicalVarResults(sim) {
@@ -1565,9 +1637,15 @@ function downloadStressCsv() {
     ["Date","Previous MTM USD","Current MTM USD","MTM Change / Historical P&L USD","MTM Change %","VaR breach"],
     ...result.values.map(row=>[row.date,row.previousMtm.toFixed(2),row.currentMtm.toFixed(2),row.pnl.toFixed(2),(row.changePct*100).toFixed(4),row.pnl<=result.varPnl?"Yes":"No"]),
     [],["99% HVaR",result.varPnl],["Expected Shortfall",result.esPnl],["Tail observations",result.tailCount],
-    [],["Securities used"],
-    ["Security","Currency"],
-    ...result.allocationRows.map(row=>[row.asset,result.data.currencies?.[row.asset] || "USD"]),
+    [],["Holdings used in MTM calculation"],
+    ["Security","Quantity","Quantity type","Currency","Current position value USD"],
+    ...result.allocationRows.map(row=>[
+      row.asset,
+      row.isFuture ? row.roundedContracts : row.shares,
+      row.isFuture ? "Contracts" : "Shares",
+      result.data.currencies?.[row.asset] || "USD",
+      row.actualValue.toFixed(2)
+    ]),
     [],["Omitted securities"],
     ["Security","Reason"],
     ...Object.entries(result.data.excluded || {})
@@ -1789,8 +1867,9 @@ async function runOptimization(varOnly=false, stressOnly=false) {
         optState.loadedPortfolio.investmentAmount = optState.investmentAmount;
       }
       optState.inspected = optState.loadedPortfolio;
+      inspectSimulation("loaded",false,!stressOnly);
       if (stressOnly) {
-        setStatus(`Portfolio loaded for stress VaR: ${optState.loadedPortfolio.label}.`);
+        setStatus(`Portfolio holdings loaded: ${optState.loadedPortfolio.label}.`);
         return;
       }
       renderHistoricalVar(optState.loadedPortfolio);
@@ -1864,6 +1943,7 @@ document.getElementById("optPreset").addEventListener("change", event => {
   document.getElementById("optVarSummary").innerHTML = "";
   document.getElementById("optVarChart").innerHTML = "";
   resetStressResult();
+  scheduleHoldingsRefresh(0);
 });
 
 document.getElementById("optPortfolio").addEventListener("change", event => {
@@ -1876,23 +1956,28 @@ document.getElementById("optPortfolio").addEventListener("change", event => {
   document.getElementById("optVarSummary").innerHTML = "";
   document.getElementById("optVarChart").innerHTML = "";
   resetStressResult();
+  scheduleHoldingsRefresh(0);
 });
 
 document.getElementById("optSymbols").addEventListener("input", () => {
+  document.getElementById("optPreset").value = "";
+  document.getElementById("optPortfolio").value = "";
   optState.inspected = null;
   optState.loadedPortfolio = null;
   document.getElementById("optVarSummary").innerHTML = "";
   document.getElementById("optVarChart").innerHTML = "";
   resetStressResult();
+  scheduleHoldingsRefresh();
 });
 
 document.getElementById("optInvestmentAmount").addEventListener("change", event => {
   optState.investmentAmount = Math.max(0, Number(event.target.value) || 0);
-  if (optState.loadedPortfolio && optState.loadedPortfolio.sourceType === "preset") {
+  if (optState.loadedPortfolio && ["preset","symbols"].includes(optState.loadedPortfolio.sourceType)) {
     optState.loadedPortfolio.investmentAmount = optState.investmentAmount;
     renderSummary();
   }
   optState.roundedContracts = {};
+  resetStressResult();
   if (optState.inspected) inspectSimulation(optState.inspected.id);
 });
 
@@ -1905,6 +1990,7 @@ document.getElementById("inspectSimulationNumber").addEventListener("keydown", e
   if (event.key === "Enter") inspectSimulation(Number(event.target.value));
 });
 document.getElementById("downloadSimulationCsv").addEventListener("click", downloadInspectedCsv);
+document.getElementById("savePortfolio").addEventListener("click", saveCurrentPortfolio);
 document.getElementById("downloadVarCsv").addEventListener("click", downloadVarCsv);
 document.getElementById("stressScenario").addEventListener("change", () => {
   updateStressScenarioNote();
@@ -1931,6 +2017,7 @@ async function initializeOptimizationPage() {
     return;
   }
   refreshPortfolioSelector();
+  scheduleHoldingsRefresh(0);
 }
 initializeOptimizationPage();
 </script>
