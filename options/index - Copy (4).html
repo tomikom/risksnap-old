@@ -100,11 +100,6 @@ a.strategy-link {
     margin-bottom: 8px;
 }
 
-input.rs-time-to-expiry[readonly] {
-    background-color: #eeeeee;
-    color: #333333;
-}
-
 .rs-pricer-box button {
     background-color: #008CBA;
     border: none;
@@ -282,12 +277,6 @@ async function priceOption(prefix) {
   const dividend = document.getElementById(prefix + "_dividend").value;
   const type = document.getElementById(prefix + "_type").value;
 
-  if (!time || Number(time) <= 0) {
-    document.getElementById(prefix + "_result").innerHTML =
-      "Please select an Expiry Date after the Trade Date.";
-    return;
-  }
-
   const url =
     "https://priceoption-203178530029.northamerica-northeast2.run.app" +
     "?spot=" + encodeURIComponent(spot) +
@@ -314,75 +303,6 @@ async function priceOption(prefix) {
 
   }
 }
-</script>
-<script>
-/* Add trade/expiry dates to every option calculator and calculate
-   the year fraction using an Actual/365 day-count basis. */
-function rsDateText(date) {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return year + "-" + month + "-" + day;
-}
-
-function rsDateAtUTC(dateText) {
-  const parts = dateText.split("-").map(Number);
-  return Date.UTC(parts[0], parts[1] - 1, parts[2]);
-}
-
-function rsUpdateTimeToExpiry(prefix) {
-  const tradeInput = document.getElementById(prefix + "_trade_date");
-  const expiryInput = document.getElementById(prefix + "_expiry_date");
-  const timeInput = document.getElementById(prefix + "_time");
-  if (!tradeInput || !expiryInput || !timeInput || !tradeInput.value || !expiryInput.value) return;
-
-  const days = (rsDateAtUTC(expiryInput.value) - rsDateAtUTC(tradeInput.value)) / 86400000;
-  if (days < 0) {
-    timeInput.value = "";
-    timeInput.setCustomValidity("Expiry Date must be on or after Trade Date.");
-  } else {
-    timeInput.value = (days / 365).toFixed(6);
-    timeInput.setCustomValidity("");
-  }
-}
-
-function rsAddDateFields(timeInput) {
-  const prefix = timeInput.id.slice(0, -5);
-  if (document.getElementById(prefix + "_trade_date")) return;
-
-  let timeLabel = timeInput.previousElementSibling;
-  while (timeLabel && timeLabel.tagName !== "LABEL") timeLabel = timeLabel.previousElementSibling;
-  if (!timeLabel) return;
-
-  const today = new Date();
-  const defaultExpiry = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 30);
-  const tradeId = prefix + "_trade_date";
-  const expiryId = prefix + "_expiry_date";
-
-  if (timeInput.closest(".rs-grid")) {
-    timeLabel.insertAdjacentHTML("beforebegin",
-      '<label for="' + tradeId + '">Trade Date</label><input type="date" id="' + tradeId + '" value="' + rsDateText(today) + '">' +
-      '<label for="' + expiryId + '">Expiry Date</label><input type="date" id="' + expiryId + '" value="' + rsDateText(defaultExpiry) + '">');
-  } else {
-    timeLabel.insertAdjacentHTML("beforebegin",
-      '<label for="' + tradeId + '">Trade Date</label><br>' +
-      '<input type="date" id="' + tradeId + '" value="' + rsDateText(today) + '"><br>' +
-      '<label for="' + expiryId + '">Expiry Date</label><br>' +
-      '<input type="date" id="' + expiryId + '" value="' + rsDateText(defaultExpiry) + '"><br>');
-  }
-
-  timeLabel.textContent = "Time to Expiry (years)";
-  timeInput.readOnly = true;
-  timeInput.classList.add("rs-time-to-expiry");
-
-  document.getElementById(tradeId).addEventListener("change", function() { rsUpdateTimeToExpiry(prefix); });
-  document.getElementById(expiryId).addEventListener("change", function() { rsUpdateTimeToExpiry(prefix); });
-  rsUpdateTimeToExpiry(prefix);
-}
-
-document.addEventListener("DOMContentLoaded", function() {
-  document.querySelectorAll('input[id$="_time"]').forEach(rsAddDateFields);
-});
 </script>
 <div class="text-section">
 <span id="Options"></span>
@@ -737,14 +657,6 @@ function rsSignedPremium(price, qty, shares) {
   return -qty * price * shares;
 }
 
-function rsValidatedTime(prefix) {
-  const value = Number(document.getElementById(prefix + "_time").value);
-  if (!isFinite(value) || value <= 0) {
-    throw new Error("Please select an Expiry Date after the Trade Date.");
-  }
-  return value;
-}
-
 
 async function rsSolveStrikeForTargetPrice(spot, vol, rate, time, dividend, type, targetPrice) {
   if (targetPrice <= 0) {
@@ -812,7 +724,7 @@ async function priceZeroPremiumSeagull(prefix) {
   const S = Number(document.getElementById(prefix + "_spot").value);
   const rate = Number(document.getElementById(prefix + "_rate").value);
   const dividend = Number(document.getElementById(prefix + "_dividend").value);
-  const time = rsValidatedTime(prefix);
+  const time = Number(document.getElementById(prefix + "_time").value);
   const shares = Number(document.getElementById(prefix + "_shares").value);
 
   let financeLegIndex;
@@ -961,7 +873,7 @@ async function priceStrategy(prefix) {
     const S = Number(document.getElementById(prefix + "_spot").value);
     const rate = Number(document.getElementById(prefix + "_rate").value);
     const dividend = Number(document.getElementById(prefix + "_dividend").value);
-    const time = rsValidatedTime(prefix);
+    const time = Number(document.getElementById(prefix + "_time").value);
     const shares = Number(document.getElementById(prefix + "_shares").value);
 
     let totalCashPremium = 0;
