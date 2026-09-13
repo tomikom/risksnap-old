@@ -105,6 +105,30 @@ input.rs-time-to-expiry[readonly] {
     color: #333333;
 }
 
+.rs-market-input-links {
+    display: flex;
+    gap: 9px;
+    flex-wrap: wrap;
+    margin: 0 0 14px 0;
+}
+
+.rs-market-input-link {
+    display: inline-block;
+    padding: 7px 13px;
+    border-radius: 8px;
+    background-color: #3A5FCD;
+    color: white !important;
+    font-weight: bold;
+    text-decoration: none !important;
+    cursor: pointer;
+}
+
+.rs-market-input-link:hover,
+.rs-market-input-link:focus {
+    background-color: #28489f;
+    text-decoration: underline !important;
+}
+
 .rs-pricer-box button {
     background-color: #008CBA;
     border: none;
@@ -380,8 +404,25 @@ function rsAddDateFields(timeInput) {
   rsUpdateTimeToExpiry(prefix);
 }
 
+function rsAddMarketInputLinks(timeInput) {
+  const calculator = timeInput.closest(".rs-pricer-box, .rs-calc");
+  if (!calculator || calculator.querySelector(".rs-market-input-links")) return;
+
+  const heading = calculator.querySelector("h3, h4");
+  if (!heading) return;
+
+  heading.insertAdjacentHTML("afterend",
+    '<div class="rs-market-input-links">' +
+      '<a class="rs-market-input-link" href="https://www.risksnap.com/surface/" target="_blank" rel="noopener noreferrer" title="Get implied volatility and dividend yield from the Surface Grid." aria-label="Surface: Get implied volatility and dividend yield from the Surface Grid.">Surface</a>' +
+      '<a class="rs-market-input-link" href="https://www.risksnap.com/rates_and_inflation/" target="_blank" rel="noopener noreferrer" title="Get rates from Rates and Inflation." aria-label="Rate: Get rates from Rates and Inflation.">Rate</a>' +
+    '</div>');
+}
+
 document.addEventListener("DOMContentLoaded", function() {
-  document.querySelectorAll('input[id$="_time"]').forEach(rsAddDateFields);
+  document.querySelectorAll('input[id$="_time"]').forEach(function(timeInput) {
+    rsAddDateFields(timeInput);
+    rsAddMarketInputLinks(timeInput);
+  });
 });
 </script>
 <div class="text-section">

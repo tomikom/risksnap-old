@@ -153,32 +153,6 @@ Please click on User Agreement before using any calculators on RiskSnap .
     padding-top: 10px;
     margin-top: 4px;
 }
-.rs-surface-interpolator {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    flex-wrap: wrap;
-    margin: 12px 0;
-    padding: 12px;
-    border: 1px solid #b8c7d9;
-    border-radius: 8px;
-    background: #f4f8fc;
-}
-.rs-surface-interpolator input { width: 130px; padding: 6px; }
-.rs-surface-interpolator button {
-    background: #3A5FCD;
-    color: white;
-    border: none;
-    border-radius: 8px;
-    padding: 8px 14px;
-    cursor: pointer;
-    font-weight: bold;
-}
-.rs-surface-interpolation-result {
-    flex-basis: 100%;
-    font-weight: bold;
-    min-height: 1.2em;
-}
 </style>
 
 <div class="rs-surface-box">
@@ -568,91 +542,6 @@ async function refreshGammaPanels() {
     statusBox.textContent = `Surface loaded for ${ticker}. Gamma curtains: Put ${rsFmt(putWall.strike)}, Call ${rsFmt(callWall.strike)}, Gamma ${rsFmt(gammaWall.strike)}, Zero ${rsFmt(zero)}. Total GEX at spot ${Math.round(atSpot.total).toLocaleString()}.`;
 }
 
-function surfaceNaturalCubicSpline(xValues, yValues, x0) {
-    const points = xValues.map((x, i) => ({x: Number(x), y: Number(yValues[i])}))
-        .filter(p => Number.isFinite(p.x) && Number.isFinite(p.y))
-        .sort((a, b) => a.x - b.x);
-    if (points.length < 2) throw new Error("Not enough surface points for interpolation.");
-
-    const xs = points.map(p => p.x);
-    const ys = points.map(p => p.y);
-    const n = xs.length;
-    if (x0 < xs[0] || x0 > xs[n - 1]) {
-        throw new Error(`Strike is outside the grid range (${xs[0].toFixed(2)} to ${xs[n - 1].toFixed(2)} moneyness).`);
-    }
-
-    const y2 = new Array(n).fill(0);
-    const u = new Array(n - 1).fill(0);
-    for (let i = 1; i < n - 1; i++) {
-        const sig = (xs[i] - xs[i - 1]) / (xs[i + 1] - xs[i - 1]);
-        const p = sig * y2[i - 1] + 2;
-        y2[i] = (sig - 1) / p;
-        u[i] = (6 * ((ys[i + 1] - ys[i]) / (xs[i + 1] - xs[i]) -
-            (ys[i] - ys[i - 1]) / (xs[i] - xs[i - 1])) /
-            (xs[i + 1] - xs[i - 1]) - sig * u[i - 1]) / p;
-    }
-    for (let k = n - 2; k >= 0; k--) y2[k] = y2[k] * y2[k + 1] + u[k];
-
-    let low = 0;
-    let high = n - 1;
-    while (high - low > 1) {
-        const mid = Math.floor((high + low) / 2);
-        if (xs[mid] > x0) high = mid;
-        else low = mid;
-    }
-    const h = xs[high] - xs[low];
-    const a = (xs[high] - x0) / h;
-    const b = (x0 - xs[low]) / h;
-    return Math.max(a * ys[low] + b * ys[high] +
-        ((a * a * a - a) * y2[low] + (b * b * b - b) * y2[high]) * h * h / 6, 1e-10);
-}
-
-function interpolateSurfaceIV() {
-    const result = document.getElementById("surfaceInterpolationResult");
-    try {
-        const surface = lastLoadedSurface;
-        if (!surface || surface.surfaceType !== "smooth") throw new Error("Create a Smoothed Surface first.");
-
-        const strike = Number(document.getElementById("surfaceInterpolationStrike").value);
-        const time = Number(document.getElementById("surfaceInterpolationTime").value);
-        const spot = Number(surface.underlying);
-        if (!(strike > 0) || !(spot > 0)) throw new Error("Enter a valid positive strike.");
-        if (!(time > 0)) throw new Error("Enter a positive Time to Expiry.");
-
-        const moneyness = strike / spot;
-        const tenors = (surface.tenors || []).map(Number);
-        const grid = surface.iv || [];
-        if (!tenors.length || grid.length !== tenors.length) throw new Error("Surface grid is incomplete.");
-
-        let iv;
-        let note = "";
-        if (time <= tenors[0]) {
-            iv = surfaceNaturalCubicSpline(surface.moneyness, grid[0], moneyness);
-            note = " (nearest-tenor extrapolation)";
-        } else if (time >= tenors[tenors.length - 1]) {
-            iv = surfaceNaturalCubicSpline(surface.moneyness, grid[grid.length - 1], moneyness);
-            note = " (nearest-tenor extrapolation)";
-        } else {
-            let upper = 1;
-            while (upper < tenors.length && tenors[upper] < time) upper++;
-            const lower = upper - 1;
-            const t1 = tenors[lower];
-            const t2 = tenors[upper];
-            const v1 = surfaceNaturalCubicSpline(surface.moneyness, grid[lower], moneyness);
-            const v2 = surfaceNaturalCubicSpline(surface.moneyness, grid[upper], moneyness);
-            const totalVariance = t1 * v1 * v1 +
-                ((time - t1) / (t2 - t1)) * (t2 * v2 * v2 - t1 * v1 * v1);
-            iv = Math.sqrt(Math.max(totalVariance, 1e-20) / time);
-        }
-
-        const dividend = Number(surface.dividendYield);
-        const dividendText = Number.isFinite(dividend) ? (dividend * 100).toFixed(2) + "%" : "N/A";
-        result.textContent = `Interpolated IV: ${(iv * 100).toFixed(2)}% | Dividend Yield: ${dividendText} | Moneyness: ${moneyness.toFixed(4)}${note}`;
-    } catch (err) {
-        result.textContent = err.message;
-    }
-}
-
 function renderSurfaceGrid(surface) {
     const panel = document.getElementById("surfaceGridPanel");
     const moneyness = surface.moneyness || [];
@@ -673,14 +562,6 @@ function renderSurfaceGrid(surface) {
 			<span style="background:#35946e;color:white;padding:2px 6px;">Green</span> = quote supported.
             <span style="background:#724219;color:white;padding:2px 6px;">Brown</span> = partly extrapolated.
             <span style="background:#bfbdc3;color:black;padding:2px 6px;">Grey</span> = fully/tenor extrapolated.
-        </div>
-        <div class="rs-surface-interpolator">
-            <label for="surfaceInterpolationStrike"><strong>Strike:</strong></label>
-            <input id="surfaceInterpolationStrike" type="number" min="0.01" step="0.01" value="${Number(surface.underlying).toFixed(2)}">
-            <label for="surfaceInterpolationTime"><strong>Time to Expiry (years):</strong></label>
-            <input id="surfaceInterpolationTime" type="number" min="0.000001" step="0.000001" value="0.082192">
-            <button type="button" onclick="interpolateSurfaceIV()">Interpolate IV</button>
-            <div id="surfaceInterpolationResult" class="rs-surface-interpolation-result"></div>
         </div>
         <table style="border-collapse:collapse; min-width:850px; font-size:13px;">
             <thead>
