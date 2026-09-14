@@ -3,12 +3,12 @@ layout: home-template
 ---
 <div class ="image-section rs-hero-section">
   <div class="rs-feature-carousel" aria-roledescription="carousel" aria-label="RiskSnap analytics highlights">
-  <a class="rs-correlation-hero rs-feature-slide is-active" href="/correlations/" aria-label="Explore RiskSnap correlations" aria-hidden="false">
+  <div class="rs-correlation-hero rs-feature-slide is-active" aria-label="RiskSnap correlations" aria-hidden="false">
     <div class="rs-correlation-hero__copy">
       <div class="rs-correlation-hero__title">RiskSnap.com</div>
       <div class="rs-correlation-hero__kicker">MARKET RISK, MADE VISIBLE</div>
       <div class="rs-correlation-hero__text">Explore correlations, portfolio risk and market dispersion across assets and through time.</div>
-      <div class="rs-correlation-hero__prompt">Explore Correlations <span aria-hidden="true">›</span></div>
+      <a class="rs-correlation-hero__prompt" href="/correlations/">Explore Correlations <span aria-hidden="true">›</span></a>
     </div>
     <svg class="rs-correlation-hero__graphic" viewBox="180 0 930 430" role="img" aria-labelledby="rsCorrHeroTitle rsCorrHeroDesc" preserveAspectRatio="xMidYMid meet">
       <title id="rsCorrHeroTitle">Animated correlation bubble matrix</title>
@@ -64,14 +64,14 @@ layout: home-template
         <text x="860" y="410">Bubble size = correlation strength</text>
       </g>
     </svg>
-  </a>
+  </div>
 
-  <a class="rs-correlation-hero rs-feature-slide rs-portfolio-hero" href="/portfolio_optimization/" aria-label="Explore RiskSnap portfolio market value" aria-hidden="true" tabindex="-1">
+  <div class="rs-correlation-hero rs-feature-slide rs-portfolio-hero" aria-label="RiskSnap portfolio market value" aria-hidden="true">
     <div class="rs-correlation-hero__copy">
       <div class="rs-correlation-hero__title">Portfolio Market Value</div>
       <div class="rs-correlation-hero__kicker">SEE THE PATH, NOT JUST THE RESULT</div>
       <div class="rs-correlation-hero__text">Track market value through time and see the peak, trough and recovery that shape portfolio risk.</div>
-      <div class="rs-correlation-hero__prompt">Explore Portfolio Optimization <span aria-hidden="true">›</span></div>
+      <a class="rs-correlation-hero__prompt" href="/portfolio_optimization/">Explore Portfolio Optimization <span aria-hidden="true">›</span></a>
     </div>
     <svg class="rs-correlation-hero__graphic rs-portfolio-hero__graphic" viewBox="0 0 930 430" role="img" aria-labelledby="rsPortfolioHeroTitle rsPortfolioHeroDesc" preserveAspectRatio="xMidYMid meet">
       <title id="rsPortfolioHeroTitle">Portfolio market value with peak and trough</title>
@@ -107,7 +107,7 @@ layout: home-template
       </g>
       <text class="rs-portfolio-hero__note" x="82" y="40">Illustrative Portfolio Market Value (EOD) · 250 observations</text>
     </svg>
-  </a>
+  </div>
 
   <div class="rs-feature-carousel__controls" aria-label="Choose featured view">
     <button class="rs-feature-carousel__dot is-active" type="button" aria-label="Show correlations" aria-pressed="true"></button>
@@ -131,7 +131,6 @@ layout: home-template
         var active = i === current;
         slide.classList.toggle('is-active', active);
         slide.setAttribute('aria-hidden', active ? 'false' : 'true');
-        slide.tabIndex = active ? 0 : -1;
       });
       dots.forEach(function (dot, i) {
         var active = i === current;
@@ -174,7 +173,7 @@ layout: home-template
 .rs-feature-carousel {
     position: relative;
     width: 100vw;
-    min-height: clamp(220px, 22vw, 320px);
+    min-height: clamp(190px, 18vw, 260px);
     margin-left: calc(50% - 50vw);
     overflow: hidden;
     background: #0000ff;
@@ -218,7 +217,7 @@ layout: home-template
 .rs-correlation-hero__graphic {
     display: block;
     width: 100%;
-    height: clamp(220px, 22vw, 320px);
+    height: clamp(190px, 18vw, 260px);
     background: #eaf2ff;
 }
 .rs-correlation-hero__copy {
@@ -254,6 +253,7 @@ layout: home-template
     padding-bottom: 3px;
     border-bottom: 1px solid rgba(255,255,255,.75);
     color: #fff;
+    text-decoration: none;
     font: 600 13px/1.3 Arial, Helvetica, sans-serif;
 }
 .rs-correlation-hero__grid path {
@@ -292,17 +292,16 @@ layout: home-template
 .rs-portfolio-hero__annotations .is-peak { fill: #24834f; }
 .rs-portfolio-hero__annotations .is-trough { fill: #ad3429; }
 .rs-portfolio-hero__note { fill: #425b79; font: 700 15px Arial, Helvetica, sans-serif; }
-.rs-correlation-hero:hover .rs-correlation-hero__title,
-.rs-correlation-hero:focus-visible .rs-correlation-hero__title { color: #fff; }
-.rs-correlation-hero:hover .rs-correlation-hero__prompt { border-bottom-color: #fff; }
-.rs-correlation-hero:focus-visible { outline: 3px solid #3A5FCD; outline-offset: -3px; }
+.rs-correlation-hero__prompt:hover,
+.rs-correlation-hero__prompt:focus-visible { border-bottom-color: #fff; color: #fff; }
+.rs-correlation-hero__prompt:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
 @media (max-width: 700px) {
-    .rs-feature-carousel { min-height: 440px; }
+    .rs-feature-carousel { min-height: 390px; }
     .rs-correlation-hero { grid-template-columns: 1fr; }
     .rs-correlation-hero__copy { padding: 26px 24px 24px; }
     .rs-correlation-hero__text { max-width: none; }
     .rs-correlation-hero__prompt { margin-top: 16px; }
-    .rs-correlation-hero__graphic { height: 220px; }
+    .rs-correlation-hero__graphic { height: 190px; }
     .rs-feature-carousel__controls { left: 50%; bottom: 8px; }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -1003,7 +1002,7 @@ div.c {
 </script>
 
 <!-- RiskSnap landing page correction: exact banner blue and saved-share support, 2026-09-10 -->
-<section class="rs-portfolio-quotes" style="background:#0000FF !important;" aria-labelledby="rs-portfolio-quotes-title">
+<section class="rs-portfolio-quotes" style="background:#E5F1FF !important;" aria-labelledby="rs-portfolio-quotes-title">
   <div class="rs-portfolio-quotes__heading">
     <div>
       <p class="rs-global-markets__eyebrow">Before the U.S. opening bell</p>
@@ -1020,6 +1019,7 @@ div.c {
       </div>
       <select id="rs-portfolio-choice" class="rs-visually-hidden" tabindex="-1" aria-hidden="true"><option value="">Loading choices…</option></select>
       <button id="rs-portfolio-load" type="button">Get quotes</button>
+      <button id="rs-portfolio-results-close" type="button" hidden>Close list</button>
     </div>
   </div>
   <p id="rs-portfolio-status" class="rs-global-markets__status" aria-live="polite">Choose a preset or a portfolio saved on the Correlations page.</p>
@@ -1037,11 +1037,11 @@ div.c {
 <p class="rs-broker-access-note"><strong>Broker access note:</strong> Markets commonly accessible to retail investors through international brokers include the United States (NYSE and Nasdaq), Canada (TMX), United Kingdom (London Stock Exchange), Germany (Deutsche Börse), Japan (JPX), Hong Kong (HKEX), Switzerland (SIX) and Australia (ASX). Mainland China is generally accessed through eligible Stock Connect securities; India, South Korea, Taiwan, Brazil, Dubai and Saudi Arabia may require participating brokers, registration, custody arrangements or local onboarding. Availability varies by jurisdiction, security and account type.</p>
 
 <style>
-.rs-portfolio-quotes { margin: 0 0 12px; padding: 12px; border: 1px solid #0000CC; border-radius: 10px; background: #0000FF; color: #fff; font-family: Arial, Helvetica, sans-serif; }
+.rs-portfolio-quotes { margin: 0 0 12px; padding: 12px; border: 1px solid #9fc4ee; border-radius: 10px; background: #E5F1FF; color: #172536; font-family: Arial, Helvetica, sans-serif; }
 .rs-portfolio-quotes__heading { display: flex; justify-content: space-between; align-items: end; gap: 14px; flex-wrap: wrap; }
-.rs-portfolio-quotes h2 { margin: 0; color: #fff; font-size: 18px; }
+.rs-portfolio-quotes h2 { margin: 0; color: #172536; font-size: 18px; }
 .rs-portfolio-quotes__controls { display: grid; grid-template-columns: auto minmax(190px, 280px) auto; align-items: center; gap: 7px; }
-.rs-portfolio-choice-label { color: #fff; font-size: 11px; font-weight: 700; }
+.rs-portfolio-choice-label { color: #172536; font-size: 11px; font-weight: 700; }
 .rs-visually-hidden { position: absolute !important; width: 1px !important; height: 1px !important; padding: 0 !important; margin: -1px !important; overflow: hidden !important; clip: rect(0,0,0,0) !important; white-space: nowrap !important; border: 0 !important; }
 .rs-portfolio-picker { position: relative; min-width: 0; }
 .rs-portfolio-choice-button { width: 100%; min-width: 0; text-align: left; color: #172536 !important; background: #fff !important; }
@@ -1051,17 +1051,17 @@ div.c {
 .rs-portfolio-choice-option { display: block; width: 100%; margin: 1px 0; padding: 7px 8px !important; border: 0 !important; color: #172536 !important; background: #fff !important; text-align: left; }
 .rs-portfolio-choice-option:hover, .rs-portfolio-choice-option:focus { background: #edf4ff !important; }
 .rs-portfolio-choice-menu .rs-portfolio-close { position: sticky; bottom: 0; width: 100%; margin-top: 6px; color: #fff; background: #2f5f9f; }
-.rs-portfolio-create-note { margin: 3px 0 0; color: #edf5fc; font-size: 12px; }
-.rs-portfolio-create-note a { color: #fff; font-weight: 700; text-decoration: underline; }
+.rs-portfolio-create-note { margin: 3px 0 0; color: #354b63; font-size: 12px; }
+.rs-portfolio-create-note a { color: #174f91; font-weight: 700; text-decoration: underline; }
 .rs-portfolio-quotes select, .rs-portfolio-quotes button { min-height: 31px; border: 1px solid #9bacc0; border-radius: 5px; background: #fff; }
 .rs-portfolio-quotes button { padding: 4px 10px; color: #fff; border-color: #2f5f9f; background: #2f5f9f; cursor: pointer; }
 .rs-portfolio-table-wrap { margin-top: 8px; overflow-x: auto; }
-.rs-portfolio-table { width: 100%; border-collapse: collapse; color: #fff; font-size: 12px; }
-.rs-portfolio-table th, .rs-portfolio-table td { padding: 6px 8px; border-bottom: 1px solid rgba(255,255,255,.25); text-align: right; }
+.rs-portfolio-table { width: 100%; border-collapse: collapse; color: #172536; font-size: 12px; }
+.rs-portfolio-table th, .rs-portfolio-table td { padding: 6px 8px; border-bottom: 1px solid rgba(23,37,54,.18); text-align: right; }
 .rs-portfolio-table th:first-child, .rs-portfolio-table td:first-child { text-align: left; font-weight: 700; }
-.rs-portfolio-change.is-up { color: #a9f0c4; }
-.rs-portfolio-change.is-down { color: #ffd0cb; }
-.rs-portfolio-quotes .rs-global-markets__status, .rs-portfolio-quotes .rs-global-markets__note { color: #edf5fc; }
+.rs-portfolio-change.is-up { color: #14733d; }
+.rs-portfolio-change.is-down { color: #a62f25; }
+.rs-portfolio-quotes .rs-global-markets__status, .rs-portfolio-quotes .rs-global-markets__note { color: #354b63; }
 .rs-broker-access-note { margin: 3px 4px 14px; color: #657386; font: 9px/1.35 Arial, Helvetica, sans-serif; }
 @media (max-width: 650px) {
   .rs-portfolio-quotes__controls { width: 100%; grid-template-columns: 1fr auto; }
@@ -1079,6 +1079,7 @@ div.c {
   const choiceMenu = document.getElementById("rs-portfolio-choice-menu");
   const choiceOptions = document.getElementById("rs-portfolio-choice-options");
   const button = document.getElementById("rs-portfolio-load");
+  const resultsCloseButton = document.getElementById("rs-portfolio-results-close");
   const closeButton = document.getElementById("rs-portfolio-close");
   const status = document.getElementById("rs-portfolio-status");
   const rows = document.getElementById("rs-portfolio-quote-rows");
@@ -1242,6 +1243,7 @@ div.c {
     status.textContent = "Loading EOD and pre-market quotes…";
     rows.innerHTML = "";
     wrap.hidden = false;
+    if (resultsCloseButton) resultsCloseButton.hidden = false;
     try {
       const response = await fetch(`${endpoint}/latest_prices`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ symbols: holdings.map(item => item.symbol) }) });
       const payload = await response.json();
@@ -1270,11 +1272,17 @@ div.c {
   }
 
   button.addEventListener("click", loadQuotes);
+  if (resultsCloseButton) resultsCloseButton.addEventListener("click", () => {
+    wrap.hidden = true;
+    resultsCloseButton.hidden = true;
+  });
   choiceButton.addEventListener("click", () => {
     choiceMenu.hidden = !choiceMenu.hidden;
     choiceButton.setAttribute("aria-expanded", String(!choiceMenu.hidden));
   });
-  if (closeButton) closeButton.addEventListener("click", () => {
+  if (closeButton) closeButton.addEventListener("click", event => {
+    event.preventDefault();
+    event.stopPropagation();
     choiceMenu.hidden = true;
     choiceButton.setAttribute("aria-expanded", "false");
     choiceButton.focus();
@@ -1548,6 +1556,33 @@ div.c {
 })();
 </script>
 
+<style>
+/* Neutral, readable treatment for the three-column article area. */
+.row .column {
+  color: #172536;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 15px;
+  line-height: 1.5;
+}
+.row .column.right,
+.row .column.right .frame1,
+.row .column.right .frame2,
+.row .column.right .frame3,
+.row .column.right .frame4,
+.row .column.right .frame5,
+.row .column.right .frame6 {
+  background: #f8fbff !important;
+  color: #172536 !important;
+}
+.row .column h2,
+.row .column h3,
+.row .column h4 {
+  color: #173b67 !important;
+  font-family: Arial, Helvetica, sans-serif;
+  line-height: 1.2;
+}
+</style>
+
 <p class="world-news-link"><a href="https://news.google.com/home?hl=en-CA&amp;gl=CA&amp;ceid=CA%3Aen" target="_blank" rel="noopener noreferrer">Google News <span aria-hidden="true">↗</span></a> &nbsp; <a href="https://www.reuters.com/world/" target="_blank" rel="noopener noreferrer">Reuters World News <span aria-hidden="true">↗</span></a></p>
 <p>
 <div class="row">
@@ -1599,9 +1634,7 @@ this started to occur in March, right after the US incursion into Iran.
 	
 <p> 
 
-</div>
-
-<div class="column right frame1"> 
+<div class="frame1"> 
  <!--  <h4>Futures</h4>
  <p>
    <div class="a"><p>Energy Futures<p></div>
@@ -1609,26 +1642,32 @@ this started to occur in March, right after the US incursion into Iran.
 </div>
 <div class="column right frame5">-->
 <h4>Volatility</h4>
- <p>
-<div class="a"><p>The VIX (CBOE Volatility Index) typical ranges:  12-20 normal, 20-30 elevated fear/uncertainty, 30-40 significant stress, 40-60 panic.  Currently considered normal.  Note the very strong negative correlations between the other markets (with exception of gold) and VIX.</p></div>
-For historical volatilities refer to the diagonal on the correlations matrix at <a href="https://www.risksnap.com/correlations/">Correlations</a> page.For implied volatilities refer to our <a href="https://www.risksnap.com/surface/">Surface</a> page, where implied volatilities are provided both in 3d graphics and as a grid</a> 
+<div class="a">
+  <p>The VIX (CBOE Volatility Index) typical ranges: 12-20 normal, 20-30 elevated fear/uncertainty, 30-40 significant stress, 40-60 panic. Currently considered normal. Note the very strong negative correlations between the other markets (with exception of gold) and VIX.</p>
+  <p>For historical volatilities refer to the diagonal on the correlations matrix at the <a href="https://www.risksnap.com/correlations/">Correlations</a> page. For implied volatilities refer to our <a href="https://www.risksnap.com/surface/">Surface</a> page, where implied volatilities are provided both in 3D graphics and as a grid.</p>
+  <p>Implied volatility can also be used to capitalize on an expected change in market volatility by buying (or selling) options or using a <a href="https://www.risksnap.com/options/#calculator-7" style="color:#005a9c;text-decoration:underline;font-weight:600;">straddle</a>. A long (or short) straddle can provide a relatively pure volatility position when its changing delta is successfully hedged.</p>
+</div>
 
 </div>
-<div class="column right frame4">
+<div class="frame4">
    <h4>Correlations</h4>
  <p>
    <div class="a"><p>Correlation covers all risk factors. Some of the most watched risk factors can be found in <a href="https://www.risksnap.com/correlations/"">Correlations</a> page
 </div>
 	
 </div>
-<div class="column right frame2">
+<div class="frame6">
+   <h4>Dispersion - Portfolios</h4>
+   <div class="a"><p>Dispersion shows how differently the securities in a portfolio are moving. A widening fan indicates greater divergence, while a narrowing fan indicates more similar performance. Current and historical dispersion can be viewed on the <a href="https://www.risksnap.com/dispersion/">Dispersion Index</a> page.</p></div>
+</div>
+<div class="frame2">
 <h4>Volatility Surface - Equities</h4>
  <p>
 <div class="a"><p>Real time implied vol surfaces from market sources can be viewed on <a href="https://www.risksnap.com/surface/">Surface</a> page</p></div>
 
 	
 
-<div class="column right frame3"> 
+<div class="frame3"> 
    <h4>Gamma - Equities</h4>
  <p>
      <div class="a"><p>Gamma is the change in delta and is useful for viewing expected changes in equity prices due to option trading.  Gamma walls are also provided in the <a href="https://www.risksnap.com/gamma/"">Gamma</a> page <p>  </div>
@@ -1637,6 +1676,9 @@ For historical volatilities refer to the diagonal on the correlations matrix at 
 
 <p>
 </div>
+
+</div><!-- end right column -->
+</div><!-- end three-column row -->
 
 <h1 class="three-col-header">VaR as a Risk Measure</h1>
 <p class="paragraph">Value at Risk (VaR) is one of the most popular tools used in risk management and is incorporated within the Basel Accord for banking supervision.  VaR is used by central counterparties (CCPs) for purposes of determining initial margin.  VaR and Expected Shortfall (ES) are standard measures used by traders for setting risk limits and can be used by investors, traders and risk managers both for preventing panic selling (or buying) in periods of high volatility, and also preventing overreaching in periods of low volatility.
