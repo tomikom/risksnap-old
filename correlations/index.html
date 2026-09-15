@@ -4,8 +4,9 @@ title: Correlations, Portfolios
 ---
 <!--
 RiskSnap Correlations
-Version: index(153)
+Version: index(154)
 Changes:
+- Changed the futures button to "+1 contract" so repeated clicks add successive contract-sized unit quantities; the input arrows continue to move by one contract up or down
 - Added a one-contract button to each futures row so the correct underlying unit quantity can be entered with one click; equity and ETF rows are unchanged
 - Changed futures holding inputs from contract counts to underlying unit quantities (for example, corn defaults to 5000); equity and ETF share inputs are unchanged, and existing saved portfolios remain compatible
 - Kept risk analytics on completed EOD data while correcting live chart and current-valuation futures lookups to use exact Yahoo codes (for example CORN to ZC=F and OIL to CL=F); generic labels remain presentation/news terms only
@@ -2807,7 +2808,7 @@ function renderPortfolioTable() {
             marketFxPair,
             marketFxRate
           )}</td>
-      <td><input class="portfolio-shares" data-asset="${row.asset}" type="number" min="0" step="${isFuturesAsset(row.asset) ? contractFactor(row.asset) : 1}" value="${formatShares(displayedHoldingUnits(row.asset, row.shares))}"><div class="portfolio-unit-label">${isFuturesAsset(row.asset) ? "Units" : "Shares"}</div>${isFuturesAsset(row.asset) ? `<button type="button" class="one-contract-button" data-asset="${row.asset}" title="Set units to one contract (${formatShares(contractFactor(row.asset))})">1 contract</button>` : ""}</td>
+      <td><input class="portfolio-shares" data-asset="${row.asset}" type="number" min="0" step="${isFuturesAsset(row.asset) ? contractFactor(row.asset) : 1}" value="${formatShares(displayedHoldingUnits(row.asset, row.shares))}"><div class="portfolio-unit-label">${isFuturesAsset(row.asset) ? "Units" : "Shares"}</div>${isFuturesAsset(row.asset) ? `<button type="button" class="one-contract-button" data-asset="${row.asset}" title="Add one contract (${formatShares(contractFactor(row.asset))} units)">+1 contract</button>` : ""}</td>
       <td>${contractDescription(row.asset)}</td>
       <td>${formatMoney(row.marketValue)}</td>
       <td>${volatilityText}</td>
@@ -2835,7 +2836,8 @@ function renderPortfolioTable() {
   body.querySelectorAll(".one-contract-button").forEach(button => {
     button.addEventListener("click", () => {
       portfolioAutoEqualWeight = false;
-      portfolioShares[button.dataset.asset] = 1;
+      const currentContracts = Math.max(0, Number(portfolioShares[button.dataset.asset]) || 0);
+      portfolioShares[button.dataset.asset] = currentContracts + 1;
       renderPortfolioTable();
       renderPortfolioMarketValueChart();
     });
