@@ -4,8 +4,9 @@ title: Correlations, Portfolios
 ---
 <!--
 RiskSnap Correlations
-Version: index(152)
+Version: index(153)
 Changes:
+- Added a one-contract button to each futures row so the correct underlying unit quantity can be entered with one click; equity and ETF rows are unchanged
 - Changed futures holding inputs from contract counts to underlying unit quantities (for example, corn defaults to 5000); equity and ETF share inputs are unchanged, and existing saved portfolios remain compatible
 - Kept risk analytics on completed EOD data while correcting live chart and current-valuation futures lookups to use exact Yahoo codes (for example CORN to ZC=F and OIL to CL=F); generic labels remain presentation/news terms only
 - Added Beta vs T10YIE beside Beta vs SPY; SPY remains a normal portfolio holding when selected, while an unselected SPY is loaded only as an internal beta benchmark; T10YIE is silently included as an internal benchmark when not selected and uses its daily change as the inflation factor
@@ -499,6 +500,8 @@ h1 { color: white; text-align: center; background-color: #3A5FCD; }
 .portfolio-table input.portfolio-shares { width:90px; padding:4px 6px; text-align:right; box-sizing:border-box; }
 .portfolio-table td:nth-child(6) { text-align:left; font-size:12px; color:#555; }
 .portfolio-unit-label { margin-top:2px; font-size:10px; color:#666; text-align:center; }
+.one-contract-button { margin-top:4px; padding:2px 7px; border:1px solid #9eb6ce; border-radius:4px; background:#edf5ff; color:#244c73; font-size:10px; cursor:pointer; }
+.one-contract-button:hover, .one-contract-button:focus { background:#dcecff; }
 .futures-note { margin-top:5px; }
 .portfolio-empty { color:#666; padding:10px 0; }
 .portfolio-footnote { margin:7px 2px 0; color:#666; font-size:11px; line-height:1.35; }
@@ -2804,7 +2807,7 @@ function renderPortfolioTable() {
             marketFxPair,
             marketFxRate
           )}</td>
-      <td><input class="portfolio-shares" data-asset="${row.asset}" type="number" min="0" step="${isFuturesAsset(row.asset) ? contractFactor(row.asset) : 1}" value="${formatShares(displayedHoldingUnits(row.asset, row.shares))}"><div class="portfolio-unit-label">${isFuturesAsset(row.asset) ? "Units" : "Shares"}</div></td>
+      <td><input class="portfolio-shares" data-asset="${row.asset}" type="number" min="0" step="${isFuturesAsset(row.asset) ? contractFactor(row.asset) : 1}" value="${formatShares(displayedHoldingUnits(row.asset, row.shares))}"><div class="portfolio-unit-label">${isFuturesAsset(row.asset) ? "Units" : "Shares"}</div>${isFuturesAsset(row.asset) ? `<button type="button" class="one-contract-button" data-asset="${row.asset}" title="Set units to one contract (${formatShares(contractFactor(row.asset))})">1 contract</button>` : ""}</td>
       <td>${contractDescription(row.asset)}</td>
       <td>${formatMoney(row.marketValue)}</td>
       <td>${volatilityText}</td>
@@ -2827,6 +2830,15 @@ function renderPortfolioTable() {
     };
     input.addEventListener("change", commit);
     input.addEventListener("blur", commit);
+  });
+
+  body.querySelectorAll(".one-contract-button").forEach(button => {
+    button.addEventListener("click", () => {
+      portfolioAutoEqualWeight = false;
+      portfolioShares[button.dataset.asset] = 1;
+      renderPortfolioTable();
+      renderPortfolioMarketValueChart();
+    });
   });
 
   body.querySelectorAll(".portfolio-chart-button").forEach(button => {
