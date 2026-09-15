@@ -4,9 +4,8 @@ title: Correlations, Portfolios
 ---
 <!--
 RiskSnap Correlations
-Version: index(152)
+Version: index(151)
 Changes:
-- Changed futures holding inputs from contract counts to underlying unit quantities (for example, corn defaults to 5000); equity and ETF share inputs are unchanged, and existing saved portfolios remain compatible
 - Kept risk analytics on completed EOD data while correcting live chart and current-valuation futures lookups to use exact Yahoo codes (for example CORN to ZC=F and OIL to CL=F); generic labels remain presentation/news terms only
 - Added Beta vs T10YIE beside Beta vs SPY; SPY remains a normal portfolio holding when selected, while an unselected SPY is loaded only as an internal beta benchmark; T10YIE is silently included as an internal benchmark when not selected and uses its daily change as the inflation factor
 - Corrected TTM dividend yield for all non-USD equities by keeping the dividend/price ratio in the security's native currency; FX conversion is not applied to the yield ratio
@@ -154,7 +153,7 @@ Changes:
 
     <div class="portfolio-header">
       <div>
-        <div class="portfolio-note">Use the Correlations section to select holdings, then enter the number of units held and the portfolio’s Book Cost. For equities, units are shares; for futures, enter the quantity of the underlying commodity represented by the position. If desired the portfolio may be saved locally in your cache. When no saved portfolio is loaded, RiskSnap creates an approximately equal-notional portfolio from the selected holdings, using one or more whole contracts for futures. Click the chart button beside a holding for price history.</div>
+        <div class="portfolio-note">Use the Correlations section to select holdings, then enter the number of units held and the portfolio’s Book Cost. For equities, units are shares; for commodities, units are whole futures contracts. If desired the portfolio may be saved locally in your cache. When no saved portfolio is loaded, RiskSnap creates an approximately equal-notional portfolio from the selected holdings, subject to whole-contract futures sizing. Click the chart button beside a holding for price history.</div>
       </div>
       <div class="portfolio-controls">
         <label>Book Cost:
@@ -211,8 +210,8 @@ Changes:
       </table>
     </div>
     <div class="portfolio-footnote"><sup>1</sup> Div is the trailing twelve-month (TTM) dividend or distribution yield for the selected EOD date: split-adjusted cash dividends or ETF distributions during the preceding 12 months divided by that EOD price.</div>
-    <div class="portfolio-footnote futures-note"><strong>Book Cost:</strong> Portfolio Book Cost may include a combination of actual amounts invested in equities/ETFs and notional amounts for futures. For a futures position, Book Cost represents underlying units × purchase price (equivalently, contracts × contract size × purchase price), not the cash outlay. Futures require margin rather than payment of the full notional amount; margin is collateral and is generally returned when the position is closed, subject to trading gains or losses and other applicable charges.</div>
-    <div class="portfolio-footnote futures-note"><strong>Futures:</strong> Enter the underlying quantity represented by the futures position; for example, one ZC=F corn contract is 5,000 units. Current Notional Value represents the value of that underlying quantity. The full notional value is not normally required to establish a futures position. Margin requirements are determined by the exchange and broker and vary by contract and market conditions.</div>
+    <div class="portfolio-footnote futures-note"><strong>Book Cost:</strong> Portfolio Book Cost may include a combination of actual amounts invested in equities/ETFs and notional amounts for futures. For a futures position, Book Cost represents contracts × contract size × purchase price, not the cash outlay. Futures require margin rather than payment of the full notional amount; margin is collateral and is generally returned when the position is closed, subject to trading gains or losses and other applicable charges.</div>
+    <div class="portfolio-footnote futures-note"><strong>Futures:</strong> Current Notional Value represents the value of the underlying commodity represented by the contract. The full notional value is not normally required to establish a futures position. Margin requirements are determined by the exchange and broker and vary by contract and market conditions.</div>
 
     <div id="securityChartPanel" class="portfolio-chart-panel" hidden>
       <div class="portfolio-chart-header">
@@ -662,23 +661,9 @@ function holdingNotional(asset, price, units) {
   return p * u * contractFactor(asset);
 }
 
-// Portfolio state and saved portfolios continue to store futures as contract
-// counts. Only the editable table presents futures as underlying quantities.
-function displayedHoldingUnits(asset, storedUnits) {
-  const units = Number(storedUnits);
-  if (!Number.isFinite(units)) return 0;
-  return isFuturesAsset(asset) ? units * contractFactor(asset) : units;
-}
-
-function storedHoldingUnits(asset, displayedUnits) {
-  const units = Number(displayedUnits);
-  if (!Number.isFinite(units)) return 0;
-  return isFuturesAsset(asset) ? units / contractFactor(asset) : units;
-}
-
 function contractDescription(asset) {
   const spec = futuresSpec(asset);
-  return spec ? "" : "Shares";
+  return spec ? spec.contract : "Shares";
 }
 
 function futuresPriceDisplay(asset, price) {
@@ -2804,7 +2789,7 @@ function renderPortfolioTable() {
             marketFxPair,
             marketFxRate
           )}</td>
-      <td><input class="portfolio-shares" data-asset="${row.asset}" type="number" min="0" step="${isFuturesAsset(row.asset) ? contractFactor(row.asset) : 1}" value="${formatShares(displayedHoldingUnits(row.asset, row.shares))}"><div class="portfolio-unit-label">${isFuturesAsset(row.asset) ? "Units" : "Shares"}</div></td>
+      <td><input class="portfolio-shares" data-asset="${row.asset}" type="number" min="0" step="1" value="${formatShares(row.shares)}"><div class="portfolio-unit-label">${isFuturesAsset(row.asset) ? "Contracts" : "Shares"}</div></td>
       <td>${contractDescription(row.asset)}</td>
       <td>${formatMoney(row.marketValue)}</td>
       <td>${volatilityText}</td>
@@ -2821,7 +2806,7 @@ function renderPortfolioTable() {
     const commit = () => {
       portfolioAutoEqualWeight = false;
       const rawUnits = Math.max(0, Number(input.value) || 0);
-      portfolioShares[input.dataset.asset] = storedHoldingUnits(input.dataset.asset, rawUnits);
+      portfolioShares[input.dataset.asset] = isFuturesAsset(input.dataset.asset) ? Math.floor(rawUnits) : rawUnits;
       renderPortfolioTable();
       renderPortfolioMarketValueChart();
     };
