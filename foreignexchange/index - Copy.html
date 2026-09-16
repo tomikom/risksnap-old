@@ -95,7 +95,6 @@ Foreign exchange is the largest and most liquid financial market in the world.  
 </div>
 
 <div id="fxStatus" class="fx-status">Loading EUR/USD...</div>
-<p class="fx-chart-note">Click any series name in the legend to hide or restore that line. Hover over a line to see both its normalized index and its actual quoted rate.</p>
 <div id="fxMobileZoomControls" class="fx-mobile-zoom-controls">
   <button type="button" onclick="fxMobileZoom(0.8)">Zoom +</button>
   <button type="button" onclick="fxMobileZoom(1.25)">Zoom −</button>
@@ -111,7 +110,6 @@ Foreign exchange is the largest and most liquid financial market in the world.  
 .fx-controls button,.fx-instrument-controls button{background:#3A5FCD;color:#fff;border:0;border-radius:999px;padding:9px 16px;cursor:pointer;font-size:14px}
 .fx-controls button.active,.fx-instrument-controls button.active{background:#f59e0b;font-weight:bold}
 .fx-status{background:#f6f8fc;border-left:5px solid #3A5FCD;padding:10px 12px;margin:10px 0 16px;color:#333}
-.fx-chart-note{margin:0 0 12px;color:#44546a;font-size:13px;line-height:1.4}
 .fx-card{background:white;border:1px solid #d9e0ef;border-radius:16px;box-shadow:0 4px 16px rgba(20,35,75,.10);padding:10px}
 .fx-chart{width:100%;height:500px}
 .fx-note{margin-top:12px;color:#555;font-size:14px}
@@ -220,8 +218,7 @@ function drawCombined(items){
  fxPairs.filter(p=>p.key!=="OIL").forEach(p=>{
    const item=items.find(x=>x.pair===p.key); if(!item||item.error)return;
    const q=clean(item); if(p.invert)q.y=q.y.map(v=>v?1/v:NaN); if(!q.x.length)return; const base=Number(q.y[0]); if(!base)return;
-   const actualDecimals=p.key==="USDJPY"||p.key==="GOLD"?2:4;
-   traces.push({x:q.x,y:q.y.map(v=>Number(v)/base*100),customdata:q.y,type:"scatter",mode:"lines",line:{width:p.key==="GOLD"?3.5:2.2,color:p.color},name:p.label,hovertemplate:`%{x}<br>Index: %{y:.2f}<br>Actual: %{customdata:.${actualDecimals}f}<extra>${p.label}</extra>`})
+   traces.push({x:q.x,y:q.y.map(v=>Number(v)/base*100),type:"scatter",mode:"lines",line:{width:p.key==="GOLD"?3.5:2.2,color:p.color},name:p.label,hovertemplate:"%{x}<br>Index: %{y:.2f}<extra>"+p.label+"</extra>"})
  });
  Plotly.newPlot("fx_SELECTED",traces,{title:{text:"FX rates and Gold normalized to 100",x:.03},paper_bgcolor:"white",plot_bgcolor:"white",hovermode:"x unified",legend:{orientation:"h",x:.02,y:-.18},xaxis:{showgrid:true,gridcolor:"#edf1f7",fixedrange:true},yaxis:{title:"Index, first date = 100",showgrid:true,gridcolor:"#edf1f7",fixedrange:true}},fxPlotConfig())
 }
@@ -743,3 +740,5 @@ async function loadFxCharts() {
 
 window.addEventListener("load", loadFxCharts);
 </script>
+
+
