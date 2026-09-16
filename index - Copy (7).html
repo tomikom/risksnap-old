@@ -811,7 +811,6 @@ div.c {
   font-size: 10px;
   font-weight: 700;
   cursor: pointer;
-  text-decoration: none;
 }
 .rs-market-card__chart:hover { background: #f0f4ff; border-color: #7188c7; }
 .rs-global-markets__note { margin-top: 4px; font-size: 9px; }
@@ -840,8 +839,8 @@ div.c {
     { place: "Brazil", name: "Bovespa", symbol: "^BVSP", size: "B3 US$0.96T†", locale: "pt-BR", access: "Local representative and custody may apply" },
     { place: "Switzerland", name: "SMI", symbol: "^SSMI", size: "SIX US$2.61T†", locale: "de-CH", access: "Widely available" },
     { place: "Australia", name: "S&P/ASX 200", symbol: "^AXJO", size: "ASX US$2.19T†", locale: "en-AU", access: "Widely available" },
-    { place: "Dubai", name: "DFM General Index", symbol: "DFMGI.AE", size: "DFM US$0.24T†", locale: "en-AE", access: "Participating broker; local onboarding may apply", chartUrl: "https://www.tradingview.com/symbols/DFM-DFMGI/" },
-    { place: "Saudi Arabia", name: "Tadawul All Share", symbol: "^TASI.SR", size: "Saudi Exchange US$2.63T†", locale: "en-SA", access: "Participating broker; local onboarding may apply", chartUrl: "https://www.tradingview.com/symbols/TADAWUL-TASI/" }
+    { place: "Dubai", name: "DFM General Index", symbol: "DFMGI.AE", size: "DFM US$0.24T†", locale: "en-AE", access: "Participating broker; local onboarding may apply" },
+    { place: "Saudi Arabia", name: "Tadawul All Share", symbol: "^TASI.SR", size: "Saudi Exchange US$2.63T†", locale: "en-SA", access: "Participating broker; local onboarding may apply" }
   ];
   const grid = document.getElementById("rs-global-markets-grid");
   const status = document.getElementById("rs-global-markets-status");
@@ -852,14 +851,11 @@ div.c {
     "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;"
   })[character]);
   const number = value => Number(value).toLocaleString(undefined, { maximumFractionDigits: 2 });
-  const chartLink = market => market.chartUrl
-    ? `<a class="rs-market-card__chart" href="${safe(market.chartUrl)}" target="_blank" rel="noopener noreferrer">Chart <span aria-hidden="true">↗</span></a>`
-    : `<button type="button" class="rs-market-card__chart" data-rs-chart-symbol="${safe(market.symbol)}" data-rs-chart-name="${safe(market.name)}">Chart</button>`;
   const card = market => `<article class="rs-market-card" data-symbol="${safe(market.symbol)}">
     <div class="rs-market-card__top"><div><p class="rs-market-card__place">${safe(market.place)}</p><h3>${safe(market.name)}</h3></div><span class="rs-market-card__state">Waiting</span></div>
     <p class="rs-market-card__level">&mdash;</p><p class="rs-market-card__change is-flat">Latest change unavailable</p>
     <div class="rs-market-card__details"><div><span class="rs-market-card__label">Exchange capitalization</span><span class="rs-market-card__detail">Exchange cap ${safe(market.size)}</span></div></div>
-    <div class="rs-market-card__links">${chartLink(market)}<a class="rs-market-card__news" href="https://news.google.com/search?q=${encodeURIComponent(`${market.name} ${market.place} stock market`)}" target="_blank" rel="noopener noreferrer">Related news <span aria-hidden="true">↗</span></a></div>
+    <div class="rs-market-card__links"><button type="button" class="rs-market-card__chart" data-rs-chart-symbol="${safe(market.symbol)}" data-rs-chart-name="${safe(market.name)}">Chart</button><a class="rs-market-card__news" href="https://news.google.com/search?q=${encodeURIComponent(`${market.name} ${market.place} stock market`)}" target="_blank" rel="noopener noreferrer">Related news <span aria-hidden="true">↗</span></a></div>
   </article>`;
   grid.innerHTML = markets.map(card).join("");
 
