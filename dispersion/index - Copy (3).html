@@ -32,18 +32,6 @@ title: Dispersion Index
   </section>
   <p class="portfolio-note">Presets use an approximately $100,000 equal-notional portfolio, with whole-contract futures sizing. To create and save a custom portfolio, use the <a href="/correlations/">Correlations page</a>.</p>
 
-  <section class="paths-card" aria-labelledby="pathsTitle">
-    <header>
-      <div><h3 id="pathsTitle">Actual Indexed Paths</h3><div id="pathsAsOf">Select a portfolio to begin.</div></div>
-      <div class="paths-badge">Rebased to 100</div>
-    </header>
-    <div id="pathsChart" class="paths-chart" role="img" aria-label="Actual indexed paths of portfolio holdings and portfolio value">
-      <div class="paths-placeholder">The actual asset paths will appear here after dispersion is calculated.</div>
-    </div>
-    <div id="pathsLegend" class="paths-legend"></div>
-    <p class="paths-note">Each holding and the portfolio are indexed to 100 at the beginning of the displayed 250-observation period. The heavier dark line is the portfolio.</p>
-  </section>
-
   <section class="fan-card" aria-labelledby="fanTitle">
     <header>
       <div><h3 id="fanTitle">Dispersion Fan</h3><div id="asOf">Select a portfolio to begin.</div></div>
@@ -86,17 +74,6 @@ title: Dispersion Index
 .controls button:disabled { opacity:.55; cursor:default; }
 .portfolio-note { margin:7px 12px 0; color:#666; font-size:11px; }
 #status { color:#666; font-size:12px; }
-.paths-card { margin-top:15px; padding:14px 16px; border:1px solid #c7d5e8; border-radius:9px; background:linear-gradient(180deg,#f9fbff,#fff); }
-.paths-card header { display:flex; justify-content:space-between; align-items:flex-start; gap:12px; flex-wrap:wrap; }
-.paths-card h3 { margin:0; color:#244b7a; font-size:21px; }
-#pathsAsOf { margin-top:3px; color:#666; font-size:12px; }
-.paths-badge { padding:5px 11px; border:1px solid #a7bad4; border-radius:999px; background:#edf3fb; color:#31587f; font-size:12px; font-weight:700; }
-.paths-chart { width:100%; max-width:900px; min-height:330px; margin:7px auto 0; }
-.paths-chart svg { display:block; width:100%; height:auto; }
-.paths-placeholder { display:flex; align-items:center; justify-content:center; min-height:300px; color:#777; font-size:13px; text-align:center; }
-.paths-legend { display:flex; justify-content:center; gap:7px 14px; flex-wrap:wrap; max-width:900px; margin:3px auto 0; color:#444; font-size:11px; }
-.paths-legend .portfolio-key { font-weight:700; }
-.paths-note { max-width:900px; margin:8px auto 0; color:#666; font-size:11px; text-align:center; }
 .fan-card { margin-top:15px; padding:14px 16px; border:1px solid #cbd8c4; border-radius:9px; background:linear-gradient(180deg,#f9fcf7,#fff); }
 .fan-card header { display:flex; justify-content:space-between; align-items:flex-start; gap:12px; flex-wrap:wrap; }
 .fan-card h3 { margin:0; color:#234d1c; font-size:21px; }
@@ -124,7 +101,7 @@ title: Dispersion Index
 .swatch { width:9px; height:9px; border-radius:50%; }
 .explanation { max-width:820px; margin:11px auto 0; padding-top:8px; border-top:1px solid #d6dfd1; color:#555; font-size:12px; line-height:1.45; }
 .explanation p { margin:4px 0; }
-@media(max-width:620px){.metrics{grid-template-columns:1fr;gap:4px}.fan{min-height:220px}.paths-chart{min-height:230px}.controls label,.controls select{width:100%}}
+@media(max-width:620px){.metrics{grid-template-columns:1fr;gap:4px}.fan{min-height:220px}.controls label,.controls select{width:100%}}
 </style>
 
 <script>
@@ -153,7 +130,6 @@ title: Dispersion Index
   let historyRows=[];
   let historyTimer=null;
   let historyContext=null;
-  let pathContext=null;
   let calculationId=0;
   let latestCalculation=null;
   let currentController=null;
@@ -327,43 +303,6 @@ title: Dispersion Index
   }
   function point(cx,cy,r,deg){ const a=deg*Math.PI/180; return [cx+r*Math.sin(a),cy-r*Math.cos(a)]; }
   function sectorPath(cx,cy,r,start,end){ const a=point(cx,cy,r,start), b=point(cx,cy,r,end); return `M ${cx} ${cy} L ${a[0]} ${a[1]} A ${r} ${r} 0 0 1 ${b[0]} ${b[1]} Z`; }
-  function renderIndexedPaths(selectedDate){
-    if(!pathContext) return;
-    const {data,saved,assetMap,name}=pathContext, dates=data.dates||[], series=data.prices_usd||{};
-    let end=dates.indexOf(selectedDate);
-    if(end<0) end=dates.length-1;
-    const start=Math.max(0,end-249), shownDates=dates.slice(start,end+1);
-    const holdings=assetMap.map((item,i)=>{
-      const prices=series[item.requestSymbol], units=Number(saved.shares?.[item.asset])||0, factor=item.spec?.factor||1;
-      if(!Array.isArray(prices)||prices.length!==dates.length||units<=0) return null;
-      const base=Number(prices[start]);
-      if(!Number.isFinite(base)||base<=0) return null;
-      return {asset:item.asset,color:COLORS[i%COLORS.length],values:prices.slice(start,end+1).map(value=>100*Number(value)/base),units,factor,prices};
-    }).filter(Boolean);
-    if(holdings.length<2||shownDates.length<2) return;
-    const portfolioValues=shownDates.map((date,k)=>holdings.reduce((sum,h)=>sum+h.units*Number(h.prices[start+k])*h.factor,0));
-    const portfolioBase=portfolioValues[0];
-    const portfolio=portfolioValues.map(value=>100*value/portfolioBase);
-    const allValues=holdings.flatMap(h=>h.values).concat(portfolio).filter(Number.isFinite);
-    let yMin=Math.min(...allValues),yMax=Math.max(...allValues),pad=Math.max(2,(yMax-yMin)*.08);
-    yMin-=pad;yMax+=pad;
-    const width=900,height=360,left=62,right=22,top=30,bottom=48,plotW=width-left-right,plotH=height-top-bottom;
-    const x=i=>left+(shownDates.length===1?0:i/(shownDates.length-1))*plotW;
-    const y=value=>top+(yMax-value)/(yMax-yMin)*plotH;
-    const linePath=values=>values.map((value,i)=>`${i?'L':'M'}${x(i).toFixed(1)} ${y(value).toFixed(1)}`).join(' ');
-    const ticks=Array.from({length:5},(_,i)=>yMin+(yMax-yMin)*i/4);
-    let svg=`<svg viewBox="0 0 ${width} ${height}" aria-labelledby="pathsSvgTitle"><title id="pathsSvgTitle">${esc(name)} actual indexed holding and portfolio paths through ${esc(selectedDate||shownDates.at(-1))}</title>`;
-    ticks.forEach(value=>{svg+=`<line x1="${left}" y1="${y(value)}" x2="${width-right}" y2="${y(value)}" stroke="#dce4ef"/><text x="${left-9}" y="${y(value)+4}" text-anchor="end" fill="#617186" font-size="12">${value.toFixed(0)}</text>`;});
-    svg+=`<line x1="${left}" y1="${y(100)}" x2="${width-right}" y2="${y(100)}" stroke="#8ca1bc" stroke-dasharray="4 4"/>`;
-    holdings.forEach(h=>{svg+=`<path d="${linePath(h.values)}" fill="none" stroke="${h.color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity=".78"><title>${esc(h.asset)}: 100.00 to ${h.values.at(-1).toFixed(2)}</title></path>`;});
-    svg+=`<path d="${linePath(portfolio)}" fill="none" stroke="#23395d" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"><title>Portfolio: 100.00 to ${portfolio.at(-1).toFixed(2)}</title></path>`;
-    const mid=Math.floor((shownDates.length-1)/2),labelPoints=[[0,'start'],[mid,'middle'],[shownDates.length-1,'end']];
-    labelPoints.forEach(([i,anchor])=>{svg+=`<text x="${x(i)}" y="${height-17}" text-anchor="${anchor}" fill="#617186" font-size="12">${esc(shownDates[i])}</text>`;});
-    svg+=`</svg>`;
-    $("pathsChart").innerHTML=svg;
-    $("pathsAsOf").textContent=`${name} • ${shownDates.length} actual EOD observations • through ${shownDates.at(-1)}`;
-    $("pathsLegend").innerHTML=holdings.map(h=>`<span class="key"><span class="swatch" style="background:${h.color}"></span>${esc(h.asset)}</span>`).join("")+`<span class="key portfolio-key"><span class="swatch" style="background:#23395d"></span>Portfolio</span>`;
-  }
   function render(result,name,lookback,date,percentile){
     const share=Math.max(0,Math.min(1,result.share));
     const rank=Math.max(0,Math.min(1,Number(percentile)||0));
@@ -434,7 +373,6 @@ title: Dispersion Index
     $("historySlider").value=i;
     const percentile=historicalPercentile(row.result.dispersion);
     render(row.result,historyContext.name,historyContext.lookback,row.date,percentile);
-    renderIndexedPaths(row.date);
     const prior20=historyRows[Math.max(0,i-20)];
     const change=row.result.dispersion-prior20.result.dispersion;
     $("historyChange").textContent=`20-day change: ${change>=0?"+":""}${pct(change)} • Range: ${pct(Math.min(...historyRows.map(r=>r.result.dispersion)))} to ${pct(Math.max(...historyRows.map(r=>r.result.dispersion)))}`;
@@ -455,7 +393,6 @@ title: Dispersion Index
     if(currentController) currentController.abort();
     if(historyController) historyController.abort();
     latestCalculation=null;
-    pathContext=null;
     stopHistory();
     setHistoryEnabled(false);
     $("historyControls").hidden=false;
@@ -490,7 +427,7 @@ title: Dispersion Index
           const cachedSaved=isPreset?equalNotionalPortfolio(assetMap,cached.data):saved;
           const cachedRows=buildRollingRows(cached.data,cachedSaved,assetMap,lookback);
           const cachedLatest=cachedRows.at(-1);
-          if(cachedLatest){ pathContext={data:cached.data,saved:cachedSaved,assetMap,name}; render(cachedLatest.result,name,lookback,cachedLatest.date,.5); renderIndexedPaths(cachedLatest.date); }
+          if(cachedLatest) render(cachedLatest.result,name,lookback,cachedLatest.date,.5);
           $("badge").className="badge waiting";
           $("badge").textContent="Refreshing current values";
           $("status").textContent="Showing the last calculation while current values refresh…";
@@ -514,7 +451,6 @@ title: Dispersion Index
       if(isPreset) saved=equalNotionalPortfolio(assetMap,data);
       historyRows=buildRollingRows(data,saved,assetMap,lookback);
       if(!historyRows.length) throw new Error("Insufficient cleaned history for this lookback.");
-      pathContext={data,saved,assetMap,name};
       historyContext={name,lookback};
       $("historyControls").hidden=false;
       $("historySlider").min=0; $("historySlider").max=historyRows.length-1; $("historySlider").value=historyRows.length-1;
