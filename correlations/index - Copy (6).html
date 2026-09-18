@@ -595,22 +595,22 @@ const NON_HOLDING_SYMBOLS = new Set([
   "DX-Y.NYB", "EURUSD=X", "GC=F", "BTC-USD", "ETH-USD"
 ]);
 const FUTURES_SPECS = {
-  "GOLD":          { yahoo: "MGC=F", name: "Micro Gold", factor: 10,     contract: "10 troy oz",       tick: 0.1,     decimals: 1 },
-  "OIL":           { yahoo: "CL=F",  name: "Crude Oil", factor: 1000,   contract: "1,000 barrels",     tick: 0.01,    decimals: 2 },
-  "CORN":          { yahoo: "ZC=F",  name: "Corn", factor: 5000,        contract: "5,000 bu",          tick: 0.0025,  decimals: 4 },
-  "SOYBEANS":      { yahoo: "ZS=F",  name: "Soybeans", factor: 5000,    contract: "5,000 bu",          tick: 0.0025,  decimals: 4 },
-  "KC HRW WHEAT":  { yahoo: "KE=F",  name: "KC HRW Wheat", factor: 5000, contract: "5,000 bu",         tick: 0.0025,  decimals: 4 },
-  "NATURAL GAS":   { yahoo: "NG=F",  name: "Natural Gas", factor: 10000, contract: "10,000 MMBtu",    tick: 0.001,   decimals: 3 },
-  "SILVER":        { yahoo: "SIL=F", name: "Micro Silver", factor: 1000, contract: "1,000 troy oz",    tick: 0.005,   decimals: 3 },
-  "COPPER":        { yahoo: "HG=F",  name: "Copper", factor: 25000,    contract: "25,000 lb",         tick: 0.0005,  decimals: 4 },
-  "LIVE CATTLE":   { yahoo: "LE=F",  name: "Live Cattle", factor: 40000, contract: "40,000 lb",       tick: 0.00025, decimals: 5 },
-  "FEEDER CATTLE": { yahoo: "GF=F",  name: "Feeder Cattle", factor: 50000, contract: "50,000 lb",     tick: 0.00025, decimals: 5 },
-  "COFFEE":        { yahoo: "KC=F",  name: "Coffee", factor: 37500,     contract: "37,500 lb",        tick: 0.0005,  decimals: 4 },
-  "COCOA":         { yahoo: "CC=F",  name: "Cocoa", factor: 10,         contract: "10 metric tonnes", tick: 1,       decimals: 0 },
-  "COTTON":        { yahoo: "CT=F",  name: "Cotton", factor: 50000,     contract: "50,000 lb",        tick: 0.0001,  decimals: 4 },
-  "SUGAR #11":     { yahoo: "SB=F",  name: "Sugar #11", factor: 112000,  contract: "112,000 lb",       tick: 0.0001,  decimals: 4 },
-  "ORANGE JUICE":  { yahoo: "OJ=F",  name: "Orange Juice", factor: 15000, contract: "15,000 lb",      tick: 0.0005,  decimals: 4 },
-  "LUMBER":        { yahoo: "LBS=F", name: "Lumber", factor: 27500,     contract: "27,500 board ft",  tick: 0.5,     decimals: 1 }
+  "GOLD":          { yahoo: "MGC=F", name: "Micro Gold", factor: 10,    contract: "10 troy oz" },
+  "OIL":           { yahoo: "CL=F",  name: "Crude Oil", factor: 1000,  contract: "1,000 barrels" },
+  "CORN":          { yahoo: "ZC=F",  name: "Corn", factor: 5000,       contract: "5,000 bu" },
+  "SOYBEANS":      { yahoo: "ZS=F",  name: "Soybeans", factor: 5000,   contract: "5,000 bu" },
+  "KC HRW WHEAT":  { yahoo: "KE=F",  name: "KC HRW Wheat", factor: 5000, contract: "5,000 bu" },
+  "NATURAL GAS":   { yahoo: "NG=F",  name: "Natural Gas", factor: 10000, contract: "10,000 MMBtu" },
+  "SILVER":        { yahoo: "SIL=F", name: "Micro Silver", factor: 1000, contract: "1,000 troy oz" },
+  "COPPER":        { yahoo: "HG=F",  name: "Copper", factor: 25000,   contract: "25,000 lb" },
+  "LIVE CATTLE":   { yahoo: "LE=F",  name: "Live Cattle", factor: 40000, contract: "40,000 lb" },
+  "FEEDER CATTLE": { yahoo: "GF=F",  name: "Feeder Cattle", factor: 50000, contract: "50,000 lb" },
+  "COFFEE":        { yahoo: "KC=F",  name: "Coffee", factor: 37500,    contract: "37,500 lb" },
+  "COCOA":         { yahoo: "CC=F",  name: "Cocoa", factor: 10,        contract: "10 metric tonnes" },
+  "COTTON":        { yahoo: "CT=F",  name: "Cotton", factor: 50000,    contract: "50,000 lb" },
+  "SUGAR #11":     { yahoo: "SB=F",  name: "Sugar #11", factor: 112000, contract: "112,000 lb" },
+  "ORANGE JUICE":  { yahoo: "OJ=F",  name: "Orange Juice", factor: 15000, contract: "15,000 lb" },
+  "LUMBER":        { yahoo: "LBS=F", name: "Lumber", factor: 27500,    contract: "27,500 board ft" }
 };
 
 function futuresSpec(asset) {
@@ -641,17 +641,6 @@ function contractFactor(asset) {
   return spec ? Number(spec.factor) : 1;
 }
 
-function futuresTickPrice(asset, price) {
-  const spec = futuresSpec(asset);
-  const p = Number(price);
-  const tick = Number(spec && spec.tick);
-  if (!spec || !Number.isFinite(p) || !Number.isFinite(tick) || tick <= 0) return p;
-  // Yahoo sometimes returns values such as 3.3482501 for a valid 3.34825
-  // settlement. Snap only the working price to the exchange tick; the raw
-  // downloaded observation remains unchanged in the source data.
-  return Math.round(p / tick) * tick;
-}
-
 function futuresUnitPrice(asset, price) {
   const spec = futuresSpec(asset);
   const p = Number(price);
@@ -659,7 +648,7 @@ function futuresUnitPrice(asset, price) {
 
   // Live/current futures prices supplied to this page are already normalized
   // to dollars per displayed unit by /latest_prices. Do not convert cents here.
-  return futuresTickPrice(asset, p);
+  return p;
 }
 
 function futuresEodUnitPrice(asset, price) {
@@ -670,7 +659,7 @@ function futuresEodUnitPrice(asset, price) {
   // /correlations_data and /rolling_matrix already normalize futures quotes
   // to dollars per displayed unit. Do not apply the legacy cents conversion
   // again in EOD display or Matrix History portfolio valuation.
-  return futuresTickPrice(asset, p);
+  return p;
 }
 
 function holdingNotional(asset, price, units) {
@@ -681,7 +670,7 @@ function holdingNotional(asset, price, units) {
 }
 
 function holdingValuation(asset, price, units) {
-  const p = isFuturesAsset(asset) ? futuresTickPrice(asset, price) : Number(price);
+  const p = Number(price);
   const u = Number(units);
   if (!Number.isFinite(p) || !Number.isFinite(u)) return NaN;
   if (!isFuturesAsset(asset)) return p * u;
@@ -715,15 +704,14 @@ function futuresPriceDisplay(asset, price) {
   if (!spec || !Number.isFinite(n)) return "—";
   const yahoo = normalizeDisplaySymbol(spec.yahoo);
   const p = futuresUnitPrice(asset, n);
-  const decimals = Number.isInteger(Number(spec.decimals)) ? Number(spec.decimals) : 2;
 
-  if (["ZC=F", "ZS=F", "KE=F"].includes(yahoo)) return `$${p.toFixed(decimals)}/bu`;
-  if (yahoo === "NG=F") return `$${p.toFixed(decimals)}/MMBtu`;
-  if (["HG=F", "LE=F", "GF=F", "KC=F", "CT=F", "SB=F", "OJ=F"].includes(yahoo)) return `$${p.toFixed(decimals)}/lb`;
-  if (yahoo === "MGC=F" || yahoo === "SIL=F") return `$${p.toFixed(decimals)}/troy oz`;
-  if (yahoo === "CL=F") return `$${p.toFixed(decimals)}/barrel`;
-  if (yahoo === "CC=F") return `$${p.toFixed(decimals)}/metric tonne`;
-  if (yahoo === "LBS=F") return `$${p.toFixed(decimals)}/board ft`;
+  if (["ZC=F", "ZS=F", "KE=F"].includes(yahoo)) return `$${p.toFixed(4)}/bu`;
+  if (yahoo === "NG=F") return `$${p.toFixed(3)}/MMBtu`;
+  if (["HG=F", "LE=F", "GF=F", "KC=F", "CT=F", "SB=F", "OJ=F"].includes(yahoo)) return `$${p.toFixed(4)}/lb`;
+  if (yahoo === "MGC=F" || yahoo === "SIL=F") return `$${p.toFixed(2)}/troy oz`;
+  if (yahoo === "CL=F") return `$${p.toFixed(2)}/barrel`;
+  if (yahoo === "CC=F") return `$${p.toFixed(2)}/metric tonne`;
+  if (yahoo === "LBS=F") return `$${p.toFixed(4)}/board ft`;
   return formatMoney(p);
 }
 
