@@ -302,37 +302,6 @@ let EQUITIES_PRESETS = {};
 let EQUITIES_SECURITY_META = {};
 const EQUITIES_CONFIG_ENDPOINT = "https://surface-203178530029.northamerica-northeast2.run.app/risksnap_config";
 
-// Display precision only. Prices retain their full downloaded precision for
-// storage and calculations. Values are in RiskSnap's normalized dollar units.
-const FUTURES_DISPLAY_DECIMALS = Object.freeze({
-  "CL=F": 2,  // WTI crude oil, $/barrel
-  "BZ=F": 2,  // Brent crude oil, $/barrel
-  "NG=F": 3,  // natural gas, $/MMBtu
-  "RB=F": 4,  // gasoline, $/gallon
-  "GC=F": 1,  // gold, $/troy ounce
-  "MGC=F": 1, // micro gold, $/troy ounce
-  "SI=F": 3,  // silver, $/troy ounce
-  "SIL=F": 3, // micro silver, $/troy ounce
-  "HG=F": 4,  // copper, $/pound
-  "ZC=F": 4,  // corn, $/bushel
-  "ZW=F": 4,  // Chicago wheat, $/bushel
-  "KE=F": 4,  // KC wheat, $/bushel
-  "ZS=F": 4,  // soybeans, $/bushel
-  "SB=F": 4,  // sugar, $/pound
-  "KC=F": 4,  // coffee, $/pound
-  "GF=F": 5,  // feeder cattle, $/pound
-  "LE=F": 5,  // live cattle, $/pound
-  "HE=F": 5   // lean hogs, $/pound
-});
-
-function priceDisplayDecimals(symbol) {
-  const code = String(symbol || "").trim().toUpperCase();
-  const meta = EQUITIES_SECURITY_META[code] || {};
-  const configured = Number(meta.display_decimals ?? meta.price_decimals);
-  if (Number.isInteger(configured) && configured >= 0 && configured <= 8) return configured;
-  return FUTURES_DISPLAY_DECIMALS[code] ?? 2;
-}
-
 async function loadEquitiesConfig() {
   const response = await fetch(EQUITIES_CONFIG_ENDPOINT);
   const data = await response.json();
@@ -472,9 +441,8 @@ function fmtLocalUsdPriceHtml(row) {
   const local = Number(row && row.price);
   const usd = Number(row && row.usd_price);
   const currency = String(row && row.currency || "USD");
-  const decimals = priceDisplayDecimals(row && row.symbol);
   if (!Number.isFinite(local)) return '<span class="equities-na">N/A</span>';
-  if (currency === "USD") return `<div class="equities-price-stack"><div>${escapeHtml(fmtMoney(local, "USD", decimals))}</div></div>`;
+  if (currency === "USD") return `<div class="equities-price-stack"><div>${escapeHtml(fmtMoney(local, "USD"))}</div></div>`;
   const localText = currency === "GBp"
     ? `GBp ${local.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}`
     : `${currency} ${local.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}`;
@@ -485,11 +453,11 @@ function fmtLocalUsdPriceHtml(row) {
   return `<div class="equities-price-stack"><div>${escapeHtml(localText)}</div><div class="equities-price-usd">${escapeHtml(usdText)}</div>${fx ? `<div class="equities-price-fx">${escapeHtml(fx)}</div>` : ""}</div>`;
 }
 
-function fmtMoney(value, currency, decimals = 2) {
+function fmtMoney(value, currency) {
   const n = Number(value);
   if (!Number.isFinite(n)) return "N/A";
   const prefix = currency === "USD" || !currency ? "$" : `${currency} `;
-  return `${prefix}${n.toLocaleString(undefined, {minimumFractionDigits:decimals, maximumFractionDigits:decimals})}`;
+  return `${prefix}${n.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}`;
 }
 
 function fmtLarge(value) {
@@ -599,8 +567,6 @@ function drawEquitiesPriceChart(rows, symbol) {
     .sort((a,b) => a.date.localeCompare(b.date));
   if (clean.length < 2) return false;
 
-  const priceDecimals = priceDisplayDecimals(symbol);
-
   const width=920, height=280, margin={left:72,right:22,top:18,bottom:42};
   const iw=width-margin.left-margin.right, ih=height-margin.top-margin.bottom;
   let lo=Math.min(...clean.map(r=>r.price)), hi=Math.max(...clean.map(r=>r.price));
@@ -613,7 +579,7 @@ function drawEquitiesPriceChart(rows, symbol) {
   for(let i=0;i<=4;i++){
     const value=lo+(hi-lo)*i/4, yy=y(value);
     svg.appendChild(eqSvg("line",{x1:margin.left,y1:yy,x2:width-margin.right,y2:yy,class:"eq-chart-grid"}));
-    svg.appendChild(eqSvg("text",{x:margin.left-8,y:yy+4,class:"eq-chart-label","text-anchor":"end"},value.toLocaleString(undefined,{minimumFractionDigits:priceDecimals,maximumFractionDigits:priceDecimals})));
+    svg.appendChild(eqSvg("text",{x:margin.left-8,y:yy+4,class:"eq-chart-label","text-anchor":"end"},value.toLocaleString(undefined,{maximumFractionDigits:2})));
   }
   svg.appendChild(eqSvg("line",{x1:margin.left,y1:margin.top,x2:margin.left,y2:height-margin.bottom,class:"eq-chart-axis"}));
   svg.appendChild(eqSvg("line",{x1:margin.left,y1:height-margin.bottom,x2:width-margin.right,y2:height-margin.bottom,class:"eq-chart-axis"}));
@@ -637,7 +603,7 @@ function drawEquitiesPriceChart(rows, symbol) {
     const row=clean[idx], xx=x(idx), yy=y(row.price);
     hoverLine.setAttribute("x1",xx); hoverLine.setAttribute("x2",xx); hoverLine.setAttribute("visibility","visible");
     hoverPoint.setAttribute("cx",xx); hoverPoint.setAttribute("cy",yy); hoverPoint.setAttribute("visibility","visible");
-    tip.innerHTML=`<strong>${escapeHtml(symbol)}</strong><br>${escapeHtml(eqChartDateLabel(row.date))}<br>${escapeHtml(row.price.toLocaleString(undefined,{minimumFractionDigits:priceDecimals,maximumFractionDigits:priceDecimals}))}`;
+    tip.innerHTML=`<strong>${escapeHtml(symbol)}</strong><br>${escapeHtml(eqChartDateLabel(row.date))}<br>${escapeHtml(row.price.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}))}`;
     tip.style.display="block";
     const containerRect=container.getBoundingClientRect();
     const cx=(rect.left-containerRect.left)+(xx/width)*rect.width;
