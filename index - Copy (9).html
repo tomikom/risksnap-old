@@ -109,57 +109,9 @@ layout: home-template
     </svg>
   </div>
 
-  <div class="rs-correlation-hero rs-feature-slide rs-dispersion-hero" aria-label="RiskSnap market dispersion" aria-hidden="true">
-    <div class="rs-correlation-hero__copy">
-      <div class="rs-correlation-hero__title">Market Dispersion</div>
-      <div class="rs-correlation-hero__kicker">SEE WHEN MARKETS MOVE APART</div>
-      <div class="rs-correlation-hero__text">See how widely portfolio assets are moving apart through time and when opportunities for diversification are increasing.</div>
-      <a class="rs-correlation-hero__prompt" href="/dispersion/">Explore Dispersion <span aria-hidden="true">›</span></a>
-    </div>
-    <svg class="rs-correlation-hero__graphic rs-dispersion-hero__graphic" viewBox="0 0 930 430" role="img" aria-labelledby="rsDispersionHeroTitle rsDispersionHeroDesc" preserveAspectRatio="xMidYMid meet">
-      <title id="rsDispersionHeroTitle">Market dispersion fan through time</title>
-      <desc id="rsDispersionHeroDesc">Several asset paths begin together and spread into a widening fan, while a dark line shows the portfolio path.</desc>
-      <defs>
-        <linearGradient id="rsDispersionHeroBg" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stop-color="#fbfdff"/>
-          <stop offset="100%" stop-color="#e8f0fb"/>
-        </linearGradient>
-        <linearGradient id="rsDispersionFanFill" x1="0" y1="0" x2="1" y2="0">
-          <stop offset="0%" stop-color="#5f86cf" stop-opacity=".05"/>
-          <stop offset="100%" stop-color="#5f86cf" stop-opacity=".22"/>
-        </linearGradient>
-      </defs>
-      <rect width="930" height="430" fill="url(#rsDispersionHeroBg)"/>
-      <g class="rs-dispersion-hero__grid" aria-hidden="true">
-        <path d="M78 86H884M78 166H884M78 246H884M78 326H884"/>
-        <path d="M78 64V350M78 350H884"/>
-      </g>
-      <g class="rs-dispersion-hero__axis" aria-hidden="true">
-        <text x="65" y="91">130</text><text x="65" y="171">115</text>
-        <text x="65" y="251">100</text><text x="65" y="331">85</text>
-        <text x="78" y="382">Start</text><text x="481" y="382">125 days</text><text x="884" y="382">250 days</text>
-      </g>
-      <path class="rs-dispersion-hero__fan" d="M78 246 C250 235 390 199 520 137 C650 80 760 55 884 48 L884 338 C760 326 650 306 520 281 C390 255 250 244 78 246 Z"/>
-      <g class="rs-dispersion-hero__paths" aria-hidden="true">
-        <path class="asset asset-1" d="M78 246 C220 241 350 213 480 166 S735 75 884 58"/>
-        <path class="asset asset-2" d="M78 246 C225 237 350 228 480 208 S735 132 884 102"/>
-        <path class="asset asset-3" d="M78 246 C225 250 350 238 480 226 S735 200 884 174"/>
-        <path class="portfolio" d="M78 246 C225 244 350 232 480 218 S735 188 884 162"/>
-        <path class="asset asset-4" d="M78 246 C225 248 350 254 480 267 S735 286 884 310"/>
-        <path class="asset asset-5" d="M78 246 C225 252 350 267 480 290 S735 323 884 338"/>
-      </g>
-      <g class="rs-dispersion-hero__labels" aria-hidden="true">
-        <text x="858" y="42">Wider fan</text>
-        <text x="884" y="151">Portfolio</text>
-        <text x="82" y="40">Illustrative indexed asset paths · 250 observations</text>
-      </g>
-    </svg>
-  </div>
-
   <div class="rs-feature-carousel__controls" aria-label="Choose featured view">
     <button class="rs-feature-carousel__dot is-active" type="button" aria-label="Show correlations" aria-pressed="true"></button>
     <button class="rs-feature-carousel__dot" type="button" aria-label="Show portfolio market value" aria-pressed="false"></button>
-    <button class="rs-feature-carousel__dot" type="button" aria-label="Show market dispersion" aria-pressed="false"></button>
   </div>
   </div>
 
@@ -340,21 +292,6 @@ layout: home-template
 .rs-portfolio-hero__annotations .is-peak { fill: #24834f; }
 .rs-portfolio-hero__annotations .is-trough { fill: #ad3429; }
 .rs-portfolio-hero__note { fill: #425b79; font: 700 15px Arial, Helvetica, sans-serif; }
-.rs-dispersion-hero { background: #0000ff; }
-.rs-dispersion-hero__grid path { fill: none; stroke: #9eb3cf; stroke-width: 1; opacity: .4; }
-.rs-dispersion-hero__axis text { fill: #617186; font: 13px Arial, Helvetica, sans-serif; }
-.rs-dispersion-hero__axis text:nth-child(-n+4) { text-anchor: end; }
-.rs-dispersion-hero__axis text:nth-child(n+5) { text-anchor: middle; }
-.rs-dispersion-hero__fan { fill: url(#rsDispersionFanFill); }
-.rs-dispersion-hero__paths path { fill: none; stroke-width: 3; stroke-linecap: round; opacity: .82; }
-.rs-dispersion-hero__paths .asset-1 { stroke: #3569c8; }
-.rs-dispersion-hero__paths .asset-2 { stroke: #7057b8; }
-.rs-dispersion-hero__paths .asset-3 { stroke: #29965b; }
-.rs-dispersion-hero__paths .asset-4 { stroke: #df7b43; }
-.rs-dispersion-hero__paths .asset-5 { stroke: #c65353; }
-.rs-dispersion-hero__paths .portfolio { stroke: #23395d; stroke-width: 5; opacity: 1; }
-.rs-dispersion-hero__labels text { fill: #425b79; font: 700 14px Arial, Helvetica, sans-serif; text-anchor: end; }
-.rs-dispersion-hero__labels text:last-child { text-anchor: start; font-size: 15px; }
 .rs-correlation-hero__prompt:hover,
 .rs-correlation-hero__prompt:focus-visible { border-bottom-color: #fff; color: #fff; }
 .rs-correlation-hero__prompt:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
