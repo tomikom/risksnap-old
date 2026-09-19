@@ -125,7 +125,7 @@ title: Portfolio Optimization
     <div class="inspector-header">
       <div>
         <div class="opt-panel-title">Portfolio Holdings</div>
-        <div class="opt-chart-note">Risk calculations use equity market value and futures exposure. Futures units, agreed price and current gain/loss are shown separately.</div>
+        <div class="opt-chart-note">All risk calculations use the holdings shown below. Shares may be edited before calculating or saving.</div>
       </div>
       <div class="inspector-controls">
         <label for="inspectSimulationNumber">Simulation #</label>
@@ -149,11 +149,10 @@ title: Portfolio Optimization
             <th>USD FX</th>
             <th>USD Price</th>
             <th>Target $</th>
-            <th>Units</th>
-            <th>Agreed Price</th>
-            <th>Contracts</th>
-            <th>Exposure $</th>
-            <th>Current Value $</th>
+            <th>Shares</th>
+            <th>Equivalent Contracts</th>
+            <th>Rounded Contracts</th>
+            <th>Actual $</th>
             <th>EWMA Price Return</th>
             <th>TTM Div Yield</th>
             <th>Wtd Price Return</th>
@@ -363,7 +362,6 @@ h1 { color:white; text-align:center; background-color:#3A5FCD; }
 .opt-table th:first-child, .opt-table td:first-child { text-align:left; }
 .opt-table tfoot td { font-weight:700; border-top:2px solid #999; }
 .opt-contract-input,
-.opt-futures-units-input,
 .opt-share-input {
   width:72px;
   padding:3px 5px;
@@ -492,27 +490,22 @@ const OPT_FUTURES = {
   "ZS=F":  {multiplier:5000, unit:"bushels"},
   "KE=F":  {multiplier:5000, unit:"bushels"},
   "NG=F":  {multiplier:10000, unit:"MMBtu"},
-  "HG=F":  {multiplier:25000, unit:"lb"},
-  "LE=F":  {multiplier:40000, unit:"lb"},
-  "GF=F":  {multiplier:50000, unit:"lb"},
-  "KC=F":  {multiplier:37500, unit:"lb"},
-  "CC=F":  {multiplier:10, unit:"metric tonnes"},
-  "CT=F":  {multiplier:50000, unit:"lb"},
-  "SB=F":  {multiplier:112000, unit:"lb"},
-  "OJ=F":  {multiplier:15000, unit:"lb"},
-  "LBS=F": {multiplier:27500, unit:"board ft"}
+  "HG=F":  {multiplier:25000, unit:"lb"}
 };
 
 function futureSpec(asset) {
   return OPT_FUTURES[String(asset || "").trim().toUpperCase()] || null;
 }
 
-// RiskSnap's history endpoints already return futures in normalized dollar
-// quote units, including grain futures in dollars per bushel.
+// The correlations endpoint's return calculations are already validated and
+// must remain unchanged. Only normalize the historical price level when it is
+// used for dollar MTM: Yahoo quotes these grain futures in cents per bushel.
 function historicalMtmUnitPrice(asset, price) {
   const value = Number(price);
   if (!Number.isFinite(value)) return NaN;
-  return value;
+  return ["ZC=F","ZS=F","KE=F"].includes(String(asset || "").trim().toUpperCase())
+    ? value / 100
+    : value;
 }
 
 async function loadOptimizationConfig() {
@@ -873,7 +866,7 @@ function shareAllocation(sim) {
           : (Number.isFinite(localPrice) && Number.isFinite(fxToUsd) ? localPrice * fxToUsd : NaN));
 
     const loadedQuantity = Number(sim.loadedQuantities && sim.loadedQuantities[asset]);
-    const hasLoadedQuantity = Number.isFinite(loadedQuantity);
+    const hasLoadedQuantity = Number.isFinite(loadedQuantity) && loadedQuantity >= 0;
     const targetValue = amount * sim.weights[i];
 
     if (isFuture) {
@@ -887,22 +880,17 @@ function shareAllocation(sim) {
       const overrideKey = `${sim.id}|${asset}`;
       const override = Number(optState.roundedContracts[overrideKey]);
       const roundedContracts = hasLoadedQuantity
-        ? loadedQuantity
+        ? Math.max(0, Math.trunc(loadedQuantity))
         : (Number.isFinite(override)
             ? Math.max(0, Math.trunc(override))
             : (Number.isFinite(equivalentContracts) ? Math.max(0, Math.round(equivalentContracts)) : 0));
 
       const actualValue = roundedContracts * (Number.isFinite(contractNotional) ? contractNotional : 0);
-      const agreedPrice = Number(sim.futuresAgreedPrices && sim.futuresAgreedPrices[asset]);
-      const currentValue = Number.isFinite(agreedPrice) && agreedPrice > 0 && Number.isFinite(localPrice)
-        ? (localPrice - agreedPrice) * roundedContracts * spec.multiplier
-        : NaN;
-      const underlyingUnits = roundedContracts * spec.multiplier;
 
       return {
         asset,isFuture,spec,localPrice,currency,fxToUsd,fxDisplay,
         fxDate:fxInfo.date,fxSource:fxInfo.source,usdPrice,targetValue,
-        shares:null,equivalentContracts,roundedContracts,underlyingUnits,agreedPrice,contractNotional,actualValue,currentValue
+        shares:null,equivalentContracts,roundedContracts,contractNotional,actualValue
       };
     }
 
@@ -914,7 +902,7 @@ function shareAllocation(sim) {
     return {
       asset,isFuture,spec:null,localPrice,currency,fxToUsd,fxDisplay,
       fxDate:fxInfo.date,fxSource:fxInfo.source,usdPrice,targetValue,
-      shares,equivalentContracts:null,roundedContracts:null,underlyingUnits:null,agreedPrice:null,contractNotional:null,actualValue,currentValue:actualValue
+      shares,equivalentContracts:null,roundedContracts:null,contractNotional:null,actualValue
     };
   });
 
@@ -1031,8 +1019,7 @@ function buildLoadedPortfolio(source) {
   const saved = readSavedPortfolios()[source.name];
   const quantities = saved && saved.shares && typeof saved.shares === "object" ? saved.shares : {};
   const values = optState.assets.map(asset => {
-    const rawQuantity = Number(quantities[asset]) || 0;
-    const quantity = futureSpec(asset) ? rawQuantity : Math.max(0, rawQuantity);
+    const quantity = Math.max(0, Number(quantities[asset]) || 0);
     const usdPrice = Number(optState.usdPrices[asset]);
     const localPrice = Number(optState.prices[asset]);
     const price = Number.isFinite(usdPrice) && usdPrice > 0 ? usdPrice : localPrice;
@@ -1044,19 +1031,14 @@ function buildLoadedPortfolio(source) {
   const sim = portfolioMetrics(values.map(value => value/total), "loaded");
   sim.label = source.name;
   sim.sourceType = "saved";
-  sim.loadedQuantities = Object.fromEntries(optState.assets.map(asset => [asset,
-    futureSpec(asset) ? (Number(quantities[asset]) || 0) : Math.max(0,Number(quantities[asset]) || 0)
-  ]));
-  sim.futuresAgreedPrices = { ...(saved.futuresAgreedPrices || {}) };
-  sim.bookValue = Math.max(0, Number(saved.bookValue) || 0);
+  sim.loadedQuantities = Object.fromEntries(optState.assets.map(asset => [asset,Math.max(0,Number(quantities[asset]) || 0)]));
   sim.investmentAmount = total;
   return sim;
 }
 
 function portfolioFromQuantities(quantities, label="Current holdings") {
   const values = optState.assets.map(asset => {
-    const rawQuantity = Number(quantities?.[asset]) || 0;
-    const quantity = futureSpec(asset) ? rawQuantity : Math.max(0, rawQuantity);
+    const quantity = Math.max(0, Number(quantities?.[asset]) || 0);
     const usdPrice = Number(optState.usdPrices[asset]);
     const localPrice = Number(optState.prices[asset]);
     const price = Number.isFinite(usdPrice) && usdPrice > 0 ? usdPrice : localPrice;
@@ -1068,9 +1050,7 @@ function portfolioFromQuantities(quantities, label="Current holdings") {
   const sim = portfolioMetrics(values.map(value => value/total), "loaded");
   sim.label = label;
   sim.sourceType = "holdings";
-  sim.loadedQuantities = Object.fromEntries(optState.assets.map(asset => [asset,
-    futureSpec(asset) ? (Number(quantities?.[asset]) || 0) : Math.max(0,Number(quantities?.[asset]) || 0)
-  ]));
+  sim.loadedQuantities = Object.fromEntries(optState.assets.map(asset => [asset,Math.max(0,Number(quantities?.[asset]) || 0)]));
   sim.investmentAmount = total;
   return sim;
 }
@@ -1093,10 +1073,6 @@ function saveCurrentPortfolio() {
   portfolios[cleanName] = {
     securities: allocation.rows.map(row => row.asset),
     shares: Object.fromEntries(allocation.rows.map(row => [row.asset,row.isFuture ? row.roundedContracts : row.shares])),
-    futuresAgreedPrices: Object.fromEntries(allocation.rows
-      .filter(row => row.isFuture && Number.isFinite(row.agreedPrice) && row.agreedPrice > 0)
-      .map(row => [row.asset,row.agreedPrice])),
-    bookValue: Math.max(0, Number(sim.bookValue) || 0),
     investmentAmount: allocation.invested,
     savedAt: new Date().toISOString()
   };
@@ -1281,7 +1257,7 @@ function inspectSimulation(id, preserveVar=false, scrollToHoldings=true) {
 
   document.getElementById("inspectSummary").innerHTML = `
     <span><strong>${sim.id === "loaded" ? "Loaded portfolio" : "Simulation"}:</strong> ${sim.id === "loaded" ? escapeHtml(sim.label) : `#${sim.id}`}</span>
-    <span><strong>${sim.sourceType === "saved" ? "Futures exposure plus equity value" : "Investment"}:</strong> ${fmtMoney(sim.investmentAmount ?? optState.investmentAmount,0)}</span>
+    <span><strong>Investment:</strong> ${fmtMoney(sim.investmentAmount ?? optState.investmentAmount,0)}</span>
     <span><strong>Total Return:</strong> ${fmtPct(sim.totalReturn,4)}</span>
     <span><strong>Volatility:</strong> ${fmtPct(sim.volatility,4)}</span>
     <span><strong>Risk-Free:</strong> ${fmtPct(optState.riskFree,4)}</span>
@@ -1302,15 +1278,18 @@ function inspectSimulation(id, preserveVar=false, scrollToHoldings=true) {
       <td title="${escapeHtml(a.fxSource)} ${escapeHtml(a.fxDate)}">${Number.isFinite(a.fxDisplay) ? a.fxDisplay.toFixed(4) : "N/A"}</td>
       <td>${fmtMoney(a.usdPrice)}</td>
       <td>${fmtMoney(a.targetValue)}</td>
-      <td>${a.isFuture
-        ? `<input class="opt-futures-units-input" type="number" step="${a.spec.multiplier}" data-asset="${escapeHtml(asset)}" value="${a.underlyingUnits}"><div class="opt-unit-note">${escapeHtml(a.spec.unit)}</div>`
-        : `<input class="opt-share-input" type="number" min="0" step="1" data-asset="${escapeHtml(asset)}" value="${a.shares}">`}</td>
-      <td>${a.isFuture && Number.isFinite(a.agreedPrice) && a.agreedPrice > 0 ? a.agreedPrice.toLocaleString(undefined,{maximumFractionDigits:5}) : "—"}</td>
+      <td>${a.isFuture ? "—" : `<input class="opt-share-input" type="number" min="0" step="1" data-asset="${escapeHtml(asset)}" value="${a.shares}">`}</td>
       <td title="${a.isFuture ? `Contract notional ${fmtMoney(a.contractNotional)} (${a.spec.multiplier.toLocaleString()} ${a.spec.unit})` : ""}">
-        ${a.isFuture && Number.isFinite(a.roundedContracts) ? a.roundedContracts.toFixed(4) : "—"}
+        ${a.isFuture && Number.isFinite(a.equivalentContracts) ? a.equivalentContracts.toFixed(4) : "—"}
+      </td>
+      <td>
+        ${a.isFuture
+          ? `<input class="opt-contract-input" type="number" min="0" step="1"
+              data-sim-id="${sim.id}" data-asset="${escapeHtml(asset)}"
+              value="${a.roundedContracts}">`
+          : "—"}
       </td>
       <td>${fmtMoney(a.actualValue)}</td>
-      <td>${a.isFuture ? (Number.isFinite(a.currentValue) ? fmtMoney(a.currentValue) : "Enter agreed price in Portfolio Analytics") : fmtMoney(a.currentValue)}</td>
       <td>${fmtPct(er,6)}</td>
       <td>${fmtPct(dy,6)}</td>
       <td>${fmtPct(w*er,6)}</td>
@@ -1325,7 +1304,7 @@ function inspectSimulation(id, preserveVar=false, scrollToHoldings=true) {
       <td>${fmtPct(sim.weights.reduce((a,b)=>a+b,0),6)}</td>
       <td></td><td></td><td></td><td></td>
       <td>${fmtMoney(sim.investmentAmount ?? optState.investmentAmount)}</td>
-      <td></td><td></td><td></td><td></td>
+      <td></td><td></td><td></td>
       <td>${fmtMoney(allocation.invested)}</td>
       <td></td><td></td>
       <td>${fmtPct(sim.priceReturn,6)}</td>
@@ -1334,7 +1313,7 @@ function inspectSimulation(id, preserveVar=false, scrollToHoldings=true) {
     </tr>
     <tr>
       <td>Cash / (over-allocation)</td>
-      <td colspan="10"></td>
+      <td colspan="9"></td>
       <td>${fmtMoney(allocation.cash)}</td>
       <td colspan="5"></td>
     </tr>`;
@@ -1346,26 +1325,6 @@ function inspectSimulation(id, preserveVar=false, scrollToHoldings=true) {
       const value = Math.max(0, Math.trunc(Number(event.target.value) || 0));
       optState.roundedContracts[`${simId}|${asset}`] = value;
       inspectSimulation(simId);
-    });
-  });
-
-  document.querySelectorAll(".opt-futures-units-input").forEach(input => {
-    input.addEventListener("change", event => {
-      const asset = String(event.target.dataset.asset || "").toUpperCase();
-      const currentAllocation = shareAllocation(optState.inspected);
-      const quantities = Object.fromEntries(currentAllocation.rows.map(row => [
-        row.asset,
-        row.asset === asset ? (Number(event.target.value) || 0) / row.spec.multiplier : (row.isFuture ? row.roundedContracts : row.shares)
-      ]));
-      const updated = portfolioFromQuantities(quantities, optState.inspected.label || "Current holdings");
-      if (!updated) return;
-      updated.futuresAgreedPrices = { ...(optState.inspected.futuresAgreedPrices || {}) };
-      updated.bookValue = Number(optState.inspected.bookValue) || 0;
-      optState.loadedPortfolio = updated;
-      optState.inspected = updated;
-      resetStressResult();
-      inspectSimulation("loaded");
-      setStatus("Portfolio holdings updated. Futures risk continues to use signed exposure.");
     });
   });
 
@@ -1789,18 +1748,18 @@ function downloadInspectedCsv() {
     ["Portfolio Volatility",sim.volatility],
     ["Sharpe Ratio",sim.sharpe],
     [],
-    ["Security","Weight","Local Price","Currency","USD FX","FX Date","USD Price","Target Value USD","Units","Agreed Price","Contracts","Contract Notional USD","Exposure USD","Current Value USD","EWMA Price Return","TTM Dividend Yield","Weighted Price Return","Weighted Dividend Yield","Variance Contribution"]
+    ["Security","Weight","Local Price","Currency","USD FX","FX Date","USD Price","Target Value USD","Shares","Equivalent Contracts","Rounded Contracts","Contract Notional USD","Actual Value USD","EWMA Price Return","TTM Dividend Yield","Weighted Price Return","Weighted Dividend Yield","Variance Contribution"]
   ];
   const allocation = shareAllocation(sim);
   optState.assets.forEach((asset,i) => {
     const w = sim.weights[i], er = Number(optState.ewma[asset] || 0), dy = Number(optState.dividends[asset] || 0);
     const a = allocation.rows[i];
     rows.push([asset,w,a.localPrice,a.currency,a.fxDisplay,a.fxDate,a.usdPrice,a.targetValue,
-      a.isFuture ? a.underlyingUnits : a.shares,
-      a.isFuture ? a.agreedPrice : "",
+      a.isFuture ? "" : a.shares,
+      a.isFuture ? a.equivalentContracts : "",
       a.isFuture ? a.roundedContracts : "",
       a.isFuture ? a.contractNotional : "",
-      a.actualValue,a.currentValue,er,dy,w*er,w*dy,sim.varianceContributions[i]]);
+      a.actualValue,er,dy,w*er,w*dy,sim.varianceContributions[i]]);
   });
   rows.push([]);
   rows.push(["Invested",allocation.invested]);
