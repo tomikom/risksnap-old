@@ -125,7 +125,7 @@ title: Portfolio Optimization
     <div class="inspector-header">
       <div>
         <div class="opt-panel-title">Portfolio Holdings</div>
-        <div class="opt-chart-note">Risk calculations use equity market value and futures exposure. Futures units, agreed price, initial margin and current gain/loss are shown separately. Initial-margin defaults are IBKR Canada/US overnight requirements in USD as of September 20, 2026 and remain editable.</div>
+        <div class="opt-chart-note">Risk calculations use equity market value and futures exposure. Futures units, agreed price and current gain/loss are shown separately.</div>
       </div>
       <div class="inspector-controls">
         <label for="inspectSimulationNumber">Simulation #</label>
@@ -152,7 +152,6 @@ title: Portfolio Optimization
             <th>Units</th>
             <th>Agreed Price</th>
             <th>Contracts</th>
-            <th>Initial Margin $</th>
             <th>Exposure $</th>
             <th>Current Value $</th>
             <th>EWMA Price Return</th>
@@ -365,7 +364,6 @@ h1 { color:white; text-align:center; background-color:#3A5FCD; }
 .opt-table tfoot td { font-weight:700; border-top:2px solid #999; }
 .opt-contract-input,
 .opt-futures-units-input,
-.opt-margin-input,
 .opt-share-input {
   width:72px;
   padding:3px 5px;
@@ -374,7 +372,6 @@ h1 { color:white; text-align:center; background-color:#3A5FCD; }
   text-align:right;
   font:inherit;
 }
-.opt-margin-input { width:92px; }
 .inspector-header {
   display:flex;
   justify-content:space-between;
@@ -488,24 +485,22 @@ const OPT_STRESS_SCENARIOS = [
 ];
 
 const OPT_FUTURES = {
-  // IBKR Canada resident / US futures overnight initial margin, USD,
-  // retrieved September 20, 2026. Long and short requirements can differ.
-  "MGC=F": {multiplier:10, unit:"troy oz", marginLong:4145.34, marginShort:4205.34},
-  "SIL=F": {multiplier:1000, unit:"troy oz", marginLong:13677.78, marginShort:12877.78},
-  "CL=F":  {multiplier:1000, unit:"barrels", marginLong:19459.21, marginShort:19519.21},
-  "ZC=F":  {multiplier:5000, unit:"bushels", marginLong:2079.61, marginShort:2279.61},
-  "ZS=F":  {multiplier:5000, unit:"bushels", marginLong:4717.76, marginShort:5667.76},
-  "KE=F":  {multiplier:5000, unit:"bushels", marginLong:4223.88, marginShort:4961.38},
-  "NG=F":  {multiplier:10000, unit:"MMBtu", marginLong:6554.71, marginShort:6284.71},
-  "HG=F":  {multiplier:25000, unit:"lb", marginLong:25180.625, marginShort:24780.625},
-  "LE=F":  {multiplier:40000, unit:"lb", marginLong:6462.70, marginShort:6442.70},
-  "GF=F":  {multiplier:50000, unit:"lb", marginLong:13313.42, marginShort:13600.92},
-  "KC=F":  {multiplier:37500, unit:"lb", marginLong:18020.71, marginShort:18020.71},
-  "CC=F":  {multiplier:10, unit:"metric tonnes", marginLong:12288.79, marginShort:12288.79},
-  "CT=F":  {multiplier:50000, unit:"lb", marginLong:3775.63, marginShort:3775.63},
-  "SB=F":  {multiplier:112000, unit:"lb", marginLong:2124.86, marginShort:2124.86},
-  "OJ=F":  {multiplier:15000, unit:"lb", marginLong:7576.29, marginShort:7576.29},
-  "LBS=F": {multiplier:27500, unit:"board ft", marginLong:2570.82, marginShort:2777.07}
+  "MGC=F": {multiplier:10, unit:"troy oz"},
+  "SIL=F": {multiplier:1000, unit:"troy oz"},
+  "CL=F":  {multiplier:1000, unit:"barrels"},
+  "ZC=F":  {multiplier:5000, unit:"bushels"},
+  "ZS=F":  {multiplier:5000, unit:"bushels"},
+  "KE=F":  {multiplier:5000, unit:"bushels"},
+  "NG=F":  {multiplier:10000, unit:"MMBtu"},
+  "HG=F":  {multiplier:25000, unit:"lb"},
+  "LE=F":  {multiplier:40000, unit:"lb"},
+  "GF=F":  {multiplier:50000, unit:"lb"},
+  "KC=F":  {multiplier:37500, unit:"lb"},
+  "CC=F":  {multiplier:10, unit:"metric tonnes"},
+  "CT=F":  {multiplier:50000, unit:"lb"},
+  "SB=F":  {multiplier:112000, unit:"lb"},
+  "OJ=F":  {multiplier:15000, unit:"lb"},
+  "LBS=F": {multiplier:27500, unit:"board ft"}
 };
 
 function futureSpec(asset) {
@@ -903,18 +898,11 @@ function shareAllocation(sim) {
         ? (localPrice - agreedPrice) * roundedContracts * spec.multiplier
         : NaN;
       const underlyingUnits = roundedContracts * spec.multiplier;
-      const defaultMarginPerContract = roundedContracts < 0 ? spec.marginShort : spec.marginLong;
-      const defaultInitialMargin = Math.abs(roundedContracts) * defaultMarginPerContract;
-      const savedInitialMargin = Number(sim.futuresInitialMargins && sim.futuresInitialMargins[asset]);
-      const initialMargin = Number.isFinite(savedInitialMargin) && savedInitialMargin >= 0
-        ? savedInitialMargin
-        : defaultInitialMargin;
 
       return {
         asset,isFuture,spec,localPrice,currency,fxToUsd,fxDisplay,
         fxDate:fxInfo.date,fxSource:fxInfo.source,usdPrice,targetValue,
-        shares:null,equivalentContracts,roundedContracts,underlyingUnits,agreedPrice,contractNotional,
-        actualValue,currentValue,initialMargin,defaultMarginPerContract
+        shares:null,equivalentContracts,roundedContracts,underlyingUnits,agreedPrice,contractNotional,actualValue,currentValue
       };
     }
 
@@ -926,15 +914,13 @@ function shareAllocation(sim) {
     return {
       asset,isFuture,spec:null,localPrice,currency,fxToUsd,fxDisplay,
       fxDate:fxInfo.date,fxSource:fxInfo.source,usdPrice,targetValue,
-      shares,equivalentContracts:null,roundedContracts:null,underlyingUnits:null,agreedPrice:null,
-      contractNotional:null,actualValue,currentValue:actualValue,initialMargin:0,defaultMarginPerContract:0
+      shares,equivalentContracts:null,roundedContracts:null,underlyingUnits:null,agreedPrice:null,contractNotional:null,actualValue,currentValue:actualValue
     };
   });
 
   const invested = rows.reduce((sum,row) => sum + row.actualValue,0);
   const currentValue = rows.reduce((sum,row) => sum + (Number.isFinite(row.currentValue) ? row.currentValue : 0),0);
-  const initialMargin = rows.reduce((sum,row) => sum + (Number.isFinite(row.initialMargin) ? row.initialMargin : 0),0);
-  return {rows,invested,currentValue,initialMargin,cash:amount-invested};
+  return {rows,invested,currentValue,cash:amount-invested};
 }
 
 async function loadCanonicalRiskFree(asOf, fallback) {
@@ -1063,7 +1049,6 @@ function buildLoadedPortfolio(source) {
     futureSpec(asset) ? (Number(quantities[asset]) || 0) : Math.max(0,Number(quantities[asset]) || 0)
   ]));
   sim.futuresAgreedPrices = { ...(saved.futuresAgreedPrices || {}) };
-  sim.futuresInitialMargins = { ...(saved.futuresInitialMargins || {}) };
   sim.bookValue = Math.max(0, Number(saved.bookValue) || 0);
   sim.investmentAmount = total;
   return sim;
@@ -1112,9 +1097,6 @@ function saveCurrentPortfolio() {
     futuresAgreedPrices: Object.fromEntries(allocation.rows
       .filter(row => row.isFuture && Number.isFinite(row.agreedPrice) && row.agreedPrice > 0)
       .map(row => [row.asset,row.agreedPrice])),
-    futuresInitialMargins: Object.fromEntries(allocation.rows
-      .filter(row => row.isFuture && Number.isFinite(row.initialMargin) && row.initialMargin >= 0)
-      .map(row => [row.asset,row.initialMargin])),
     bookValue: Math.max(0, Number(sim.bookValue) || 0),
     investmentAmount: allocation.invested,
     savedAt: new Date().toISOString()
@@ -1328,9 +1310,6 @@ function inspectSimulation(id, preserveVar=false, scrollToHoldings=true) {
       <td title="${a.isFuture ? `Contract notional ${fmtMoney(a.contractNotional)} (${a.spec.multiplier.toLocaleString()} ${a.spec.unit})` : ""}">
         ${a.isFuture && Number.isFinite(a.roundedContracts) ? a.roundedContracts.toFixed(4) : "—"}
       </td>
-      <td>${a.isFuture
-        ? `<input class="opt-margin-input" type="number" min="0" step="0.01" data-asset="${escapeHtml(asset)}" value="${Number(a.initialMargin).toFixed(2)}" title="IBKR default ${fmtMoney(a.defaultMarginPerContract)} per contract; editable">`
-        : "—"}</td>
       <td>${fmtMoney(a.actualValue)}</td>
       <td>${a.isFuture ? (Number.isFinite(a.currentValue) ? fmtMoney(a.currentValue) : "Enter agreed price in Portfolio Analytics") : fmtMoney(a.currentValue)}</td>
       <td>${fmtPct(er,6)}</td>
@@ -1347,7 +1326,7 @@ function inspectSimulation(id, preserveVar=false, scrollToHoldings=true) {
       <td>${fmtPct(sim.weights.reduce((a,b)=>a+b,0),6)}</td>
       <td></td><td></td><td></td><td></td>
       <td>${fmtMoney(sim.investmentAmount ?? optState.investmentAmount)}</td>
-      <td></td><td></td><td></td><td>${fmtMoney(allocation.initialMargin)}</td>
+      <td></td><td></td><td></td>
       <td>${fmtMoney(allocation.invested)}</td>
       <td>${fmtMoney(allocation.currentValue)}</td>
       <td></td><td></td>
@@ -1357,7 +1336,7 @@ function inspectSimulation(id, preserveVar=false, scrollToHoldings=true) {
     </tr>
     <tr>
       <td>Cash / (over-allocation)</td>
-      <td colspan="10"></td>
+      <td colspan="9"></td>
       <td>${fmtMoney(allocation.cash)}</td>
       <td colspan="6"></td>
     </tr>`;
@@ -1383,7 +1362,6 @@ function inspectSimulation(id, preserveVar=false, scrollToHoldings=true) {
       const updated = portfolioFromQuantities(quantities, optState.inspected.label || "Current holdings");
       if (!updated) return;
       updated.futuresAgreedPrices = { ...(optState.inspected.futuresAgreedPrices || {}) };
-      updated.futuresInitialMargins = { ...(optState.inspected.futuresInitialMargins || {}) };
       updated.bookValue = Number(optState.inspected.bookValue) || 0;
       optState.loadedPortfolio = updated;
       optState.inspected = updated;
@@ -1403,31 +1381,11 @@ function inspectSimulation(id, preserveVar=false, scrollToHoldings=true) {
       ]));
       const updated = portfolioFromQuantities(quantities, optState.inspected.label || "Current holdings");
       if (!updated) return;
-      updated.futuresAgreedPrices = { ...(optState.inspected.futuresAgreedPrices || {}) };
-      updated.futuresInitialMargins = { ...(optState.inspected.futuresInitialMargins || {}) };
-      updated.bookValue = Number(optState.inspected.bookValue) || 0;
       optState.loadedPortfolio = updated;
       optState.inspected = updated;
       resetStressResult();
       inspectSimulation("loaded");
       setStatus("Portfolio holdings updated. VaR will use the shares shown below.");
-    });
-  });
-
-  document.querySelectorAll(".opt-margin-input").forEach(input => {
-    input.addEventListener("change", event => {
-      const inspectedId = optState.inspected.id;
-      const asset = String(event.target.dataset.asset || "").toUpperCase();
-      const value = Math.max(0, Number(event.target.value) || 0);
-      optState.inspected.futuresInitialMargins = {
-        ...(optState.inspected.futuresInitialMargins || {}),
-        [asset]: value
-      };
-      if (optState.loadedPortfolio) {
-        optState.loadedPortfolio.futuresInitialMargins = { ...optState.inspected.futuresInitialMargins };
-      }
-      inspectSimulation(inspectedId);
-      setStatus("Initial futures margin updated. The value remains editable and is included when the portfolio is saved.");
     });
   });
 
