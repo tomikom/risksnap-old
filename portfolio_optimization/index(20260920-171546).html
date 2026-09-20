@@ -62,9 +62,9 @@ title: Portfolio Optimization
     <strong>Sharpe:</strong>
     (weighted EWMA price return + weighted TTM dividend yield − 1Y USD risk-free rate)
     ÷ portfolio volatility.
-    Equities use whole shares. Futures use fractional contract equivalents for the optimized
-    exposure, with an editable whole-contract implementation check. Change the investment amount
-    to see how the contract equivalents scale.
+    Optimization and its volatility and Sharpe statistics currently use ordinary equities only.
+    Futures and equity options remain available in loaded portfolios and are shown separately,
+    but are excluded until combined derivative-risk calculations are connected.
     <span id="optAsOf"></span>
   </div>
 
@@ -125,7 +125,7 @@ title: Portfolio Optimization
     <div class="inspector-header">
       <div>
         <div class="opt-panel-title">Portfolio Holdings</div>
-        <div class="opt-chart-note">Risk calculations use equity market value and futures exposure. Futures units, agreed price, initial margin and current gain/loss are shown separately. Initial-margin defaults are IBKR Canada/US overnight requirements in USD as of September 20, 2026 and remain editable.</div>
+        <div class="opt-chart-note">The displayed volatility and Sharpe use ordinary equities only. Futures units, agreed price, initial margin and current gain/loss are shown separately. Initial-margin defaults are IBKR Canada/US overnight requirements in USD as of September 20, 2026 and remain editable.</div>
       </div>
       <div class="inspector-controls">
         <label for="inspectSimulationNumber">Simulation #</label>
@@ -165,6 +165,26 @@ title: Portfolio Optimization
         <tbody id="inspectBody"></tbody>
         <tfoot id="inspectFoot"></tfoot>
       </table>
+    </div>
+
+    <div class="opt-options-panel">
+      <div class="opt-panel-title">Equity Options</div>
+      <div class="opt-option-entry">
+        <label>Underlying <select id="optOptionUnderlying"></select></label>
+        <label>Trade date <input id="optOptionTradeDate" type="date"></label>
+        <label>Expiry <input id="optOptionExpiry" type="date"></label>
+        <label>Strike <input id="optOptionStrike" type="number" min="0" step="any"></label>
+        <label>Type <select id="optOptionType"><option value="call">Call</option><option value="put">Put</option></select></label>
+        <label>Contracts <input id="optOptionContracts" type="number" step="1" value="1"></label>
+        <button id="optOptionAdd" type="button">Add option</button>
+      </div>
+      <div class="opt-chart-note">Signed contracts: positive is long and negative is short. Multiplier 100. Standard, unadjusted listed equity options only. Options and futures are excluded from the displayed volatility and Sharpe until combined derivative-risk calculations are connected.</div>
+      <div class="opt-table-wrap">
+        <table class="opt-table">
+          <thead><tr><th>Underlying</th><th>Trade date</th><th>Expiry</th><th>Strike</th><th>Put/Call</th><th>Contracts</th><th>Multiplier</th><th></th></tr></thead>
+          <tbody id="optOptionsBody"><tr><td colspan="8">No equity options added.</td></tr></tbody>
+        </table>
+      </div>
     </div>
 
     <div class="sharpe-check-box">
@@ -375,6 +395,17 @@ h1 { color:white; text-align:center; background-color:#3A5FCD; }
   font:inherit;
 }
 .opt-margin-input { width:92px; }
+.opt-options-panel { margin-top:14px; padding-top:12px; border-top:1px solid #ddd; }
+.opt-option-entry { display:flex; gap:9px; align-items:flex-end; flex-wrap:wrap; margin:7px 0; }
+.opt-option-entry label { display:flex; flex-direction:column; gap:3px; font-size:11px; color:#555; }
+.opt-option-entry input, .opt-option-entry select { min-height:30px; padding:4px 6px; box-sizing:border-box; }
+#optOptionUnderlying { min-width:120px; }
+#optOptionStrike { width:95px; }
+#optOptionContracts { width:80px; }
+#optOptionAdd, .opt-option-remove { cursor:pointer; border:1px solid #9eb6ce; border-radius:4px; background:#edf5ff; color:#244c73; padding:5px 9px; }
+.opt-option-field { padding:3px 5px; box-sizing:border-box; }
+input.opt-option-field[type="date"] { width:132px; }
+input.opt-option-field[type="number"] { width:92px; text-align:right; }
 .inspector-header {
   display:flex;
   justify-content:space-between;
@@ -990,13 +1021,17 @@ function randomWeights(n, rng, maxWeight) {
 
 function portfolioMetrics(weights, id) {
   const n = optState.assets.length;
+  const equityWeightTotal = weights.reduce((sum, weight, i) => sum + (futureSpec(optState.assets[i]) ? 0 : Number(weight) || 0), 0);
+  const riskWeights = weights.map((weight, i) =>
+    futureSpec(optState.assets[i]) || !(equityWeightTotal > 0) ? 0 : (Number(weight) || 0) / equityWeightTotal
+  );
   let priceReturn = 0;
   let dividendYield = 0;
 
   for (let i=0; i<n; i++) {
     const asset = optState.assets[i];
-    priceReturn += weights[i] * Number(optState.ewma[asset] || 0);
-    dividendYield += weights[i] * Number(optState.dividends[asset] || 0);
+    priceReturn += riskWeights[i] * Number(optState.ewma[asset] || 0);
+    dividendYield += riskWeights[i] * Number(optState.dividends[asset] || 0);
   }
 
   let variance = 0;
@@ -1005,11 +1040,11 @@ function portfolioMetrics(weights, id) {
     let rowCovWeighted = 0;
     for (let j=0; j<n; j++) {
       const cov = optState.vol[i] * optState.vol[j] * optState.corr[i][j];
-      const term = weights[i] * weights[j] * cov;
+      const term = riskWeights[i] * riskWeights[j] * cov;
       variance += term;
-      rowCovWeighted += weights[j] * cov;
+      rowCovWeighted += riskWeights[j] * cov;
     }
-    varianceContributions[i] = weights[i] * rowCovWeighted;
+    varianceContributions[i] = riskWeights[i] * rowCovWeighted;
   }
 
   const volatility = variance >= -1e-12 ? Math.sqrt(Math.max(0,variance)) : NaN;
@@ -1021,6 +1056,7 @@ function portfolioMetrics(weights, id) {
   return {
     id,
     weights: weights.slice(),
+    riskWeights,
     priceReturn,
     dividendYield,
     totalReturn,
@@ -1064,6 +1100,7 @@ function buildLoadedPortfolio(source) {
   ]));
   sim.futuresAgreedPrices = { ...(saved.futuresAgreedPrices || {}) };
   sim.futuresInitialMargins = { ...(saved.futuresInitialMargins || {}) };
+  sim.options = Array.isArray(saved.options) ? saved.options.map(option => ({ ...option, multiplier:100 })) : [];
   sim.bookValue = Math.max(0, Number(saved.bookValue) || 0);
   sim.investmentAmount = total;
   return sim;
@@ -1099,6 +1136,14 @@ function scheduleHoldingsRefresh(delay=350) {
 function saveCurrentPortfolio() {
   const sim = optState.inspected;
   if (!sim || !optState.assets.length) return;
+  const invalidOption = (Array.isArray(sim.options) ? sim.options : []).find(option =>
+    !option.underlying || !option.tradeDate || !option.expiry || option.expiry < option.tradeDate ||
+    !(Number(option.strike) > 0) || Math.trunc(Number(option.contracts) || 0) === 0
+  );
+  if (invalidOption) {
+    setStatus("Complete every option's dates, strike and non-zero contracts before saving.");
+    return;
+  }
   const allocation = shareAllocation(sim);
   const suggested = sim.sourceType === "saved" ? sim.label : "";
   const name = window.prompt("Portfolio name", suggested || "My Portfolio");
@@ -1115,6 +1160,15 @@ function saveCurrentPortfolio() {
     futuresInitialMargins: Object.fromEntries(allocation.rows
       .filter(row => row.isFuture && Number.isFinite(row.initialMargin) && row.initialMargin >= 0)
       .map(row => [row.asset,row.initialMargin])),
+    options: Array.isArray(sim.options) ? sim.options.map(option => ({
+      underlying: String(option.underlying || "").trim().toUpperCase(),
+      tradeDate: String(option.tradeDate || ""),
+      expiry: String(option.expiry || ""),
+      strike: Number(option.strike) || 0,
+      optionType: option.optionType === "put" ? "put" : "call",
+      contracts: Math.trunc(Number(option.contracts) || 0),
+      multiplier:100
+    })) : [],
     bookValue: Math.max(0, Number(sim.bookValue) || 0),
     investmentAmount: allocation.invested,
     savedAt: new Date().toISOString()
@@ -1132,17 +1186,27 @@ function saveCurrentPortfolio() {
 function runSimulations(count, seed, maxWeightPct) {
   const rng = mulberry32(seed);
   const n = optState.assets.length;
+  const equityIndices = optState.assets.map((asset,i) => futureSpec(asset) ? -1 : i).filter(i => i >= 0);
+  const equityCount = equityIndices.length;
   const cap = maxWeightPct / 100;
   const simulations = [];
 
+  if (!equityCount) return {simulations, equalWeight:null};
+  const expandEquityWeights = equityWeights => {
+    const result = Array(n).fill(0);
+    equityIndices.forEach((assetIndex,i) => result[assetIndex] = equityWeights[i]);
+    return result;
+  };
+
   // Simulation 0 is deliberately equal-weight for a stable checking reference.
-  const equalWeights = Array(n).fill(1/n);
+  const equalWeights = expandEquityWeights(Array(equityCount).fill(1/equityCount));
   const equalWeight = portfolioMetrics(equalWeights, 0);
   simulations.push(equalWeight);
 
   for (let id=1; id<=count; id++) {
-    const weights = randomWeights(n, rng, cap);
-    if (!weights) continue;
+    const equityWeights = randomWeights(equityCount, rng, cap);
+    if (!equityWeights) continue;
+    const weights = expandEquityWeights(equityWeights);
     simulations.push(portfolioMetrics(weights, id));
   }
   return {simulations, equalWeight};
@@ -1278,6 +1342,71 @@ function renderChart() {
   });
 }
 
+function renderOptimizationOptions(sim) {
+  const select = document.getElementById("optOptionUnderlying");
+  const body = document.getElementById("optOptionsBody");
+  const addButton = document.getElementById("optOptionAdd");
+  if (!select || !body || !addButton) return;
+  if (!Array.isArray(sim.options)) sim.options = [];
+
+  const prior = select.value;
+  const equities = optState.assets.filter(asset => !futureSpec(asset));
+  select.innerHTML = equities.length
+    ? equities.map(asset => `<option value="${escapeHtml(asset)}">${escapeHtml(asset)}</option>`).join("")
+    : '<option value="">Select an equity holding</option>';
+  if (equities.includes(prior)) select.value = prior;
+
+  body.innerHTML = sim.options.length ? sim.options.map((option,index) => `
+    <tr data-option-index="${index}">
+      <td>${escapeHtml(option.underlying)}</td>
+      <td><input class="opt-option-field" data-field="tradeDate" type="date" value="${escapeHtml(option.tradeDate || "")}"></td>
+      <td><input class="opt-option-field" data-field="expiry" type="date" value="${escapeHtml(option.expiry || "")}"></td>
+      <td><input class="opt-option-field" data-field="strike" type="number" min="0" step="any" value="${Number(option.strike) || ""}"></td>
+      <td><select class="opt-option-field" data-field="optionType"><option value="call" ${option.optionType === "call" ? "selected" : ""}>Call</option><option value="put" ${option.optionType === "put" ? "selected" : ""}>Put</option></select></td>
+      <td><input class="opt-option-field" data-field="contracts" type="number" step="1" value="${Math.trunc(Number(option.contracts) || 0)}"></td>
+      <td>100</td>
+      <td><button type="button" class="opt-option-remove" data-index="${index}">Remove</button></td>
+    </tr>`).join("") : '<tr><td colspan="8">No equity options added.</td></tr>';
+
+  body.querySelectorAll(".opt-option-field").forEach(input => {
+    input.onchange = () => {
+      const index = Number(input.closest("tr")?.dataset.optionIndex);
+      const option = sim.options[index];
+      if (!option) return;
+      const field = input.dataset.field;
+      option[field] = field === "strike" || field === "contracts" ? Number(input.value) || 0 : input.value;
+      renderOptimizationOptions(sim);
+    };
+  });
+  body.querySelectorAll(".opt-option-remove").forEach(button => {
+    button.onclick = () => {
+      sim.options.splice(Number(button.dataset.index),1);
+      inspectSimulation(sim.id,true,false);
+    };
+  });
+
+  addButton.onclick = () => {
+    const underlying = String(select.value || "").trim().toUpperCase();
+    const tradeDate = document.getElementById("optOptionTradeDate")?.value || "";
+    const expiry = document.getElementById("optOptionExpiry")?.value || "";
+    const strike = Number(document.getElementById("optOptionStrike")?.value);
+    const optionType = document.getElementById("optOptionType")?.value === "put" ? "put" : "call";
+    const contracts = Math.trunc(Number(document.getElementById("optOptionContracts")?.value) || 0);
+    if (!underlying || !tradeDate || !expiry || !(strike > 0) || contracts === 0) {
+      setStatus("Complete the option underlying, dates, strike and non-zero contracts.");
+      return;
+    }
+    if (expiry < tradeDate) {
+      setStatus("Option expiry cannot be before its trade date.");
+      return;
+    }
+    sim.options.push({underlying,tradeDate,expiry,strike,optionType,contracts,multiplier:100});
+    if (sim.id === "loaded") optState.loadedPortfolio = sim;
+    setStatus(`Added ${underlying} ${optionType}. Save the portfolio to retain it.`);
+    inspectSimulation(sim.id,true,false);
+  };
+}
+
 function inspectSimulation(id, preserveVar=false, scrollToHoldings=true) {
   const sim = id === "loaded"
     ? optState.loadedPortfolio
@@ -1297,14 +1426,17 @@ function inspectSimulation(id, preserveVar=false, scrollToHoldings=true) {
   if (sim.id !== "loaded") document.getElementById("inspectSimulationNumber").value = sim.id;
   document.getElementById("downloadSimulationCsv").disabled = false;
   document.getElementById("savePortfolio").disabled = false;
+  const hasExcludedDerivatives = optState.assets.some((asset,i) => futureSpec(asset) && Math.abs(Number(sim.weights[i]) || 0) > 0) ||
+    (Array.isArray(sim.options) && sim.options.length > 0);
+  const riskPrefix = hasExcludedDerivatives ? "Equity-only " : "";
 
   document.getElementById("inspectSummary").innerHTML = `
     <span><strong>${sim.id === "loaded" ? "Loaded portfolio" : "Simulation"}:</strong> ${sim.id === "loaded" ? escapeHtml(sim.label) : `#${sim.id}`}</span>
     <span><strong>${sim.sourceType === "saved" ? "Futures exposure plus equity value" : "Investment"}:</strong> ${fmtMoney(sim.investmentAmount ?? optState.investmentAmount,0)}</span>
     <span><strong>Total Return:</strong> ${fmtPct(sim.totalReturn,4)}</span>
-    <span><strong>Volatility:</strong> ${fmtPct(sim.volatility,4)}</span>
+    <span><strong>${riskPrefix}Volatility:</strong> ${fmtPct(sim.volatility,4)}</span>
     <span><strong>Risk-Free:</strong> ${fmtPct(optState.riskFree,4)}</span>
-    <span><strong>Sharpe:</strong> ${fmtNum(sim.sharpe,6)}</span>
+    <span><strong>${riskPrefix}Sharpe:</strong> ${fmtNum(sim.sharpe,6)}</span>
   `;
 
   const allocation = shareAllocation(sim);
@@ -1335,8 +1467,8 @@ function inspectSimulation(id, preserveVar=false, scrollToHoldings=true) {
       <td>${a.isFuture ? (Number.isFinite(a.currentValue) ? fmtMoney(a.currentValue) : "Enter agreed price in Portfolio Analytics") : fmtMoney(a.currentValue)}</td>
       <td>${fmtPct(er,6)}</td>
       <td>${fmtPct(dy,6)}</td>
-      <td>${fmtPct(w*er,6)}</td>
-      <td>${fmtPct(w*dy,6)}</td>
+      <td>${fmtPct((sim.riskWeights ? sim.riskWeights[i] : w)*er,6)}</td>
+      <td>${fmtPct((sim.riskWeights ? sim.riskWeights[i] : w)*dy,6)}</td>
       <td>${fmtNum(sim.varianceContributions[i],10)}</td>
     </tr>`;
   }).join("");
@@ -1384,6 +1516,7 @@ function inspectSimulation(id, preserveVar=false, scrollToHoldings=true) {
       if (!updated) return;
       updated.futuresAgreedPrices = { ...(optState.inspected.futuresAgreedPrices || {}) };
       updated.futuresInitialMargins = { ...(optState.inspected.futuresInitialMargins || {}) };
+      updated.options = Array.isArray(optState.inspected.options) ? optState.inspected.options.map(option => ({...option})) : [];
       updated.bookValue = Number(optState.inspected.bookValue) || 0;
       optState.loadedPortfolio = updated;
       optState.inspected = updated;
@@ -1405,6 +1538,7 @@ function inspectSimulation(id, preserveVar=false, scrollToHoldings=true) {
       if (!updated) return;
       updated.futuresAgreedPrices = { ...(optState.inspected.futuresAgreedPrices || {}) };
       updated.futuresInitialMargins = { ...(optState.inspected.futuresInitialMargins || {}) };
+      updated.options = Array.isArray(optState.inspected.options) ? optState.inspected.options.map(option => ({...option})) : [];
       updated.bookValue = Number(optState.inspected.bookValue) || 0;
       optState.loadedPortfolio = updated;
       optState.inspected = updated;
@@ -1430,6 +1564,8 @@ function inspectSimulation(id, preserveVar=false, scrollToHoldings=true) {
       setStatus("Initial futures margin updated. The value remains editable and is included when the portfolio is saved.");
     });
   });
+
+  renderOptimizationOptions(sim);
 
   document.getElementById("inspectFormula").textContent =
     `(${(sim.priceReturn*100).toFixed(6)}% + ${(sim.dividendYield*100).toFixed(6)}% − ${(optState.riskFree*100).toFixed(6)}%) ÷ ${(sim.volatility*100).toFixed(6)}% = ${sim.sharpe.toFixed(8)}`;
