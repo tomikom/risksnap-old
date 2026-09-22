@@ -1729,7 +1729,7 @@ function valueFromUpper(matrix, i, j) {
 }
 
 function normalizePayload(payload, periodLabel) {
-  const assets = (payload.assets || []).slice(0, MAX_INTERNAL_ASSETS);
+  const assets = (payload.assets || []).slice(0, MAX_ASSETS);
   const raw = payload.matrix || payload.correlation || [];
   const matrix = raw.slice(0, assets.length).map(row => (row || []).slice(0, assets.length));
   let volatility = payload.volatility;
@@ -2188,8 +2188,7 @@ async function refreshPortfolioPrices() {
   } finally {
     portfolioPriceRefreshInProgress = false;
     if (button) {
-      button.disabled = false;
-      button.classList.remove("is-loading");
+          button.classList.remove("is-loading");
       button.title = "Download the latest available prices.";
     }
     if (label) label.textContent = "Refresh Prices";
