@@ -4,8 +4,12 @@ title: Correlations, Portfolios
 ---
 <!--
 RiskSnap Correlations
-Version: index(151)
+Version: index(154)
 Changes:
+- Added an Agreed price field for futures; positive units mean bought and negative units mean sold, and current and historical futures values use (market price - agreed price) × signed contracts × factor
+- Changed the futures button to "+1 contract" so repeated clicks add successive contract-sized unit quantities; the input arrows continue to move by one contract up or down
+- Added a one-contract button to each futures row so the correct underlying unit quantity can be entered with one click; equity and ETF rows are unchanged
+- Changed futures holding inputs from contract counts to underlying unit quantities (for example, corn defaults to 5000); equity and ETF share inputs are unchanged, and existing saved portfolios remain compatible
 - Kept risk analytics on completed EOD data while correcting live chart and current-valuation futures lookups to use exact Yahoo codes (for example CORN to ZC=F and OIL to CL=F); generic labels remain presentation/news terms only
 - Added Beta vs T10YIE beside Beta vs SPY; SPY remains a normal portfolio holding when selected, while an unselected SPY is loaded only as an internal beta benchmark; T10YIE is silently included as an internal benchmark when not selected and uses its daily change as the inflation factor
 - Corrected TTM dividend yield for all non-USD equities by keeping the dividend/price ratio in the security's native currency; FX conversion is not applied to the yield ratio
@@ -153,7 +157,7 @@ Changes:
 
     <div class="portfolio-header">
       <div>
-        <div class="portfolio-note">Use the Correlations section to select holdings, then enter the number of units held and the portfolio’s Book Cost. For equities, units are shares; for commodities, units are whole futures contracts. If desired the portfolio may be saved locally in your cache. When no saved portfolio is loaded, RiskSnap creates an approximately equal-notional portfolio from the selected holdings, subject to whole-contract futures sizing. Click the chart button beside a holding for price history.</div>
+        <div class="portfolio-note">Use the Correlations section to select holdings, then enter the number of units held and the portfolio’s Book Cost. For equities, units are shares; for futures, enter the quantity of the underlying commodity represented by the position and its initial margin. Equity options may be added below. If desired the portfolio may be saved locally in your cache. When no saved portfolio is loaded, RiskSnap creates an approximately equal-notional portfolio from the selected holdings, using one or more whole contracts for futures. Click the chart button beside a holding for price history.</div>
       </div>
       <div class="portfolio-controls">
         <label>Book Cost:
@@ -189,6 +193,8 @@ Changes:
             <th>EOD price</th>
             <th>Market price</th>
             <th>Units</th>
+            <th>Agreed price</th>
+            <th>Initial margin (USD)</th>
             <th>Description</th>
             <th>Value</th>
             <th>Vol (EOD)</th>
@@ -203,6 +209,8 @@ Changes:
         <tfoot>
           <tr>
             <td colspan="6">Total</td>
+            <td id="portfolioTotalInitialMargin">—</td>
+            <td></td>
             <td id="portfolioTotalMarketValue">—</td>
             <td colspan="6"></td>
           </tr>
@@ -210,8 +218,28 @@ Changes:
       </table>
     </div>
     <div class="portfolio-footnote"><sup>1</sup> Div is the trailing twelve-month (TTM) dividend or distribution yield for the selected EOD date: split-adjusted cash dividends or ETF distributions during the preceding 12 months divided by that EOD price.</div>
-    <div class="portfolio-footnote futures-note"><strong>Book Cost:</strong> Portfolio Book Cost may include a combination of actual amounts invested in equities/ETFs and notional amounts for futures. For a futures position, Book Cost represents contracts × contract size × purchase price, not the cash outlay. Futures require margin rather than payment of the full notional amount; margin is collateral and is generally returned when the position is closed, subject to trading gains or losses and other applicable charges.</div>
-    <div class="portfolio-footnote futures-note"><strong>Futures:</strong> Current Notional Value represents the value of the underlying commodity represented by the contract. The full notional value is not normally required to establish a futures position. Margin requirements are determined by the exchange and broker and vary by contract and market conditions.</div>
+    <div class="portfolio-footnote futures-note"><strong>Book Cost:</strong> Enter the amount invested in equities and ETFs. Futures are valued separately from their agreed purchase or sale price.</div>
+    <div class="portfolio-footnote futures-note"><strong>Futures:</strong> Enter the agreed price and a signed quantity: positive units are bought and negative units are sold. Futures value equals (market price − agreed price) × signed contracts × contract factor. Initial-margin defaults are IBKR Canada/US overnight requirements in USD as of September 20, 2026 and remain editable.</div>
+
+    <div class="portfolio-options-panel">
+      <div class="portfolio-subheading">Equity Options</div>
+      <div class="portfolio-option-entry">
+        <label>Underlying <select id="optionUnderlying"></select></label>
+        <label>Trade date <input id="optionTradeDate" type="date"></label>
+        <label>Expiry <input id="optionExpiry" type="date"></label>
+        <label>Strike <input id="optionStrike" type="number" min="0" step="any"></label>
+        <label>Type <select id="optionType"><option value="call">Call</option><option value="put">Put</option></select></label>
+        <label>Contracts <input id="optionContracts" type="number" step="1" value="1"></label>
+        <button id="optionAdd" type="button">Add option</button>
+      </div>
+      <div class="portfolio-footnote">Contracts are signed: positive is long and negative is short. The multiplier is fixed at 100. Only standard, unadjusted listed equity options are supported. Options and futures are currently excluded from volatility, beta and Sharpe, which remain equity-only.</div>
+      <div class="portfolio-table-wrap">
+        <table class="portfolio-table option-table">
+          <thead><tr><th>Underlying</th><th>Trade date</th><th>Expiry</th><th>Strike</th><th>Put/Call</th><th>Contracts</th><th>Multiplier</th><th></th></tr></thead>
+          <tbody id="portfolioOptionsBody"><tr><td colspan="8" class="portfolio-empty">No equity options added.</td></tr></tbody>
+        </table>
+      </div>
+    </div>
 
     <div id="securityChartPanel" class="portfolio-chart-panel" hidden>
       <div class="portfolio-chart-header">
@@ -443,6 +471,17 @@ h1 { color: white; text-align: center; background-color: #3A5FCD; }
 .matrix-history-header { margin-bottom: 4px; }
 #matrixHistorySlider { width: 100%; }
 
+/* On phones the sticky panel covers the lower correlation bubbles.
+   Keep it in the normal page flow beneath the matrix instead. */
+@media (max-width: 800px) {
+  .matrix-history-panel {
+    position: static;
+    bottom: auto;
+    z-index: auto;
+    box-shadow: none;
+  }
+}
+
 
 .portfolio-panel { background:#fff; border:1px solid #ddd; border-radius:8px; margin:14px 0; padding:0 14px 12px 14px; scroll-margin-top:12px; }
 .world-index-charts { margin:0 0 12px; padding:9px 10px; border:1px solid #d9e2f4; border-radius:6px; background:#f7f9fd; }
@@ -485,12 +524,27 @@ h1 { color: white; text-align: center; background-color: #3A5FCD; }
 .portfolio-table th:first-child, .portfolio-table td:first-child { text-align:left; }
 .portfolio-table tfoot td { font-weight:700; border-top:2px solid #999; border-bottom:0; }
 .portfolio-table input.portfolio-shares { width:90px; padding:4px 6px; text-align:right; box-sizing:border-box; }
-.portfolio-table td:nth-child(6) { text-align:left; font-size:12px; color:#555; }
+.portfolio-table input.futures-agreed-price { width:100px; padding:4px 6px; text-align:right; box-sizing:border-box; }
+.portfolio-table input.futures-initial-margin { width:112px; padding:4px 6px; text-align:right; box-sizing:border-box; }
+.portfolio-table td:nth-child(8) { text-align:left; font-size:12px; color:#555; }
 .portfolio-unit-label { margin-top:2px; font-size:10px; color:#666; text-align:center; }
+.one-contract-button { margin-top:4px; padding:2px 7px; border:1px solid #9eb6ce; border-radius:4px; background:#edf5ff; color:#244c73; font-size:10px; cursor:pointer; }
+.one-contract-button:hover, .one-contract-button:focus { background:#dcecff; }
 .futures-note { margin-top:5px; }
 .portfolio-empty { color:#666; padding:10px 0; }
 .portfolio-footnote { margin:7px 2px 0; color:#666; font-size:11px; line-height:1.35; }
 .portfolio-footnote sup, .portfolio-table th sup { font-size:9px; vertical-align:super; }
+.portfolio-options-panel { margin-top:16px; padding-top:12px; border-top:1px solid #ddd; }
+.portfolio-option-entry { display:flex; gap:9px; align-items:flex-end; flex-wrap:wrap; margin-bottom:7px; }
+.portfolio-option-entry label { display:flex; flex-direction:column; gap:3px; font-size:11px; color:#555; }
+.portfolio-option-entry input, .portfolio-option-entry select { padding:4px 6px; min-height:30px; box-sizing:border-box; }
+#optionUnderlying { min-width:120px; }
+#optionStrike { width:95px; }
+#optionContracts { width:80px; }
+#optionAdd, .option-remove { cursor:pointer; border:1px solid #9eb6ce; border-radius:4px; background:#edf5ff; color:#244c73; padding:5px 9px; }
+.option-table input, .option-table select { padding:3px 5px; box-sizing:border-box; }
+.option-table input[type="date"] { width:132px; }
+.option-table input[type="number"] { width:92px; text-align:right; }
 .portfolio-dividend-history { margin:12px 0 4px; border:1px solid #d8dfe9; border-radius:6px; padding:10px; background:#fbfcfe; }
 .portfolio-dividend-history-header { display:flex; justify-content:space-between; align-items:flex-start; gap:12px; flex-wrap:wrap; margin-bottom:8px; }
 .portfolio-dividend-history-title { font-size:15px; font-weight:700; color:#222; }
@@ -576,22 +630,22 @@ const NON_HOLDING_SYMBOLS = new Set([
   "DX-Y.NYB", "EURUSD=X", "GC=F", "BTC-USD", "ETH-USD"
 ]);
 const FUTURES_SPECS = {
-  "GOLD":          { yahoo: "MGC=F", name: "Micro Gold", factor: 10,    contract: "10 troy oz" },
-  "OIL":           { yahoo: "CL=F",  name: "Crude Oil", factor: 1000,  contract: "1,000 barrels" },
-  "CORN":          { yahoo: "ZC=F",  name: "Corn", factor: 5000,       contract: "5,000 bu" },
-  "SOYBEANS":      { yahoo: "ZS=F",  name: "Soybeans", factor: 5000,   contract: "5,000 bu" },
-  "KC HRW WHEAT":  { yahoo: "KE=F",  name: "KC HRW Wheat", factor: 5000, contract: "5,000 bu" },
-  "NATURAL GAS":   { yahoo: "NG=F",  name: "Natural Gas", factor: 10000, contract: "10,000 MMBtu" },
-  "SILVER":        { yahoo: "SIL=F", name: "Micro Silver", factor: 1000, contract: "1,000 troy oz" },
-  "COPPER":        { yahoo: "HG=F",  name: "Copper", factor: 25000,   contract: "25,000 lb" },
-  "LIVE CATTLE":   { yahoo: "LE=F",  name: "Live Cattle", factor: 40000, contract: "40,000 lb" },
-  "FEEDER CATTLE": { yahoo: "GF=F",  name: "Feeder Cattle", factor: 50000, contract: "50,000 lb" },
-  "COFFEE":        { yahoo: "KC=F",  name: "Coffee", factor: 37500,    contract: "37,500 lb" },
-  "COCOA":         { yahoo: "CC=F",  name: "Cocoa", factor: 10,        contract: "10 metric tonnes" },
-  "COTTON":        { yahoo: "CT=F",  name: "Cotton", factor: 50000,    contract: "50,000 lb" },
-  "SUGAR #11":     { yahoo: "SB=F",  name: "Sugar #11", factor: 112000, contract: "112,000 lb" },
-  "ORANGE JUICE":  { yahoo: "OJ=F",  name: "Orange Juice", factor: 15000, contract: "15,000 lb" },
-  "LUMBER":        { yahoo: "LBS=F", name: "Lumber", factor: 27500,    contract: "27,500 board ft" }
+  "GOLD":          { yahoo: "MGC=F", name: "Micro Gold", factor: 10,     contract: "10 troy oz",       tick: 0.1,     decimals: 1, marginLong:4145.34, marginShort:4205.34 },
+  "OIL":           { yahoo: "CL=F",  name: "Crude Oil", factor: 1000,   contract: "1,000 barrels",     tick: 0.01,    decimals: 2, marginLong:19459.21, marginShort:19519.21 },
+  "CORN":          { yahoo: "ZC=F",  name: "Corn", factor: 5000,        contract: "5,000 bu",          tick: 0.0025,  decimals: 4, marginLong:2079.61, marginShort:2279.61 },
+  "SOYBEANS":      { yahoo: "ZS=F",  name: "Soybeans", factor: 5000,    contract: "5,000 bu",          tick: 0.0025,  decimals: 4, marginLong:4717.76, marginShort:5667.76 },
+  "KC HRW WHEAT":  { yahoo: "KE=F",  name: "KC HRW Wheat", factor: 5000, contract: "5,000 bu",         tick: 0.0025,  decimals: 4, marginLong:4223.88, marginShort:4961.38 },
+  "NATURAL GAS":   { yahoo: "NG=F",  name: "Natural Gas", factor: 10000, contract: "10,000 MMBtu",    tick: 0.001,   decimals: 3, marginLong:6554.71, marginShort:6284.71 },
+  "SILVER":        { yahoo: "SIL=F", name: "Micro Silver", factor: 1000, contract: "1,000 troy oz",    tick: 0.005,   decimals: 3, marginLong:13677.78, marginShort:12877.78 },
+  "COPPER":        { yahoo: "HG=F",  name: "Copper", factor: 25000,    contract: "25,000 lb",         tick: 0.0005,  decimals: 4, marginLong:25180.625, marginShort:24780.625 },
+  "LIVE CATTLE":   { yahoo: "LE=F",  name: "Live Cattle", factor: 40000, contract: "40,000 lb",       tick: 0.00025, decimals: 5, marginLong:6462.70, marginShort:6442.70 },
+  "FEEDER CATTLE": { yahoo: "GF=F",  name: "Feeder Cattle", factor: 50000, contract: "50,000 lb",     tick: 0.00025, decimals: 5, marginLong:13313.42, marginShort:13600.92 },
+  "COFFEE":        { yahoo: "KC=F",  name: "Coffee", factor: 37500,     contract: "37,500 lb",        tick: 0.0005,  decimals: 4, marginLong:18020.71, marginShort:18020.71 },
+  "COCOA":         { yahoo: "CC=F",  name: "Cocoa", factor: 10,         contract: "10 metric tonnes", tick: 1,       decimals: 0, marginLong:12288.79, marginShort:12288.79 },
+  "COTTON":        { yahoo: "CT=F",  name: "Cotton", factor: 50000,     contract: "50,000 lb",        tick: 0.0001,  decimals: 4, marginLong:3775.63, marginShort:3775.63 },
+  "SUGAR #11":     { yahoo: "SB=F",  name: "Sugar #11", factor: 112000,  contract: "112,000 lb",       tick: 0.0001,  decimals: 4, marginLong:2124.86, marginShort:2124.86 },
+  "ORANGE JUICE":  { yahoo: "OJ=F",  name: "Orange Juice", factor: 15000, contract: "15,000 lb",      tick: 0.0005,  decimals: 4, marginLong:7576.29, marginShort:7576.29 },
+  "LUMBER":        { yahoo: "LBS=F", name: "Lumber", factor: 27500,     contract: "27,500 board ft",  tick: 0.5,     decimals: 1, marginLong:2570.82, marginShort:2777.07 }
 };
 
 function futuresSpec(asset) {
@@ -622,6 +676,17 @@ function contractFactor(asset) {
   return spec ? Number(spec.factor) : 1;
 }
 
+function futuresTickPrice(asset, price) {
+  const spec = futuresSpec(asset);
+  const p = Number(price);
+  const tick = Number(spec && spec.tick);
+  if (!spec || !Number.isFinite(p) || !Number.isFinite(tick) || tick <= 0) return p;
+  // Yahoo sometimes returns values such as 3.3482501 for a valid 3.34825
+  // settlement. Snap only the working price to the exchange tick; the raw
+  // downloaded observation remains unchanged in the source data.
+  return Math.round(p / tick) * tick;
+}
+
 function futuresUnitPrice(asset, price) {
   const spec = futuresSpec(asset);
   const p = Number(price);
@@ -629,7 +694,7 @@ function futuresUnitPrice(asset, price) {
 
   // Live/current futures prices supplied to this page are already normalized
   // to dollars per displayed unit by /latest_prices. Do not convert cents here.
-  return p;
+  return futuresTickPrice(asset, p);
 }
 
 function futuresEodUnitPrice(asset, price) {
@@ -640,7 +705,7 @@ function futuresEodUnitPrice(asset, price) {
   // /correlations_data and /rolling_matrix already normalize futures quotes
   // to dollars per displayed unit. Do not apply the legacy cents conversion
   // again in EOD display or Matrix History portfolio valuation.
-  return p;
+  return futuresTickPrice(asset, p);
 }
 
 function holdingNotional(asset, price, units) {
@@ -650,9 +715,46 @@ function holdingNotional(asset, price, units) {
   return p * u * contractFactor(asset);
 }
 
+function holdingValuation(asset, price, units) {
+  const p = isFuturesAsset(asset) ? futuresTickPrice(asset, price) : Number(price);
+  const u = Number(units);
+  if (!Number.isFinite(p) || !Number.isFinite(u)) return NaN;
+  if (!isFuturesAsset(asset)) return p * u;
+  const agreedPrice = Number(portfolioFuturesAgreedPrices[asset]);
+  if (!Number.isFinite(agreedPrice) || agreedPrice <= 0) return NaN;
+  return (p - agreedPrice) * u * contractFactor(asset);
+}
+
+// Portfolio state and saved portfolios continue to store futures as contract
+// counts. Only the editable table presents futures as underlying quantities.
+function displayedHoldingUnits(asset, storedUnits) {
+  const units = Number(storedUnits);
+  if (!Number.isFinite(units)) return 0;
+  return isFuturesAsset(asset) ? units * contractFactor(asset) : units;
+}
+
+function storedHoldingUnits(asset, displayedUnits) {
+  const units = Number(displayedUnits);
+  if (!Number.isFinite(units)) return 0;
+  return isFuturesAsset(asset) ? units / contractFactor(asset) : units;
+}
+
 function contractDescription(asset) {
   const spec = futuresSpec(asset);
-  return spec ? spec.contract : "Shares";
+  return spec ? "" : "Shares";
+}
+
+function defaultFuturesInitialMargin(asset, contracts) {
+  const spec = futuresSpec(asset);
+  const quantity = Number(contracts);
+  if (!spec || !Number.isFinite(quantity)) return 0;
+  const perContract = quantity < 0 ? Number(spec.marginShort) : Number(spec.marginLong);
+  return Number.isFinite(perContract) ? Math.abs(quantity) * perContract : 0;
+}
+
+function futuresInitialMargin(asset, contracts) {
+  const saved = Number(portfolioFuturesInitialMargins[asset]);
+  return Number.isFinite(saved) && saved >= 0 ? saved : defaultFuturesInitialMargin(asset, contracts);
 }
 
 function futuresPriceDisplay(asset, price) {
@@ -661,14 +763,15 @@ function futuresPriceDisplay(asset, price) {
   if (!spec || !Number.isFinite(n)) return "—";
   const yahoo = normalizeDisplaySymbol(spec.yahoo);
   const p = futuresUnitPrice(asset, n);
+  const decimals = Number.isInteger(Number(spec.decimals)) ? Number(spec.decimals) : 2;
 
-  if (["ZC=F", "ZS=F", "KE=F"].includes(yahoo)) return `$${p.toFixed(4)}/bu`;
-  if (yahoo === "NG=F") return `$${p.toFixed(3)}/MMBtu`;
-  if (["HG=F", "LE=F", "GF=F", "KC=F", "CT=F", "SB=F", "OJ=F"].includes(yahoo)) return `$${p.toFixed(4)}/lb`;
-  if (yahoo === "MGC=F" || yahoo === "SIL=F") return `$${p.toFixed(2)}/troy oz`;
-  if (yahoo === "CL=F") return `$${p.toFixed(2)}/barrel`;
-  if (yahoo === "CC=F") return `$${p.toFixed(2)}/metric tonne`;
-  if (yahoo === "LBS=F") return `$${p.toFixed(4)}/board ft`;
+  if (["ZC=F", "ZS=F", "KE=F"].includes(yahoo)) return `$${p.toFixed(decimals)}/bu`;
+  if (yahoo === "NG=F") return `$${p.toFixed(decimals)}/MMBtu`;
+  if (["HG=F", "LE=F", "GF=F", "KC=F", "CT=F", "SB=F", "OJ=F"].includes(yahoo)) return `$${p.toFixed(decimals)}/lb`;
+  if (yahoo === "MGC=F" || yahoo === "SIL=F") return `$${p.toFixed(decimals)}/troy oz`;
+  if (yahoo === "CL=F") return `$${p.toFixed(decimals)}/barrel`;
+  if (yahoo === "CC=F") return `$${p.toFixed(decimals)}/metric tonne`;
+  if (yahoo === "LBS=F") return `$${p.toFixed(decimals)}/board ft`;
   return formatMoney(p);
 }
 
@@ -718,6 +821,9 @@ let matrixHistoryReadyStatus = "";
 let matrixHistoryLookback = 25;
 let matrixHistoryPlayDelayMs = 250;
 let portfolioShares = {};
+let portfolioFuturesAgreedPrices = {};
+let portfolioFuturesInitialMargins = {};
+let portfolioOptions = [];
 let portfolioSecurities = [];
 let portfolioPrices = {};
 let portfolioCurrentPrices = {};       // USD prices used for valuation/calculation
@@ -801,6 +907,7 @@ document.getElementById("portfolioBookValue").addEventListener("input", () => {
 document.getElementById("portfolioSave").addEventListener("click", savePortfolio);
 document.getElementById("portfolioLoad").addEventListener("click", loadPortfolio);
 document.getElementById("portfolioDelete").addEventListener("click", deletePortfolio);
+document.getElementById("optionAdd").addEventListener("click", addPortfolioOption);
 document.getElementById("portfolioSavedList").addEventListener("change", () => {
   const selected = document.getElementById("portfolioSavedList").value;
   if (selected) document.getElementById("portfolioName").value = selected;
@@ -849,6 +956,9 @@ document.getElementById("presetButtons").addEventListener("click", event => {
   // A preset is a fresh ticker selection, not a loaded saved portfolio.
   portfolioAutoEqualWeight = true;
   portfolioShares = {};
+  portfolioFuturesAgreedPrices = {};
+  portfolioFuturesInitialMargins = {};
+  portfolioOptions = [];
   const savedList = document.getElementById("portfolioSavedList");
   if (savedList) savedList.value = "";
   const portfolioName = document.getElementById("portfolioName");
@@ -954,9 +1064,11 @@ function inferActiveSelectionFromSettings() {
     const saved = portfolios[name] || {};
     const shares = saved.shares || {};
     const listed = Array.isArray(saved.securities) ? saved.securities : Object.keys(shares);
+    const optionUnderlyings = new Set((Array.isArray(saved.options) ? saved.options : [])
+      .map(option => normalizeDisplaySymbol(option.underlying)).filter(Boolean));
     const holdings = listed
       .map(normalizeDisplaySymbol)
-      .filter(asset => asset && (Object.keys(shares).length === 0 || Number(shares[asset]) > 0));
+      .filter(asset => asset && (optionUnderlyings.has(asset) || Number(shares[asset]) !== 0));
     if (sameSymbolList(symbols, holdings)) return { type: "portfolio", name };
   }
 
@@ -1759,6 +1871,12 @@ function initializePortfolio(payload, selectedEquities, selectedCommodities = []
   Object.keys(portfolioShares).forEach(asset => {
     if (!portfolioSecurities.includes(asset)) delete portfolioShares[asset];
   });
+  Object.keys(portfolioFuturesAgreedPrices).forEach(asset => {
+    if (!portfolioSecurities.includes(asset)) delete portfolioFuturesAgreedPrices[asset];
+  });
+  Object.keys(portfolioFuturesInitialMargins).forEach(asset => {
+    if (!portfolioSecurities.includes(asset)) delete portfolioFuturesInitialMargins[asset];
+  });
 
   portfolioSecurities.forEach(asset => {
     if (!Number.isFinite(Number(portfolioShares[asset]))) portfolioShares[asset] = 0;
@@ -1859,8 +1977,9 @@ function currentPortfolioRows() {
           price = futuresEodUnitPrice(asset, price);
         }
       }
-      const shares = Math.max(0, Number(portfolioShares[asset]) || 0);
-      return { asset, price, shares, marketValue: holdingNotional(asset, price, shares) };
+      const rawShares = Number(portfolioShares[asset]) || 0;
+      const shares = isFuturesAsset(asset) ? rawShares : Math.max(0, rawShares);
+      return { asset, price, shares, marketValue: holdingValuation(asset, price, shares) };
     });
 }
 
@@ -1870,7 +1989,8 @@ function riskPortfolioRows(payload) {
     const index = payload.assets.indexOf(asset);
     const rawPrice = index >= 0 ? Number(payload.prices[index]) : NaN;
     const price = isFuturesAsset(asset) ? futuresEodUnitPrice(asset, rawPrice) : rawPrice;
-    const shares = Math.max(0, Number(portfolioShares[asset]) || 0);
+    const rawShares = Number(portfolioShares[asset]) || 0;
+    const shares = isFuturesAsset(asset) ? rawShares : Math.max(0, rawShares);
     return { asset, index, price, shares, marketValue: holdingNotional(asset, price, shares) };
   }).filter(row => row.index >= 0 && Number.isFinite(row.price) && row.price > 0);
 }
@@ -2270,6 +2390,7 @@ function securityBetaVsInflation(payload, asset) {
 function portfolioBetaComponents(payload) {
   const rows = riskPortfolioRows(payload)
     .filter(row => row.marketValue > 0)
+    .filter(row => !isFuturesAsset(row.asset))
     .filter(row => !(hideInternalSpyBenchmark && row.asset === BETA_BENCHMARK))
     .filter(row => !(hideInternalInflationBenchmark && row.asset === INFLATION_BETA_BENCHMARK));
   const totalEodMarketValue = rows.reduce((sum, row) => sum + row.marketValue, 0);
@@ -2301,8 +2422,8 @@ function calculatePortfolioVolatility(payload) {
 
   // Risk calculations always use the EOD prices carried by the selected
   // correlation-matrix frame. Current quotes are valuation-only.
-  const rows = riskPortfolioRows(payload).filter(row => row.marketValue > 0);
-  const totalMarketValue = rows.reduce((sum, row) => sum + row.marketValue, 0);
+  const rows = riskPortfolioRows(payload).filter(row => row.marketValue > 0 && !isFuturesAsset(row.asset));
+  const totalMarketValue = rows.reduce((sum, row) => sum + (Number.isFinite(row.marketValue) ? row.marketValue : 0), 0);
   if (totalMarketValue <= 0) return null;
 
   const positions = rows.map(row => {
@@ -2333,7 +2454,7 @@ function calculatePortfolioVolatility(payload) {
 function calculatePortfolioAnalyticsLocally(totalMarketValue) {
   // Market value/gain-loss use displayed prices, but EWMA weighting, portfolio
   // volatility and Sharpe must use the selected frame's EOD prices.
-  const riskRows = riskPortfolioRows(portfolioRiskPayload).filter(row => row.marketValue > 0);
+  const riskRows = riskPortfolioRows(portfolioRiskPayload).filter(row => row.marketValue > 0 && !isFuturesAsset(row.asset));
   const bookValue = Math.max(
     0,
     Number(document.getElementById("portfolioBookValue").value) || 0
@@ -2416,9 +2537,12 @@ function portfolioMarketValueForFrame(frame) {
     if (!portfolioSecurities.includes(asset)) return;
     const rawPrice = Number(frame.prices[i]);
     const price = isFuturesAsset(asset) ? futuresEodUnitPrice(asset, rawPrice) : rawPrice;
-    const shares = Math.max(0, Number(portfolioShares[asset]) || 0);
+    const rawShares = Number(portfolioShares[asset]) || 0;
+    const shares = isFuturesAsset(asset) ? rawShares : Math.max(0, rawShares);
     if (!Number.isFinite(price) || price <= 0) return;
-    total += holdingNotional(asset, price, shares);
+    const value = holdingValuation(asset, price, shares);
+    if (!Number.isFinite(value)) return;
+    total += value;
     found = true;
   });
   return found ? total : null;
@@ -2496,9 +2620,12 @@ function selectedPortfolioDailyChange(totalMarketValue) {
     portfolioSecurities.forEach(asset => {
       const rawPrice = Number(portfolioLatestEodPrices[asset]);
       const price = isFuturesAsset(asset) ? futuresEodUnitPrice(asset, rawPrice) : rawPrice;
-      const shares = Math.max(0, Number(portfolioShares[asset]) || 0);
+      const rawShares = Number(portfolioShares[asset]) || 0;
+      const shares = isFuturesAsset(asset) ? rawShares : Math.max(0, rawShares);
       if (!Number.isFinite(price) || price <= 0) return;
-      total += holdingNotional(asset, price, shares);
+      const value = holdingValuation(asset, price, shares);
+      if (!Number.isFinite(value)) return;
+      total += value;
       found = true;
     });
     previousValue = found ? total : null;
@@ -2585,6 +2712,10 @@ function updatePortfolioSummary(totalMarketValue) {
   const maximumDrawdownDates = maximumDrawdown
     ? `${formatShortDate(maximumDrawdown.peakDate)} → ${formatShortDate(maximumDrawdown.troughDate)}`
     : "—";
+  const hasExcludedDerivatives = portfolioOptions.length > 0 || portfolioSecurities.some(asset =>
+    isFuturesAsset(asset) && (Number(portfolioShares[asset]) || 0) !== 0
+  );
+  const riskPrefix = hasExcludedDerivatives ? "Equity-only " : "";
 
   summary.innerHTML = `
     <div class="portfolio-summary-columns">
@@ -2617,19 +2748,19 @@ function updatePortfolioSummary(totalMarketValue) {
       <section class="portfolio-summary-section" aria-label="Portfolio Analytics">
         <div class="portfolio-summary-heading">Portfolio Analytics</div>
         <div class="portfolio-summary-grid">
-          <div class="portfolio-summary-label">Annual Weighted Return (EWMA)</div>
+          <div class="portfolio-summary-label">${riskPrefix}Annual Weighted Return (EWMA)</div>
           <div class="portfolio-summary-value">${ewmaText}</div>
           <div class="portfolio-summary-label">Portfolio TTM Dividend Yield</div>
           <div class="portfolio-summary-value">${dividendText}</div>
-          <div class="portfolio-summary-label">Portfolio Volatility (${selectedDays}d)</div>
+          <div class="portfolio-summary-label">${riskPrefix}Portfolio Volatility (${selectedDays}d)</div>
           <div class="portfolio-summary-value">${pct(volatility)}</div>
-          <div class="portfolio-summary-label">Beta vs SPY (${selectedDays}d)</div>
+          <div class="portfolio-summary-label">${riskPrefix}Beta vs SPY (${selectedDays}d)</div>
           <div class="portfolio-summary-value">${betaText}</div>
-          <div class="portfolio-summary-label">Beta vs T10YIE (${selectedDays}d)</div>
+          <div class="portfolio-summary-label">${riskPrefix}Beta vs T10YIE (${selectedDays}d)</div>
           <div class="portfolio-summary-value">${inflationBetaText}</div>
           <div class="portfolio-summary-label">Risk-Free Rate (1Y)</div>
           <div class="portfolio-summary-value">${riskFreeText}</div>
-          <div class="portfolio-summary-label">Sharpe Ratio</div>
+          <div class="portfolio-summary-label">${riskPrefix}Sharpe Ratio</div>
           <div class="portfolio-summary-value">${sharpeText}</div>
         </div>
       </section>
@@ -2670,6 +2801,74 @@ function foreignPriceDisplay(localPrice, usdPrice, currency, fxPair, fxRate) {
   return `${localText}<div class="portfolio-usd-equivalent">${usdText}</div>${fxText}`;
 }
 
+function renderPortfolioOptions() {
+  const underlyingSelect = document.getElementById("optionUnderlying");
+  const body = document.getElementById("portfolioOptionsBody");
+  if (!underlyingSelect || !body) return;
+
+  const priorUnderlying = underlyingSelect.value;
+  const equities = portfolioSecurities.filter(asset => !isFuturesAsset(asset));
+  underlyingSelect.innerHTML = equities.length
+    ? equities.map(asset => `<option value="${escapeHtml(asset)}">${escapeHtml(displayAsset(asset))}</option>`).join("")
+    : '<option value="">Select an equity above</option>';
+  if (equities.includes(priorUnderlying)) underlyingSelect.value = priorUnderlying;
+
+  if (!portfolioOptions.length) {
+    body.innerHTML = '<tr><td colspan="8" class="portfolio-empty">No equity options added.</td></tr>';
+    return;
+  }
+
+  body.innerHTML = portfolioOptions.map((option, index) => `
+    <tr data-option-index="${index}">
+      <td>${escapeHtml(displayAsset(option.underlying))}</td>
+      <td><input class="option-field" data-field="tradeDate" type="date" value="${option.tradeDate || ""}"></td>
+      <td><input class="option-field" data-field="expiry" type="date" value="${option.expiry || ""}"></td>
+      <td><input class="option-field" data-field="strike" type="number" min="0" step="any" value="${Number(option.strike) || ""}"></td>
+      <td><select class="option-field" data-field="optionType"><option value="call" ${option.optionType === "call" ? "selected" : ""}>Call</option><option value="put" ${option.optionType === "put" ? "selected" : ""}>Put</option></select></td>
+      <td><input class="option-field" data-field="contracts" type="number" step="1" value="${Number(option.contracts) || 0}"></td>
+      <td>100</td>
+      <td><button type="button" class="option-remove" data-index="${index}">Remove</button></td>
+    </tr>`).join("");
+
+  body.querySelectorAll(".option-field").forEach(input => {
+    input.addEventListener("change", () => {
+      const row = input.closest("tr");
+      const index = Number(row && row.dataset.optionIndex);
+      const option = portfolioOptions[index];
+      if (!option) return;
+      const field = input.dataset.field;
+      option[field] = field === "strike" || field === "contracts" ? Number(input.value) || 0 : input.value;
+      renderPortfolioOptions();
+    });
+  });
+  body.querySelectorAll(".option-remove").forEach(button => {
+    button.addEventListener("click", () => {
+      portfolioOptions.splice(Number(button.dataset.index), 1);
+      renderPortfolioTable();
+    });
+  });
+}
+
+function addPortfolioOption() {
+  const underlying = normalizeDisplaySymbol(document.getElementById("optionUnderlying")?.value || "");
+  const tradeDate = document.getElementById("optionTradeDate")?.value || "";
+  const expiry = document.getElementById("optionExpiry")?.value || "";
+  const strike = Number(document.getElementById("optionStrike")?.value);
+  const optionType = document.getElementById("optionType")?.value === "put" ? "put" : "call";
+  const contracts = Math.trunc(Number(document.getElementById("optionContracts")?.value) || 0);
+  if (!underlying || !tradeDate || !expiry || !(strike > 0) || contracts === 0) {
+    setPortfolioStorageStatus("Complete the underlying, trade date, expiry, strike and non-zero contracts before adding the option.");
+    return;
+  }
+  if (expiry < tradeDate) {
+    setPortfolioStorageStatus("Option expiry cannot be before its trade date.");
+    return;
+  }
+  portfolioOptions.push({ underlying, tradeDate, expiry, strike, optionType, contracts, multiplier:100 });
+  setPortfolioStorageStatus(`Added ${underlying} ${optionType}.`);
+  renderPortfolioTable();
+}
+
 function renderPortfolioTable() {
   const body = document.getElementById("portfolioBody");
   const summary = document.getElementById("portfolioSummary");
@@ -2682,13 +2881,16 @@ function renderPortfolioTable() {
     summary.textContent = "";
     const stickySummary = document.getElementById("matrixPortfolioSummary");
     if (stickySummary) stickySummary.textContent = "";
-    body.innerHTML = `<tr><td colspan="12" class="portfolio-empty">No selected securities with current prices are available.</td></tr>`;
+    body.innerHTML = `<tr><td colspan="15" class="portfolio-empty">No selected securities with current prices are available.</td></tr>`;
     const totalValueCell = document.getElementById("portfolioTotalMarketValue");
     if (totalValueCell) totalValueCell.textContent = "—";
+    const totalMarginCell = document.getElementById("portfolioTotalInitialMargin");
+    if (totalMarginCell) totalMarginCell.textContent = "—";
+    renderPortfolioOptions();
     return;
   }
 
-  const totalMarketValue = rows.reduce((sum, row) => sum + row.marketValue, 0);
+  const totalMarketValue = rows.reduce((sum, row) => sum + (Number.isFinite(row.marketValue) ? row.marketValue : 0), 0);
 
   rows.forEach((row, rowIndex) => {
     const riskAssets = portfolioRiskPayload && Array.isArray(portfolioRiskPayload.assets)
@@ -2778,9 +2980,11 @@ function renderPortfolioTable() {
             marketFxPair,
             marketFxRate
           )}</td>
-      <td><input class="portfolio-shares" data-asset="${row.asset}" type="number" min="0" step="1" value="${formatShares(row.shares)}"><div class="portfolio-unit-label">${isFuturesAsset(row.asset) ? "Contracts" : "Shares"}</div></td>
+      <td><input class="portfolio-shares" data-asset="${row.asset}" type="number" ${isFuturesAsset(row.asset) ? "" : 'min="0"'} step="${isFuturesAsset(row.asset) ? contractFactor(row.asset) : 1}" value="${formatShares(displayedHoldingUnits(row.asset, row.shares))}"><div class="portfolio-unit-label">${isFuturesAsset(row.asset) ? "Units (+ bought / − sold)" : "Shares"}</div>${isFuturesAsset(row.asset) ? `<button type="button" class="one-contract-button" data-asset="${row.asset}" data-change="1" title="Add one bought contract (${formatShares(contractFactor(row.asset))} units)">+1 contract</button> <button type="button" class="one-contract-button" data-asset="${row.asset}" data-change="-1" title="Add one sold contract (-${formatShares(contractFactor(row.asset))} units)">−1 contract</button>` : ""}</td>
+      <td>${futuresHolding ? `<input class="futures-agreed-price" data-asset="${row.asset}" type="number" min="0" step="any" placeholder="Required" value="${Number(portfolioFuturesAgreedPrices[row.asset]) > 0 ? Number(portfolioFuturesAgreedPrices[row.asset]) : ""}">` : "—"}</td>
+      <td>${futuresHolding ? `<input class="futures-initial-margin" data-asset="${row.asset}" type="number" min="0" step="0.01" value="${futuresInitialMargin(row.asset, row.shares).toFixed(2)}" title="Editable total initial margin in USD">` : "—"}</td>
       <td>${contractDescription(row.asset)}</td>
-      <td>${formatMoney(row.marketValue)}</td>
+      <td>${Number.isFinite(row.marketValue) ? formatMoney(row.marketValue) : "Enter agreed price"}</td>
       <td>${volatilityText}</td>
       <td>${dividendYieldText}</td>
       <td>${annualReturnText}</td>
@@ -2794,10 +2998,44 @@ function renderPortfolioTable() {
   body.querySelectorAll(".portfolio-shares").forEach(input => {
     const commit = () => {
       portfolioAutoEqualWeight = false;
-      const rawUnits = Math.max(0, Number(input.value) || 0);
-      portfolioShares[input.dataset.asset] = isFuturesAsset(input.dataset.asset) ? Math.floor(rawUnits) : rawUnits;
+      const enteredUnits = Number(input.value) || 0;
+      const rawUnits = isFuturesAsset(input.dataset.asset) ? enteredUnits : Math.max(0, enteredUnits);
+      portfolioShares[input.dataset.asset] = storedHoldingUnits(input.dataset.asset, rawUnits);
       renderPortfolioTable();
       renderPortfolioMarketValueChart();
+    };
+    input.addEventListener("change", commit);
+    input.addEventListener("blur", commit);
+  });
+
+  body.querySelectorAll(".one-contract-button").forEach(button => {
+    button.addEventListener("click", () => {
+      portfolioAutoEqualWeight = false;
+      const currentContracts = Number(portfolioShares[button.dataset.asset]) || 0;
+      portfolioShares[button.dataset.asset] = currentContracts + (Number(button.dataset.change) || 1);
+      renderPortfolioTable();
+      renderPortfolioMarketValueChart();
+    });
+  });
+
+  body.querySelectorAll(".futures-agreed-price").forEach(input => {
+    const commit = () => {
+      const price = Number(input.value);
+      if (Number.isFinite(price) && price > 0) portfolioFuturesAgreedPrices[input.dataset.asset] = price;
+      else delete portfolioFuturesAgreedPrices[input.dataset.asset];
+      renderPortfolioTable();
+      renderPortfolioMarketValueChart();
+    };
+    input.addEventListener("change", commit);
+    input.addEventListener("blur", commit);
+  });
+
+  body.querySelectorAll(".futures-initial-margin").forEach(input => {
+    const commit = () => {
+      const margin = Number(input.value);
+      if (Number.isFinite(margin) && margin >= 0) portfolioFuturesInitialMargins[input.dataset.asset] = margin;
+      else delete portfolioFuturesInitialMargins[input.dataset.asset];
+      renderPortfolioTable();
     };
     input.addEventListener("change", commit);
     input.addEventListener("blur", commit);
@@ -2809,9 +3047,16 @@ function renderPortfolioTable() {
 
   const totalValueCell = document.getElementById("portfolioTotalMarketValue");
   if (totalValueCell) totalValueCell.textContent = formatMoney(totalMarketValue);
+  const totalMarginCell = document.getElementById("portfolioTotalInitialMargin");
+  if (totalMarginCell) {
+    const totalInitialMargin = rows.reduce((sum,row) =>
+      sum + (isFuturesAsset(row.asset) ? futuresInitialMargin(row.asset,row.shares) : 0), 0);
+    totalMarginCell.textContent = formatMoney(totalInitialMargin);
+  }
   updatePortfolioSummary(totalMarketValue);
   updatePortfolioDataLabels();
   updateFundamentalHeadings();
+  renderPortfolioOptions();
 }
 
 function chartDateLabel(value) {
@@ -3717,12 +3962,43 @@ function savePortfolio() {
   }
 
   const holdings = {};
-  const heldSecurities = portfolioSecurities.filter(asset => {
-    const shares = Math.max(0, Number(portfolioShares[asset]) || 0);
-    if (shares <= 0) return false;
+  const futuresAgreedPrices = {};
+  const futuresInitialMargins = {};
+  let heldSecurities = portfolioSecurities.filter(asset => {
+    const rawShares = Number(portfolioShares[asset]) || 0;
+    const shares = isFuturesAsset(asset) ? rawShares : Math.max(0, rawShares);
+    if (shares === 0) return false;
+    if (isFuturesAsset(asset)) {
+      const agreedPrice = Number(portfolioFuturesAgreedPrices[asset]);
+      if (!Number.isFinite(agreedPrice) || agreedPrice <= 0) return false;
+      futuresAgreedPrices[asset] = agreedPrice;
+      futuresInitialMargins[asset] = futuresInitialMargin(asset, shares);
+    }
     holdings[asset] = shares;
     return true;
   });
+
+  const invalidOption = portfolioOptions.find(option =>
+    !option.underlying || !option.tradeDate || !option.expiry || option.expiry < option.tradeDate ||
+    !(Number(option.strike) > 0) || Math.trunc(Number(option.contracts) || 0) === 0
+  );
+  if (invalidOption) {
+    setPortfolioStorageStatus("Complete every option's dates, strike and non-zero contracts before saving.");
+    return;
+  }
+  heldSecurities = [...new Set([
+    ...heldSecurities,
+    ...portfolioOptions.map(option => normalizeDisplaySymbol(option.underlying)).filter(Boolean)
+  ])];
+
+  const incompleteFuture = portfolioSecurities.find(asset =>
+    isFuturesAsset(asset) && (Number(portfolioShares[asset]) || 0) !== 0 &&
+    !(Number(portfolioFuturesAgreedPrices[asset]) > 0)
+  );
+  if (incompleteFuture) {
+    setPortfolioStorageStatus(`Enter the agreed price for ${displayAsset(incompleteFuture)} before saving.`);
+    return;
+  }
 
   if (!heldSecurities.length) {
     setPortfolioStorageStatus("Enter units for at least one holding before saving.");
@@ -3751,6 +4027,17 @@ function savePortfolio() {
     name: saveName,
     securities: heldSecurities,
     shares: holdings,
+    futuresAgreedPrices,
+    futuresInitialMargins,
+    options: portfolioOptions.map(option => ({
+      underlying: normalizeDisplaySymbol(option.underlying),
+      tradeDate: option.tradeDate,
+      expiry: option.expiry,
+      strike: Number(option.strike),
+      optionType: option.optionType === "put" ? "put" : "call",
+      contracts: Math.trunc(Number(option.contracts) || 0),
+      multiplier: 100
+    })),
     bookValue: Math.max(0, Number(document.getElementById("portfolioBookValue").value) || 0)
   };
 
@@ -3772,14 +4059,17 @@ function loadPortfolio() {
   }
 
   const savedShares = saved.shares || {};
+  const savedOptions = Array.isArray(saved.options) ? saved.options : [];
   const listedSecurities = Array.isArray(saved.securities)
     ? saved.securities.map(normalizeDisplaySymbol)
     : Object.keys(savedShares).map(normalizeDisplaySymbol);
   // Older saved portfolios may contain every selected equity, including zero-share rows.
   // Load only actual holdings so a five-security portfolio remains five securities.
-  const securities = listedSecurities.filter(asset =>
-    Math.max(0, Number(savedShares[asset]) || 0) > 0
-  );
+  const optionUnderlyings = new Set(savedOptions.map(option => normalizeDisplaySymbol(option.underlying)).filter(Boolean));
+  const securities = listedSecurities.filter(asset => {
+    const quantity = Number(savedShares[asset]) || 0;
+    return optionUnderlyings.has(asset) || (isFuturesAsset(asset) ? quantity !== 0 : quantity > 0);
+  });
   document.getElementById("equitySymbols").value = securities.join(", ");
   activeYahooPreset = matchingPresetKey(document.getElementById("equitySymbols").value);
   updatePresetHighlight();
@@ -3787,6 +4077,17 @@ function loadPortfolio() {
   saveLastPortfolioBookCost();
   portfolioAutoEqualWeight = false;
   portfolioShares = { ...(saved.shares || {}) };
+  portfolioFuturesAgreedPrices = { ...(saved.futuresAgreedPrices || {}) };
+  portfolioFuturesInitialMargins = { ...(saved.futuresInitialMargins || {}) };
+  portfolioOptions = savedOptions.map(option => ({
+    underlying: normalizeDisplaySymbol(option.underlying),
+    tradeDate: String(option.tradeDate || ""),
+    expiry: String(option.expiry || ""),
+    strike: Number(option.strike) || 0,
+    optionType: option.optionType === "put" ? "put" : "call",
+    contracts: Math.trunc(Number(option.contracts) || 0),
+    multiplier: 100
+  }));
 
   // A saved portfolio stores only its identity, holdings, shares and Book Cost.
   // Risk measures are rebuilt, but retain any already-downloaded live quotes for
