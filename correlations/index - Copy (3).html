@@ -645,7 +645,7 @@ const FUTURES_SPECS = {
   "COTTON":        { yahoo: "CT=F",  name: "Cotton", factor: 50000,     contract: "50,000 lb",        tick: 0.0001,  decimals: 4, marginLong:3775.63, marginShort:3775.63 },
   "SUGAR #11":     { yahoo: "SB=F",  name: "Sugar #11", factor: 112000,  contract: "112,000 lb",       tick: 0.0001,  decimals: 4, marginLong:2124.86, marginShort:2124.86 },
   "ORANGE JUICE":  { yahoo: "OJ=F",  name: "Orange Juice", factor: 15000, contract: "15,000 lb",      tick: 0.0005,  decimals: 4, marginLong:7576.29, marginShort:7576.29 },
-  "LUMBER":        { yahoo: "LBR=F", name: "Lumber", factor: 27.5,      contract: "27.5 thousand board ft", tick: 0.5, decimals: 1, marginLong:2570.82, marginShort:2777.07 }
+  "LUMBER":        { yahoo: "LBR=F", name: "Lumber", factor: 27500,     contract: "27,500 board ft",  tick: 0.0005,  decimals: 4, marginLong:2570.82, marginShort:2777.07 }
 };
 
 function futuresSpec(asset) {
@@ -771,7 +771,7 @@ function futuresPriceDisplay(asset, price) {
   if (yahoo === "MGC=F" || yahoo === "SIL=F") return `$${p.toFixed(decimals)}/troy oz`;
   if (yahoo === "CL=F") return `$${p.toFixed(decimals)}/barrel`;
   if (yahoo === "CC=F") return `$${p.toFixed(decimals)}/metric tonne`;
-  if (yahoo === "LBR=F") return `$${p.toFixed(decimals)}/1,000 board ft`;
+  if (yahoo === "LBR=F") return `$${p.toFixed(decimals)}/board ft`;
   return formatMoney(p);
 }
 
