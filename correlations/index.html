@@ -11,7 +11,7 @@ Changes:
 - Added a one-contract button to each futures row so the correct underlying unit quantity can be entered with one click; equity and ETF rows are unchanged
 - Changed futures holding inputs from contract counts to underlying unit quantities (for example, corn defaults to 5000); equity and ETF share inputs are unchanged, and existing saved portfolios remain compatible
 - Kept risk analytics on completed EOD data while correcting live chart and current-valuation futures lookups to use exact Yahoo codes (for example CORN to ZC=F and OIL to CL=F); generic labels remain presentation/news terms only
-- Replaced portfolio Beta vs T10YIE with Beta vs USD 5Y Yield; T10YIE remains available only as an optional correlation-matrix series
+- Replaced portfolio Beta vs T10YIE with Beta vs ^FVX (5Y yield); T10YIE remains available only as an optional correlation-matrix series
 - Corrected TTM dividend yield for all non-USD equities by keeping the dividend/price ratio in the security's native currency; FX conversion is not applied to the yield ratio
 - Corrected Yahoo cent-quoted futures EOD prices (including ZC=F corn) to dollars per unit and applied contract notional sizing to EOD portfolio values
 - Pairwise rolling history now keeps the full Matrix History range and follows Matrix History playback/slider movement without truncating at the originally clicked date
@@ -202,7 +202,7 @@ Changes:
             <th>An. Wtd. Total Return</th>
             <th>Sharpe Ratio</th>
             <th>Beta vs SPY</th>
-            <th>Beta vs USD 5Y Yield</th>
+            <th>Beta vs ^FVX (5Y yield)</th>
           </tr>
         </thead>
         <tbody id="portfolioBody"></tbody>
@@ -599,7 +599,7 @@ const VOL_X = LEFT - 22;
 const MAX_ASSETS = 20;
 const MAX_INTERNAL_ASSETS = MAX_ASSETS + 2;
 const BETA_BENCHMARK = "SPY";
-const INFLATION_BETA_BENCHMARK = "YIELD_USD";
+const INFLATION_BETA_BENCHMARK = "^FVX";
 let DEFAULT_EQUITIES = "";
 let YAHOO_PRESETS = {};
 let RISK_SNAP_SECURITY_META = {};
@@ -1298,13 +1298,11 @@ async function fetchCorrelationData() {
   // SPY has two roles: if the user selected it, keep it visible and eligible as a normal holding;
   // otherwise add one hidden copy solely so Beta vs SPY can be calculated.
   hideInternalSpyBenchmark = !inputs.equities.includes(BETA_BENCHMARK);
-  hideInternalInflationBenchmark = !inputs.yields.includes("USD");
-  const requestedEquities = hideInternalSpyBenchmark
-    ? [...inputs.equities, BETA_BENCHMARK]
-    : [...inputs.equities];
-  const requestedYields = hideInternalInflationBenchmark
-    ? [...inputs.yields, "USD"]
-    : [...inputs.yields];
+  hideInternalInflationBenchmark = !inputs.equities.includes(INFLATION_BETA_BENCHMARK);
+  const requestedEquities = [...inputs.equities];
+  if (hideInternalSpyBenchmark) requestedEquities.push(BETA_BENCHMARK);
+  if (hideInternalInflationBenchmark) requestedEquities.push(INFLATION_BETA_BENCHMARK);
+  const requestedYields = [...inputs.yields];
   const requestPayload = {
     lookback,
     fx_gold_oil: inputs.fx_gold_oil,
@@ -2756,7 +2754,7 @@ function updatePortfolioSummary(totalMarketValue) {
           <div class="portfolio-summary-value">${pct(volatility)}</div>
           <div class="portfolio-summary-label">${riskPrefix}Beta vs SPY (${selectedDays}d)</div>
           <div class="portfolio-summary-value">${betaText}</div>
-          <div class="portfolio-summary-label">${riskPrefix}Beta vs USD 5Y Yield (${selectedDays}d)</div>
+          <div class="portfolio-summary-label">${riskPrefix}Beta vs ^FVX (5Y yield) (${selectedDays}d)</div>
           <div class="portfolio-summary-value">${inflationBetaText}</div>
           <div class="portfolio-summary-label">Risk-Free Rate (1Y)</div>
           <div class="portfolio-summary-value">${riskFreeText}</div>
@@ -2777,7 +2775,7 @@ function updatePortfolioSummary(totalMarketValue) {
       `  |  MDD (${selectedDays}d) ${maximumDrawdownText}` +
       `  |  EWMA ${ewmaText}  |  Div ${dividendText}` +
       `  |  Vol (${selectedDays}d) ${pct(volatility)}` +
-      `  |  Beta SPY ${betaText}  |  Beta USD 5Y ${inflationBetaText}  |  RF ${riskFreeText}  |  Sharpe ${sharpeText}`;
+      `  |  Beta SPY ${betaText}  |  Beta ^FVX ${inflationBetaText}  |  RF ${riskFreeText}  |  Sharpe ${sharpeText}`;
   }
 }
 
