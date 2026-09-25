@@ -773,9 +773,9 @@ async function rsFitRhoAtTenor(surface, row) {
         const w = (1 - xs[j - 1]) / (xs[j] - xs[j - 1]);
         return Number(surface.iv[row][j - 1]) * (1 - w) + Number(surface.iv[row][j]) * w;
     })();
-    const points = xs.map((x, j) => ({x, iv:Number(surface.iv[row][j]), flagged:Number(surface.flags?.[row]?.[j]) !== 0}))
-        .filter(point => Number.isFinite(point.iv) && point.iv > 0 && !point.flagged);
-    if (points.length < 3) throw new Error("Fewer than three unflagged IV points.");
+    const points = xs.map((x, j) => ({x, iv:Number(surface.iv[row][j]), weight:[1, 0.5, 0.1][Number(surface.flags?.[row]?.[j]) ?? 0] ?? 0.1}))
+        .filter(point => Number.isFinite(point.iv) && point.iv > 0);
+    if (points.length < 3) throw new Error("Fewer than three IV points.");
     const cache = new Map();
     async function evaluate(rho) {
         const key = rho.toFixed(4);
@@ -783,8 +783,11 @@ async function rsFitRhoAtTenor(surface, row) {
         const curve = await RiskSnapGamma.getHestonCurve(S, tenor, r, q, atm, rho);
         if (!Array.isArray(curve.m) || !Array.isArray(curve.vols) || curve.m.length < 2 || curve.m.length !== curve.vols.length)
             throw new Error("Heston service returned an invalid curve.");
-        const errors = points.map(point => RiskSnapGamma.getCurveVol(curve, point.x) - point.iv);
-        const result = {rho, error:Math.sqrt(errors.reduce((sum, e) => sum + e * e, 0) / errors.length)};
+        const squared = points.reduce((sum, point) => {
+            const error = RiskSnapGamma.getCurveVol(curve, point.x) - point.iv;
+            return sum + point.weight * error * error;
+        }, 0);
+        const result = {rho, error:Math.sqrt(squared / points.reduce((sum, point) => sum + point.weight, 0))};
         cache.set(key, result);
         return result;
     }

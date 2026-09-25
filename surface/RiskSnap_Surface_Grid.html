@@ -682,6 +682,8 @@ function renderSurfaceGrid(surface) {
             <button type="button" onclick="interpolateSurfaceIV()">Interpolate IV</button>
             <div id="surfaceInterpolationResult" class="rs-surface-interpolation-result"></div>
         </div>
+        <button type="button" id="surfaceFitRhoButton" onclick="fitSurfaceRho()" ${surface.surfaceType === "smooth" ? "" : "disabled"}>Fit Heston Rho by tenor</button>
+        <div id="surfaceRhoStatus" role="status" style="margin:5px 0;"></div>
         <table style="border-collapse:collapse; min-width:850px; font-size:13px;">
             <thead>
     `;
@@ -691,16 +693,16 @@ function renderSurfaceGrid(surface) {
         strikeGrid.forEach(k => {
             html += `<th style="border:1px solid #aaa; padding:5px; background:#d8dce0;">${Number(k).toFixed(2)}</th>`;
         });
-        html += `</tr>`;
+        html += `<th style="border:1px solid #aaa; padding:5px; background:#d8dce0;"></th></tr>`;
     }
 
     html += `<tr><th colspan="2" style="border:1px solid #aaa; padding:5px; background:#d8dce0;">Moneyness (strike / spot)</th>`;
     moneyness.forEach(m => {
         html += `<th style="border:1px solid #aaa; padding:5px; background:#d8dce0;">${Number(m).toFixed(2)}</th>`;
     });
-    html += `</tr><tr><th style="border:1px solid #aaa; padding:5px; background:#d8dce0;">Tenor</th><th style="border:1px solid #aaa; padding:5px; background:#d8dce0;">Expiry</th>`;
+    html += `<th style="border:1px solid #aaa; padding:5px; background:#d8dce0;"></th></tr><tr><th style="border:1px solid #aaa; padding:5px; background:#d8dce0;">Tenor</th><th style="border:1px solid #aaa; padding:5px; background:#d8dce0;">Expiry</th>`;
     moneyness.forEach(() => { html += `<th style="border:1px solid #aaa; padding:5px; background:#d8dce0;"></th>`; });
-    html += `</tr></thead><tbody>`;
+    html += `<th style="border:1px solid #aaa; padding:5px; background:#d8dce0;">Heston Rho</th></tr></thead><tbody>`;
 
     for (let r = 0; r < iv.length; r++) {
         html += `<tr>`;
@@ -716,11 +718,90 @@ function renderSurfaceGrid(surface) {
             const text = Number.isFinite(Number(v)) ? (Number(v) * 100).toFixed(2) + "%" : "";
             html += `<td style="border:1px solid #aaa; padding:5px; text-align:right; background:${bg}; color:${color};">${text}</td>`;
         }
-        html += `</tr>`;
+        html += `<td class="surface-rho-cell" title="Fit rho to this tenor's smoothed IV row" style="border:1px solid #aaa; padding:5px; background:#d8dce0; text-align:right;">—</td></tr>`;
     }
 
     html += `</tbody></table>`;
     panel.innerHTML = html;
+}
+
+async function fitSurfaceRho() {
+    const surface = lastLoadedSurface;
+    const status = document.getElementById("surfaceRhoStatus");
+    const button = document.getElementById("surfaceFitRhoButton");
+    if (!surface || surface.surfaceType !== "smooth") { status.textContent = "Create a smoothed surface first."; return; }
+    button.disabled = true;
+    const cells = Array.from(document.querySelectorAll("#surfaceGridPanel .surface-rho-cell"));
+    try {
+        let next = 0, done = 0;
+        async function worker() {
+            while (next < surface.tenors.length) {
+                const row = next++;
+                try {
+                    const fit = await fitSurfaceRhoRow(surface, row);
+                    if (lastLoadedSurface !== surface || !cells[row]?.isConnected) return;
+                    cells[row].textContent = fit.rho.toFixed(4);
+                    cells[row].title = `RMS IV error: ${(fit.error * 100).toFixed(2)} percentage points; ${fit.points} IV points. Grey values receive lower weight.`;
+                } catch (error) {
+                    if (lastLoadedSurface !== surface || !cells[row]?.isConnected) return;
+                    cells[row].textContent = "—";
+                    cells[row].title = error.message;
+                }
+                status.textContent = `Fitted ${++done} of ${surface.tenors.length} tenors…`;
+            }
+        }
+        await Promise.all(Array.from({length:Math.min(3, surface.tenors.length)}, worker));
+        if (lastLoadedSurface !== surface) return;
+        status.textContent = "Heston Rho fitted separately for each tenor. Hover over a value for its IV fit error.";
+    } finally { button.disabled = false; }
+}
+
+async function fitSurfaceRhoRow(surface, row) {
+    const xs = surface.moneyness.map(Number), tenor = Number(surface.tenors[row]);
+    const spot = Number(surface.underlying), rate = Number(surface.r), dividend = Number(surface.dividendYield);
+    const at = xs.findIndex(x => x >= 1);
+    if (!(tenor > 0) || !(spot > 0) || at <= 0 || !Number.isFinite(rate) || !Number.isFinite(dividend))
+        throw new Error("Incomplete surface row or ATM outside grid.");
+    const weight = (1 - xs[at - 1]) / (xs[at] - xs[at - 1]);
+    const atm = Number(surface.iv[row][at - 1]) * (1 - weight) + Number(surface.iv[row][at]) * weight;
+    if (!(atm > 0)) throw new Error("ATM volatility unavailable.");
+    const points = xs.map((x, i) => ({x, iv:Number(surface.iv[row][i]), weight:[1, 0.5, 0.1][Number(surface.flags?.[row]?.[i]) ?? 0] ?? 0.1}))
+        .filter(p => Number.isFinite(p.iv) && p.iv > 0);
+    if (points.length < 3) throw new Error("Fewer than three IV points.");
+    const cache = new Map();
+    async function evaluate(rho) {
+        const key = rho.toFixed(4);
+        if (cache.has(key)) return cache.get(key);
+        const response = await fetch("https://hestoncurve-203178530029.northamerica-northeast2.run.app", {
+            method:"POST", headers:{"Content-Type":"application/json"},
+            body:JSON.stringify({S:spot, t:tenor, r:rate, q:dividend, atmVol:atm, rho})
+        });
+        if (!response.ok) throw new Error("Heston service unavailable.");
+        const curve = await response.json();
+        if (!Array.isArray(curve.m) || !Array.isArray(curve.vols) || curve.m.length < 2 || curve.m.length !== curve.vols.length)
+            throw new Error("Invalid Heston curve.");
+        const sum = points.reduce((acc, p) => {
+            const x = Math.max(Number(curve.m[0]), Math.min(Number(curve.m[curve.m.length - 1]), p.x));
+            const e = surfaceNaturalCubicSpline(curve.m, curve.vols, x) - p.iv;
+            return acc + p.weight * e * e;
+        }, 0);
+        const error = Math.sqrt(sum / points.reduce((acc, p) => acc + p.weight, 0));
+        const result = {rho, error, points:points.length};
+        cache.set(key, result);
+        return result;
+    }
+    let best = null;
+    for (const rho of [-0.95, -0.65, -0.35, 0, 0.35, 0.65, 0.95]) {
+        const trial = await evaluate(rho);
+        if (!best || trial.error < best.error) best = trial;
+    }
+    for (const step of [0.15, 0.05, 0.015]) {
+        for (const rho of [Math.max(-0.99, best.rho - step), Math.min(0.99, best.rho + step)]) {
+            const trial = await evaluate(rho);
+            if (trial.error < best.error) best = trial;
+        }
+    }
+    return best;
 }
 </script>
 
