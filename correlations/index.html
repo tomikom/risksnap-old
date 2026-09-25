@@ -178,6 +178,7 @@ Changes:
       </div>
     </div>
     <div id="portfolioSummary" class="portfolio-summary"></div>
+    <div id="portfolioOptionPositions" class="portfolio-option-positions" hidden></div>
     <div class="portfolio-data-status">
       <span><strong>Market Prices:</strong> <span id="portfolioPriceTimestamp">Not refreshed</span></span>
       <button id="portfolioRefreshPrices" type="button"><span class="portfolio-refresh-label">Refresh Prices</span></button>
@@ -536,6 +537,8 @@ h1 { color: white; text-align: center; background-color: #3A5FCD; }
 .portfolio-footnote { margin:7px 2px 0; color:#666; font-size:11px; line-height:1.35; }
 .portfolio-footnote sup, .portfolio-table th sup { font-size:9px; vertical-align:super; }
 .portfolio-options-panel { margin-top:16px; padding-top:12px; border-top:1px solid #ddd; }
+.portfolio-option-positions { margin:8px 0; padding:7px 10px; border:1px solid #ccd9e8; background:#f4f8fc; font-size:12px; }
+.portfolio-option-positions button { margin-left:8px; }
 .portfolio-option-entry { display:flex; gap:9px; align-items:flex-end; flex-wrap:wrap; margin-bottom:7px; }
 .portfolio-option-entry label { display:flex; flex-direction:column; gap:3px; font-size:11px; color:#555; }
 .portfolio-option-entry input, .portfolio-option-entry select { padding:4px 6px; min-height:30px; box-sizing:border-box; }
@@ -2811,7 +2814,23 @@ function foreignPriceDisplay(localPrice, usdPrice, currency, fxPair, fxRate) {
 function renderPortfolioOptions() {
   const underlyingSelect = document.getElementById("optionUnderlying");
   const body = document.getElementById("portfolioOptionsBody");
+  const positions = document.getElementById("portfolioOptionPositions");
   if (!underlyingSelect || !body) return;
+
+  if (positions) {
+    positions.hidden = !portfolioOptions.length;
+    positions.innerHTML = portfolioOptions.length
+      ? `<strong>Equity options (${portfolioOptions.length}):</strong> ` + portfolioOptions.map(option =>
+          `${escapeHtml(displayAsset(option.underlying))} ${escapeHtml(option.expiry || "expiry missing")} ` +
+          `${escapeHtml(String(option.strike))} ${option.optionType === "put" ? "put" : "call"} ` +
+          `(${Number(option.contracts) > 0 ? "+" : ""}${escapeHtml(String(option.contracts))} contract${Math.abs(Number(option.contracts)) === 1 ? "" : "s"})`
+        ).join("; ") +
+        ' · Option value is not included in portfolio totals. <button type="button" id="portfolioEditOptions">View / edit options</button>'
+      : "";
+    positions.querySelector("#portfolioEditOptions")?.addEventListener("click", () => {
+      document.querySelector(".portfolio-options-panel")?.scrollIntoView({ behavior:"smooth", block:"start" });
+    });
+  }
 
   const priorUnderlying = underlyingSelect.value;
   const equities = portfolioSecurities.filter(asset => !isFuturesAsset(asset));
@@ -2834,7 +2853,7 @@ function renderPortfolioOptions() {
       <td><select class="option-field" data-field="optionType"><option value="call" ${option.optionType === "call" ? "selected" : ""}>Call</option><option value="put" ${option.optionType === "put" ? "selected" : ""}>Put</option></select></td>
       <td><input class="option-field" data-field="contracts" type="number" step="1" value="${Number(option.contracts) || 0}"></td>
       <td>100</td>
-      <td><button type="button" class="option-remove" data-index="${index}">Remove</button></td>
+      <td><button type="button" class="option-price" data-index="${index}">Price</button> <button type="button" class="option-remove" data-index="${index}">Remove</button></td>
     </tr>`).join("");
 
   body.querySelectorAll(".option-field").forEach(input => {
@@ -2845,13 +2864,28 @@ function renderPortfolioOptions() {
       if (!option) return;
       const field = input.dataset.field;
       option[field] = field === "strike" || field === "contracts" ? Number(input.value) || 0 : input.value;
-      renderPortfolioOptions();
+      renderPortfolioTable();
     });
   });
   body.querySelectorAll(".option-remove").forEach(button => {
     button.addEventListener("click", () => {
       portfolioOptions.splice(Number(button.dataset.index), 1);
       renderPortfolioTable();
+    });
+  });
+  body.querySelectorAll(".option-price").forEach(button => {
+    button.addEventListener("click", () => {
+      const option = portfolioOptions[Number(button.dataset.index)];
+      if (!option || !option.underlying || !option.expiry || !(Number(option.strike) > 0)) return;
+      const params = new URLSearchParams({
+        ticker: option.underlying,
+        tradeDate: option.tradeDate || "",
+        expiry: option.expiry,
+        strike: String(option.strike),
+        type: option.optionType === "put" ? "put" : "call",
+        contracts: String(option.contracts)
+      });
+      window.location.href = `/options/?${params.toString()}#OptionPricer`;
     });
   });
 }
