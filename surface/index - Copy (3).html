@@ -694,12 +694,10 @@ function renderSurfaceGrid(surface) {
         html += `</tr>`;
     }
 
-    html += `<tr><th colspan="2" style="border:1px solid #aaa; padding:5px; background:#d8dce0;">Moneyness (strike / spot)</th>`;
+    html += `<tr><th style="border:1px solid #aaa; padding:5px; background:#d8dce0;">Tenor</th><th style="border:1px solid #aaa; padding:5px; background:#d8dce0;">Expiry</th>`;
     moneyness.forEach(m => {
         html += `<th style="border:1px solid #aaa; padding:5px; background:#d8dce0;">${Number(m).toFixed(2)}</th>`;
     });
-    html += `</tr><tr><th style="border:1px solid #aaa; padding:5px; background:#d8dce0;">Tenor</th><th style="border:1px solid #aaa; padding:5px; background:#d8dce0;">Expiry</th>`;
-    moneyness.forEach(() => { html += `<th style="border:1px solid #aaa; padding:5px; background:#d8dce0;"></th>`; });
     html += `</tr></thead><tbody>`;
 
     for (let r = 0; r < iv.length; r++) {

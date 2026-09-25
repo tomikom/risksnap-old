@@ -3001,7 +3001,7 @@ function renderPortfolioOptions() {
       ${(() => { const v = portfolioOptionValuation(option); return v.status === "ready"
         ? `<td>${(v.iv * 100).toFixed(2)}%</td><td>${formatMoney(v.eodPrice)}</td><td>${formatMoney(v.currentPrice)}</td><td>${v.deltaShares.toFixed(2)}</td><td>${formatMoney(v.currentValue)}</td>`
         : `<td colspan="5">${escapeHtml(v.status)}</td>`; })()}
-      <td><button type="button" class="option-price" data-index="${index}">Price</button> <button type="button" class="option-gamma" data-index="${index}" title="Open this option in the Gamma Ladder">Gamma Ladder</button> <button type="button" class="option-remove" data-index="${index}">Remove</button></td>
+      <td><button type="button" class="option-price" data-index="${index}">Price</button> <button type="button" class="option-remove" data-index="${index}">Remove</button></td>
     </tr>`).join("");
 
   body.querySelectorAll(".option-field").forEach(input => {
@@ -3034,20 +3034,6 @@ function renderPortfolioOptions() {
         contracts: String(option.contracts)
       });
       window.location.href = `/options/?${params.toString()}#OptionPricer`;
-    });
-  });
-  body.querySelectorAll(".option-gamma").forEach(button => {
-    button.addEventListener("click", () => {
-      const option = portfolioOptions[Number(button.dataset.index)];
-      if (!option || !option.underlying || !option.expiry || !(Number(option.strike) > 0)) return;
-      const params = new URLSearchParams({
-        ticker: option.underlying,
-        expiry: option.expiry,
-        strike: String(option.strike),
-        type: option.optionType === "put" ? "put" : "call",
-        contracts: String(option.contracts)
-      });
-      window.location.href = `/gamma/?${params.toString()}#GammaLadder`;
     });
   });
 }
