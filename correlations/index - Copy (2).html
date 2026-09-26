@@ -161,7 +161,7 @@ Changes:
       </div>
       <div class="portfolio-controls">
         <label>Book Cost:
-          <input id="portfolioBookValue" type="number" step="any" value="100000">
+          <input id="portfolioBookValue" type="number" min="0" step="1000" value="100000">
         </label>
       </div>
       <div class="portfolio-storage">
@@ -221,7 +221,7 @@ Changes:
     </div>
     <div class="portfolio-footnote"><sup>1</sup> Div is the trailing twelve-month (TTM) dividend or distribution yield for the selected EOD date: split-adjusted cash dividends or ETF distributions during the preceding 12 months divided by that EOD price.</div>
     <div class="portfolio-footnote"><strong>5Y rate sensitivity:</strong> A coefficient of 0.0541 means an estimated 0.541% asset return for a 10 basis point rise in the US 5-year yield. Yield changes are measured in percentage points; this is a historical relationship, not a forecast.</div>
-    <div class="portfolio-footnote futures-note"><strong>Book Cost:</strong> Enter the net cost of the positions: share purchase prices plus fees, futures fees, and option premiums plus fees. Premiums paid are positive; premiums received for written options are negative. Exclude margin deposits, which are collateral. Gain/Loss equals signed Market Value less Book Cost. Enter the combined Book Cost for all positions above.</div>
+    <div class="portfolio-footnote futures-note"><strong>Book Cost:</strong> Enter the amount invested in equities and ETFs. Futures are valued separately from their agreed purchase or sale price.</div>
     <div class="portfolio-footnote futures-note"><strong>Futures:</strong> Enter the agreed price and a signed quantity: positive units are bought and negative units are sold. Futures value equals (market price − agreed price) × signed contracts × contract factor. Initial-margin defaults are IBKR Canada/US overnight requirements in USD as of September 20, 2026 and remain editable.</div>
 
     <div class="portfolio-options-panel">
@@ -308,7 +308,7 @@ Changes:
     </div>
     <div id="matrixPortfolioSummary" class="matrix-portfolio-summary"></div>
     <div id="matrixHistoryStatus" class="matrix-history-status">Loading matrix history...</div>
-    <div class="matrix-history-note"><strong>The slider is a historical market scenario applied to today’s positions.</strong> Shares and futures contracts stay fixed. Each option uses historical spot and IV selected for historical strike/spot moneyness from today’s smoothed grid. Remaining time to expiry stays fixed; r uses that date’s USD 1Y Treasury rate and d uses the preceding year’s dividends divided by that date’s stock price. Historical IV itself is unavailable. The correlation matrix and risk measures use each historical EOD date. 250 consecutive daily matrices are shown, each using the selected correlation period.</div>
+    <div class="matrix-history-note">Review how the selected portfolio, risk measures, and correlation matrix would have appeared at each historical EOD date. Portfolio quantities remain fixed; this is a historical replay, not a transaction-cost-adjusted trading-strategy backtest. 250 consecutive daily matrices are shown, each using the selected correlation period.</div>
     <div class="matrix-history-slider-row">
       <div id="matrixHistorySliderDate" class="matrix-history-slider-date">Latest</div>
       <input id="matrixHistorySlider" type="range" min="0" max="0" value="0" aria-label="Correlation matrix history slider">
@@ -2233,10 +2233,6 @@ async function loadPortfolioDividendHistory() {
     if (!response.ok) throw new Error(data.error || response.statusText);
     portfolioDividendHistory = data.series || {};
     renderPortfolioDividendHistory();
-    if (portfolioOptions.length) {
-      renderPortfolioTable();
-      renderPortfolioMarketValueChart();
-    }
   } catch (error) {
     portfolioDividendHistory = {};
     portfolioDividendHistoryRows = [];
@@ -2474,7 +2470,10 @@ function calculatePortfolioAnalyticsLocally(totalMarketValue) {
   // Market value/gain-loss use displayed prices, but EWMA weighting, portfolio
   // volatility and Sharpe must use the selected frame's EOD prices.
   const riskRows = riskPortfolioRows(portfolioRiskPayload).filter(row => row.marketValue > 0 && !isFuturesAsset(row.asset));
-  const bookValue = Number(document.getElementById("portfolioBookValue").value) || 0;
+  const bookValue = Math.max(
+    0,
+    Number(document.getElementById("portfolioBookValue").value) || 0
+  );
   const marketValue = Number(totalMarketValue) || 0;
   const volatility = calculatePortfolioVolatility(portfolioRiskPayload);
   const beta = calculatePortfolioBeta(portfolioRiskPayload, BETA_BENCHMARK);
@@ -2530,7 +2529,7 @@ function calculatePortfolioAnalyticsLocally(totalMarketValue) {
     market_value: marketValue,
     book_value: bookValue,
     gain_loss: marketValue - bookValue,
-    gain_loss_pct: bookValue !== 0 ? (marketValue - bookValue) / Math.abs(bookValue) : null,
+    gain_loss_pct: bookValue > 0 ? (marketValue - bookValue) / bookValue : null,
     volatility,
     beta,
     inflation_beta: inflationBeta,
@@ -2561,56 +2560,7 @@ function portfolioMarketValueForFrame(frame) {
     total += value;
     found = true;
   });
-  if (portfolioOptions.length) {
-    const optionValue = portfolioOptionsValueForFrame(frame);
-    if (optionValue === null) return null;
-    total += optionValue;
-    found = true;
-  }
   return found ? total : null;
-}
-
-function historicalOptionRateAndDividend(frame, option, index) {
-  const rate = frame?.risk_free_rate;
-  const series = portfolioDividendHistory[option.underlying];
-  const localPrice = Number(frame?.local_prices?.[index]);
-  const usdPrice = Number(frame?.prices?.[index]);
-  const currency = String(frame?.currencies?.[index] || "USD");
-  if (currency !== "USD" && !(localPrice > 0)) return null;
-  const dividendPrice = localPrice > 0 ? localPrice : usdPrice;
-  if (rate === null || rate === undefined || !Number.isFinite(Number(rate)) ||
-      !series || !(dividendPrice > 0)) return null;
-  const detail = historicalDividendDetail(option.underlying,
-    String(frame.date).slice(0, 10), usdPrice, dividendPrice);
-  return Number.isFinite(detail.yield) ? {rate:Number(rate), dividend:detail.yield} : null;
-}
-
-function portfolioOptionsValueForFrame(frame) {
-  const date = String(frame?.date || "").slice(0, 10);
-  if (!date || !Array.isArray(frame?.assets) || !Array.isArray(frame?.prices)) return null;
-  let total = 0;
-  for (const option of portfolioOptions) {
-    const index = frame.assets.indexOf(option.underlying);
-    const spot = index < 0 ? NaN : Number(frame.prices[index]);
-    const record = portfolioOptionSurfaces.get(option.underlying);
-    if (!(spot > 0) || record?.status !== "ready") return null;
-    const inputs = historicalOptionRateAndDividend(frame, option, index);
-    if (!inputs) return null;
-    // Hold remaining tenor fixed; use historical spot, moneyness, 1Y rate and trailing dividend yield.
-    const years = optionCalendarDays(optionValuationDateToday(), option.expiry) / 365;
-    const strike = Number(option.strike);
-    if (!(years > 0)) return null;
-    const surface = record.data;
-    const tenors = (surface.tenors || []).map(Number);
-    const tenor = Math.max(tenors[0], Math.min(tenors.at(-1), years));
-    const iv = portfolioOptionSurfaceIv(surface, strike, spot, tenor);
-    const model = iv === null ? null : optionBlackScholes(option.optionType, spot, strike,
-      years, inputs.rate, inputs.dividend, iv);
-    if (!model) return null;
-    const price = model.price;
-    total += price * Number(option.contracts) * 100;
-  }
-  return total;
 }
 
 function selectedPortfolioMaximumDrawdown(selectedDays) {
@@ -2622,15 +2572,15 @@ function selectedPortfolioMaximumDrawdown(selectedDays) {
     ? Math.max(0, Math.min(matrixHistoryFrames.length - 1, matrixHistoryIndex))
     : matrixHistoryFrames.length - 1;
   const startIndex = Math.max(0, endIndex - Math.max(1, Number(selectedDays) || 250) + 1);
-  const frames = matrixHistoryFrames.slice(startIndex, endIndex + 1);
-  const rows = frames
+  const rows = matrixHistoryFrames
+    .slice(startIndex, endIndex + 1)
     .map(frame => ({
       date: String(frame.date || "").slice(0, 10),
       value: portfolioMarketValueForFrame(frame)
     }))
     .filter(row => row.date && Number.isFinite(row.value) && row.value > 0);
 
-  if (rows.length < 2 || rows.length !== frames.length) return null;
+  if (rows.length < 2) return null;
 
   let peakValue = rows[0].value;
   let peakDate = rows[0].date;
@@ -2717,21 +2667,6 @@ function selectedPortfolioDailyChange(totalMarketValue) {
   return { change, pct: change / previousValue, eodValue: previousValue, eodDate: comparisonDate };
 }
 
-function currentOptionTotals() {
-  if (!portfolioOptions.length) return null;
-  if (portfolioViewMode === "historical") {
-    const frame = matrixHistoryFrames[matrixHistoryIndex];
-    const current = portfolioOptionsValueForFrame(frame);
-    return current === null ? null : { current, eod: 0 };
-  }
-  const values = portfolioOptions.map(portfolioOptionValuation);
-  if (values.some(value => value.status !== "ready")) return null;
-  return {
-    current: values.reduce((sum, value) => sum + value.currentValue, 0),
-    eod: values.reduce((sum, value) => sum + value.eodValue, 0)
-  };
-}
-
 function updatePortfolioSummary(totalMarketValue) {
   const summary = document.getElementById("portfolioSummary");
   const stickySummary = document.getElementById("matrixPortfolioSummary");
@@ -2742,10 +2677,7 @@ function updatePortfolioSummary(totalMarketValue) {
   }
   totalMarketValue = Number(totalMarketValue);
 
-  const options = currentOptionTotals();
-  const optionsPending = portfolioOptions.length && !options;
-  const fullMarketValue = totalMarketValue + (options?.current || 0);
-  const a = calculatePortfolioAnalyticsLocally(fullMarketValue);
+  const a = calculatePortfolioAnalyticsLocally(totalMarketValue);
   const bookCost = Number(a.book_value);
   const gainLoss = Number(a.gain_loss);
   const returnOnBookCost = a.gain_loss_pct === null ? null : Number(a.gain_loss_pct);
@@ -2758,11 +2690,6 @@ function updatePortfolioSummary(totalMarketValue) {
   const riskFreeRate = Number(a.risk_free_rate);
   const sharpe = a.sharpe === null ? null : Number(a.sharpe);
   const dailyChange = selectedPortfolioDailyChange(Number(a.market_value));
-  if (dailyChange && options && portfolioViewMode === "current") {
-    dailyChange.eodValue += options.eod;
-    dailyChange.change = fullMarketValue - dailyChange.eodValue;
-    dailyChange.pct = dailyChange.eodValue ? dailyChange.change / Math.abs(dailyChange.eodValue) : null;
-  }
 
   const signedMoney = value => `${value >= 0 ? "+" : ""}${formatMoney(value)}`;
   const signedPct = value => value === null || !Number.isFinite(value)
@@ -2804,12 +2731,7 @@ function updatePortfolioSummary(totalMarketValue) {
     isFuturesAsset(asset) && (Number(portfolioShares[asset]) || 0) !== 0
   );
   const riskPrefix = hasExcludedDerivatives ? "Equity-only " : "";
-  const optionExclusionLabel = "";
-  const displayedValue = optionsPending ? "—" : formatMoney(fullMarketValue);
-  const displayedGain = optionsPending ? "—" : signedMoney(gainLoss);
-  const displayedReturn = optionsPending ? "—" : signedPct(returnOnBookCost);
-  const displayedEod = optionsPending ? "—" : eodValueText;
-  const displayedChange = optionsPending ? "—" : dailyChangeText;
+  const optionExclusionLabel = portfolioOptions.length ? " (excl. options)" : "";
 
   summary.innerHTML = `
     <div class="portfolio-summary-columns">
@@ -2819,16 +2741,16 @@ function updatePortfolioSummary(totalMarketValue) {
           <div class="portfolio-summary-label">Book Cost</div>
           <div class="portfolio-summary-value">${formatMoney(bookCost)}</div>
           <div class="portfolio-summary-label">${portfolioViewMode === "historical" && matrixHistoryFrames[matrixHistoryIndex]?.date ? `Market Value (${formatShortDate(matrixHistoryFrames[matrixHistoryIndex].date)})` : "Current Market Value"}${optionExclusionLabel}</div>
-          <div class="portfolio-summary-value">${displayedValue}</div>
+          <div class="portfolio-summary-value">${formatMoney(Number(a.market_value))}</div>
           <div class="portfolio-summary-label">Gain/Loss${optionExclusionLabel}</div>
-          <div class="portfolio-summary-value ${tone(gainLoss)}">${displayedGain}</div>
+          <div class="portfolio-summary-value ${tone(gainLoss)}">${signedMoney(gainLoss)}</div>
           <div class="portfolio-summary-label">Return on Book Cost</div>
-          <div class="portfolio-summary-value ${tone(returnOnBookCost || 0)}">${displayedReturn}</div>
+          <div class="portfolio-summary-value ${tone(returnOnBookCost || 0)}">${signedPct(returnOnBookCost)}</div>
           <div class="portfolio-summary-break"></div>
           <div class="portfolio-summary-label">${eodValueLabel}${optionExclusionLabel}</div>
-          <div class="portfolio-summary-value">${displayedEod}</div>
+          <div class="portfolio-summary-value">${eodValueText}</div>
           <div class="portfolio-summary-label">Change vs EOD${optionExclusionLabel}</div>
-          <div class="portfolio-summary-value ${dailyChange ? tone(dailyChange.change) : ""}">${displayedChange}</div>
+          <div class="portfolio-summary-value ${dailyChange ? tone(dailyChange.change) : ""}">${dailyChangeText}</div>
           <div class="portfolio-summary-break"></div>
           <div class="portfolio-summary-label">Maximum Drawdown (${selectedDays}d)</div>
           <div class="portfolio-summary-value ${maximumDrawdown ? tone(maximumDrawdown.drawdown) : ""}">${maximumDrawdownText}</div>
@@ -2865,9 +2787,9 @@ function updatePortfolioSummary(totalMarketValue) {
       ? formatCompactDate(portfolioRiskPayload.date)
       : "Latest";
     stickySummary.textContent =
-      `${dateText}  |  MV ${displayedValue}` +
-      `  |  G/L ${displayedGain} (${displayedReturn})` +
-      `  |  Day ${displayedChange}` +
+      `${dateText}  |  MV ${formatMoney(Number(a.market_value))}` +
+      `  |  G/L ${signedMoney(gainLoss)} (${signedPct(returnOnBookCost)})` +
+      `  |  Day ${dailyChangeText}` +
       `  |  MDD (${selectedDays}d) ${maximumDrawdownText}` +
       `  |  EWMA ${ewmaText}  |  Div ${dividendText}` +
       `  |  Vol (${selectedDays}d) ${pct(volatility)}` +
@@ -2951,6 +2873,7 @@ function portfolioOptionSurfaceIv(surface, strike, currentSpot, years) {
 }
 
 function ensurePortfolioOptionSurfaces(force = false) {
+  if (portfolioViewMode !== "current") return;
   const tickers = [...new Set(portfolioOptions.map(option => option.underlying).filter(Boolean))];
   tickers.forEach(ticker => {
     const existing = portfolioOptionSurfaces.get(ticker);
@@ -2964,34 +2887,12 @@ function ensurePortfolioOptionSurfaces(force = false) {
         portfolioOptionSurfaces.set(ticker, { status:"ready", data });
       })
       .catch(error => portfolioOptionSurfaces.set(ticker, {status:"error", message:error.message}))
-      .finally(() => {
-        renderPortfolioTable();
-        renderPortfolioMarketValueChart();
-      });
+      .finally(() => renderPortfolioTable());
   });
 }
 
 function portfolioOptionValuation(option) {
-  if (portfolioViewMode === "historical") {
-    const frame = matrixHistoryFrames[matrixHistoryIndex];
-    if (!frame) return {status:"Historical frame unavailable"};
-    if (portfolioOptionSurfaces.get(option.underlying)?.status !== "ready")
-      return {status:"Loading IV…"};
-    const date = String(frame.date).slice(0, 10);
-    const spot = Number(frame.prices[frame.assets.indexOf(option.underlying)]);
-    const inputs = historicalOptionRateAndDividend(frame, option, frame.assets.indexOf(option.underlying));
-    if (!inputs) return {status:"Historical rate or dividends unavailable"};
-    const years = optionCalendarDays(optionValuationDateToday(), option.expiry) / 365;
-    const surface = portfolioOptionSurfaces.get(option.underlying)?.data;
-    const tenor = Math.max(Number(surface.tenors[0]), Math.min(Number(surface.tenors.at(-1)), years));
-    const iv = years > 0 ? portfolioOptionSurfaceIv(surface, Number(option.strike), spot, tenor) : null;
-    const price = iv === null ? NaN :
-      optionBlackScholes(option.optionType, spot, Number(option.strike), years,
-        inputs.rate, inputs.dividend, iv)?.price;
-    if (!Number.isFinite(price)) return {status:"Historical model unavailable"};
-    return {status:"ready", iv, currentPrice:price, eodPrice:NaN,
-      currentValue:price * Number(option.contracts) * 100, eodValue:NaN, deltaShares:NaN};
-  }
+  if (portfolioViewMode !== "current") return {status:"Current model only"};
   const record = portfolioOptionSurfaces.get(option.underlying);
   if (!record || record.status !== "ready") return {status:record?.message || "Loading IV…"};
   const currentSpot = Number(portfolioPrices[option.underlying]);
@@ -3022,18 +2923,35 @@ function renderPortfolioOptionMtm(baseCurrentValue) {
   panel.hidden = !portfolioOptions.length;
   if (!portfolioOptions.length) return;
   if (portfolioViewMode !== "current") {
-    panel.textContent = "Each historical option price uses that date’s stock price, USD 1Y rate (r) and trailing twelve-month dividend yield (d). IV comes from today’s smoothed grid at historical strike/spot moneyness; remaining time to expiry stays fixed. These are model estimates, not historical option quotes.";
+    panel.textContent = "Option model values are shown only in Current mode; historical portfolio totals exclude options.";
     return;
   }
   const valuations = portfolioOptions.map(portfolioOptionValuation);
   if (valuations.some(row => row.status !== "ready")) {
-    panel.textContent = `Portfolio value awaits option prices: ${valuations.filter(row => row.status !== "ready").map(row => row.status).join("; ")}`;
+    panel.textContent = `Portfolio including options: unavailable until every option has a valid current IV and EOD stock price. ${valuations.filter(row => row.status !== "ready").map(row => row.status).join("; ")}`;
     return;
   }
-  panel.innerHTML = `Option values use the smoothed volatility surface. EOD options use the EOD stock price and remaining time with current IV, rate and dividend yield. ` +
+  let underlyingEod = 0;
+  for (const asset of portfolioSecurities) {
+    const shares = Number(portfolioShares[asset]) || 0;
+    if (!shares) continue;
+    const raw = Number(portfolioLatestEodPrices[asset]);
+    if (!(raw > 0)) { panel.textContent = `Full EOD model value unavailable: missing EOD price for ${asset}.`; return; }
+    const price = isFuturesAsset(asset) ? futuresEodUnitPrice(asset, raw) : raw;
+    const value = holdingValuation(asset, price, shares);
+    if (!Number.isFinite(value)) { panel.textContent = `Full EOD model value unavailable for ${asset}.`; return; }
+    underlyingEod += value;
+  }
+  const current = baseCurrentValue + valuations.reduce((sum, row) => sum + row.currentValue, 0);
+  const eod = underlyingEod + valuations.reduce((sum, row) => sum + row.eodValue, 0);
+  const change = current - eod;
+  panel.innerHTML = `<strong>Portfolio including options (model):</strong> Current ${formatMoney(current)} · ` +
+    `EOD ${escapeHtml(portfolioLatestEodDate)} ${formatMoney(eod)} · Change ${formatMoney(change)} ` +
+    `(${eod ? (100 * change / Math.abs(eod)).toFixed(2) : "—"}%). ` +
+    `EOD options use the EOD stock price and remaining time with current IV, rate and dividend yield. ` +
     (portfolioOptions.some(option => option.tradeDate > portfolioLatestEodDate)
       ? `An option entered after EOD is included as an as-if-held EOD comparison. ` : "") +
-    `EOD option values are model estimates, not historical option quotes.`;
+    `This is a model comparison, not a historical option quote; Book Cost and Gain/Loss above exclude option premium.`;
 }
 
 function renderPortfolioOptions() {
@@ -3050,7 +2968,7 @@ function renderPortfolioOptions() {
           `${escapeHtml(String(option.strike))} ${option.optionType === "put" ? "put" : "call"} ` +
           `(${Number(option.contracts) > 0 ? "+" : ""}${escapeHtml(String(option.contracts))} contract${Math.abs(Number(option.contracts)) === 1 ? "" : "s"})`
         ).join("; ") +
-        ' · <button type="button" id="portfolioEditOptions">View / edit options</button>'
+        ' · Option value is not included in portfolio totals. <button type="button" id="portfolioEditOptions">View / edit options</button>'
       : "";
     positions.querySelector("#portfolioEditOptions")?.addEventListener("click", () => {
       document.querySelector(".portfolio-options-panel")?.scrollIntoView({ behavior:"smooth", block:"start" });
@@ -3162,7 +3080,7 @@ function renderPortfolioTable() {
   body.innerHTML = "";
   const rows = currentPortfolioRows();
 
-  if (!rows.length && !portfolioOptions.length) {
+  if (!rows.length) {
     summary.textContent = "";
     const stickySummary = document.getElementById("matrixPortfolioSummary");
     if (stickySummary) stickySummary.textContent = "";
@@ -3532,9 +3450,7 @@ function drawLineChart(container, rows, valueKey, options = {}) {
 }
 
 function portfolioMarketValueSeries() {
-  const rows = matrixHistoryFrames.map(frame => ({ date: frame.date, value: portfolioMarketValueForFrame(frame) }));
-  return portfolioOptions.length && rows.some(row => !Number.isFinite(row.value))
-    ? [] : rows.filter(row => Number.isFinite(row.value));
+  return matrixHistoryFrames.map(frame => ({ date: frame.date, value: portfolioMarketValueForFrame(frame) })).filter(row => Number.isFinite(row.value));
 }
 
 function renderPortfolioMarketValueChart() {
@@ -4181,7 +4097,7 @@ function makeSvg(tag, attrs, text) {
 function loadLastPortfolioBookCost() {
   try {
     const saved = Number(localStorage.getItem(PORTFOLIO_BOOK_VALUE_KEY));
-    if (Number.isFinite(saved) && saved !== 0) {
+    if (Number.isFinite(saved) && saved > 0) {
       document.getElementById("portfolioBookValue").value = saved;
     }
   } catch (err) {
@@ -4191,7 +4107,7 @@ function loadLastPortfolioBookCost() {
 
 function saveLastPortfolioBookCost() {
   try {
-    const value = Number(document.getElementById("portfolioBookValue").value) || 0;
+    const value = Math.max(0, Number(document.getElementById("portfolioBookValue").value) || 0);
     localStorage.setItem(PORTFOLIO_BOOK_VALUE_KEY, String(value));
   } catch (err) {
     console.log("Unable to save the last Book Cost.", err);
@@ -4327,7 +4243,7 @@ function savePortfolio() {
       contracts: Math.trunc(Number(option.contracts) || 0),
       multiplier: 100
     })),
-    bookValue: Number(document.getElementById("portfolioBookValue").value) || 0
+    bookValue: Math.max(0, Number(document.getElementById("portfolioBookValue").value) || 0)
   };
 
   if (!writeSavedPortfolios(portfolios)) return;
