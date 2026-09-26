@@ -143,8 +143,6 @@ input.rs-time-to-expiry[readonly] {
     margin-top: 18px;
     font-weight: bold;
 }
-.rs-market-status { min-height: 1.2em; margin: 5px 0 10px; color: #173b64; font-size: 13px; }
-.rs-moneyness { margin: -3px 0 9px; color: #333; font-size: 13px; }
 
 .rs-strategy-link-note {
     margin-top: 8px;
@@ -216,9 +214,10 @@ input.rs-time-to-expiry[readonly] {
 </div>
 <p>The Black-Scholes generalized formula can be used to price european options on stocks without dividends (the original model by Black and Scholes, 1973), options on stocks with a continuous dividend yield (Merton, 1973), options on futures (Black 1976) and options on currencies (Garman and Kohlhagen - 1983).<br><br>Options can be bought to possibly capitalize on a view with the loss capped at the premium paid, or sold to earn income at the risk that the option is exercised with possibility of unlimited losses.  Options can be sold/bought back to lock in current gains/losses.Strategies can be used to combine options, to mitigate costs/risk or increase income.
 Calculators are tools for understanding risk characteristics of various market products .
-<br><br>In either pricer, enter an equity code, strike and expiry date to load the current spot, smoothed implied volatility, rate and dividend yield. You may also enter values manually.
+<br><br>For current spot, yields, dividend yields refer to the Surface Tab.  The grid in Surface Tab provides current implied volatility .
 
-<br><br>Ensure you have read the <a href="https://www.risksnap.com/contact/#UserAgreement">User Agreement</a> before using any calculators on RiskSnap.
+<br><br>Please click on User Agreement before using any calculators on RiskSnap. 
+<a href="https://www.risksnap.com/contact/#UserAgreement"> User Agreement</a>
 </p>
 <span id="OptionPricer"></span>
 <h3 style="background-color:#1E90FF;color:white;">💲&nbsp; Online Black-Scholes Option Pricer</h3>
@@ -233,16 +232,11 @@ Calculators are tools for understanding risk characteristics of various market p
   <div class="rs-pricer-box">
     <h4>Option Pricer 1</h4>
 
-    <label for="p1_code">Equity code</label><br>
-    <input id="p1_code" autocomplete="off" placeholder="e.g. XOM"><br>
-    <div id="p1_market_status" class="rs-market-status" role="status"></div>
-
     <label>Spot</label><br>
     <input id="p1_spot" value="100"><br>
 
     <label>Strike</label><br>
     <input id="p1_strike" value="97"><br>
-    <div id="p1_moneyness" class="rs-moneyness"></div>
 
     <label>Volatility</label><br>
     <input id="p1_vol" value="0.20"><br>
@@ -262,11 +256,7 @@ Calculators are tools for understanding risk characteristics of various market p
       <option value="put">Put</option>
     </select><br><br>
 
-    <label for="p1_contracts">Contracts (signed)</label><br>
-    <input id="p1_contracts" type="number" step="1" value="1"><br>
-
     <button onclick="priceOption('p1')">Price Option</button>
-    <button type="button" onclick="rsOpenGamma('p1')">Gamma</button>
 
     <div id="p1_result" class="rs-pricer-result"></div>
   </div>
@@ -274,16 +264,11 @@ Calculators are tools for understanding risk characteristics of various market p
   <div class="rs-pricer-box">
     <h4>Option Pricer 2</h4>
 
-    <label for="p2_code">Equity code</label><br>
-    <input id="p2_code" autocomplete="off" placeholder="e.g. XOM"><br>
-    <div id="p2_market_status" class="rs-market-status" role="status"></div>
-
     <label>Spot</label><br>
     <input id="p2_spot" value="100"><br>
 
     <label>Strike</label><br>
     <input id="p2_strike" value="103"><br>
-    <div id="p2_moneyness" class="rs-moneyness"></div>
 
     <label>Volatility</label><br>
     <input id="p2_vol" value="0.20"><br>
@@ -303,11 +288,7 @@ Calculators are tools for understanding risk characteristics of various market p
       <option value="put">Put</option>
     </select><br><br>
 
-    <label for="p2_contracts">Contracts (signed)</label><br>
-    <input id="p2_contracts" type="number" step="1" value="1"><br>
-
     <button onclick="priceOption('p2')">Price Option</button>
-    <button type="button" onclick="rsOpenGamma('p2')">Gamma</button>
 
     <div id="p2_result" class="rs-pricer-result"></div>
   </div>
@@ -467,99 +448,6 @@ function rsSurfaceVolatility(surface, strike, expiryTime) {
   return { iv, extrapolated };
 }
 
-const rsSurfaceRequests = new Map();
-const rsMarketGenerations = {p1:0, p2:0};
-
-function rsUpdateMoneyness(prefix) {
-  const strike = Number(document.getElementById(prefix + "_strike").value);
-  const spot = Number(document.getElementById(prefix + "_spot").value);
-  const target = document.getElementById(prefix + "_moneyness");
-  target.textContent = strike > 0 && spot > 0
-    ? `Moneyness (strike / spot): ${(strike / spot).toFixed(4)} (${(100 * strike / spot).toFixed(2)}%)`
-    : "";
-}
-
-async function rsRefreshOptionMarketInputs(prefix) {
-  const generation = ++rsMarketGenerations[prefix];
-  const code = document.getElementById(prefix + "_code").value.trim().toUpperCase();
-  const status = document.getElementById(prefix + "_market_status");
-  if (!code) { status.textContent = ""; rsUpdateMoneyness(prefix); return false; }
-  if (!/^[A-Z0-9.\-]{1,15}$/.test(code)) {
-    status.textContent = "Enter a valid equity code.";
-    return false;
-  }
-  status.textContent = `Checking ${code}…`;
-  try {
-    if (!rsSurfaceRequests.has(code)) {
-      const request = fetch("https://surface-203178530029.northamerica-northeast2.run.app/surface?" +
-        new URLSearchParams({ticker:code, surface_type:"smooth"}))
-        .then(async response => {
-          const surface = await response.json();
-          if (!response.ok || surface.error || !(Number(surface.underlying) > 0) ||
-              surface.surfaceType !== "smooth")
-            throw new Error(surface.error || "No current smoothed surface for this code.");
-          return surface;
-        }).catch(error => { rsSurfaceRequests.delete(code); throw error; });
-      rsSurfaceRequests.set(code, request);
-    }
-    const surface = await rsSurfaceRequests.get(code);
-    if (generation !== rsMarketGenerations[prefix] ||
-        document.getElementById(prefix + "_code").value.trim().toUpperCase() !== code) return false;
-    document.getElementById(prefix + "_spot").value = Number(surface.underlying).toFixed(4);
-    rsUpdateMoneyness(prefix);
-    const strike = Number(document.getElementById(prefix + "_strike").value);
-    const time = Number(document.getElementById(prefix + "_time").value);
-    if (!(strike > 0) || !(time > 0)) {
-      status.textContent = `Current spot for ${code} loaded. Enter a strike and valid expiry for IV, r and d.`;
-      return true;
-    }
-    document.getElementById(prefix + "_rate").value = Number(surface.r).toFixed(6);
-    document.getElementById(prefix + "_dividend").value = Number(surface.dividendYield).toFixed(6);
-    const {iv, extrapolated} = rsSurfaceVolatility(surface, strike, time);
-    document.getElementById(prefix + "_vol").value = iv.toFixed(6);
-    status.textContent = `${code}: current smoothed IV ${(100 * iv).toFixed(2)}%` +
-      (extrapolated ? " (surface extrapolation)" : "") + "; r and d loaded.";
-    return true;
-  } catch (error) {
-    if (generation === rsMarketGenerations[prefix]) {
-      document.getElementById(prefix + "_vol").value = "";
-      status.textContent = `${code}: ${error.message}`;
-    }
-    return false;
-  }
-}
-
-async function rsOpenGamma(prefix) {
-  const code = document.getElementById(prefix + "_code").value.trim().toUpperCase();
-  const expiry = document.getElementById(prefix + "_expiry_date").value;
-  const strike = Number(document.getElementById(prefix + "_strike").value);
-  const type = document.getElementById(prefix + "_type").value;
-  const contracts = Number(document.getElementById(prefix + "_contracts").value);
-  const status = document.getElementById(prefix + "_market_status");
-  if (!/^[A-Z0-9.\-]{1,15}$/.test(code) || !/^\d{4}-\d{2}-\d{2}$/.test(expiry) ||
-      !(Number(document.getElementById(prefix + "_time").value) > 0) ||
-      !(strike > 0) || !["put", "call"].includes(type) ||
-      !Number.isInteger(contracts) || contracts === 0) {
-    status.textContent = "Enter a valid code, strike, future expiry and signed whole contracts for Gamma.";
-    return;
-  }
-  if (!await rsRefreshOptionMarketInputs(prefix)) return;
-  location.href = `/gamma/?${new URLSearchParams({ticker:code, expiry,
-    strike:String(strike), type, contracts:String(contracts)})}#GammaLadder`;
-}
-
-function rsBindOptionMarketInputs(prefix) {
-  const code = document.getElementById(prefix + "_code");
-  const strike = document.getElementById(prefix + "_strike");
-  const spot = document.getElementById(prefix + "_spot");
-  code.addEventListener("change", () => rsRefreshOptionMarketInputs(prefix));
-  strike.addEventListener("input", () => { rsUpdateMoneyness(prefix); rsRefreshOptionMarketInputs(prefix); });
-  spot.addEventListener("input", () => rsUpdateMoneyness(prefix));
-  for (const suffix of ["_expiry_date", "_trade_date"])
-    document.getElementById(prefix + suffix).addEventListener("change", () => rsRefreshOptionMarketInputs(prefix));
-  rsUpdateMoneyness(prefix);
-}
-
 async function rsReceivePortfolioOption() {
   const params = new URLSearchParams(location.search);
   if (!params.has("ticker") || !params.has("expiry")) return;
@@ -577,7 +465,6 @@ async function rsReceivePortfolioOption() {
     return;
   }
   status.textContent = `Loading the current ${ticker} smoothed volatility surface…`;
-  document.getElementById("p1_code").value = ticker;
   document.getElementById("p1_strike").value = strike;
   document.getElementById("p1_type").value = type;
   document.getElementById("p1_trade_date").value = today;
@@ -590,9 +477,6 @@ async function rsReceivePortfolioOption() {
     if (!response.ok || surface.error) throw new Error(surface.error || "Surface unavailable");
     const {iv, extrapolated} = rsSurfaceVolatility(surface, strike, days / 365);
     document.getElementById("p1_spot").value = Number(surface.underlying).toFixed(4);
-    document.getElementById("p1_contracts").value = contracts;
-    rsSurfaceRequests.set(ticker, Promise.resolve(surface));
-    rsUpdateMoneyness("p1");
     document.getElementById("p1_vol").value = iv.toFixed(6);
     document.getElementById("p1_rate").value = Number(surface.r).toFixed(6);
     document.getElementById("p1_dividend").value = Number(surface.dividendYield).toFixed(6);
@@ -615,8 +499,6 @@ document.addEventListener("DOMContentLoaded", function() {
     rsAddDateFields(timeInput);
     rsAddMarketInputLinks(timeInput);
   });
-  rsBindOptionMarketInputs("p1");
-  rsBindOptionMarketInputs("p2");
   rsReceivePortfolioOption();
 });
 </script>
