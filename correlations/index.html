@@ -1815,6 +1815,34 @@ function pricesFromPayload(payload) {
   return result;
 }
 
+async function fetchMissingOptionEodPrices(payload) {
+  const missing = [...new Set(portfolioOptions.map(option => option.underlying))]
+    .filter(ticker => !(Number(portfolioLatestEodPrices[ticker]) > 0));
+  if (!missing.length) return;
+  const expectedDate = portfolioLatestEodDate;
+  const expectedOptions = portfolioOptions;
+  try {
+    const response = await fetch("https://surface-203178530029.northamerica-northeast2.run.app/correlations_data", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ lookback: Number(document.getElementById("corrPeriod").value) || 25,
+        fx_gold_oil: [], yields: [], equities: missing.join(", ") })
+    });
+    const data = await response.json();
+    if (!response.ok || expectedOptions !== portfolioOptions || expectedDate !== portfolioLatestEodDate) return;
+    const supplementalDate = String(data.date || data.as_of || "").slice(0, 10);
+    // Never label an older close as the portfolio's latest EOD date.
+    if (supplementalDate !== expectedDate) return;
+    const prices = pricesFromPayload(data);
+    missing.forEach(ticker => {
+      if (Number(prices[ticker]) > 0) portfolioLatestEodPrices[ticker] = prices[ticker];
+    });
+    renderPortfolioTable();
+  } catch (error) {
+    console.warn("Option underlying EOD price request failed.", error);
+  }
+}
+
 function setDisplayedPortfolioPricesFromPayload(payload) {
   // In Matrix History, the selected frame supplies the dated market value.
   // The immediately preceding frame supplies EOD prices and risk analytics.
@@ -1903,6 +1931,8 @@ function initializePortfolio(payload, selectedEquities, selectedCommodities = []
   }
   renderPortfolioTable();
   const signature = portfolioSecurities.join("|");
+  if (portfolioOptions.some(option => !(Number(portfolioLatestEodPrices[option.underlying]) > 0)))
+    fetchMissingOptionEodPrices(payload);
   if (signature && signature !== portfolioPriceRefreshSignature) {
     portfolioPriceRefreshSignature = signature;
     refreshPortfolioPrices();
