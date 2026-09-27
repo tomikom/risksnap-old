@@ -100,6 +100,11 @@ a.strategy-link {
     margin-bottom: 8px;
 }
 
+input.rs-time-to-expiry[readonly] {
+    background-color: #eeeeee;
+    color: #333333;
+}
+
 .rs-pricer-box button {
     background-color: #008CBA;
     border: none;
@@ -114,6 +119,8 @@ a.strategy-link {
     margin-top: 18px;
     font-weight: bold;
 }
+.rs-market-status { min-height: 1.2em; margin: 5px 0 10px; color: #173b64; font-size: 13px; }
+.rs-moneyness { margin: -3px 0 9px; color: #333; font-size: 13px; }
 
 .rs-strategy-link-note {
     margin-top: 8px;
@@ -185,13 +192,13 @@ a.strategy-link {
 </div>
 <p>The Black-Scholes generalized formula can be used to price european options on stocks without dividends (the original model by Black and Scholes, 1973), options on stocks with a continuous dividend yield (Merton, 1973), options on futures (Black 1976) and options on currencies (Garman and Kohlhagen - 1983).<br><br>Options can be bought to possibly capitalize on a view with the loss capped at the premium paid, or sold to earn income at the risk that the option is exercised with possibility of unlimited losses.  Options can be sold/bought back to lock in current gains/losses.Strategies can be used to combine options, to mitigate costs/risk or increase income.
 Calculators are tools for understanding risk characteristics of various market products .
-<br><br>For current spot, yields, dividend yields refer to the Surface Tab.  The grid in Surface Tab provides current implied volatility .
+<br><br>In either pricer, enter an equity code, strike and expiry date to load the current spot, smoothed implied volatility, rate and dividend yield. You may also enter values manually; the <a href="https://www.risksnap.com/surface/">Surface</a> and <a href="https://www.risksnap.com/rates_and_inflation/">Rates and Inflation</a> pages are available for reference.
 
-<br><br>Please click on User Agreement before using any calculators on RiskSnap. 
-<a href="https://www.risksnap.com/contact/#UserAgreement"> User Agreement</a>
+<br><br>Ensure you have read the <a href="https://www.risksnap.com/contact/#UserAgreement">User Agreement</a> before using any calculators on RiskSnap.
 </p>
 <span id="OptionPricer"></span>
 <h3 style="background-color:#1E90FF;color:white;">💲&nbsp; Online Black-Scholes Option Pricer</h3>
+<div id="rsPortfolioOptionStatus" role="status" style="margin:8px 0;color:#173b64;"></div>
 <!--<p class="rs-strategy-link-note">
   For strategy calculators refer to:
   <a href="https://www.risksnap.com/strategies/#Calculators">Strategies calculators</a>
@@ -202,11 +209,16 @@ Calculators are tools for understanding risk characteristics of various market p
   <div class="rs-pricer-box">
     <h4>Option Pricer 1</h4>
 
+    <label for="p1_code">Equity code</label><br>
+    <input id="p1_code" autocomplete="off" placeholder="e.g. XOM"><br>
+    <div id="p1_market_status" class="rs-market-status" role="status"></div>
+
     <label>Spot</label><br>
     <input id="p1_spot" value="100"><br>
 
     <label>Strike</label><br>
     <input id="p1_strike" value="97"><br>
+    <div id="p1_moneyness" class="rs-moneyness"></div>
 
     <label>Volatility</label><br>
     <input id="p1_vol" value="0.20"><br>
@@ -217,8 +229,8 @@ Calculators are tools for understanding risk characteristics of various market p
     <label>Time (years)</label><br>
     <input id="p1_time" value="0.082191"><br>
 
-    <label>Dividend Yield</label><br>
-    <input id="p1_dividend" value="0.04"><br>
+    <label>Dividend Yield (trailing 12 months, Sharpe method)</label><br>
+    <input id="p1_dividend" value="" placeholder="Loading dividend yield"><br>
 
     <label>Type</label><br>
     <select id="p1_type">
@@ -226,7 +238,12 @@ Calculators are tools for understanding risk characteristics of various market p
       <option value="put">Put</option>
     </select><br><br>
 
+    <label for="p1_contracts">Contracts (signed)</label><br>
+    <input id="p1_contracts" type="number" step="1" value="1"><br>
+
     <button onclick="priceOption('p1')">Price Option</button>
+    <button type="button" onclick="rsOpenGamma('p1')">Gamma</button>
+    <button type="button" onclick="rsCopyToPricer2()" title="Copy Pricer 1 inputs to Pricer 2">Copy to Pricer 2 →</button>
 
     <div id="p1_result" class="rs-pricer-result"></div>
   </div>
@@ -234,11 +251,16 @@ Calculators are tools for understanding risk characteristics of various market p
   <div class="rs-pricer-box">
     <h4>Option Pricer 2</h4>
 
+    <label for="p2_code">Equity code</label><br>
+    <input id="p2_code" autocomplete="off" placeholder="e.g. XOM"><br>
+    <div id="p2_market_status" class="rs-market-status" role="status"></div>
+
     <label>Spot</label><br>
     <input id="p2_spot" value="100"><br>
 
     <label>Strike</label><br>
     <input id="p2_strike" value="103"><br>
+    <div id="p2_moneyness" class="rs-moneyness"></div>
 
     <label>Volatility</label><br>
     <input id="p2_vol" value="0.20"><br>
@@ -249,8 +271,8 @@ Calculators are tools for understanding risk characteristics of various market p
     <label>Time (years)</label><br>
     <input id="p2_time" value="0.082191"><br>
 
-    <label>Dividend Yield</label><br>
-    <input id="p2_dividend" value="0.04"><br>
+    <label>Dividend Yield (trailing 12 months, Sharpe method)</label><br>
+    <input id="p2_dividend" value="" placeholder="Loading dividend yield"><br>
 
     <label>Type</label><br>
     <select id="p2_type">
@@ -258,7 +280,11 @@ Calculators are tools for understanding risk characteristics of various market p
       <option value="put">Put</option>
     </select><br><br>
 
+    <label for="p2_contracts">Contracts (signed)</label><br>
+    <input id="p2_contracts" type="number" step="1" value="1"><br>
+
     <button onclick="priceOption('p2')">Price Option</button>
+    <button type="button" onclick="rsOpenGamma('p2')">Gamma</button>
 
     <div id="p2_result" class="rs-pricer-result"></div>
   </div>
@@ -267,6 +293,21 @@ Calculators are tools for understanding risk characteristics of various market p
 
 <button id="backToTop" onclick="window.scrollTo({top:0,behavior:'smooth'})">↑</button>
 <script>
+let rsTransferredOption = null;
+async function rsCopyToPricer2() {
+  clearTimeout(rsCodeTimers.p2);
+  ++rsMarketGenerations.p2; // Ignore a previous code lookup still in progress for Pricer 2.
+  for (const field of ["code", "spot", "strike", "vol", "rate", "trade_date",
+    "expiry_date", "dividend", "type", "contracts"]) {
+    document.getElementById("p2_" + field).value = document.getElementById("p1_" + field).value;
+  }
+  rsUpdateTimeToExpiry("p2");
+  rsUpdateMoneyness("p2");
+  document.getElementById("p2_market_status").textContent = "Copied from Pricer 1. Edit any input to compare.";
+  document.getElementById("p2_result").textContent = "";
+  if (Number(document.getElementById("p2_time").value) > 0) await priceOption("p2");
+}
+
 async function priceOption(prefix) {
 
   const spot = document.getElementById(prefix + "_spot").value;
@@ -276,6 +317,18 @@ async function priceOption(prefix) {
   const time = document.getElementById(prefix + "_time").value;
   const dividend = document.getElementById(prefix + "_dividend").value;
   const type = document.getElementById(prefix + "_type").value;
+
+  if (dividend.trim() === "" || !Number.isFinite(Number(dividend))) {
+    document.getElementById(prefix + "_result").textContent =
+      "Dividend yield has not loaded. Wait for the dated dividend history or enter a yield manually.";
+    return;
+  }
+
+  if (!time || Number(time) <= 0) {
+    document.getElementById(prefix + "_result").innerHTML =
+      "Please select an Expiry Date after the Trade Date.";
+    return;
+  }
 
   const url =
     "https://priceoption-203178530029.northamerica-northeast2.run.app" +
@@ -294,7 +347,12 @@ async function priceOption(prefix) {
 
     document.getElementById(prefix + "_result").innerHTML =
       "Price: " + data.price.toFixed(6) +
-      "<br>Delta: " + data.delta.toFixed(6);
+      "<br>Delta: " + data.delta.toFixed(6) +
+      (prefix === "p1" && rsTransferredOption
+        ? "<br>Model value (" + rsTransferredOption.contracts + " × 100): $" +
+          (data.price * rsTransferredOption.contracts * 100).toLocaleString("en-CA", {minimumFractionDigits:2,maximumFractionDigits:2}) +
+          "<br>Delta-equivalent shares: " + (data.delta * rsTransferredOption.contracts * 100).toFixed(2)
+        : "");
 
   } catch(err) {
 
@@ -303,6 +361,302 @@ async function priceOption(prefix) {
 
   }
 }
+</script>
+<script>
+/* Add trade/expiry dates to every option calculator and calculate
+   the year fraction using an Actual/365 day-count basis. */
+function rsDateText(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return year + "-" + month + "-" + day;
+}
+
+function rsDateAtUTC(dateText) {
+  const parts = dateText.split("-").map(Number);
+  return Date.UTC(parts[0], parts[1] - 1, parts[2]);
+}
+
+function rsUpdateTimeToExpiry(prefix) {
+  const tradeInput = document.getElementById(prefix + "_trade_date");
+  const expiryInput = document.getElementById(prefix + "_expiry_date");
+  const timeInput = document.getElementById(prefix + "_time");
+  if (!tradeInput || !expiryInput || !timeInput || !tradeInput.value || !expiryInput.value) return;
+
+  const days = (rsDateAtUTC(expiryInput.value) - rsDateAtUTC(tradeInput.value)) / 86400000;
+  if (days < 0) {
+    timeInput.value = "";
+    timeInput.setCustomValidity("Expiry Date must be on or after Trade Date.");
+  } else {
+    timeInput.value = (days / 365).toFixed(6);
+    timeInput.setCustomValidity("");
+  }
+}
+
+function rsAddDateFields(timeInput) {
+  const prefix = timeInput.id.slice(0, -5);
+  if (document.getElementById(prefix + "_trade_date")) return;
+
+  let timeLabel = timeInput.previousElementSibling;
+  while (timeLabel && timeLabel.tagName !== "LABEL") timeLabel = timeLabel.previousElementSibling;
+  if (!timeLabel) return;
+
+  const today = new Date();
+  const defaultExpiry = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 30);
+  const tradeId = prefix + "_trade_date";
+  const expiryId = prefix + "_expiry_date";
+
+  if (timeInput.closest(".rs-grid")) {
+    timeLabel.insertAdjacentHTML("beforebegin",
+      '<label for="' + tradeId + '">Trade Date</label><input type="date" id="' + tradeId + '" value="' + rsDateText(today) + '">' +
+      '<label for="' + expiryId + '">Expiry Date</label><input type="date" id="' + expiryId + '" value="' + rsDateText(defaultExpiry) + '">');
+  } else {
+    timeLabel.insertAdjacentHTML("beforebegin",
+      '<label for="' + tradeId + '">Trade Date</label><br>' +
+      '<input type="date" id="' + tradeId + '" value="' + rsDateText(today) + '"><br>' +
+      '<label for="' + expiryId + '">Expiry Date</label><br>' +
+      '<input type="date" id="' + expiryId + '" value="' + rsDateText(defaultExpiry) + '"><br>');
+  }
+
+  timeLabel.textContent = "Time to Expiry (years)";
+  timeInput.readOnly = true;
+  timeInput.classList.add("rs-time-to-expiry");
+
+  document.getElementById(tradeId).addEventListener("change", function() { rsUpdateTimeToExpiry(prefix); });
+  document.getElementById(expiryId).addEventListener("change", function() { rsUpdateTimeToExpiry(prefix); });
+  rsUpdateTimeToExpiry(prefix);
+}
+
+function rsSurfaceVolatility(surface, strike, expiryTime) {
+  const moneyness = strike / Number(surface.underlying);
+  const x = surface.moneyness.map(Number), t = surface.tenors.map(Number);
+  if (!x.length || !t.length || moneyness < x[0] || moneyness > x[x.length - 1] ||
+      expiryTime < t[0] || expiryTime > t[t.length - 1]) {
+    throw new Error("Strike or expiry is outside the available volatility surface.");
+  }
+  const col = Math.min(x.length - 2, Math.max(0, x.findIndex(v => v >= moneyness) - 1));
+  const row = Math.min(t.length - 2, Math.max(0, t.findIndex(v => v >= expiryTime) - 1));
+  const w = (moneyness - x[col]) / (x[col + 1] - x[col]);
+  function strikeVol(i) {
+    return Number(surface.iv[i][col]) * (1 - w) + Number(surface.iv[i][col + 1]) * w;
+  }
+  const v1 = strikeVol(row), v2 = strikeVol(row + 1);
+  const variance1 = t[row] * v1 * v1, variance2 = t[row + 1] * v2 * v2;
+  const variance = variance1 + (expiryTime - t[row]) / (t[row + 1] - t[row]) * (variance2 - variance1);
+  const iv = Math.sqrt(variance / expiryTime);
+  if (!Number.isFinite(iv) || iv < 0.01) throw new Error("No valid implied volatility for this option.");
+  const extrapolated = [row, row + 1].some(i =>
+    [col, col + 1].some(j => Number(surface.flags?.[i]?.[j]) !== 0));
+  return { iv, extrapolated };
+}
+
+const rsSurfaceRequests = new Map();
+const rsDividendRequests = new Map();
+async function rsSharpeDividendYield(ticker) {
+  if (!rsDividendRequests.has(ticker)) {
+    const request = (async () => {
+      const base = "https://surface-203178530029.northamerica-northeast2.run.app";
+      const priceResponse = await fetch(base + "/correlations_data", {
+        method: "POST", headers: {"Content-Type":"application/json"},
+        body: JSON.stringify({lookback:25, fx_gold_oil:[], yields:[], equities:ticker})
+      });
+      const priceData = await priceResponse.json();
+      const index = (priceData.assets || []).indexOf(ticker);
+      const date = String(priceData.date || priceData.as_of || "").slice(0,10);
+      const local = Number(priceData.local_prices?.[index]);
+      const usd = Number(priceData.prices?.[index]);
+      const spot = local > 0 ? local : usd;
+      if (!priceResponse.ok || index < 0 || !date || !(spot > 0))
+        throw new Error("Dated EOD price unavailable for dividend yield");
+      const startDate = new Date(date + "T12:00:00Z");
+      startDate.setUTCDate(startDate.getUTCDate() - 365);
+      const start = startDate.toISOString().slice(0,10);
+      const dividendResponse = await fetch(base + "/dividend_history", {
+        method:"POST", headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({symbols:[ticker], start, end:date})
+      });
+      const dividendData = await dividendResponse.json();
+      const series = dividendData.series?.[ticker];
+      if (!dividendResponse.ok || !series) throw new Error("Dividend history unavailable");
+      const amount = (series.dividends || []).filter(row => row.date > start && row.date <= date)
+        .reduce((sum,row) => {
+          const factor = (series.splits || []).reduce((product,split) =>
+            split.date > row.date && split.date <= date && Number(split.ratio) > 0
+              ? product * Number(split.ratio) : product, 1);
+          const dividend = Number(row.amount) / factor;
+          return sum + (Number.isFinite(dividend) ? dividend : 0);
+        }, 0);
+      return {yield:amount / spot, date};
+    })().catch(error => {rsDividendRequests.delete(ticker); throw error;});
+    rsDividendRequests.set(ticker, request);
+  }
+  return rsDividendRequests.get(ticker);
+}
+const rsMarketGenerations = {p1:0, p2:0};
+const rsCodeTimers = {p1:null, p2:null};
+
+function rsUpdateMoneyness(prefix) {
+  const strike = Number(document.getElementById(prefix + "_strike").value);
+  const spot = Number(document.getElementById(prefix + "_spot").value);
+  const target = document.getElementById(prefix + "_moneyness");
+  target.textContent = strike > 0 && spot > 0
+    ? `Moneyness (strike / spot): ${(strike / spot).toFixed(4)} (${(100 * strike / spot).toFixed(2)}%)`
+    : "";
+}
+
+async function rsRefreshOptionMarketInputs(prefix) {
+  const generation = ++rsMarketGenerations[prefix];
+  const code = document.getElementById(prefix + "_code").value.trim().toUpperCase();
+  const status = document.getElementById(prefix + "_market_status");
+  if (!code) { status.textContent = ""; rsUpdateMoneyness(prefix); return false; }
+  if (!/^[A-Z0-9.\-]{1,15}$/.test(code)) {
+    status.textContent = "Enter a valid equity code.";
+    return false;
+  }
+  status.textContent = `Checking ${code}…`;
+  document.getElementById(prefix + "_dividend").value = "";
+  try {
+    if (!rsSurfaceRequests.has(code)) {
+      const request = fetch("https://surface-203178530029.northamerica-northeast2.run.app/surface?" +
+        new URLSearchParams({ticker:code, surface_type:"smooth"}))
+        .then(async response => {
+          const surface = await response.json();
+          if (!response.ok || surface.error || !(Number(surface.underlying) > 0) ||
+              surface.surfaceType !== "smooth")
+            throw new Error(surface.error || "No current smoothed surface for this code.");
+          return surface;
+        }).catch(error => { rsSurfaceRequests.delete(code); throw error; });
+      rsSurfaceRequests.set(code, request);
+    }
+    const surface = await rsSurfaceRequests.get(code);
+    if (generation !== rsMarketGenerations[prefix] ||
+        document.getElementById(prefix + "_code").value.trim().toUpperCase() !== code) return false;
+    document.getElementById(prefix + "_spot").value = Number(surface.underlying).toFixed(4);
+    rsUpdateMoneyness(prefix);
+    const strike = Number(document.getElementById(prefix + "_strike").value);
+    const time = Number(document.getElementById(prefix + "_time").value);
+    if (!(strike > 0) || !(time > 0)) {
+      status.textContent = `Current spot for ${code} loaded. Enter a strike and valid expiry for IV, r and d.`;
+      return true;
+    }
+    document.getElementById(prefix + "_rate").value = Number(surface.r).toFixed(6);
+    status.textContent = `${code}: loading trailing dividend history…`;
+    const dividendInput = await rsSharpeDividendYield(code);
+    if (generation !== rsMarketGenerations[prefix]) return false;
+    document.getElementById(prefix + "_dividend").value = dividendInput.yield.toFixed(6);
+    const {iv, extrapolated} = rsSurfaceVolatility(surface, strike, time);
+    document.getElementById(prefix + "_vol").value = iv.toFixed(6);
+    status.textContent = `${code}: current smoothed IV ${(100 * iv).toFixed(2)}%` +
+      (extrapolated ? " (surface extrapolation)" : "") + `; r and trailing dividend yield (${dividendInput.date}) loaded.`;
+    return true;
+  } catch (error) {
+    if (generation === rsMarketGenerations[prefix]) {
+      document.getElementById(prefix + "_vol").value = "";
+      status.textContent = `${code}: ${error.message}`;
+    }
+    return false;
+  }
+}
+
+async function rsOpenGamma(prefix) {
+  const code = document.getElementById(prefix + "_code").value.trim().toUpperCase();
+  const expiry = document.getElementById(prefix + "_expiry_date").value;
+  const strike = Number(document.getElementById(prefix + "_strike").value);
+  const type = document.getElementById(prefix + "_type").value;
+  const contracts = Number(document.getElementById(prefix + "_contracts").value);
+  const status = document.getElementById(prefix + "_market_status");
+  if (!/^[A-Z0-9.\-]{1,15}$/.test(code) || !/^\d{4}-\d{2}-\d{2}$/.test(expiry) ||
+      !(Number(document.getElementById(prefix + "_time").value) > 0) ||
+      !(strike > 0) || !["put", "call"].includes(type) ||
+      !Number.isInteger(contracts) || contracts === 0) {
+    status.textContent = "Enter a valid code, strike, future expiry and signed whole contracts for Gamma.";
+    return;
+  }
+  if (!await rsRefreshOptionMarketInputs(prefix)) return;
+  location.href = `/gamma/?${new URLSearchParams({ticker:code, expiry,
+    strike:String(strike), type, contracts:String(contracts)})}#GammaLadder`;
+}
+
+function rsBindOptionMarketInputs(prefix) {
+  const code = document.getElementById(prefix + "_code");
+  const strike = document.getElementById(prefix + "_strike");
+  const spot = document.getElementById(prefix + "_spot");
+  code.addEventListener("input", () => {
+    ++rsMarketGenerations[prefix];
+    clearTimeout(rsCodeTimers[prefix]);
+    rsCodeTimers[prefix] = setTimeout(() => rsRefreshOptionMarketInputs(prefix), 400);
+  });
+  code.addEventListener("change", () => {
+    clearTimeout(rsCodeTimers[prefix]);
+    rsRefreshOptionMarketInputs(prefix);
+  });
+  strike.addEventListener("input", () => { rsUpdateMoneyness(prefix); rsRefreshOptionMarketInputs(prefix); });
+  spot.addEventListener("input", () => rsUpdateMoneyness(prefix));
+  for (const suffix of ["_expiry_date", "_trade_date"])
+    document.getElementById(prefix + suffix).addEventListener("change", () => rsRefreshOptionMarketInputs(prefix));
+  rsUpdateMoneyness(prefix);
+}
+
+async function rsReceivePortfolioOption() {
+  const params = new URLSearchParams(location.search);
+  if (!params.has("ticker") || !params.has("expiry")) return;
+  const ticker = (params.get("ticker") || "").trim().toUpperCase();
+  const expiry = params.get("expiry") || "";
+  const strike = Number(params.get("strike"));
+  const type = params.get("type");
+  const contracts = Number(params.get("contracts"));
+  const status = document.getElementById("rsPortfolioOptionStatus");
+  const today = rsDateText(new Date());
+  const days = (rsDateAtUTC(expiry) - rsDateAtUTC(today)) / 86400000;
+  if (!/^[A-Z0-9.\-]{1,15}$/.test(ticker) || !/^\d{4}-\d{2}-\d{2}$/.test(expiry) ||
+      !(strike > 0) || !["put", "call"].includes(type) || !Number.isInteger(contracts) || !contracts || days <= 0) {
+    status.textContent = "The portfolio option details are incomplete or expired.";
+    return;
+  }
+  status.textContent = `Loading the current ${ticker} smoothed volatility surface…`;
+  document.getElementById("p1_dividend").value = "";
+  document.getElementById("p1_code").value = ticker;
+  document.getElementById("p1_strike").value = strike;
+  document.getElementById("p1_type").value = type;
+  document.getElementById("p1_trade_date").value = today;
+  document.getElementById("p1_expiry_date").value = expiry;
+  rsUpdateTimeToExpiry("p1");
+  try {
+    const response = await fetch("https://surface-203178530029.northamerica-northeast2.run.app/surface?" +
+      new URLSearchParams({ ticker, surface_type:"smooth" }));
+    const surface = await response.json();
+    if (!response.ok || surface.error) throw new Error(surface.error || "Surface unavailable");
+    const {iv, extrapolated} = rsSurfaceVolatility(surface, strike, days / 365);
+    document.getElementById("p1_spot").value = Number(surface.underlying).toFixed(4);
+    document.getElementById("p1_contracts").value = contracts;
+    rsSurfaceRequests.set(ticker, Promise.resolve(surface));
+    rsUpdateMoneyness("p1");
+    document.getElementById("p1_vol").value = iv.toFixed(6);
+    document.getElementById("p1_rate").value = Number(surface.r).toFixed(6);
+    const dividendInput = await rsSharpeDividendYield(ticker);
+    document.getElementById("p1_dividend").value = dividendInput.yield.toFixed(6);
+    rsTransferredOption = {contracts};
+    status.textContent = `${ticker} ${expiry} ${strike} ${type}, ${contracts} contract(s). ` +
+      `Current smoothed IV: ${(iv * 100).toFixed(2)}%${extrapolated ? " (surface extrapolation)" : ""}. ` +
+      `Priced as of ${today}; trade date ${params.get("tradeDate") || "not recorded"}. ` +
+      "Model value and delta below are for the current inputs.";
+    await priceOption("p1");
+  } catch (error) {
+    rsTransferredOption = null;
+    status.textContent = `Could not complete market inputs for ${ticker}: ${error.message}. ` +
+      "The option details are filled, but price and delta have not been calculated.";
+    document.getElementById("p1_result").textContent = "";
+  }
+}
+
+document.addEventListener("DOMContentLoaded", function() {
+  document.querySelectorAll('input[id$="_time"]').forEach(function(timeInput) {
+    rsAddDateFields(timeInput);
+  });
+  rsBindOptionMarketInputs("p1");
+  rsBindOptionMarketInputs("p2");
+  rsReceivePortfolioOption();
+});
 </script>
 <div class="text-section">
 <span id="Options"></span>
@@ -657,6 +1011,14 @@ function rsSignedPremium(price, qty, shares) {
   return -qty * price * shares;
 }
 
+function rsValidatedTime(prefix) {
+  const value = Number(document.getElementById(prefix + "_time").value);
+  if (!isFinite(value) || value <= 0) {
+    throw new Error("Please select an Expiry Date after the Trade Date.");
+  }
+  return value;
+}
+
 
 async function rsSolveStrikeForTargetPrice(spot, vol, rate, time, dividend, type, targetPrice) {
   if (targetPrice <= 0) {
@@ -724,7 +1086,7 @@ async function priceZeroPremiumSeagull(prefix) {
   const S = Number(document.getElementById(prefix + "_spot").value);
   const rate = Number(document.getElementById(prefix + "_rate").value);
   const dividend = Number(document.getElementById(prefix + "_dividend").value);
-  const time = Number(document.getElementById(prefix + "_time").value);
+  const time = rsValidatedTime(prefix);
   const shares = Number(document.getElementById(prefix + "_shares").value);
 
   let financeLegIndex;
@@ -873,7 +1235,7 @@ async function priceStrategy(prefix) {
     const S = Number(document.getElementById(prefix + "_spot").value);
     const rate = Number(document.getElementById(prefix + "_rate").value);
     const dividend = Number(document.getElementById(prefix + "_dividend").value);
-    const time = Number(document.getElementById(prefix + "_time").value);
+    const time = rsValidatedTime(prefix);
     const shares = Number(document.getElementById(prefix + "_shares").value);
 
     let totalCashPremium = 0;
