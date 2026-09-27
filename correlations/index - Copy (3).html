@@ -1224,11 +1224,6 @@ function getSelectedInputs() {
   const fx = selectedValues(".fx-check");
   const yields = selectedValues(".yield-check");
   const equities = parseEquities(document.getElementById("equitySymbols").value);
-  // Option underlyings need price history even when no shares are held.
-  portfolioOptions.forEach(option => {
-    const underlying = normalizeDisplaySymbol(option.underlying);
-    if (underlying && !equities.includes(underlying)) equities.push(underlying);
-  });
 
   const selected = [];
   const add = (source, value, label) => {
@@ -1349,8 +1344,7 @@ async function fetchCorrelationData() {
       activePayload.messages = [...(activePayload.messages || []), `Maximum ${MAX_ASSETS} assets shown. Omitted: ${inputs.omitted.join(", ")}.`];
     }
     drawCorrelationChart(activePayload);
-    initializePortfolio(activePayload,
-      parseEquities(document.getElementById("equitySymbols").value), selectedValues(".commodity-check"));
+    initializePortfolio(activePayload, inputs.equities, selectedValues(".commodity-check"));
     refreshSelectedRollingPair(activePayload);
     setStatus(`Updated ${activePayload.assets.length} assets for ${period}.`);
     showMessages(activePayload.messages || []);
@@ -4409,6 +4403,11 @@ function savePortfolio() {
     setPortfolioStorageStatus("Complete every option's dates, strike and non-zero contracts before saving.");
     return;
   }
+  heldSecurities = [...new Set([
+    ...heldSecurities,
+    ...portfolioOptions.map(option => normalizeDisplaySymbol(option.underlying)).filter(Boolean)
+  ])];
+
   const incompleteFuture = portfolioSecurities.find(asset =>
     isFuturesAsset(asset) && (Number(portfolioShares[asset]) || 0) !== 0 &&
     !(Number(portfolioFuturesAgreedPrices[asset]) > 0)
@@ -4418,8 +4417,8 @@ function savePortfolio() {
     return;
   }
 
-  if (!heldSecurities.length && !portfolioOptions.length) {
-    setPortfolioStorageStatus("Enter units for at least one holding or add an option before saving.");
+  if (!heldSecurities.length) {
+    setPortfolioStorageStatus("Enter units for at least one holding before saving.");
     return;
   }
 
@@ -4483,9 +4482,10 @@ function loadPortfolio() {
     : Object.keys(savedShares).map(normalizeDisplaySymbol);
   // Older saved portfolios may contain every selected equity, including zero-share rows.
   // Load only actual holdings so a five-security portfolio remains five securities.
+  const optionUnderlyings = new Set(savedOptions.map(option => normalizeDisplaySymbol(option.underlying)).filter(Boolean));
   const securities = listedSecurities.filter(asset => {
     const quantity = Number(savedShares[asset]) || 0;
-    return isFuturesAsset(asset) ? quantity !== 0 : quantity > 0;
+    return optionUnderlyings.has(asset) || (isFuturesAsset(asset) ? quantity !== 0 : quantity > 0);
   });
   document.getElementById("equitySymbols").value = securities.join(", ");
   activeYahooPreset = matchingPresetKey(document.getElementById("equitySymbols").value);
