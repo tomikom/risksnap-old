@@ -229,7 +229,7 @@ Calculators are tools for understanding risk characteristics of various market p
     <label>Time (years)</label><br>
     <input id="p1_time" value="0.082191"><br>
 
-    <label>Dividend Yield (trailing 12 months, Sharpe method)</label><br>
+    <label>Dividend Yield</label><br>
     <input id="p1_dividend" value="0.04"><br>
 
     <label>Type</label><br>
@@ -271,7 +271,7 @@ Calculators are tools for understanding risk characteristics of various market p
     <label>Time (years)</label><br>
     <input id="p2_time" value="0.082191"><br>
 
-    <label>Dividend Yield (trailing 12 months, Sharpe method)</label><br>
+    <label>Dividend Yield</label><br>
     <input id="p2_dividend" value="0.04"><br>
 
     <label>Type</label><br>
@@ -445,47 +445,6 @@ function rsSurfaceVolatility(surface, strike, expiryTime) {
 }
 
 const rsSurfaceRequests = new Map();
-const rsDividendRequests = new Map();
-async function rsSharpeDividendYield(ticker) {
-  if (!rsDividendRequests.has(ticker)) {
-    const request = (async () => {
-      const base = "https://surface-203178530029.northamerica-northeast2.run.app";
-      const priceResponse = await fetch(base + "/correlations_data", {
-        method: "POST", headers: {"Content-Type":"application/json"},
-        body: JSON.stringify({lookback:25, fx_gold_oil:[], yields:[], equities:ticker})
-      });
-      const priceData = await priceResponse.json();
-      const index = (priceData.assets || []).indexOf(ticker);
-      const date = String(priceData.date || priceData.as_of || "").slice(0,10);
-      const local = Number(priceData.local_prices?.[index]);
-      const usd = Number(priceData.prices?.[index]);
-      const spot = local > 0 ? local : usd;
-      if (!priceResponse.ok || index < 0 || !date || !(spot > 0))
-        throw new Error("Dated EOD price unavailable for dividend yield");
-      const startDate = new Date(date + "T12:00:00Z");
-      startDate.setUTCDate(startDate.getUTCDate() - 365);
-      const start = startDate.toISOString().slice(0,10);
-      const dividendResponse = await fetch(base + "/dividend_history", {
-        method:"POST", headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({symbols:[ticker], start, end:date})
-      });
-      const dividendData = await dividendResponse.json();
-      const series = dividendData.series?.[ticker];
-      if (!dividendResponse.ok || !series) throw new Error("Dividend history unavailable");
-      const amount = (series.dividends || []).filter(row => row.date > start && row.date <= date)
-        .reduce((sum,row) => {
-          const factor = (series.splits || []).reduce((product,split) =>
-            split.date > row.date && split.date <= date && Number(split.ratio) > 0
-              ? product * Number(split.ratio) : product, 1);
-          const dividend = Number(row.amount) / factor;
-          return sum + (Number.isFinite(dividend) ? dividend : 0);
-        }, 0);
-      return {yield:amount / spot, date};
-    })().catch(error => {rsDividendRequests.delete(ticker); throw error;});
-    rsDividendRequests.set(ticker, request);
-  }
-  return rsDividendRequests.get(ticker);
-}
 const rsMarketGenerations = {p1:0, p2:0};
 const rsCodeTimers = {p1:null, p2:null};
 
@@ -533,13 +492,11 @@ async function rsRefreshOptionMarketInputs(prefix) {
       return true;
     }
     document.getElementById(prefix + "_rate").value = Number(surface.r).toFixed(6);
-    const dividendInput = await rsSharpeDividendYield(code);
-    if (generation !== rsMarketGenerations[prefix]) return false;
-    document.getElementById(prefix + "_dividend").value = dividendInput.yield.toFixed(6);
+    document.getElementById(prefix + "_dividend").value = Number(surface.dividendYield).toFixed(6);
     const {iv, extrapolated} = rsSurfaceVolatility(surface, strike, time);
     document.getElementById(prefix + "_vol").value = iv.toFixed(6);
     status.textContent = `${code}: current smoothed IV ${(100 * iv).toFixed(2)}%` +
-      (extrapolated ? " (surface extrapolation)" : "") + `; r and trailing dividend yield (${dividendInput.date}) loaded.`;
+      (extrapolated ? " (surface extrapolation)" : "") + "; r and d loaded.";
     return true;
   } catch (error) {
     if (generation === rsMarketGenerations[prefix]) {
@@ -624,8 +581,7 @@ async function rsReceivePortfolioOption() {
     rsUpdateMoneyness("p1");
     document.getElementById("p1_vol").value = iv.toFixed(6);
     document.getElementById("p1_rate").value = Number(surface.r).toFixed(6);
-    const dividendInput = await rsSharpeDividendYield(ticker);
-    document.getElementById("p1_dividend").value = dividendInput.yield.toFixed(6);
+    document.getElementById("p1_dividend").value = Number(surface.dividendYield).toFixed(6);
     rsTransferredOption = {contracts};
     status.textContent = `${ticker} ${expiry} ${strike} ${type}, ${contracts} contract(s). ` +
       `Current smoothed IV: ${(iv * 100).toFixed(2)}%${extrapolated ? " (surface extrapolation)" : ""}. ` +
