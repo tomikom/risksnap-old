@@ -227,7 +227,7 @@ Market sources provide traded prices, bid/offer and IV for each listed option ho
     <div id="p1_moneyness" class="rs-moneyness"></div>
 
     <label>Volatility</label><br>
-    <input id="p1_vol" value="0.20"><br>
+    <input id="p1_vol" value="0.20"> <button type="button" onclick="rsRestoreVolatility('p1')">Restore IV</button><br>
 
     <label>Rate</label><br>
     <input id="p1_rate" value="0.006"><br>
@@ -269,7 +269,7 @@ Market sources provide traded prices, bid/offer and IV for each listed option ho
     <div id="p2_moneyness" class="rs-moneyness"></div>
 
     <label>Volatility</label><br>
-    <input id="p2_vol" value="0.20"><br>
+    <input id="p2_vol" value="0.20"> <button type="button" onclick="rsRestoreVolatility('p2')">Restore IV</button><br>
 
     <label>Rate</label><br>
     <input id="p2_rate" value="0.006"><br>
@@ -463,6 +463,43 @@ function rsSurfaceVolatility(surface, strike, expiryTime) {
 }
 
 const rsSurfaceRequests = new Map();
+async function rsRestoreVolatility(prefix) {
+  const code = document.getElementById(prefix + "_code").value.trim().toUpperCase();
+  const status = document.getElementById(prefix + "_market_status");
+  const strike = Number(document.getElementById(prefix + "_strike").value);
+  const time = Number(document.getElementById(prefix + "_time").value);
+  if (!code || !(strike > 0) || !(time > 0)) {
+    status.textContent = "Enter an equity code, strike and future expiry to restore IV.";
+    return;
+  }
+  const generation = rsMarketGenerations[prefix];
+  status.textContent = `Restoring ${code} smoothed IV…`;
+  try {
+    if (!rsSurfaceRequests.has(code)) {
+      const request = fetch("https://surface-203178530029.northamerica-northeast2.run.app/surface?" +
+        new URLSearchParams({ticker:code, surface_type:"smooth"}))
+        .then(async response => {
+          const surface = await response.json();
+          if (!response.ok || surface.error || surface.surfaceType !== "smooth")
+            throw new Error(surface.error || "No current smoothed surface for this code.");
+          return surface;
+        }).catch(error => { rsSurfaceRequests.delete(code); throw error; });
+      rsSurfaceRequests.set(code, request);
+    }
+    const surface = await rsSurfaceRequests.get(code);
+    if (generation !== rsMarketGenerations[prefix] ||
+        document.getElementById(prefix + "_code").value.trim().toUpperCase() !== code ||
+        Number(document.getElementById(prefix + "_strike").value) !== strike ||
+        Number(document.getElementById(prefix + "_time").value) !== time) return;
+    const {iv, extrapolated} = rsSurfaceVolatility(surface, strike, time);
+    document.getElementById(prefix + "_vol").value = iv.toFixed(6);
+    status.textContent = `${code}: restored smoothed IV ${(100 * iv).toFixed(2)}%` +
+      (extrapolated ? " (surface extrapolation)." : ".");
+    await priceOption(prefix);
+  } catch (error) {
+    status.textContent = `${code}: ${error.message}`;
+  }
+}
 const rsDividendRequests = new Map();
 async function rsSharpeDividendYield(ticker) {
   if (!rsDividendRequests.has(ticker)) {

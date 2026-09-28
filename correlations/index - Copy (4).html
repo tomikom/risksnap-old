@@ -3204,7 +3204,7 @@ function renderPortfolioOptions() {
         type: option.optionType === "put" ? "put" : "call",
         contracts: String(option.contracts)
       });
-      window.open(`/options/?${params.toString()}#OptionPricer`, "_blank", "noopener");
+      window.location.href = `/options/?${params.toString()}#OptionPricer`;
     });
   });
   body.querySelectorAll(".option-gamma").forEach(button => {
