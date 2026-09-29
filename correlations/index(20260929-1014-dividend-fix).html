@@ -3072,7 +3072,7 @@ function portfolioOptionValuation(option) {
   const eodYears = optionCalendarDays(eodDate, option.expiry) / 365;
   if (!Number.isFinite(currentSpot) || currentSpot <= 0 || !Number.isFinite(eodSpot) || eodSpot <= 0 ||
       !Number.isFinite(currentYears) || currentYears <= 0 || !Number.isFinite(eodYears) || eodYears <= 0)
-    return {status:"Loading spot…"};
+    return {status:"Spot or EOD date unavailable"};
   const surface = record.data;
   const iv = portfolioOptionSurfaceIv(surface, Number(option.strike), currentSpot, currentYears);
   if (iv === null) return {status:"Current IV grid unavailable"};
