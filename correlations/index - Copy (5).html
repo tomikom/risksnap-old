@@ -236,11 +236,11 @@ Changes:
         <button id="optionAdd" type="button">Add option</button>
       </div>
     <div class="portfolio-footnote">Contracts are signed: positive is long and negative is short. The multiplier is fixed at 100. EOD Value = EOD model price × signed contracts × 100. Delta-equivalent shares = signed contracts × 100 × option delta; these are risk exposure, not shares owned.</div>
-    <div class="portfolio-footnote"><strong>Option prices versus risk volatility:</strong> Current and EOD option prices use implied volatility (IV) from the currently loaded smoothed surface, selected at the strike relative to the current stock price. Outside the grid, IV uses the nearest moneyness or tenor boundary. EOD uses the EOD stock price and time remaining from the EOD date, but the same current IV, rate and dividend yield; it is a model estimate, not an EOD option quote. The Price button loads the surface again in the pricer, so its result may differ if market inputs have changed. Portfolio volatility in Analytics is calculated from historical equity returns, not this option IV. Options and futures are excluded from equity-only volatility, beta and Sharpe.</div>
+    <div class="portfolio-footnote"><strong>Option prices versus risk volatility:</strong> Current and EOD option prices use implied volatility (IV) from the currently loaded smoothed surface, selected at the strike relative to the current stock price. EOD uses the EOD stock price and time remaining from the EOD date, but the same current IV, rate and dividend yield; it is a model estimate, not an EOD option quote. The Price button loads the surface again in the pricer, so its result may differ if market inputs have changed. Portfolio volatility in Analytics is calculated from historical equity returns, not this option IV. Options and futures are excluded from equity-only volatility, beta and Sharpe.</div>
       <div class="portfolio-table-wrap">
         <table class="portfolio-table option-table">
-          <thead><tr><th>Underlying</th><th>Trade date</th><th>Expiry</th><th>Strike</th><th>Put/Call</th><th>Contracts</th><th>Multiplier</th><th>EOD Spot</th><th>Current Spot</th><th>IV (current)</th><th>EOD model price</th><th>Current model price</th><th>Delta-equiv. shares</th><th>EOD Value</th><th>Current Value</th><th></th></tr></thead>
-          <tbody id="portfolioOptionsBody"><tr><td colspan="16" class="portfolio-empty">No equity options added.</td></tr></tbody>
+          <thead><tr><th>Underlying</th><th>Trade date</th><th>Expiry</th><th>Strike</th><th>Put/Call</th><th>Contracts</th><th>Multiplier</th><th>IV (current)</th><th>EOD model price</th><th>Current model price</th><th>Delta-equiv. shares</th><th>EOD Value</th><th>Current Value</th><th></th></tr></thead>
+          <tbody id="portfolioOptionsBody"><tr><td colspan="14" class="portfolio-empty">No equity options added.</td></tr></tbody>
         </table>
       </div>
     </div>
@@ -552,7 +552,6 @@ h1 { color: white; text-align: center; background-color: #3A5FCD; }
 .option-table input, .option-table select { padding:3px 5px; box-sizing:border-box; }
 .option-table input[type="date"] { width:132px; }
 .option-table input[type="number"] { width:92px; text-align:right; }
-.option-table input[data-field="contracts"] { width:58px; }
 .portfolio-dividend-history { margin:12px 0 4px; border:1px solid #d8dfe9; border-radius:6px; padding:10px; background:#fbfcfe; }
 .portfolio-dividend-history-header { display:flex; justify-content:space-between; align-items:flex-start; gap:12px; flex-wrap:wrap; margin-bottom:8px; }
 .portfolio-dividend-history-title { font-size:15px; font-weight:700; color:#222; }
@@ -2993,23 +2992,16 @@ function portfolioOptionSurfaceIv(surface, strike, currentSpot, years) {
   const x = (surface.moneyness || []).map(Number);
   const t = (surface.tenors || []).map(Number);
   const moneyness = strike / currentSpot;
-  if (x.length < 2 || t.length < 1 || !(moneyness > 0) || !(years > 0)) return null;
-  const boundedMoneyness = Math.max(x[0], Math.min(x.at(-1), moneyness));
-  const col = Math.min(x.length - 2, Math.max(0, x.findIndex(value => value >= boundedMoneyness) - 1));
-  const weight = (boundedMoneyness - x[col]) / (x[col + 1] - x[col]);
-  const volAt = row => Number(surface.iv?.[row]?.[col]) * (1 - weight) +
-    Number(surface.iv?.[row]?.[col + 1]) * weight;
-  const boundedYears = Math.max(t[0], Math.min(t.at(-1), years));
-  let iv;
-  if (t.length === 1 || boundedYears === t[0]) iv = volAt(0);
-  else if (boundedYears === t.at(-1)) iv = volAt(t.length - 1);
-  else {
-    const row = Math.min(t.length - 2, Math.max(0, t.findIndex(value => value >= boundedYears) - 1));
-    const v1 = volAt(row), v2 = volAt(row + 1);
-    const variance = t[row] * v1 * v1 + (boundedYears - t[row]) / (t[row + 1] - t[row]) *
-      (t[row + 1] * v2 * v2 - t[row] * v1 * v1);
-    iv = Math.sqrt(variance / boundedYears);
-  }
+  if (x.length < 2 || t.length < 2 || moneyness < x[0] || moneyness > x.at(-1) ||
+      years < t[0] || years > t.at(-1)) return null;
+  const col = Math.min(x.length - 2, Math.max(0, x.findIndex(value => value >= moneyness) - 1));
+  const row = Math.min(t.length - 2, Math.max(0, t.findIndex(value => value >= years) - 1));
+  const weight = (moneyness - x[col]) / (x[col + 1] - x[col]);
+  const v1 = Number(surface.iv[row][col]) * (1 - weight) + Number(surface.iv[row][col + 1]) * weight;
+  const v2 = Number(surface.iv[row + 1][col]) * (1 - weight) + Number(surface.iv[row + 1][col + 1]) * weight;
+  const variance = t[row] * v1 * v1 + (years - t[row]) / (t[row + 1] - t[row]) *
+    (t[row + 1] * v2 * v2 - t[row] * v1 * v1);
+  const iv = Math.sqrt(variance / years);
   return Number.isFinite(iv) && iv >= 0.01 ? iv : null;
 }
 
@@ -3055,8 +3047,7 @@ function portfolioOptionValuation(option) {
     const previousFrame = matrixHistoryFrames[Math.max(0, matrixHistoryIndex - 1)];
     const previousValue = previousFrame ? portfolioOptionsValueForFrame(previousFrame, [option]) : null;
     const units = Number(option.contracts) * 100;
-    const priorSpot = previousFrame ? Number(previousFrame.prices[previousFrame.assets.indexOf(option.underlying)]) : NaN;
-    return {status:"ready", iv, currentSpot:spot, eodSpot:priorSpot, currentPrice:price,
+    return {status:"ready", iv, currentPrice:price,
       eodPrice:previousValue === null ? NaN : previousValue / units,
       currentValue:price * units, eodValue:previousValue, deltaShares:NaN};
   }
@@ -3074,14 +3065,14 @@ function portfolioOptionValuation(option) {
     return {status:"Spot or EOD date unavailable"};
   const surface = record.data;
   const iv = portfolioOptionSurfaceIv(surface, Number(option.strike), currentSpot, currentYears);
-  if (iv === null) return {status:"Current IV grid unavailable"};
+  if (iv === null) return {status:"Strike or expiry outside current IV grid"};
   if (!portfolioDividendHistory[option.underlying]) return {status:"Dividend history unavailable"};
   const rate = Number(surface.r), dividend = effectiveDividendYield(option.underlying);
   const current = optionBlackScholes(option.optionType, currentSpot, Number(option.strike), currentYears, rate, dividend, iv);
   const eod = optionBlackScholes(option.optionType, eodSpot, Number(option.strike), eodYears, rate, dividend, iv);
   if (!current || !eod) return {status:"Option model unavailable"};
   const units = Number(option.contracts) * 100;
-  return {status:"ready", iv, currentSpot, eodSpot, currentPrice:current.price, eodPrice:eod.price,
+  return {status:"ready", iv, currentPrice:current.price, eodPrice:eod.price,
     currentValue:current.price * units, eodValue:eod.price * units,
     deltaShares:current.delta * units, date:eodDate};
 }
@@ -3164,7 +3155,7 @@ function renderPortfolioOptions() {
   if (!document.getElementById("optionStrike").value) suggestOptionEntryStrike();
 
   if (!portfolioOptions.length) {
-    body.innerHTML = '<tr><td colspan="16" class="portfolio-empty">No equity options added.</td></tr>';
+    body.innerHTML = '<tr><td colspan="14" class="portfolio-empty">No equity options added.</td></tr>';
     return;
   }
 
@@ -3180,8 +3171,8 @@ function renderPortfolioOptions() {
       <td><input class="option-field" data-field="contracts" type="number" step="1" value="${Number(option.contracts) || 0}"></td>
       <td>100</td>
       ${(() => { const v = portfolioOptionValuation(option); return v.status === "ready"
-        ? `<td>${Number.isFinite(v.eodSpot) ? formatMoney(v.eodSpot) : "—"}</td><td>${formatMoney(v.currentSpot)}</td><td>${(v.iv * 100).toFixed(2)}%</td><td>${Number.isFinite(v.eodPrice) ? formatMoney(v.eodPrice) : "—"}</td><td>${formatMoney(v.currentPrice)}</td><td>${Number.isFinite(v.deltaShares) ? v.deltaShares.toFixed(2) : "—"}</td><td>${Number.isFinite(v.eodValue) ? formatMoney(v.eodValue) : "—"}</td><td>${formatMoney(v.currentValue)}</td>`
-        : `<td colspan="8">${escapeHtml(v.status)}</td>`; })()}
+        ? `<td>${(v.iv * 100).toFixed(2)}%</td><td>${Number.isFinite(v.eodPrice) ? formatMoney(v.eodPrice) : "—"}</td><td>${formatMoney(v.currentPrice)}</td><td>${Number.isFinite(v.deltaShares) ? v.deltaShares.toFixed(2) : "—"}</td><td>${Number.isFinite(v.eodValue) ? formatMoney(v.eodValue) : "—"}</td><td>${formatMoney(v.currentValue)}</td>`
+        : `<td colspan="6">${escapeHtml(v.status)}</td>`; })()}
       <td><button type="button" class="option-price" data-index="${index}">Price</button> <button type="button" class="option-gamma" data-index="${index}" title="Open this option in the Gamma Ladder">Gamma Ladder</button> <button type="button" class="option-remove" data-index="${index}">Remove</button></td>
     </tr>`).join("");
 
