@@ -105,30 +105,6 @@ input.rs-time-to-expiry[readonly] {
     color: #333333;
 }
 
-.rs-market-input-links {
-    display: flex;
-    gap: 9px;
-    flex-wrap: wrap;
-    margin: 0 0 14px 0;
-}
-
-.rs-market-input-link {
-    display: inline-block;
-    padding: 7px 13px;
-    border-radius: 8px;
-    background-color: #3A5FCD;
-    color: white !important;
-    font-weight: bold;
-    text-decoration: none !important;
-    cursor: pointer;
-}
-
-.rs-market-input-link:hover,
-.rs-market-input-link:focus {
-    background-color: #28489f;
-    text-decoration: underline !important;
-}
-
 .rs-pricer-box button {
     background-color: #008CBA;
     border: none;
@@ -214,9 +190,15 @@ input.rs-time-to-expiry[readonly] {
 <button class="rs-nav-button btn-strategies" onclick="location.href='#Strategies'">♟️&nbsp; Strategies</button>
 <button class="rs-nav-button btn-calculators" onclick="location.href='#Calculators'">🧮&nbsp; Strategies - Calculators</button>
 </div>
-<p>The Black-Scholes generalized formula can be used to price european options on stocks without dividends (the original model by Black and Scholes, 1973), options on stocks with a continuous dividend yield (Merton, 1973), options on futures (Black 1976) and options on currencies (Garman and Kohlhagen - 1983).<br><br>Options can be bought to possibly capitalize on a view with the loss capped at the premium paid, or sold to earn income at the risk that the option is exercised with possibility of unlimited losses.  Options can be sold/bought back to lock in current gains/losses.Strategies can be used to combine options, to mitigate costs/risk or increase income.
-Calculators are tools for understanding risk characteristics of various market products .
-<br><br>In either pricer, enter an equity code, strike and expiry date to load the current spot, smoothed implied volatility, rate and dividend yield. You may also enter values manually.
+<p>Equity options are used to hedge equity positions against losses due to adverse changes in the equity market. Options are also used to for volatility views.  Fees can be earned by selling options.  Options are used in structured notes to enhance the yield in order to benefit from bullish/bearish equity market views.</p>
+<p>
+RiskSnap's volatility surface is used to determine market volatility.  The volatility reflects current market prices for options with different strikes. This volatility is called “implied volatility (IV)” since it is implied from the option price which is a function of market demand. With the other components fixed at a point in time option price differences are due to differences in implied volatility.  This is somewhat at odds of the statistical definition of volatility which is one standard deviation of historical returns about the mean regardless of strike. The differences create a surface which can be skewed to the left or right, or resemble a smile.</p>
+<p>
+Market sources provide traded prices, bid/offer and IV for each listed option however illiquidity may make the IV out-of-date. This is sometimes accommodated by using recent bid/offer prices but the spreads may be wide for lack of depth.   RiskSnap’s  volatility surface uses Yahoo's closing prices to calculate RiskSnap IV and filters closing quotes that violate direction of puts and calls, removes some arbitrage impossibilities, applies monotonic filter checks since call prices should not rise as strike prices rise, or put prices should not fall as strikes rise and smoothes the result as a surface.  At the extremes of the surface deep ITM/OTM options can be insensitive to volatility, making IV inferences difficult. Extrapolated parts of the surface deserve particular caution.  The pricer uses Yahoo's forward annual dividend yield.
+
+</p><p>The “raw” surface on the Surface page displays Yahoo’s reported implied volatilities for reference. RiskSnap calculates its own implied volatilities from the option prices, then uses them to build the filtered smoothed surface used in its option pricing.
+
+<br><br>In either pricer, enter an equity code, strike and expiry date to load the current spot, smoothed implied volatility, rate and dividend yield. You may also enter values manually; the <a href="https://www.risksnap.com/surface/">Surface</a> and <a href="https://www.risksnap.com/rates_and_inflation/">Rates and Inflation</a> pages are available for reference.
 
 <br><br>Ensure you have read the <a href="https://www.risksnap.com/contact/#UserAgreement">User Agreement</a> before using any calculators on RiskSnap.
 </p>
@@ -238,14 +220,14 @@ Calculators are tools for understanding risk characteristics of various market p
     <div id="p1_market_status" class="rs-market-status" role="status"></div>
 
     <label>Spot</label><br>
-    <input id="p1_spot" value="100"><br>
+    <input id="p1_spot" value="100"> <button type="button" onclick="rsRestoreSpot('p1')">Restore Spot</button><br>
 
     <label>Strike</label><br>
     <input id="p1_strike" value="97"><br>
     <div id="p1_moneyness" class="rs-moneyness"></div>
 
     <label>Volatility</label><br>
-    <input id="p1_vol" value="0.20"><br>
+    <input id="p1_vol" value="0.20"> <button type="button" onclick="rsRestoreVolatility('p1')">Restore IV</button><br>
 
     <label>Rate</label><br>
     <input id="p1_rate" value="0.006"><br>
@@ -254,7 +236,7 @@ Calculators are tools for understanding risk characteristics of various market p
     <input id="p1_time" value="0.082191"><br>
 
     <label>Dividend Yield</label><br>
-    <input id="p1_dividend" value="0.04"><br>
+    <input id="p1_dividend" value="" placeholder="Loading dividend yield"><br>
 
     <label>Type</label><br>
     <select id="p1_type">
@@ -267,6 +249,7 @@ Calculators are tools for understanding risk characteristics of various market p
 
     <button onclick="priceOption('p1')">Price Option</button>
     <button type="button" onclick="rsOpenGamma('p1')">Gamma</button>
+    <button type="button" onclick="rsCopyToPricer2()" title="Copy Pricer 1 inputs to Pricer 2">Copy to Pricer 2 →</button>
 
     <div id="p1_result" class="rs-pricer-result"></div>
   </div>
@@ -279,14 +262,14 @@ Calculators are tools for understanding risk characteristics of various market p
     <div id="p2_market_status" class="rs-market-status" role="status"></div>
 
     <label>Spot</label><br>
-    <input id="p2_spot" value="100"><br>
+    <input id="p2_spot" value="100"> <button type="button" onclick="rsRestoreSpot('p2')">Restore Spot</button><br>
 
     <label>Strike</label><br>
     <input id="p2_strike" value="103"><br>
     <div id="p2_moneyness" class="rs-moneyness"></div>
 
     <label>Volatility</label><br>
-    <input id="p2_vol" value="0.20"><br>
+    <input id="p2_vol" value="0.20"> <button type="button" onclick="rsRestoreVolatility('p2')">Restore IV</button><br>
 
     <label>Rate</label><br>
     <input id="p2_rate" value="0.006"><br>
@@ -295,7 +278,7 @@ Calculators are tools for understanding risk characteristics of various market p
     <input id="p2_time" value="0.082191"><br>
 
     <label>Dividend Yield</label><br>
-    <input id="p2_dividend" value="0.04"><br>
+    <input id="p2_dividend" value="" placeholder="Loading dividend yield"><br>
 
     <label>Type</label><br>
     <select id="p2_type">
@@ -317,6 +300,20 @@ Calculators are tools for understanding risk characteristics of various market p
 <button id="backToTop" onclick="window.scrollTo({top:0,behavior:'smooth'})">↑</button>
 <script>
 let rsTransferredOption = null;
+async function rsCopyToPricer2() {
+  clearTimeout(rsCodeTimers.p2);
+  ++rsMarketGenerations.p2; // Ignore a previous code lookup still in progress for Pricer 2.
+  for (const field of ["code", "spot", "strike", "vol", "rate", "trade_date",
+    "expiry_date", "dividend", "type", "contracts"]) {
+    document.getElementById("p2_" + field).value = document.getElementById("p1_" + field).value;
+  }
+  rsUpdateTimeToExpiry("p2");
+  rsUpdateMoneyness("p2");
+  document.getElementById("p2_market_status").textContent = "Copied from Pricer 1. Edit any input to compare.";
+  document.getElementById("p2_result").textContent = "";
+  if (Number(document.getElementById("p2_time").value) > 0) await priceOption("p2");
+}
+
 async function priceOption(prefix) {
 
   const spot = document.getElementById(prefix + "_spot").value;
@@ -326,6 +323,12 @@ async function priceOption(prefix) {
   const time = document.getElementById(prefix + "_time").value;
   const dividend = document.getElementById(prefix + "_dividend").value;
   const type = document.getElementById(prefix + "_type").value;
+
+  if (dividend.trim() === "" || !Number.isFinite(Number(dividend))) {
+    document.getElementById(prefix + "_result").textContent =
+      "Dividend yield has not loaded. Wait for the dividend yield or enter one manually.";
+    return;
+  }
 
   if (!time || Number(time) <= 0) {
     document.getElementById(prefix + "_result").innerHTML =
@@ -430,25 +433,12 @@ function rsAddDateFields(timeInput) {
   rsUpdateTimeToExpiry(prefix);
 }
 
-function rsAddMarketInputLinks(timeInput) {
-  const calculator = timeInput.closest(".rs-pricer-box, .rs-calc");
-  if (!calculator || calculator.querySelector(".rs-market-input-links")) return;
-
-  const heading = calculator.querySelector("h3, h4");
-  if (!heading) return;
-
-  heading.insertAdjacentHTML("afterend",
-    '<div class="rs-market-input-links">' +
-      '<a class="rs-market-input-link" href="https://www.risksnap.com/surface/" target="_blank" rel="noopener noreferrer" title="Get implied volatility and dividend yield from the Surface Grid." aria-label="Surface: Get implied volatility and dividend yield from the Surface Grid.">Surface</a>' +
-      '<a class="rs-market-input-link" href="https://www.risksnap.com/rates_and_inflation/" target="_blank" rel="noopener noreferrer" title="Get rates from Rates and Inflation." aria-label="Rate: Get rates from Rates and Inflation.">Rate</a>' +
-    '</div>');
-}
-
 function rsSurfaceVolatility(surface, strike, expiryTime) {
   const moneyness = strike / Number(surface.underlying);
   const x = surface.moneyness.map(Number), t = surface.tenors.map(Number);
-  if (!x.length || !t.length || moneyness < x[0] || moneyness > x[x.length - 1] ||
-      expiryTime < t[0] || expiryTime > t[t.length - 1]) {
+  if (x.length < 2 || !t.length || !(expiryTime > 0) ||
+      moneyness < x[0] || moneyness > x[x.length - 1] ||
+      expiryTime > t[t.length - 1]) {
     throw new Error("Strike or expiry is outside the available volatility surface.");
   }
   const col = Math.min(x.length - 2, Math.max(0, x.findIndex(v => v >= moneyness) - 1));
@@ -456,6 +446,11 @@ function rsSurfaceVolatility(surface, strike, expiryTime) {
   const w = (moneyness - x[col]) / (x[col + 1] - x[col]);
   function strikeVol(i) {
     return Number(surface.iv[i][col]) * (1 - w) + Number(surface.iv[i][col + 1]) * w;
+  }
+  if (expiryTime <= t[0]) {
+    const iv = strikeVol(0);
+    if (!Number.isFinite(iv) || iv < 0.01) throw new Error("No valid implied volatility for this option.");
+    return { iv, extrapolated: false };
   }
   const v1 = strikeVol(row), v2 = strikeVol(row + 1);
   const variance1 = t[row] * v1 * v1, variance2 = t[row + 1] * v2 * v2;
@@ -468,7 +463,93 @@ function rsSurfaceVolatility(surface, strike, expiryTime) {
 }
 
 const rsSurfaceRequests = new Map();
+async function rsRestoreSpot(prefix) {
+  const code = document.getElementById(prefix + "_code").value.trim().toUpperCase();
+  const status = document.getElementById(prefix + "_market_status");
+  if (!/^[A-Z0-9.\-]{1,15}$/.test(code)) {
+    status.textContent = "Enter a valid equity code to restore spot.";
+    return;
+  }
+  const generation = rsMarketGenerations[prefix];
+  status.textContent = `Loading current spot for ${code}…`;
+  try {
+    const response = await fetch("https://surface-203178530029.northamerica-northeast2.run.app/surface?" +
+      new URLSearchParams({ticker:code, surface_type:"smooth"}));
+    const surface = await response.json();
+    if (!response.ok || surface.error || !(Number(surface.underlying) > 0))
+      throw new Error(surface.error || "Market spot unavailable.");
+    if (generation !== rsMarketGenerations[prefix] ||
+        document.getElementById(prefix + "_code").value.trim().toUpperCase() !== code) return;
+    document.getElementById(prefix + "_spot").value = Number(surface.underlying).toFixed(4);
+    rsUpdateMoneyness(prefix);
+    status.textContent = `${code}: spot restored to ${Number(surface.underlying).toFixed(4)}. Other inputs unchanged.`;
+    if (Number(document.getElementById(prefix + "_time").value) > 0) await priceOption(prefix);
+  } catch (error) {
+    status.textContent = `${code}: ${error.message}`;
+  }
+}
+async function rsRestoreVolatility(prefix) {
+  const code = document.getElementById(prefix + "_code").value.trim().toUpperCase();
+  const status = document.getElementById(prefix + "_market_status");
+  const strike = Number(document.getElementById(prefix + "_strike").value);
+  const time = Number(document.getElementById(prefix + "_time").value);
+  if (!code || !(strike > 0) || !(time > 0)) {
+    status.textContent = "Enter an equity code, strike and future expiry to restore IV.";
+    return;
+  }
+  const generation = rsMarketGenerations[prefix];
+  status.textContent = `Restoring ${code} smoothed IV…`;
+  try {
+    if (!rsSurfaceRequests.has(code)) {
+      const request = fetch("https://surface-203178530029.northamerica-northeast2.run.app/surface?" +
+        new URLSearchParams({ticker:code, surface_type:"smooth"}))
+        .then(async response => {
+          const surface = await response.json();
+          if (!response.ok || surface.error || surface.surfaceType !== "smooth")
+            throw new Error(surface.error || "No current smoothed surface for this code.");
+          return surface;
+        }).catch(error => { rsSurfaceRequests.delete(code); throw error; });
+      rsSurfaceRequests.set(code, request);
+    }
+    const surface = await rsSurfaceRequests.get(code);
+    if (generation !== rsMarketGenerations[prefix] ||
+        document.getElementById(prefix + "_code").value.trim().toUpperCase() !== code ||
+        Number(document.getElementById(prefix + "_strike").value) !== strike ||
+        Number(document.getElementById(prefix + "_time").value) !== time) return;
+    const {iv, extrapolated} = rsSurfaceVolatility(surface, strike, time);
+    document.getElementById(prefix + "_vol").value = iv.toFixed(6);
+    status.textContent = `${code}: restored smoothed IV ${(100 * iv).toFixed(2)}%` +
+      (extrapolated ? " (surface extrapolation)." : ".");
+    await priceOption(prefix);
+  } catch (error) {
+    status.textContent = `${code}: ${error.message}`;
+  }
+}
+const rsDividendRequests = new Map();
+async function rsSharpeDividendYield(ticker) {
+  if (!rsDividendRequests.has(ticker)) {
+    const request = (async () => {
+      // Match the equity table's /latest_prices dividend-yield field.
+      const response = await fetch(
+        "https://surface-203178530029.northamerica-northeast2.run.app/latest_prices", {
+          method:"POST", headers:{"Content-Type":"application/json"},
+          body:JSON.stringify({symbols:[ticker], include_dividends:true})
+        });
+      const data = await response.json();
+      const raw = (data.dividend_yields || data.dividendYields || data.yields || {})[ticker];
+      // The endpoint omits non-dividend-paying equities; their yield is zero.
+      let yieldValue = raw == null ? 0 : Number(raw);
+      if (!response.ok || !Number.isFinite(yieldValue) || yieldValue < 0)
+        throw new Error("Dividend yield unavailable");
+      if (yieldValue > 0.5) yieldValue /= 100;
+      return {yield:yieldValue};
+    })().catch(error => {rsDividendRequests.delete(ticker); throw error;});
+    rsDividendRequests.set(ticker, request);
+  }
+  return rsDividendRequests.get(ticker);
+}
 const rsMarketGenerations = {p1:0, p2:0};
+const rsCodeTimers = {p1:null, p2:null};
 
 function rsUpdateMoneyness(prefix) {
   const strike = Number(document.getElementById(prefix + "_strike").value);
@@ -489,6 +570,7 @@ async function rsRefreshOptionMarketInputs(prefix) {
     return false;
   }
   status.textContent = `Checking ${code}…`;
+  document.getElementById(prefix + "_dividend").value = "";
   try {
     if (!rsSurfaceRequests.has(code)) {
       const request = fetch("https://surface-203178530029.northamerica-northeast2.run.app/surface?" +
@@ -514,15 +596,20 @@ async function rsRefreshOptionMarketInputs(prefix) {
       return true;
     }
     document.getElementById(prefix + "_rate").value = Number(surface.r).toFixed(6);
-    document.getElementById(prefix + "_dividend").value = Number(surface.dividendYield).toFixed(6);
+    status.textContent = `${code}: loading dividend yield…`;
+    const dividendInput = await rsSharpeDividendYield(code);
+    if (generation !== rsMarketGenerations[prefix]) return false;
+    document.getElementById(prefix + "_dividend").value = dividendInput.yield.toFixed(6);
     const {iv, extrapolated} = rsSurfaceVolatility(surface, strike, time);
     document.getElementById(prefix + "_vol").value = iv.toFixed(6);
     status.textContent = `${code}: current smoothed IV ${(100 * iv).toFixed(2)}%` +
-      (extrapolated ? " (surface extrapolation)" : "") + "; r and d loaded.";
+      (extrapolated ? " (surface extrapolation)" : "") +
+      `; r and dividend yield loaded.`;
     return true;
   } catch (error) {
     if (generation === rsMarketGenerations[prefix]) {
       document.getElementById(prefix + "_vol").value = "";
+      document.getElementById(prefix + "_dividend").placeholder = "Enter dividend yield";
       status.textContent = `${code}: ${error.message}`;
     }
     return false;
@@ -552,7 +639,15 @@ function rsBindOptionMarketInputs(prefix) {
   const code = document.getElementById(prefix + "_code");
   const strike = document.getElementById(prefix + "_strike");
   const spot = document.getElementById(prefix + "_spot");
-  code.addEventListener("change", () => rsRefreshOptionMarketInputs(prefix));
+  code.addEventListener("input", () => {
+    ++rsMarketGenerations[prefix];
+    clearTimeout(rsCodeTimers[prefix]);
+    rsCodeTimers[prefix] = setTimeout(() => rsRefreshOptionMarketInputs(prefix), 400);
+  });
+  code.addEventListener("change", () => {
+    clearTimeout(rsCodeTimers[prefix]);
+    rsRefreshOptionMarketInputs(prefix);
+  });
   strike.addEventListener("input", () => { rsUpdateMoneyness(prefix); rsRefreshOptionMarketInputs(prefix); });
   spot.addEventListener("input", () => rsUpdateMoneyness(prefix));
   for (const suffix of ["_expiry_date", "_trade_date"])
@@ -577,6 +672,7 @@ async function rsReceivePortfolioOption() {
     return;
   }
   status.textContent = `Loading the current ${ticker} smoothed volatility surface…`;
+  document.getElementById("p1_dividend").value = "";
   document.getElementById("p1_code").value = ticker;
   document.getElementById("p1_strike").value = strike;
   document.getElementById("p1_type").value = type;
@@ -595,7 +691,8 @@ async function rsReceivePortfolioOption() {
     rsUpdateMoneyness("p1");
     document.getElementById("p1_vol").value = iv.toFixed(6);
     document.getElementById("p1_rate").value = Number(surface.r).toFixed(6);
-    document.getElementById("p1_dividend").value = Number(surface.dividendYield).toFixed(6);
+    const dividendInput = await rsSharpeDividendYield(ticker);
+    document.getElementById("p1_dividend").value = dividendInput.yield.toFixed(6);
     rsTransferredOption = {contracts};
     status.textContent = `${ticker} ${expiry} ${strike} ${type}, ${contracts} contract(s). ` +
       `Current smoothed IV: ${(iv * 100).toFixed(2)}%${extrapolated ? " (surface extrapolation)" : ""}. ` +
@@ -604,7 +701,7 @@ async function rsReceivePortfolioOption() {
     await priceOption("p1");
   } catch (error) {
     rsTransferredOption = null;
-    status.textContent = `Could not obtain current IV for ${ticker}: ${error.message}. ` +
+    status.textContent = `Could not complete market inputs for ${ticker}: ${error.message}. ` +
       "The option details are filled, but price and delta have not been calculated.";
     document.getElementById("p1_result").textContent = "";
   }
@@ -613,7 +710,6 @@ async function rsReceivePortfolioOption() {
 document.addEventListener("DOMContentLoaded", function() {
   document.querySelectorAll('input[id$="_time"]').forEach(function(timeInput) {
     rsAddDateFields(timeInput);
-    rsAddMarketInputLinks(timeInput);
   });
   rsBindOptionMarketInputs("p1");
   rsBindOptionMarketInputs("p2");

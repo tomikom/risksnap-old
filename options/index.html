@@ -537,8 +537,9 @@ async function rsSharpeDividendYield(ticker) {
         });
       const data = await response.json();
       const raw = (data.dividend_yields || data.dividendYields || data.yields || {})[ticker];
-      let yieldValue = Number(raw);
-      if (!response.ok || raw == null || !Number.isFinite(yieldValue) || yieldValue < 0)
+      // The endpoint omits non-dividend-paying equities; their yield is zero.
+      let yieldValue = raw == null ? 0 : Number(raw);
+      if (!response.ok || !Number.isFinite(yieldValue) || yieldValue < 0)
         throw new Error("Dividend yield unavailable");
       if (yieldValue > 0.5) yieldValue /= 100;
       return {yield:yieldValue};
