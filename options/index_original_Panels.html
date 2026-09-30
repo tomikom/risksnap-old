@@ -916,7 +916,7 @@ Please click on User Agreement before using any calculators on RiskSnap.
 
 <!--<p><img class="pic" src="./images/BullBear.png" width="70" alt="BullBear" align="left"></p>
 <div class="a"> -->
-<p>Calculators for the above strategies follow. The Bull Call Spread uses percentage-based strikes and linked option panels. The remaining calculators use delta-based strike selection. Each leg has its own volatility input and uses the RiskSnap pricing engine.</p>
+<p>Calculators for the above strategies follow. These use delta-based strike selection, separate volatility inputs for each leg, and the RiskSnap pricing engine.</p>
 </div>
 
 <style>
@@ -1148,10 +1148,9 @@ async function priceZeroPremiumSeagull(prefix) {
       continue;
     }
 
-    const targetDelta = leg.strikeId ? null : Number(document.getElementById(leg.deltaId).value);
-      if (leg.qtyId) leg.qty = Number(document.getElementById(leg.qtyId).value);
+    const targetDelta = Number(document.getElementById(leg.deltaId).value);
     const vol = Number(document.getElementById(leg.volId).value);
-    const strike = leg.strikeId ? Number(document.getElementById(leg.strikeId).value) : rsStrikeFromDelta(S, vol, rate, dividend, time, leg.type, targetDelta);
+    const strike = rsStrikeFromDelta(S, vol, rate, dividend, time, leg.type, targetDelta);
     const data = await rsPriceOption(S, strike, vol, rate, time, dividend, leg.type);
 
     fixedNetOptionPrice += leg.qty * data.price;
@@ -1208,8 +1207,8 @@ async function priceZeroPremiumSeagull(prefix) {
   for (const leg of solved) {
     document.getElementById(leg.ids.target).innerText =
       typeof leg.targetDelta === "number" ? rsFmt(leg.targetDelta, 4) : leg.targetDelta;
-    if (leg.ids.vol) document.getElementById(leg.ids.vol).innerText = rsFmt(leg.vol, 4);
-    if (leg.ids.strike) document.getElementById(leg.ids.strike).innerText = rsFmt(leg.strike, 6);
+    document.getElementById(leg.ids.vol).innerText = rsFmt(leg.vol, 4);
+    document.getElementById(leg.ids.strike).innerText = rsFmt(leg.strike, 6);
     document.getElementById(leg.ids.price).innerText = rsFmt(leg.price, 6);
     document.getElementById(leg.ids.actualDelta).innerText = rsFmt(leg.actualDelta, 6);
     document.getElementById(leg.ids.premium).innerText = rsFmt(leg.cashPremium, 2);
@@ -1284,10 +1283,9 @@ async function priceStrategy(prefix) {
     const solved = [];
 
     for (const leg of def.legs) {
-      const targetDelta = leg.strikeId ? null : Number(document.getElementById(leg.deltaId).value);
-      if (leg.qtyId) leg.qty = Number(document.getElementById(leg.qtyId).value);
+      const targetDelta = Number(document.getElementById(leg.deltaId).value);
       const vol = Number(document.getElementById(leg.volId).value);
-      const strike = leg.strikeId ? Number(document.getElementById(leg.strikeId).value) : rsStrikeFromDelta(S, vol, rate, dividend, time, leg.type, targetDelta);
+      const strike = rsStrikeFromDelta(S, vol, rate, dividend, time, leg.type, targetDelta);
       const data = await rsPriceOption(S, strike, vol, rate, time, dividend, leg.type);
       const cashPremium = rsSignedPremium(data.price, leg.qty, shares);
       const thisPayoffAtSpot = rsPayoffAtExpiry(S, {...leg, strike}) * shares;
@@ -1301,9 +1299,9 @@ async function priceStrategy(prefix) {
     }
 
     for (const leg of solved) {
-      if (leg.ids.target) document.getElementById(leg.ids.target).innerText = rsFmt(leg.targetDelta, 4);
-      if (leg.ids.vol) document.getElementById(leg.ids.vol).innerText = rsFmt(leg.vol, 4);
-      if (leg.ids.strike) document.getElementById(leg.ids.strike).innerText = rsFmt(leg.strike, 6);
+      document.getElementById(leg.ids.target).innerText = rsFmt(leg.targetDelta, 4);
+      document.getElementById(leg.ids.vol).innerText = rsFmt(leg.vol, 4);
+      document.getElementById(leg.ids.strike).innerText = rsFmt(leg.strike, 6);
       document.getElementById(leg.ids.price).innerText = rsFmt(leg.price, 6);
       document.getElementById(leg.ids.actualDelta).innerText = rsFmt(leg.actualDelta, 6);
       document.getElementById(leg.ids.premium).innerText = rsFmt(leg.cashPremium, 2);
@@ -1380,11 +1378,11 @@ async function priceStrategy(prefix) {
     // Positive = gain. Negative = loss.
     // These override the generic sampled values where simple sampling can be wrong.
 
-    if (prefix === "s1" && solved[0].qty === -solved[1].qty) {
+    if (prefix === "s1") {
       // Bull Call Spread: + lower call, - higher call
       let k = sortedStrikeArray();
       let debit = netDebit();
-      maxGain = solved[0].qty * (k[1] - k[0]) - debit;
+      maxGain = (k[1] - k[0]) - debit;
       maxLoss = -debit;
     }
 
@@ -1551,38 +1549,72 @@ async function priceStrategy(prefix) {
 }
 </script>
 
-<style>
-.rs-strategy-panels{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}.rs-strategy-panel{padding:16px;border:1px solid #ccc;background:white;border-radius:8px}.rs-strategy-panel .rs-grid{grid-template-columns:minmax(130px,1fr) minmax(100px,1fr);gap:8px}.rs-strategy-panel input{width:100%;box-sizing:border-box}.rs-strategy-panel input:disabled,.rs-strategy-panel button:disabled{background:#e6e6e6;color:#666;cursor:default}.rs-strategy-panel h4{margin:0 0 14px;color:#173b64}@media(max-width:650px){.rs-strategy-panels{grid-template-columns:1fr}}
-</style>
-<div class="rs-calc" id="calculator-1"><h3>1. Bull Call Spread Calculator</h3>
-<p>Buy a lower strike call and sell a higher strike call. Shared inputs are controlled from the first panel.</p>
-<div class="rs-strategy-panels"><div class="rs-strategy-panel"><h4>Bought Call</h4><div class="rs-grid"><label for="s1_code">Equity code</label><input id="s1_code" value=""><label for="s1_spot">Spot</label><input id="s1_spot" value="100"><label for="s1_rate">Rate</label><input id="s1_rate" value="0.006"><label for="s1_dividend">Dividend Yield</label><input id="s1_dividend" value="0.04"><label for="s1_time">Time to Expiry (years)</label><input id="s1_time" value="0.082191"><label for="s1_shares">Contract multiplier</label><input id="s1_shares" value="100"><label for="s1_leg1_otm">Strike (% OTM)</label><input type="number" step="0.1" id="s1_leg1_otm" value="0">
-<label for="s1_leg1_strikeinput">Strike</label><input type="number" step="any" id="s1_leg1_strikeinput" value="100">
-<label for="s1_leg1_vol">Volatility</label><input id="s1_leg1_vol" value=".20">
-<label for="s1_leg1_qty">Contracts (signed)</label><input type="number" step="1" id="s1_leg1_qty" value="1"></div>
-<button class="rs-button" onclick="rsPriceBullPanels()">Price Options</button></div><div class="rs-strategy-panel"><h4>Sold Call</h4><div class="rs-grid"><label for="s1_copy_code">Equity code</label><input id="s1_copy_code" value="" disabled><label for="s1_copy_spot">Spot</label><input id="s1_copy_spot" value="100" disabled><label for="s1_copy_rate">Rate</label><input id="s1_copy_rate" value="0.006" disabled><label for="s1_copy_dividend">Dividend Yield</label><input id="s1_copy_dividend" value="0.04" disabled><label for="s1_copy_time">Time to Expiry (years)</label><input id="s1_copy_time" value="0.082191" disabled><label for="s1_copy_shares">Contract multiplier</label><input id="s1_copy_shares" value="100" disabled><label for="s1_leg2_otm">Strike (% OTM)</label><input type="number" step="0.1" id="s1_leg2_otm" value="5">
-<label for="s1_leg2_strikeinput">Strike</label><input type="number" step="any" id="s1_leg2_strikeinput" value="105">
-<label for="s1_leg2_vol">Volatility</label><input id="s1_leg2_vol" value=".18">
-<label for="s1_leg2_qty">Contracts (signed)</label><input type="number" step="1" id="s1_leg2_qty" value="-1"></div>
-<button class="rs-button" onclick="rsPriceBullPanels()" disabled>Price Options</button></div></div><div id="s1_market_status" role="status" style="margin:10px 0"></div>
-<p class="rs-note">0% OTM means at the money; 5% OTM sets a call strike 5% above spot. Edit either the percentage or strike. Volatility, rate and dividend yield use decimals. The first Price button prices both legs. Contracts are positive for bought options and negative for sold options.</p>
-<table class="rs-calc-table"><thead><tr><th>Leg</th><th>Price per share</th><th>Delta per option</th><th>Cash Premium</th><th>Payoff at Spot</th></tr></thead><tbody><tr><td>Bought Call</td><td id="s1_leg1_price"></td><td id="s1_leg1_actualdelta"></td><td id="s1_leg1_premium"></td><td id="s1_leg1_payoff"></td></tr><tr><td>Sold Call</td><td id="s1_leg2_price"></td><td id="s1_leg2_actualdelta"></td><td id="s1_leg2_premium"></td><td id="s1_leg2_payoff"></td></tr></tbody></table><div id="s1_summary" class="rs-summary"></div></div>
+<div class="rs-calc" id="calculator-1">
+<h3>1. Bull Call Spread Calculator</h3>
+
+<p>Buy a lower strike call and sell a higher strike call. This is a debit spread.</p>
+<div class="rs-grid">
+
+  <label>Spot</label><input id="s1_spot" value="100">
+  <label>Rate</label><input id="s1_rate" value="0.006">
+  <label>Dividend Yield</label><input id="s1_dividend" value="0.04">
+  <label>Time to Expiry</label><input id="s1_time" value="0.082191">
+  <label>Contract Size / Shares</label><input id="s1_shares" value="100">
+
+  <label>Buy Lower Call Delta</label><input id="s1_leg1_delta" value="0.5">
+  <label>Buy Lower Call Volatility</label><input id="s1_leg1_vol" value="0.2">
+
+  <label>Sell Higher Call Delta</label><input id="s1_leg2_delta" value="0.25">
+  <label>Sell Higher Call Volatility</label><input id="s1_leg2_vol" value="0.18">
+
+</div>
+<button class="rs-button" onclick="priceStrategy('s1')">Price Strategy</button>
+<img src="./images/1.png"  style="margin-left:20px;" width="70" alt="Bull Call Spread" >
+<table class="rs-calc-table">
+<thead>
+<tr>
+<th>Leg</th><th>Qty</th><th>Type</th><th>Target Delta</th><th>Volatility</th><th>Strike</th><th>Price</th><th>Actual Delta</th><th>Cash Premium</th><th>Payoff at Spot</th>
+</tr>
+</thead>
+<tbody>
+
+<tr>
+<td>Buy Lower Call</td><td>1</td><td>Call</td>
+<td id="s1_leg1_target"></td><td id="s1_leg1_voldisplay"></td>
+<td id="s1_leg1_strike"></td><td id="s1_leg1_price"></td>
+<td id="s1_leg1_actualdelta"></td><td id="s1_leg1_premium"></td>
+<td id="s1_leg1_payoff"></td>
+</tr>
+
+<tr>
+<td>Sell Higher Call</td><td>-1</td><td>Call</td>
+<td id="s1_leg2_target"></td><td id="s1_leg2_voldisplay"></td>
+<td id="s1_leg2_strike"></td><td id="s1_leg2_price"></td>
+<td id="s1_leg2_actualdelta"></td><td id="s1_leg2_premium"></td>
+<td id="s1_leg2_payoff"></td>
+</tr>
+
+</tbody>
+</table>
+<div id="s1_summary" class="rs-summary"></div>
+<p class="rs-note">Inputs use decimals. Example: 20% volatility is 0.20. Put deltas should be negative, e.g. -0.25. Each leg has its own volatility input.</p>
+</div>
 <script>
-STRATEGY_DEFS.s1={legs:[1,2].map(n=>({label:n===1?'Bought Call':'Sold Call',qty:n===1?1:-1,type:'call',strikeId:`s1_leg${n}_strikeinput`,qtyId:`s1_leg${n}_qty`,volId:`s1_leg${n}_vol`,ids:{price:`s1_leg${n}_price`,actualDelta:`s1_leg${n}_actualdelta`,premium:`s1_leg${n}_premium`,payoff:`s1_leg${n}_payoff`}}))};
-function rsSyncBullPanels(){
- ['code','spot','rate','dividend','time','shares','trade_date','expiry_date'].forEach(k=>{const src=document.getElementById('s1_'+k),dst=document.getElementById('s1_copy_'+k);if(src&&dst){dst.value=src.value;dst.disabled=true;}});
+STRATEGY_DEFS["s1"] = {
+  legs: [
+    {
+ label:"Buy Lower Call", qty:1, type:"call",
+ deltaId:"s1_leg1_delta", volId:"s1_leg1_vol",
+ ids:{target:"s1_leg1_target", vol:"s1_leg1_voldisplay", strike:"s1_leg1_strike", price:"s1_leg1_price", actualDelta:"s1_leg1_actualdelta", premium:"s1_leg1_premium", payoff:"s1_leg1_payoff"}
+},{
+ label:"Sell Higher Call", qty:-1, type:"call",
+ deltaId:"s1_leg2_delta", volId:"s1_leg2_vol",
+ ids:{target:"s1_leg2_target", vol:"s1_leg2_voldisplay", strike:"s1_leg2_strike", price:"s1_leg2_price", actualDelta:"s1_leg2_actualdelta", premium:"s1_leg2_premium", payoff:"s1_leg2_payoff"}
 }
-function rsBullStrikes(){const spot=Number(document.getElementById('s1_spot').value);[1,2].forEach(n=>document.getElementById(`s1_leg${n}_strikeinput`).value=(spot*(1+Number(document.getElementById(`s1_leg${n}_otm`).value)/100)).toFixed(4));}
-let rsBullSurface=null,rsBullGeneration=0;
-function rsBullIV(){if(!rsBullSurface)return;[1,2].forEach(n=>{document.getElementById(`s1_leg${n}_vol`).value=rsSurfaceVolatility(rsBullSurface,Number(document.getElementById(`s1_leg${n}_strikeinput`).value),Number(document.getElementById('s1_time').value)).iv.toFixed(6);});}
-async function rsBullMarket(){const generation=++rsBullGeneration,code=document.getElementById('s1_code').value.trim().toUpperCase(),status=document.getElementById('s1_market_status');rsBullSurface=null;if(!code){status.textContent='';rsSyncBullPanels();return;}status.textContent='Loading '+code+'…';try{const response=await fetch('https://surface-203178530029.northamerica-northeast2.run.app/surface?'+new URLSearchParams({ticker:code,surface_type:'smooth'}));const surface=await response.json();if(generation!==rsBullGeneration)return;if(!response.ok||surface.error||!(Number(surface.underlying)>0)||surface.surfaceType!=='smooth')throw Error(surface.error||'Smoothed surface unavailable.');rsBullSurface=surface;document.getElementById('s1_spot').value=Number(surface.underlying).toFixed(4);document.getElementById('s1_rate').value=Number(surface.r).toFixed(6);if(surface.dividendYield==null||!Number.isFinite(Number(surface.dividendYield)))throw Error('Forward dividend yield unavailable.');document.getElementById('s1_dividend').value=Number(surface.dividendYield).toFixed(6);rsBullStrikes();rsBullIV();rsSyncBullPanels();status.textContent=code+': current spot, rate, forward dividend yield and each leg’s smoothed IV loaded.';}catch(e){if(generation===rsBullGeneration){status.textContent=code+': '+e.message;rsSyncBullPanels();}}}
-async function rsPriceBullPanels(){const S=Number(document.getElementById('s1_spot').value),a=Number(document.getElementById('s1_leg1_strikeinput').value),b=Number(document.getElementById('s1_leg2_strikeinput').value);if(!(S>0&&a>0&&b>a&&Number(document.getElementById('s1_shares').value)>0)){document.getElementById('s1_summary').textContent='Enter positive spot and multiplier, with the sold call strike above the bought call strike.';return;}for(const n of [1,2]){const q=Number(document.getElementById(`s1_leg${n}_qty`).value),v=Number(document.getElementById(`s1_leg${n}_vol`).value);if(!Number.isInteger(q)||(n===1?q<=0:q>=0)||!(v>0)){document.getElementById('s1_summary').textContent='Enter positive bought contracts, negative sold contracts, and positive volatility.';return;}}rsSyncBullPanels();await priceStrategy('s1');}
-document.addEventListener('DOMContentLoaded',()=>{
- rsBullStrikes();rsSyncBullPanels();document.querySelectorAll('#calculator-1 input').forEach(input=>input.addEventListener('input',()=>{document.getElementById('s1_summary').innerHTML='';document.querySelectorAll('#calculator-1 td[id]').forEach(td=>td.innerText='');}));document.getElementById('s1_code').addEventListener('change',rsBullMarket);
- ['spot','rate','dividend','shares','trade_date','expiry_date'].forEach(k=>document.getElementById('s1_'+k).addEventListener('input',()=>{if(k==='spot')rsBullStrikes();rsUpdateTimeToExpiry('s1');rsSyncBullPanels();}));
- ['s1_trade_date','s1_expiry_date','s1_leg1_otm','s1_leg2_otm','s1_leg1_strikeinput','s1_leg2_strikeinput'].forEach(id=>document.getElementById(id).addEventListener('change',()=>{try{rsBullIV();}catch(e){document.getElementById('s1_market_status').textContent=e.message;}rsSyncBullPanels();}));[1,2].forEach(n=>{document.getElementById(`s1_leg${n}_otm`).addEventListener('input',()=>{rsBullStrikes();});document.getElementById(`s1_leg${n}_strikeinput`).addEventListener('input',()=>{document.getElementById(`s1_leg${n}_otm`).value=((Number(document.getElementById(`s1_leg${n}_strikeinput`).value)/Number(document.getElementById('s1_spot').value)-1)*100).toFixed(4);});});
-});
+  ]
+};
 </script>
+
 
 <div class="rs-calc" id="calculator-2">
 <h3>2. Bull Put Spread Calculator</h3>
