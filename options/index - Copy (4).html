@@ -192,14 +192,6 @@ input.rs-time-to-expiry[readonly] {
 
 <br><br>Ensure you have read the <a href="https://www.risksnap.com/contact/#UserAgreement">User Agreement</a> before using any calculators on RiskSnap.
 </p>
-<div id="rsStrategyPortfolio" style="border:1px solid #ccd9e8;background:#f4f8fc;padding:12px;margin:14px 0;text-indent:0">
-<strong>Strategy destination portfolio</strong><br>
-<label for="rsDestinationPortfolio">Portfolio:</label> <select id="rsDestinationPortfolio" style="padding:6px;min-width:180px"></select>
-<label for="rsNewPortfolioName">New portfolio:</label> <input id="rsNewPortfolioName" maxlength="60" placeholder="Portfolio name">
-<button type="button" id="rsCreatePortfolio">Create New Portfolio</button>
-<a href="/correlations/#portfolioPanel" target="_blank" rel="noopener">Open Portfolio Analytics</a>
-<div style="font-size:13px;margin-top:6px">Each strategy's Add to Portfolio button copies all option legs into the selected saved portfolio. Load it on the Correlations page for valuation and enter its combined Book Cost there. Portfolios are shared in this browser on the same RiskSnap address.</div>
-<div id="rsDestinationStatus" role="status" style="margin-top:6px"></div></div>
 <span id="OptionPricer"></span>
 <h3 style="background-color:#1E90FF;color:white;">💲&nbsp; Online Black-Scholes Option Pricer</h3>
 <div id="rsPortfolioOptionStatus" role="status" style="margin:8px 0;color:#173b64;"></div>
@@ -1618,32 +1610,4 @@ const RSListed = (() => {
   return {match,choose,propose,applyProposal};
 })();
 
-</script>
-
-<script>
-const RSStrategyPortfolio = (() => {
-  const key='RiskSnapSavedPortfolios', sent=new Set();
-  const get=id=>document.getElementById(id);
-  function read(){const data=JSON.parse(localStorage.getItem(key)||'{}');if(!data||typeof data!=='object'||Array.isArray(data))throw Error('Saved portfolio data could not be read.');return data;}
-  function refresh(selected=get('rsDestinationPortfolio').value){
-    const select=get('rsDestinationPortfolio');try{const portfolios=read();select.replaceChildren(new Option('Select a portfolio',''));Object.keys(portfolios).sort((a,b)=>a.localeCompare(b)).forEach(name=>select.add(new Option(name,name)));if(Object.hasOwn(portfolios,selected))select.value=selected;}catch(e){get('rsDestinationStatus').textContent=e.message;}
-  }
-  function create(){try{const name=get('rsNewPortfolioName').value.trim();if(!name||['__proto__','constructor','prototype'].includes(name))throw Error('Enter a portfolio name.');const portfolios=read();const existing=Object.keys(portfolios).find(n=>n.toLowerCase()===name.toLowerCase());if(existing){refresh(existing);throw Error('Selected existing portfolio “'+existing+'”.');}portfolios[name]={name,securities:[],shares:{},futuresAgreedPrices:{},futuresInitialMargins:{},options:[],bookValue:0};localStorage.setItem(key,JSON.stringify(portfolios));refresh(name);get('rsNewPortfolioName').value='';get('rsDestinationStatus').textContent='Created “'+name+'”. Add a strategy below.';}catch(e){get('rsDestinationStatus').textContent=e.message;}}
-  function positions(p){const value=k=>get(p+'_'+k).value;const underlying=value('code').trim().toUpperCase(),tradeDate=value('trade_date'),expiry=value('expiry_date');if(!/^[A-Z0-9.\-]{1,15}$/.test(underlying)||!/^\d{4}-\d{2}-\d{2}$/.test(tradeDate)||!/^\d{4}-\d{2}-\d{2}$/.test(expiry)||expiry<tradeDate)throw Error('Enter a valid equity code, trade date and expiry.');if(Number(value('shares'))!==100)throw Error('The portfolio supports regular equity options with multiplier 100.');return STRATEGY_DEFS[p].legs.map(leg=>{const strike=Number(get(leg.strikeId).value),contracts=Number(get(leg.qtyId).value);if(!(strike>0)||!Number.isInteger(contracts)||contracts===0||Math.sign(contracts)!==Math.sign(leg.defaultQty||leg.qty))throw Error('Enter positive strikes and signed whole contracts for every leg.');return {underlying,tradeDate,expiry,strike,optionType:leg.type,contracts,multiplier:100};});}
-  async function add(p,button){const status=get(p+'_transfer_status');button.disabled=true;try{
-    const name=get('rsDestinationPortfolio').value;if(!name)throw Error('Select or create a portfolio at the beginning of this page.');
-    const legs=positions(p),signature=JSON.stringify([name,p,legs]);if(sent.has(signature))throw Error('These legs were already added to “'+name+'” during this visit.');
-    if(!Object.hasOwn(read(),name))throw Error('The selected portfolio no longer exists.');
-    status.textContent='Checking listed contracts…';const response=await fetch('https://surface-203178530029.northamerica-northeast2.run.app/listed_options?'+new URLSearchParams({ticker:legs[0].underlying}));const data=await response.json();if(!response.ok||data.error)throw Error(data.error||'Could not verify listed contracts.');
-    if(JSON.stringify(positions(p))!==JSON.stringify(legs)||get('rsDestinationPortfolio').value!==name)throw Error('Inputs or destination changed while checking. Click Add to Portfolio again.');
-    const expiry=data.expiries?.[legs[0].expiry];if(!expiry||legs.some(leg=>!(expiry[leg.optionType+'s']||[]).some(q=>Math.abs(Number(q.strike)-leg.strike)<=1e-6&&(!q.contractSize||q.contractSize==='REGULAR'))))throw Error('Every leg must be a listed regular put or call. Use Find Listed Expiry & Strikes, apply the matches, then add again.');
-    const portfolios=read();if(!Object.hasOwn(portfolios,name))throw Error('The selected portfolio no longer exists.');const saved=portfolios[name];if(!saved||typeof saved!=='object'||(saved.options!=null&&!Array.isArray(saved.options)))throw Error('This saved portfolio has an invalid option list.');
-    saved.options=[...(saved.options||[]),...legs];localStorage.setItem(key,JSON.stringify(portfolios));sent.add(signature);
-    status.textContent='Added '+legs.length+' option legs to “'+name+'”. Load that portfolio on the Correlations page to value them. Book Cost is unchanged.';
-    get('rsDestinationStatus').textContent='Last transfer: '+legs.length+' legs added to “'+name+'”.';
-  }catch(e){status.textContent=e.message;}finally{button.disabled=false;}}
-  document.addEventListener('DOMContentLoaded',()=>{refresh();get('rsCreatePortfolio').addEventListener('click',create);get('rsDestinationPortfolio').addEventListener('change',()=>get('rsDestinationStatus').textContent='');for(let i=1;i<=18;i++){const p='s'+i,button=document.createElement('button');button.type='button';button.className='rs-button';button.textContent='Add to Portfolio';button.style.margin='12px 0 0 10px';button.addEventListener('click',()=>add(p,button));get(p+'_listed_preview').insertAdjacentElement('beforebegin',button);const status=document.createElement('div');status.id=p+'_transfer_status';status.setAttribute('role','status');status.style.margin='8px 0';button.insertAdjacentElement('afterend',status);}});
-  window.addEventListener('storage',event=>{if(event.key===key)refresh();});window.addEventListener('focus',()=>refresh());
-  return {positions,add,create,refresh};
-})();
 </script>
