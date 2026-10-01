@@ -75,6 +75,13 @@ tr:nth-child(even) { background-color: #dddddd; }
 <div id="yieldStatus" class="yield-status">Loading yield charts...</div>
 
 <div class="yield-card yield-wide-card">
+    <h3 style="margin:4px 8px 8px;color:#3A5FCD;">Combined yields — six countries, starting at 100</h3>
+    <div id="yield_indexed" class="yield-chart yield-chart-wide"><p style="padding:24px;color:#555;">Loading…</p></div>
+    <p id="yieldIndexedStatus" class="yield-note" aria-live="polite">Loading six-country comparison...</p>
+    <p class="yield-note">Each yield starts at 100 on the same date. Index = 100 × yield ÷ starting yield. This compares relative changes in yields, not bond investment returns. Missing observation dates carry forward the preceding yield within each series’ available history. A negative starting yield reverses the direction of the index; a zero starting yield cannot be indexed.</p>
+</div>
+
+<div class="yield-card yield-wide-card">
     <div id="yield_all_tenors" class="yield-chart yield-chart-wide"></div>
 </div>
 
@@ -83,6 +90,10 @@ tr:nth-child(even) { background-color: #dddddd; }
     <div class="yield-card"><div id="yield_history" class="yield-chart"></div></div>
     <div class="yield-card"><div id="yield_spread" class="yield-chart"></div></div>
     <div class="yield-card"><div id="yield_table_chart" class="yield-chart"></div></div>
+</div>
+
+<div class="yield-card yield-wide-card" style="margin-top:18px;">
+    <div id="fed_funds_cpi" class="yield-chart"></div>
 </div>
 
 <div class="yield-card yield-wide-card" style="margin-top:18px;">
@@ -106,7 +117,7 @@ tr:nth-child(even) { background-color: #dddddd; }
 </div>
 
 <p class="yield-note">
-USD data source: RiskSnap Cloud Run using public Treasury/FRED data. Treasury General Account (TGA) is FRED WTREGEN, the weekly average balance of the U.S. Treasury General Account at the Federal Reserve. Treasury gross issuance is from Treasury auction data; net borrowing from the public is from the Monthly Treasury Statement. The 10Y Inflation Expectations series is the market-implied average inflation rate expected over the next 10 years.
+USD data source: RiskSnap Cloud Run using public Treasury/FRED data. Headline CPI inflation is the 12-month percentage change calculated from the monthly FRED CPIAUCSL index and is therefore reported with a delay. Treasury General Account (TGA) is FRED WTREGEN, the weekly average balance of the U.S. Treasury General Account at the Federal Reserve. Treasury gross issuance is from Treasury auction data; net borrowing from the public is from the Monthly Treasury Statement. The 10Y Inflation Expectations series is the market-implied average inflation rate expected over the next 10 years.
 </p>
 
 <details class="yield-note" style="margin-top:10px;">
@@ -236,6 +247,87 @@ function filteredRows(rows) {
     const cutoff = new Date(last.Date);
     cutoff.setFullYear(cutoff.getFullYear() - years);
     return rows.filter(row => new Date(row.Date) >= cutoff);
+}
+
+let indexedYieldCache = {};
+let indexedYieldRequests = {};
+let indexedYieldGeneration = 0;
+
+async function loadIndexedYields(forceReload = false) {
+    const generation = ++indexedYieldGeneration;
+    const range = yieldRange;
+    const tenor = document.getElementById("yieldTenorSelect").value || "10Y";
+    const status = document.getElementById("yieldIndexedStatus");
+    status.textContent = "Six-country " + tenor + " comparison… loading";
+    const results = await Promise.allSettled(yieldCountries.map(async country => {
+        const key = range + ":" + country.code;
+        if (!forceReload && indexedYieldCache[key]) return indexedYieldCache[key];
+        if (!indexedYieldRequests[key]) {
+            indexedYieldRequests[key] = (async () => {
+                const response = await fetch(YIELDS_API_URL + "?country=" + country.code + "&period=" + encodeURIComponent(range), {cache:"no-store"});
+                if (!response.ok) throw new Error(country.code + " HTTP " + response.status);
+                const payload = await response.json();
+                if (payload.error) throw new Error(payload.error);
+                const rows = normalizeYieldRows(payload).sort((a,b) => a.Date.localeCompare(b.Date));
+                indexedYieldCache[key] = rows;
+                return rows;
+            })().finally(() => { delete indexedYieldRequests[key]; });
+        }
+        return indexedYieldRequests[key];
+    }));
+    if (generation !== indexedYieldGeneration) return;
+    const unavailable = yieldCountries.filter((country,i) => results[i].status !== "fulfilled" || !results[i].value.some(r => Number.isFinite(r[tenor])));
+    function showUnavailable(message) {
+        status.textContent = message;
+        Plotly.newPlot("yield_indexed", [], {
+            annotations:[{text:message,x:0.5,y:0.5,xref:"paper",yref:"paper",showarrow:false}],
+            xaxis:{visible:false},yaxis:{visible:false},margin:{l:40,r:20,t:40,b:40}
+        }, plotlyConfig());
+    }
+    if (unavailable.length) {
+        showUnavailable("Six-country comparison unavailable: " + unavailable.map(c=>c.code).join(", ") + " has no " + tenor + " data or could not load. Try Update charts.");
+        return;
+    }
+    const series = results.map(result => result.value.filter(r => Number.isFinite(r[tenor])));
+    let start = series.map(rows=>rows[0].Date).sort().pop();
+    const end = series.map(rows=>rows[rows.length-1].Date).sort()[0];
+    if (range !== "max") {
+        const cutoff = new Date(end + "T00:00:00Z");
+        cutoff.setUTCFullYear(cutoff.getUTCFullYear() - Number(range.replace("y","")));
+        start = [start,cutoff.toISOString().slice(0,10)].sort().pop();
+    }
+    if (start > end) { showUnavailable("No overlapping history for all six countries."); return; }
+    const dates = Array.from(new Set([start,end,...series.flatMap(rows=>rows.map(r=>r.Date).filter(d=>d>=start && d<=end))])).sort();
+    const zeroBases = [];
+    const traces = series.map((rows,i) => {
+        let cursor = 0;
+        while (cursor + 1 < rows.length && rows[cursor+1].Date <= start) cursor++;
+        const base = rows[cursor][tenor];
+        if (base === 0) zeroBases.push(yieldCountries[i].code);
+        const actual = [], observationDates = [];
+        dates.forEach(date => {
+            while (cursor + 1 < rows.length && rows[cursor+1].Date <= date) cursor++;
+            actual.push(rows[cursor][tenor]);
+            observationDates.push(rows[cursor].Date);
+        });
+        const country = yieldCountries[i];
+        return {
+            x:dates,y:actual.map(value=>100*value/base),customdata:actual.map((value,j)=>[value,observationDates[j]]),
+            type:"scatter",mode:"lines",name:country.name + " (" + country.code + ")",
+            line:{width:2.4,color:country.color},
+            hovertemplate:country.name + " (" + country.code + "): %{y:.2f}<extra></extra>"
+        };
+    });
+    if (zeroBases.length) { showUnavailable("Cannot start at 100: zero starting yield for " + zeroBases.join(", ") + " on " + start + ". Choose another History period."); return; }
+    Plotly.newPlot("yield_indexed", traces, {
+        title:{text:"Six-country " + tenor + " yields — starting at 100",x:0.03,xanchor:"left",font:{size:18}},
+        margin:{l:70,r:24,t:58,b:105},paper_bgcolor:"white",plot_bgcolor:"white",hovermode:"x unified",
+        legend:{orientation:"h",x:0,y:-0.2},
+        xaxis:{showgrid:true,gridcolor:"#edf1f7",zeroline:false,tickformat:"%b %Y",hoverformat:"%b %d, %Y"},
+        yaxis:{title:"Yield index (start = 100)",showgrid:true,gridcolor:"#edf1f7",zeroline:false},
+        shapes:[{type:"line",xref:"paper",x0:0,x1:1,y0:100,y1:100,line:{color:"#999",width:1,dash:"dot"}}]
+    }, plotlyConfig());
+    status.textContent = "Common start: " + start + ". Common end: " + end + ". All six countries; " + tenor + ".";
 }
 
 function drawCombined10Y() {
@@ -458,6 +550,7 @@ async function loadOneCountry(country) {
 }
 
 async function loadSelectedCountry(forceReload = false) {
+    loadIndexedYields(forceReload);
     updateYieldButtons();
     const status = document.getElementById("yieldStatus");
     const country = selectedCountry();
@@ -583,8 +676,45 @@ function drawBreakevenInflationChart() {
     }, plotlyConfig());
 }
 
+function drawFedFundsCpiChart() {
+    if (!breakevenRows.length) return;
+    const label = yieldRange === "max" ? "full history" : "last " + yieldRange.toUpperCase();
+    const fed = breakevenRows.filter(r=>Number.isFinite(r.FedFunds));
+    const cpi = breakevenRows.filter(r=>Number.isFinite(r.CPIYoY));
+    const latestFed = fed[fed.length - 1];
+    const latestCpi = cpi[cpi.length - 1];
+    const displayDate = isoDate => {
+        const [year, month, day] = isoDate.split("-").map(Number);
+        return new Date(Date.UTC(year, month - 1, day)).toLocaleDateString("en-US", {
+            month:"short", day:"numeric", year:"numeric", timeZone:"UTC"
+        });
+    };
+    const latestDataText = [
+        latestFed ? "DFF: " + latestFed.FedFunds.toFixed(2) + "% — " + displayDate(latestFed.Date) : null,
+        latestCpi ? "CPI: " + latestCpi.CPIYoY.toFixed(2) + "% — " + displayDate(latestCpi.Date) : null
+    ].filter(Boolean).join("<br>");
+
+    Plotly.newPlot("fed_funds_cpi", [
+        {x:fed.map(r=>r.Date),y:fed.map(r=>r.FedFunds),type:"scatter",mode:"lines",name:"Effective Fed funds rate (DFF)",line:{width:2.6,color:"#1f77b4"},connectgaps:false,hovertemplate:"%{x}<br>Effective Fed funds: %{y:.2f}%<extra></extra>"},
+        {x:cpi.map(r=>r.Date),y:cpi.map(r=>r.CPIYoY),type:"scatter",mode:"lines",name:"12-month headline CPI inflation",line:{width:2.6,color:"#cc0000"},connectgaps:false,hovertemplate:"%{x}<br>12-month CPI inflation: %{y:.2f}%<extra></extra>"}
+    ], {
+        title:{text:"Federal Funds Rate vs. U.S. CPI Inflation — "+label,x:0.03,xanchor:"left",font:{size:18}},
+        margin:{l:68,r:24,t:72,b:72},paper_bgcolor:"white",plot_bgcolor:"white",hovermode:"x unified",
+        legend:{orientation:"h",x:0.02,y:-0.18},
+        annotations:[{
+            x:0.99,y:0.98,xref:"paper",yref:"paper",xanchor:"right",yanchor:"top",showarrow:false,
+            text:latestDataText,
+            align:"right",bgcolor:"rgba(245,158,11,0.14)",bordercolor:"#f59e0b",borderwidth:1,borderpad:6,
+            font:{size:12,color:"#5f4300"}
+        }],
+        xaxis:{showgrid:true,gridcolor:"#edf1f7",zeroline:false,tickformat:"%b %d, %Y",hoverformat:"%b %d, %Y"},
+        yaxis:{title:"Rate (%)",showgrid:true,gridcolor:"#edf1f7",zeroline:true,zerolinecolor:"#999",ticksuffix:"%"}
+    }, plotlyConfig());
+}
+
 async function loadBreakevenInflation(forceReload=false) {
     if (!forceReload && breakevenLoadedRange===yieldRange && breakevenRows.length) {
+        drawFedFundsCpiChart();
         drawBreakevenInflationChart();
         return;
     }
@@ -596,9 +726,12 @@ async function loadBreakevenInflation(forceReload=false) {
             Date:r.Date,
             Breakeven5Y:r.Breakeven5Y==null?null:Number(r.Breakeven5Y),
             Breakeven10Y:r.Breakeven10Y==null?null:Number(r.Breakeven10Y),
-            Forward5Y5Y:r.Forward5Y5Y==null?null:Number(r.Forward5Y5Y)
+            Forward5Y5Y:r.Forward5Y5Y==null?null:Number(r.Forward5Y5Y),
+            FedFunds:r.FedFunds==null?null:Number(r.FedFunds),
+            CPIYoY:r.CPIYoY==null?null:Number(r.CPIYoY)
         }));
         breakevenLoadedRange=yieldRange;
+        drawFedFundsCpiChart();
         drawBreakevenInflationChart();
     } catch(err) {
         console.warn("Could not load breakeven inflation expectations",err);

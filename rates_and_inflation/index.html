@@ -76,7 +76,7 @@ tr:nth-child(even) { background-color: #dddddd; }
 
 <div class="yield-card yield-wide-card">
     <h3 style="margin:4px 8px 8px;color:#3A5FCD;">Combined yields — six countries, starting at 100</h3>
-    <div id="yield_indexed" class="yield-chart yield-chart-wide"></div>
+    <div id="yield_indexed" class="yield-chart yield-chart-wide"><p style="padding:24px;color:#555;">Loading…</p></div>
     <p id="yieldIndexedStatus" class="yield-note" aria-live="polite">Loading six-country comparison...</p>
     <p class="yield-note">Each yield starts at 100 on the same date. Index = 100 × yield ÷ starting yield. This compares relative changes in yields, not bond investment returns. Missing observation dates carry forward the preceding yield within each series’ available history. A negative starting yield reverses the direction of the index; a zero starting yield cannot be indexed.</p>
 </div>
@@ -258,7 +258,7 @@ async function loadIndexedYields(forceReload = false) {
     const range = yieldRange;
     const tenor = document.getElementById("yieldTenorSelect").value || "10Y";
     const status = document.getElementById("yieldIndexedStatus");
-    status.textContent = "Loading all six countries — " + tenor + "...";
+    status.textContent = "Six-country " + tenor + " comparison… loading";
     const results = await Promise.allSettled(yieldCountries.map(async country => {
         const key = range + ":" + country.code;
         if (!forceReload && indexedYieldCache[key]) return indexedYieldCache[key];
@@ -315,7 +315,7 @@ async function loadIndexedYields(forceReload = false) {
             x:dates,y:actual.map(value=>100*value/base),customdata:actual.map((value,j)=>[value,observationDates[j]]),
             type:"scatter",mode:"lines",name:country.name + " (" + country.code + ")",
             line:{width:2.4,color:country.color},
-            hovertemplate:"%{x}<br>Index: %{y:.2f}<br>Yield: %{customdata[0]:.3f}%<br>Observation: %{customdata[1]}<extra>" + country.code + "</extra>"
+            hovertemplate:country.name + " (" + country.code + "): %{y:.2f}<extra></extra>"
         };
     });
     if (zeroBases.length) { showUnavailable("Cannot start at 100: zero starting yield for " + zeroBases.join(", ") + " on " + start + ". Choose another History period."); return; }
