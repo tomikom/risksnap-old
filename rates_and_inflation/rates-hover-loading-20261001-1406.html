@@ -76,9 +76,8 @@ tr:nth-child(even) { background-color: #dddddd; }
 
 <div class="yield-card yield-wide-card">
     <h3 style="margin:4px 8px 8px;color:#3A5FCD;">Combined yields — six countries, starting at 100</h3>
-    <button id="loadCombinedYields" type="button" class="button button4" onclick="loadCombinedYields()">Load combined chart</button>
-    <p id="yieldIndexedStatus" class="yield-note" aria-live="polite">Click Load combined chart to compare all six countries using the selected History and Tenor.</p>
-    <div id="yield_indexed" class="yield-chart yield-chart-wide" style="display:none;"></div>
+    <div id="yield_indexed" class="yield-chart yield-chart-wide"><p style="padding:24px;color:#555;">Loading…</p></div>
+    <p id="yieldIndexedStatus" class="yield-note" aria-live="polite">Loading six-country comparison...</p>
     <p class="yield-note">Each yield starts at 100 on the same date. Index = 100 × yield ÷ starting yield. This compares relative changes in yields, not bond investment returns. Missing observation dates carry forward the preceding yield within each series’ available history. A negative starting yield reverses the direction of the index; a zero starting yield cannot be indexed.</p>
 </div>
 
@@ -253,23 +252,6 @@ function filteredRows(rows) {
 let indexedYieldCache = {};
 let indexedYieldRequests = {};
 let indexedYieldGeneration = 0;
-
-async function loadCombinedYields() {
-    const button = document.getElementById("loadCombinedYields");
-    const chart = document.getElementById("yield_indexed");
-    button.disabled = true;
-    button.textContent = "Loading…";
-    chart.style.display = "block";
-    try {
-        await loadIndexedYields(true);
-    } catch (err) {
-        document.getElementById("yieldIndexedStatus").textContent = "Could not load combined chart. Click Load combined chart to retry.";
-        console.warn("Combined yields", err);
-    } finally {
-        button.disabled = false;
-        button.textContent = "Load combined chart";
-    }
-}
 
 async function loadIndexedYields(forceReload = false) {
     const generation = ++indexedYieldGeneration;
@@ -568,7 +550,7 @@ async function loadOneCountry(country) {
 }
 
 async function loadSelectedCountry(forceReload = false) {
-    document.getElementById("yieldIndexedStatus").textContent = "Click Load combined chart to compare all six countries using the selected History and Tenor.";
+    loadIndexedYields(forceReload);
     updateYieldButtons();
     const status = document.getElementById("yieldStatus");
     const country = selectedCountry();
