@@ -109,9 +109,57 @@ layout: home-template
     </svg>
   </div>
 
+  <div class="rs-correlation-hero rs-feature-slide rs-dispersion-hero" aria-label="RiskSnap market dispersion" aria-hidden="true">
+    <div class="rs-correlation-hero__copy">
+      <div class="rs-correlation-hero__title">Market Dispersion</div>
+      <div class="rs-correlation-hero__kicker">SEE WHEN MARKETS MOVE APART</div>
+      <div class="rs-correlation-hero__text">See how widely portfolio assets are moving apart through time and when opportunities for diversification are increasing.</div>
+      <a class="rs-correlation-hero__prompt" href="/dispersion/">Explore Dispersion <span aria-hidden="true">›</span></a>
+    </div>
+    <svg class="rs-correlation-hero__graphic rs-dispersion-hero__graphic" viewBox="0 0 930 430" role="img" aria-labelledby="rsDispersionHeroTitle rsDispersionHeroDesc" preserveAspectRatio="xMidYMid meet">
+      <title id="rsDispersionHeroTitle">Market dispersion fan through time</title>
+      <desc id="rsDispersionHeroDesc">Several asset paths begin together and spread into a widening fan, while a dark line shows the portfolio path.</desc>
+      <defs>
+        <linearGradient id="rsDispersionHeroBg" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stop-color="#fbfdff"/>
+          <stop offset="100%" stop-color="#e8f0fb"/>
+        </linearGradient>
+        <linearGradient id="rsDispersionFanFill" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stop-color="#5f86cf" stop-opacity=".05"/>
+          <stop offset="100%" stop-color="#5f86cf" stop-opacity=".22"/>
+        </linearGradient>
+      </defs>
+      <rect width="930" height="430" fill="url(#rsDispersionHeroBg)"/>
+      <g class="rs-dispersion-hero__grid" aria-hidden="true">
+        <path d="M78 86H884M78 166H884M78 246H884M78 326H884"/>
+        <path d="M78 64V350M78 350H884"/>
+      </g>
+      <g class="rs-dispersion-hero__axis" aria-hidden="true">
+        <text x="65" y="91">130</text><text x="65" y="171">115</text>
+        <text x="65" y="251">100</text><text x="65" y="331">85</text>
+        <text x="78" y="382">Start</text><text x="481" y="382">125 days</text><text x="884" y="382">250 days</text>
+      </g>
+      <path class="rs-dispersion-hero__fan" d="M78 246 C250 235 390 199 520 137 C650 80 760 55 884 48 L884 338 C760 326 650 306 520 281 C390 255 250 244 78 246 Z"/>
+      <g class="rs-dispersion-hero__paths" aria-hidden="true">
+        <path class="asset asset-1" d="M78 246 C220 241 350 213 480 166 S735 75 884 58"/>
+        <path class="asset asset-2" d="M78 246 C225 237 350 228 480 208 S735 132 884 102"/>
+        <path class="asset asset-3" d="M78 246 C225 250 350 238 480 226 S735 200 884 174"/>
+        <path class="portfolio" d="M78 246 C225 244 350 232 480 218 S735 188 884 162"/>
+        <path class="asset asset-4" d="M78 246 C225 248 350 254 480 267 S735 286 884 310"/>
+        <path class="asset asset-5" d="M78 246 C225 252 350 267 480 290 S735 323 884 338"/>
+      </g>
+      <g class="rs-dispersion-hero__labels" aria-hidden="true">
+        <text x="858" y="42">Wider fan</text>
+        <text x="884" y="151">Portfolio</text>
+        <text x="82" y="40">Illustrative indexed asset paths · 250 observations</text>
+      </g>
+    </svg>
+  </div>
+
   <div class="rs-feature-carousel__controls" aria-label="Choose featured view">
     <button class="rs-feature-carousel__dot is-active" type="button" aria-label="Show correlations" aria-pressed="true"></button>
     <button class="rs-feature-carousel__dot" type="button" aria-label="Show portfolio market value" aria-pressed="false"></button>
+    <button class="rs-feature-carousel__dot" type="button" aria-label="Show market dispersion" aria-pressed="false"></button>
   </div>
   </div>
 
@@ -292,6 +340,21 @@ layout: home-template
 .rs-portfolio-hero__annotations .is-peak { fill: #24834f; }
 .rs-portfolio-hero__annotations .is-trough { fill: #ad3429; }
 .rs-portfolio-hero__note { fill: #425b79; font: 700 15px Arial, Helvetica, sans-serif; }
+.rs-dispersion-hero { background: #0000ff; }
+.rs-dispersion-hero__grid path { fill: none; stroke: #9eb3cf; stroke-width: 1; opacity: .4; }
+.rs-dispersion-hero__axis text { fill: #617186; font: 13px Arial, Helvetica, sans-serif; }
+.rs-dispersion-hero__axis text:nth-child(-n+4) { text-anchor: end; }
+.rs-dispersion-hero__axis text:nth-child(n+5) { text-anchor: middle; }
+.rs-dispersion-hero__fan { fill: url(#rsDispersionFanFill); }
+.rs-dispersion-hero__paths path { fill: none; stroke-width: 3; stroke-linecap: round; opacity: .82; }
+.rs-dispersion-hero__paths .asset-1 { stroke: #3569c8; }
+.rs-dispersion-hero__paths .asset-2 { stroke: #7057b8; }
+.rs-dispersion-hero__paths .asset-3 { stroke: #29965b; }
+.rs-dispersion-hero__paths .asset-4 { stroke: #df7b43; }
+.rs-dispersion-hero__paths .asset-5 { stroke: #c65353; }
+.rs-dispersion-hero__paths .portfolio { stroke: #23395d; stroke-width: 5; opacity: 1; }
+.rs-dispersion-hero__labels text { fill: #425b79; font: 700 14px Arial, Helvetica, sans-serif; text-anchor: end; }
+.rs-dispersion-hero__labels text:last-child { text-anchor: start; font-size: 15px; }
 .rs-correlation-hero__prompt:hover,
 .rs-correlation-hero__prompt:focus-visible { border-bottom-color: #fff; color: #fff; }
 .rs-correlation-hero__prompt:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
@@ -811,6 +874,7 @@ div.c {
   font-size: 10px;
   font-weight: 700;
   cursor: pointer;
+  text-decoration: none;
 }
 .rs-market-card__chart:hover { background: #f0f4ff; border-color: #7188c7; }
 .rs-global-markets__note { margin-top: 4px; font-size: 9px; }
@@ -839,8 +903,8 @@ div.c {
     { place: "Brazil", name: "Bovespa", symbol: "^BVSP", size: "B3 US$0.96T†", locale: "pt-BR", access: "Local representative and custody may apply" },
     { place: "Switzerland", name: "SMI", symbol: "^SSMI", size: "SIX US$2.61T†", locale: "de-CH", access: "Widely available" },
     { place: "Australia", name: "S&P/ASX 200", symbol: "^AXJO", size: "ASX US$2.19T†", locale: "en-AU", access: "Widely available" },
-    { place: "Dubai", name: "DFM General Index", symbol: "DFMGI.AE", size: "DFM US$0.24T†", locale: "en-AE", access: "Participating broker; local onboarding may apply" },
-    { place: "Saudi Arabia", name: "Tadawul All Share", symbol: "^TASI.SR", size: "Saudi Exchange US$2.63T†", locale: "en-SA", access: "Participating broker; local onboarding may apply" }
+    { place: "Dubai", name: "DFM General Index", symbol: "DFMGI.AE", size: "DFM US$0.24T†", locale: "en-AE", access: "Participating broker; local onboarding may apply", chartUrl: "https://www.tradingview.com/symbols/DFM-DFMGI/" },
+    { place: "Saudi Arabia", name: "Tadawul All Share", symbol: "^TASI.SR", size: "Saudi Exchange US$2.63T†", locale: "en-SA", access: "Participating broker; local onboarding may apply", chartUrl: "https://www.tradingview.com/symbols/TADAWUL-TASI/" }
   ];
   const grid = document.getElementById("rs-global-markets-grid");
   const status = document.getElementById("rs-global-markets-status");
@@ -851,11 +915,14 @@ div.c {
     "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;"
   })[character]);
   const number = value => Number(value).toLocaleString(undefined, { maximumFractionDigits: 2 });
+  const chartLink = market => market.chartUrl
+    ? `<a class="rs-market-card__chart" href="${safe(market.chartUrl)}" target="_blank" rel="noopener noreferrer">Chart <span aria-hidden="true">↗</span></a>`
+    : `<button type="button" class="rs-market-card__chart" data-rs-chart-symbol="${safe(market.symbol)}" data-rs-chart-name="${safe(market.name)}">Chart</button>`;
   const card = market => `<article class="rs-market-card" data-symbol="${safe(market.symbol)}">
     <div class="rs-market-card__top"><div><p class="rs-market-card__place">${safe(market.place)}</p><h3>${safe(market.name)}</h3></div><span class="rs-market-card__state">Waiting</span></div>
     <p class="rs-market-card__level">&mdash;</p><p class="rs-market-card__change is-flat">Latest change unavailable</p>
     <div class="rs-market-card__details"><div><span class="rs-market-card__label">Exchange capitalization</span><span class="rs-market-card__detail">Exchange cap ${safe(market.size)}</span></div></div>
-    <div class="rs-market-card__links"><button type="button" class="rs-market-card__chart" data-rs-chart-symbol="${safe(market.symbol)}" data-rs-chart-name="${safe(market.name)}">Chart</button><a class="rs-market-card__news" href="https://news.google.com/search?q=${encodeURIComponent(`${market.name} ${market.place} stock market`)}" target="_blank" rel="noopener noreferrer">Related news <span aria-hidden="true">↗</span></a></div>
+    <div class="rs-market-card__links">${chartLink(market)}<a class="rs-market-card__news" href="https://news.google.com/search?q=${encodeURIComponent(`${market.name} ${market.place} stock market`)}" target="_blank" rel="noopener noreferrer">Related news <span aria-hidden="true">↗</span></a></div>
   </article>`;
   grid.innerHTML = markets.map(card).join("");
 
@@ -1023,8 +1090,7 @@ div.c {
     </div>
   </div>
   <p id="rs-portfolio-status" class="rs-global-markets__status" aria-live="polite">Choose a preset or a portfolio saved on the Correlations page.</p>
-  <p class="rs-portfolio-create-note">A portfolio can be created in <a href="/portfolio_optimization/">Portfolio Analytics</a>. It is saved only in the user&rsquo;s browser cache and is not retained by RiskSnap.com.</p>
-  <p class="rs-portfolio-create-note">For portfolio valuations, go to the <a href="/correlations/">Correlations page</a>.</p>
+  <p class="rs-portfolio-create-note">A portfolio can be created in <a href="/correlations/">Portfolio Analytics</a>. It is saved only in the user&rsquo;s browser cache and is not retained by RiskSnap.com.</p>
   <div class="rs-portfolio-table-wrap" hidden>
     <table class="rs-portfolio-table">
       <thead><tr><th>Symbol</th><th>Shares</th><th id="rs-portfolio-eod-heading">EOD</th><th>Pre-market</th><th>Pre-market change</th></tr></thead>
@@ -1583,16 +1649,120 @@ div.c {
 }
 </style>
 
-<p class="world-news-link"><a href="https://news.google.com/home?hl=en-CA&amp;gl=CA&amp;ceid=CA%3Aen" target="_blank" rel="noopener noreferrer">Google News <span aria-hidden="true">↗</span></a> &nbsp; <a href="https://www.reuters.com/world/" target="_blank" rel="noopener noreferrer">Reuters World News <span aria-hidden="true">↗</span></a></p>
+<p class="world-news-link"><a href="https://news.google.com/home?hl=en-CA&amp;gl=CA&amp;ceid=CA%3Aen" target="_blank" rel="noopener noreferrer">Google News <span aria-hidden="true">↗</span></a> &nbsp; <a href="https://www.reuters.com/world/" target="_blank" rel="noopener noreferrer">Reuters World News <span aria-hidden="true">↗</span></a> &nbsp; <a href="https://finance.yahoo.com/?fr=sycsrp_catchall" target="_blank" rel="noopener noreferrer">Yahoo Finance <span aria-hidden="true">↗</span></a></p>
 <p>
 <div class="row">
 <div class="column left concentration-panel" style="background-color:#E5F1FF;">
-<h2>Concentration Risk</h2>
-<p><img class="pic concentration-pic" src="./images/asset-managers-pie-chart.png" alt="Concentration" align="left">
-<img class="picbig concentration-picbig" src="./images/asset-managers-pie-chart.png" alt="Concentration"><span class="in-line-header">Concentration</span>There are several layers of concentration . Crypto attracts headlines, principally MSTR and Michael Saylor. The MAG  Seven and other AI  companies are  highly visible. Less discussed is the concentration among the asset managers investing  on behalf of funds and other clients.
-Unlike exchange-traded securities, these underlying positions are not continuously visible. ETF holdings and mutual-fund net asset values are generally published regularly, while many others  are disclosed only periodically. The three large non-bank managers are BlackRock, Vanguard and Fidelity overseeing US$33.5 trillion in asset. Also in the chart are  bank affiliated managers: State Street, J.P. Morgan and Goldman Sachs who collectively oversee US$15 trillion . These figures are extraordinary. Although the assets largely belong to clients—and bank depositors are not directly exposed—the scale raises an important question: have some asset managers become systemically important, or even too big to fail?
-</p><p>During the 2008 financial crisis, Bank of America and other major financial institutions were considered too important to permit a collapse. The Bush administration responded with the US$700 billion Troubled Asset Relief Program (TARP). Asset managers are structurally different from banks, but their enormous size of holdings could still amplify market stress if there was an exit at the same time.</p>
-<p>The Treasury has now enlarged its long-term bond-buyback operations.. Scott Bessent, Treasury Secretary indicated a buy back possibly up to $1 Trillion of long term bonds?  Would the purchases be sufficient during a severe, concentrated sell-off? 31-Aug-2026</p>
+<h2>Product coverage</h2>
+<p><b>Products covered </b>
+<p>Equities - Equity Options - Futures
+<p><b>Markets covered </b>
+NYSE, Nasdaq, TSX, Australian Securities Exchange, Tokyo Stock Exchange, Euronext Amsterdam and Saudi Exchange; U.S.-listed equity and ETF options; and futures traded on CME, CBOT, NYMEX, COMEX and ICE Futures. Subject to market-data availability.
+<p><b>Futures</b>
+Rolling front-month futures available using Yahoo Finance symbols are listed below. The contract factor is assigned. If not available the applicable factor must be entered. Rolling futures are used for historical analyses such as HVaR.
+<table style="width:100%; border-collapse:collapse; margin-top:12px;">
+  <thead>
+    <tr style="background:#dceafb;">
+      <th style="padding:8px; border:1px solid #9eb6ce; text-align:left;">
+        Category
+      </th>
+      <th style="padding:8px; border:1px solid #9eb6ce; text-align:left;">
+        Yahoo Finance continuous futures
+      </th>
+    </tr>
+  </thead>
+
+  <tbody>
+    <tr>
+      <td style="padding:8px; border:1px solid #9eb6ce;"><strong>🛢️ Energy</strong></td>
+      <td style="padding:8px; border:1px solid #9eb6ce;">
+        <code>CL=F</code> Crude Oil,
+        <code>NG=F</code> Natural Gas,
+        <code>BZ=F</code> Brent,
+        <code>RB=F</code> Gasoline
+      </td>
+    </tr>
+
+    <tr>
+      <td style="padding:8px; border:1px solid #9eb6ce;"><strong>🪙 Metals</strong></td>
+      <td style="padding:8px; border:1px solid #9eb6ce;">
+        <code>GC=F</code> Gold,
+        <code>MGC=F</code> Micro Gold,
+        <code>SI=F</code> Silver,
+        <code>HG=F</code> Copper
+      </td>
+    </tr>
+
+    <tr>
+      <td style="padding:8px; border:1px solid #9eb6ce;"><strong>🌾 Grains</strong></td>
+      <td style="padding:8px; border:1px solid #9eb6ce;">
+        <code>ZC=F</code> Corn,
+        <code>ZW=F</code> Wheat,
+        <code>KE=F</code> KC Wheat,
+        <code>ZS=F</code> Soybeans
+      </td>
+    </tr>
+
+    <tr>
+      <td style="padding:8px; border:1px solid #9eb6ce;"><strong>☕ Softs</strong></td>
+      <td style="padding:8px; border:1px solid #9eb6ce;">
+        <code>SB=F</code> Sugar,
+        <code>KC=F</code> Coffee,
+        <code>CC=F</code> Cocoa,
+        <code>CT=F</code> Cotton,
+        <code>OJ=F</code> Orange Juice
+      </td>
+    </tr>
+
+    <tr>
+      <td style="padding:8px; border:1px solid #9eb6ce;"><strong>🐄 Livestock</strong></td>
+      <td style="padding:8px; border:1px solid #9eb6ce;">
+        <code>LE=F</code> Live Cattle,
+        <code>GF=F</code> Feeder Cattle,
+        <code>HE=F</code> Lean Hogs
+      </td>
+    </tr>
+
+    <tr>
+      <td style="padding:8px; border:1px solid #9eb6ce;"><strong>🪵 Forest Products</strong></td>
+      <td style="padding:8px; border:1px solid #9eb6ce;">
+        <code>LBS=F</code> Lumber
+      </td>
+    </tr>
+
+    <tr>
+      <td style="padding:8px; border:1px solid #9eb6ce;"><strong>📈 Equity indices</strong></td>
+      <td style="padding:8px; border:1px solid #9eb6ce;">
+        <code>ES=F</code> S&amp;P 500,
+        <code>NQ=F</code> Nasdaq 100,
+        <code>YM=F</code> Dow,
+        <code>RTY=F</code> Russell 2000
+      </td>
+    </tr>
+
+    <tr>
+      <td style="padding:8px; border:1px solid #9eb6ce;"><strong>🏦 Interest rates</strong></td>
+      <td style="padding:8px; border:1px solid #9eb6ce;">
+        <code>ZB=F</code> Treasury Bond,
+        <code>ZN=F</code> 10-Year Treasury Note
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+<p style="margin-top:8px; font-size:0.9em;">
+ <!-- Yahoo Finance futures symbols represent rolling front-month contracts.-->
+  Availability is subject to market-data coverage.
+</p>
+
+<p><b>Options</b>
+<p><b>Equity Options</b>
+<p>Exchange-listed options are available on more than 3,600 U.S. equities and 1,600 ETFs, with expirations ranging from standard monthly and weekly contracts to daily options on selected products. RiskSnap provides option pricing, volatility surfaces and strategy analysis.
+<p>
+<p>Options can be used to earn premium, or to protect against volatility through  <a href="https://www.risksnap.com/options/#calculator-7" >straddles</a> or to take a directional view. The options strategies section outlines outcomes.<a href="/structuredproducts/index.html#equity-collar-trades">
+  Equity Collar Trades </a> are described under structured products.
+
+</p>
 </div>
 
 <div class="column middle daily-thoughts-panel" style="background-color:#FFF9F5;">
@@ -1600,12 +1770,33 @@ Unlike exchange-traded securities, these underlying positions are not continuous
     <p>
 
 <h3 class="three-col-header">Thoughts on Risk for the day</h3>
-<p>Sep 6, 2026</p>
+<p>Sep 29, 2026</p>
+<p><b>Dispersion</b>
+<p><img class="pic" src="./marketriskfactors/images/Dispersion.png" alt="Dispersion" >
+	<img class="picbig" src="./marketriskfactors/images/Dispersion.png" alt="Sugar 11" align="right" >Dispersion
+	<p>The Dispersion graph can be illuminating.  Notice how KOD (Kodiak Sciences) started to disperse a year ago and then continued until it broke out dramatically yesterday.</p>
+<p>Sep 17, 2026</p>
+<p><b>Behind the Curve?</b>
+<p><img class="pic" src="./marketriskfactors/images/DFF vs CPI.png" alt="DFF vs CPI" >
+	<img class="picbig" src="./marketriskfactors/images/DFF vs CPI.png" alt="DFF vs CPI" align="right" >DFF vs CPI
+<p><img class="pic" src="./marketriskfactors/images/10Y rates.png" alt="10Y rates" >
+	<img class="picbig" src="./marketriskfactors/images/10Y rates.png" alt="10Y rates" align="right" >10Y rates
+	<p>The effective federal funds rate was 3.63% on September 15, below the latest reported 12-month CPI inflation rate of 3.71% for August. With the 10-year Treasury yield near 5% on September 16, markets appear to be pricing continued inflation risk, elevated real rates, or both.</p>
+<p>Sep 15, 2026</p>
+<p><b>World Indices negative correlation to Oil and Yields</b>
+<p><img class="pic" src="./marketriskfactors/images/Correlations.png" alt="Correlations" >
+	<img class="picbig" src="./marketriskfactors/images/Correlations.png" alt="Correlations" align="right" >Correlations
+<p>The Correlations screen paints a genuinely negative aversion to higher yields and the higher price of oil.  Unfortunately both are indicating inflation problems for non-holders of oil and other commodities.  Today's oil price of $104.34 and the US 10 Year Yield breaking 5% and not included in the EOD calculation Sep 11.</p> The global crude oil market is about $4 trillion per year, depending on oil prices, currently around $100/b, or 100 mb/d [oileyes.com]. When oil spikes from $60 to $100, trillions of dollars shift globally very quickly.  It's worth considering how this affects other assets.   
 <p><b>Sugar’s Energy Connection</b>
 <p><img class="pic" src="./marketriskfactors/images/Sugar 11.png" alt="Sugar 11" >
 	<img class="picbig" src="./marketriskfactors/images/Sugar 11.png" alt="Sugar 11" align="right" >Sugar 11
 <p>The current rise in oil prices to over $92 per barrel up from $56 per barrel in early 2026, asks what impact can this have on ethanol related commodities.   Sugar, for example was heading for a deficit early as April 25, one analytic firm revised its 2025-26 esttimate of a 1.66 million-tonne deficit to a 4.33-million-tonne deficit.  "Those are the kind of numbers that have in the past been associated with serious bull markets.." Sugarcane is extensively used to make ethanol, especially in Brazil.  Refer to Friedberg's Focus on Futures, May 27, 2026  "Sugar:  the bull takes shape".  Note that in Nov 1974 after the 1973 oil embargo, sugar reached a high of $.564 per lb.   Nearby sugar is  $.18 A look at Risksnaps correlations page shows positive correlations between Oil, Natural Gas, Sugar and Corn. 
-
+<h2>Concentration Risk</h2>
+<p><img class="pic concentration-pic" src="./images/asset-managers-pie-chart.png" alt="Concentration" align="left">
+<img class="picbig concentration-picbig" src="./images/asset-managers-pie-chart.png" alt="Concentration"><span class="in-line-header"></span>August 31, 2026. There are several layers of concentration . Crypto attracts headlines, principally MSTR and Michael Saylor. The MAG  Seven and other AI  companies are  highly visible. Less discussed is the concentration among the asset managers investing  on behalf of funds and other clients.
+Unlike exchange-traded securities, these underlying positions are not continuously visible. ETF holdings and mutual-fund net asset values are generally published regularly, while many others  are disclosed only periodically. The three large non-bank managers are BlackRock, Vanguard and Fidelity overseeing US$33.5 trillion in asset. Also in the chart are  bank affiliated managers: State Street, J.P. Morgan and Goldman Sachs who collectively oversee US$15 trillion . These figures are extraordinary. Although the assets largely belong to clients—and bank depositors are not directly exposed—the scale raises an important question: have some asset managers become systemically important, or even too big to fail?
+</p><p>During the 2008 financial crisis, Bank of America and other major financial institutions were considered too important to permit a collapse. The Bush administration responded with the US$700 billion Troubled Asset Relief Program (TARP). Asset managers are structurally different from banks, but their enormous size of holdings could still amplify market stress if there was an exit at the same time.</p>
+<p>The Treasury has now enlarged its long-term bond-buyback operations.. Scott Bessent, Treasury Secretary indicated a buy back possibly up to $1 Trillion of long term bonds?  Would the purchases be sufficient during a severe, concentrated sell-off? </p
 <p>Aug 26, 2026</p>
 <p><b>Treasury's Higher-Yield Trap</b>
 <p><img class="pic" src="./marketriskfactors/images/Yield_Trap.png" alt="Yield Trap" >
@@ -1614,16 +1805,10 @@ Unlike exchange-traded securities, these underlying positions are not continuous
 
 The striking feature is that long-term yields have risen sharply while 10-year inflation expectations have remained near 2–2½%. This suggests that inflation expectations alone are not driving the move: higher real yields and term premium—the compensation investors require for holding long-duration government debt—are increasingly important.
 
-Treasury buybacks may improve liquidity or alter the maturity mix, but they do not eliminate the financing requirement. Higher yields are increasingly the price Treasury must pay to attract sufficient capital. The  <a href="https://www.risksnap.com/rates_and_inflation/">Rates and Inflation</a> page provides yields for various currencies plus relevant Federal Reserve Statistic </p>
-<p>Jul 16, 2026</p>
-<p><b>Impact of Correlations</b>
-<p>The  <a href="https://www.risksnap.com/correlations/">Correlations</a> page has a history slider that visualizes how relationships between various assets change throughout history.  For example,
-if someone clicks on 'World Indices' and presses play, it is visually evident that Oil becomes more and more inversely correlated with equities, as do yields.  As expected 
-this started to occur in March, right after the US incursion into Iran.
-<p><b>Impact of Crude Oil on correlations</b>
-<p><img class="pic" src="./marketriskfactors/images/Correlations.png" alt="Correlations" >
-	<img class="picbig" src="./marketriskfactors/images/Correlations.png" alt="Correlations" align="right" >Correlations
-<p>The global crude oil market is about $4 trillion per year, depending on oil prices, currently around $100/b, or 100 mb/d [oileyes.com]. When oil spikes from $60 to $100, trillions of dollars shift globally very quickly.  It's worth considering how this affects other assets.  In particular Gold which is one of the most heavily traded assets on Earth, rivaling US TBills. Daily turnover according to gold.org is US$174 bn/day or $63.5 trillion per year.  Gold not being a fiat currency is influenced by relationship to events/other assets.  Originally perceived as a safe haven ("war hedge"), then later as a hedge against inflation, and more recently a hedge against the US dollar.  Currently, with oil putting pressure on anticipated inflation, and a rise in yields, particular Euro Bonds 2nd largest sovereign bond market after the US, oil is negatively correlated with Euro Yields. 
+Treasury buybacks may improve liquidity or alter the maturity mix, but they do not eliminate the financing requirement. Higher yields are increasingly the price Treasury must pay to attract sufficient capital. (Aug 26, 2026) The  <a href="https://www.risksnap.com/rates_and_inflation/">Rates and Inflation</a> page provides yields for various currencies plus relevant Federal Reserve Statistic </p>
+
+
+<p>
 </div>
 <div class="column right frame1">
     <h2>Market Risk Factors</h2>
@@ -1644,21 +1829,21 @@ this started to occur in March, right after the US incursion into Iran.
 <h4>Volatility</h4>
 <div class="a">
   <p>The VIX (CBOE Volatility Index) typical ranges: 12-20 normal, 20-30 elevated fear/uncertainty, 30-40 significant stress, 40-60 panic. Currently considered normal. Note the very strong negative correlations between the other markets (with exception of gold) and VIX.</p>
-  <p>For historical volatilities refer to the diagonal on the correlations matrix at the <a href="https://www.risksnap.com/correlations/">Correlations</a> page. For implied volatilities refer to our <a href="https://www.risksnap.com/surface/">Surface</a> page, where implied volatilities are provided both in 3D graphics and as a grid.</p>
-  <p>Implied volatility can also be used to capitalize on an expected change in market volatility by buying (or selling) options or using a <a href="https://www.risksnap.com/options/#calculator-7" style="color:#005a9c;text-decoration:underline;font-weight:600;">straddle</a>. A long (or short) straddle can provide a relatively pure volatility position when its changing delta is successfully hedged.</p>
+  <p>For historical volatilities refer to the diagonal on the correlations matrix at the <a href="https://www.risksnap.com/correlations/">Correlations</a> page. For implied volatilities refer to our <a href="https://www.risksnap.com/surface/">Surface</a> page, where implied volatilities are provided both in 3D graphics and as a grid. The grid filters the available market option prices applying monotonicity, eliminating expiries where there are not enough strikes in the expiry. Extrapolated values are color coded. </p>
+  
 </div>
 
 </div>
 <div class="frame4">
    <h4>Correlations</h4>
  <p>
-   <div class="a"><p>Correlation covers all risk factors. Some of the most watched risk factors can be found in <a href="https://www.risksnap.com/correlations/"">Correlations</a> page
+   <div class="a"><p>Correlation covers all risk factors. Some of the most watched risk factors can be found in <a href="https://www.risksnap.com/correlations/"">Correlations</a> page.  The page also has a history slider that can be invoked by pressing play.
 </div>
 	
 </div>
 <div class="frame6">
    <h4>Dispersion - Portfolios</h4>
-   <div class="a"><p>Dispersion shows how differently the securities in a portfolio are moving. A widening fan indicates greater divergence, while a narrowing fan indicates more similar performance. Current and historical dispersion can be viewed on the <a href="https://www.risksnap.com/dispersion/">Dispersion Index</a> page.</p></div>
+   <div class="a"><p>Dispersion shows how differently the securities in a portfolio are moving. View broad market dispersion or identify individual holdings breaking away from their peers—for example, AMD separating from other AI-related companies. Current and historical dispersion can be viewed on the Dispersion Index page. <a href="https://www.risksnap.com/dispersion/">Dispersion Index</a> page.</p></div>
 </div>
 <div class="frame2">
 <h4>Volatility Surface - Equities</h4>
@@ -1672,6 +1857,13 @@ this started to occur in March, right after the US incursion into Iran.
  <p>
      <div class="a"><p>Gamma is the change in delta and is useful for viewing expected changes in equity prices due to option trading.  Gamma walls are also provided in the <a href="https://www.risksnap.com/gamma/"">Gamma</a> page <p>  </div>
 </div>
+<div class="frame7"> 
+   <h4>VaR as a Risk Measure</h4>
+ <p>
+     <div class="a"><p>Value at Risk (VaR) is one of the most popular tools used in risk management and is incorporated within the Basel Accord for banking supervision.  VaR is used by central counterparties (CCPs) for purposes of determining initial margin.  VaR and Expected Shortfall (ES) are standard measures used by traders for setting risk limits and can be used by investors, traders and risk managers both for preventing panic selling (or buying) in periods of high volatility, and also preventing overreaching in periods of low volatility.
+VaR calculations can be done on the <a href="/portfolio_optimization/">Portfolio Optimization</a> page.<p>  </div>
+</div>
+
 
 
 <p>
@@ -1680,11 +1872,11 @@ this started to occur in March, right after the US incursion into Iran.
 </div><!-- end right column -->
 </div><!-- end three-column row -->
 
-<h1 class="three-col-header">VaR as a Risk Measure</h1>
+<!--<h1 class="three-col-header">VaR as a Risk Measure</h1>
 <p class="paragraph">Value at Risk (VaR) is one of the most popular tools used in risk management and is incorporated within the Basel Accord for banking supervision.  VaR is used by central counterparties (CCPs) for purposes of determining initial margin.  VaR and Expected Shortfall (ES) are standard measures used by traders for setting risk limits and can be used by investors, traders and risk managers both for preventing panic selling (or buying) in periods of high volatility, and also preventing overreaching in periods of low volatility.
 VaR calculations can be done on the <a href="/portfolio_optimization/">Portfolio Optimization</a> page.
 </p>
 
-</div> <!-- text-section -->
+</div> <!-- text-section -->-->
 </body>
 </html>
