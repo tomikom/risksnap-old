@@ -4,7 +4,8 @@ title: Correlations, Portfolios
 ---
 <!--
 RiskSnap Correlations
-Version: index(154)
+Version: index(155)
+- Added share of equity portfolio risk chart using the existing EOD volatility calculation
 Changes:
 - Added an Agreed price field for futures; positive units mean bought and negative units mean sold, and current and historical futures values use (market price - agreed price) × signed contracts ×  factor
 - Changed the futures button to "+1 contract" so repeated clicks add successive contract-sized unit quantities; the input arrows continue to move by one contract up or down
@@ -604,6 +605,14 @@ h1 { color: white; text-align: center; background-color: #3A5FCD; }
 .chart-drawdown-peak-label { fill:#2e8b57; }
 .chart-drawdown-trough-label { fill:#b3261e; }
 
+.risk-contribution-panel {margin-top:18px;padding:14px;border:1px solid #ccd6df;border-radius:6px;}
+.risk-contribution-row {display:grid;grid-template-columns:100px minmax(80px,1fr) 85px;gap:12px;align-items:center;margin:10px 0;font-size:13px;}
+.risk-contribution-code {overflow-wrap:anywhere;}
+.risk-contribution-track {position:relative;height:24px;background:#f3f5f7;}
+.risk-contribution-zero {position:absolute;top:-3px;bottom:-3px;width:1px;background:#485460;z-index:2;}
+.risk-contribution-bar {position:absolute;top:3px;height:18px;}
+.risk-contribution-value {text-align:right;font-variant-numeric:tabular-nums;}
+.risk-contribution-total {margin-top:14px;font-weight:600;font-size:13px;}
 </style>
 
 <script>
@@ -2506,7 +2515,7 @@ function calculatePortfolioBeta(payload, benchmark = BETA_BENCHMARK) {
 }
 
 
-function calculatePortfolioVolatility(payload) {
+function calculatePortfolioRiskContributions(payload) {
   if (!payload || !payload.assets || !payload.volatility) return null;
 
   // Risk calculations always use the EOD prices carried by the selected
@@ -2529,15 +2538,55 @@ function calculatePortfolioVolatility(payload) {
   if (positions.some(p => p.index < 0 || !Number.isFinite(p.volatility))) return null;
 
   let variance = 0;
+  const weightedCovariances = positions.map(() => 0);
   for (let i = 0; i < positions.length; i++) {
     for (let j = 0; j < positions.length; j++) {
       const corr = portfolioCorrelation(payload, positions[i].index, positions[j].index);
       if (corr === null) return null;
-      variance += positions[i].weight * positions[j].weight
+      const term = positions[i].weight * positions[j].weight
         * positions[i].volatility * positions[j].volatility * corr;
+      variance += term;
+      weightedCovariances[i] += term;
     }
   }
-  return variance >= -1e-12 ? Math.sqrt(Math.max(variance, 0)) : null;
+  if (variance < -1e-12) return null;
+  const volatility = Math.sqrt(Math.max(variance, 0));
+  return { volatility, positions: positions.map((position, i) => ({
+    ...position,
+    contribution: volatility > 0 ? weightedCovariances[i] / volatility : null,
+    riskShare: volatility > 0 ? weightedCovariances[i] / variance : null
+  })) };
+}
+
+function calculatePortfolioVolatility(payload) {
+  return calculatePortfolioRiskContributions(payload)?.volatility ?? null;
+}
+
+function portfolioRiskContributionChart(payload, selectedDays) {
+  const risk = calculatePortfolioRiskContributions(payload);
+  const heading = `<div class="portfolio-summary-heading">Share of Equity Portfolio Risk (${selectedDays}d)</div>`;
+  if (!risk) return heading + '<p>Risk contributions unavailable: complete equity risk data are required.</p>';
+  if (!(risk.volatility > 0)) return heading + '<p>Portfolio volatility is zero; percentage risk shares are undefined.</p>';
+  const positions = risk.positions.slice().sort((a, b) => b.riskShare - a.riskShare);
+  const lower = Math.min(0, ...positions.map(p => p.riskShare));
+  const upper = Math.max(0, ...positions.map(p => p.riskShare));
+  const span = upper - lower;
+  const zero = -lower / span * 100;
+  const bars = positions.map(p => {
+    const value = p.riskShare * 100;
+    const left = (Math.min(0, p.riskShare) - lower) / span * 100;
+    const width = Math.abs(p.riskShare) / span * 100;
+    const label = escapeHtml(displayAsset(p.asset));
+    const details = escapeHtml(`${displayAsset(p.asset)}: EOD market-value weight ${(p.weight * 100).toFixed(2)}%; individual annual volatility ${(p.volatility * 100).toFixed(2)}%; contribution ${(p.contribution * 100).toFixed(2)} percentage points; share of total risk ${value.toFixed(2)}%`);
+    return `<div class="risk-contribution-row" title="${details}" tabindex="0" aria-label="${details}">
+      <span class="risk-contribution-code">${label}</span>
+      <span class="risk-contribution-track"><span class="risk-contribution-zero" style="left:${zero}%"></span><span class="risk-contribution-bar" style="left:${left}%;width:${width}%;background:${value < 0 ? '#e58b2a' : '#287bb5'}"></span></span>
+      <span class="risk-contribution-value">${value.toFixed(2)}%</span>
+    </div>`;
+  }).join('');
+  const total = positions.reduce((sum, p) => sum + p.riskShare, 0);
+  return heading + bars + `<div class="risk-contribution-total">Total risk share ${(total * 100).toFixed(2)}% · Annual portfolio volatility ${(risk.volatility * 100).toFixed(2)}%</div>
+    <div class="portfolio-footnote">Uses the same equity holdings, EOD weights and return window as Portfolio Volatility. Futures and options are excluded. Orange bars left of zero reduce portfolio volatility; blue bars right of zero contribute to it. Hover or focus a row for its weight, individual volatility and contribution in percentage points.</div>`;
 }
 
 function calculatePortfolioAnalyticsLocally(totalMarketValue) {
@@ -2949,7 +2998,8 @@ function updatePortfolioSummary(totalMarketValue) {
           <div class="portfolio-summary-value">${sharpeText}</div>
         </div>
       </section>
-    </div>`;
+    </div>
+    <section class="risk-contribution-panel" aria-label="Equity portfolio risk contributions">${portfolioRiskContributionChart(portfolioRiskPayload, selectedDays)}</section>`;
 
   if (stickySummary) {
     const dateText = portfolioViewMode === "historical" && portfolioRiskPayload && portfolioRiskPayload.date
