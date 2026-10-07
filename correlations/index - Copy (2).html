@@ -637,8 +637,6 @@ const BETA_BENCHMARK = "SPY";
 const INFLATION_BETA_BENCHMARK = "^FVX";
 let DEFAULT_EQUITIES = "";
 let YAHOO_PRESETS = {};
-let HOLDING_PRESETS = {};
-let holdingPresetRequest = 0;
 let RISK_SNAP_SECURITY_META = {};
 const RISK_SNAP_CONFIG_ENDPOINT = "https://surface-203178530029.northamerica-northeast2.run.app/risksnap_config";
 
@@ -647,7 +645,6 @@ async function loadRiskSnapConfig() {
   const data = await response.json();
   if (!response.ok) throw new Error(data.error || response.statusText);
   YAHOO_PRESETS = data.portfolio_presets || {};
-  HOLDING_PRESETS = data.portfolio_holding_presets || {};
   RISK_SNAP_SECURITY_META = data.security_metadata || {};
   const labels = data.preset_labels || {};
   const keys = (data.preset_surfaces || {}).correlations || Object.keys(YAHOO_PRESETS);
@@ -995,75 +992,11 @@ document.querySelectorAll(".fx-check,.yield-check,.treasury-check").forEach(cb =
   updateSaveDefaultsState();
   scheduleCorrelationRefresh();
 }));
-async function loadHoldingPreset(key, requestId) {
-  const recipe = HOLDING_PRESETS[key];
-  setPortfolioStorageStatus("Loading preset quotes and listed protective puts…");
-  try {
-    const symbols = Object.keys(recipe.shares);
-    const quoteResponse = await fetch(LATEST_PRICES_ENDPOINT, {
-      method:"POST", headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({symbols})
-    });
-    const quoteData = await quoteResponse.json();
-    if (!quoteResponse.ok) throw new Error(quoteData.error || "Preset quotes unavailable.");
-    const prices = parseLatestPriceResponse(quoteData, "prices");
-    if (symbols.some(symbol => !(Number(prices[symbol]) > 0)))
-      throw new Error("A required preset quote is unavailable. Existing holdings were retained.");
-    const tradeDate = torontoDateKey(new Date().toISOString());
-    const target = new Date(tradeDate + "T12:00:00Z");
-    target.setUTCMonth(target.getUTCMonth() + recipe.months);
-    const targetDate = target.toISOString().slice(0,10);
-    const options = await Promise.all(recipe.puts.map(async leg => {
-      const url = OPTION_SURFACE_ENDPOINT.replace(/\/surface$/, "/listed_options");
-      const response = await fetch(`${url}?${new URLSearchParams({ticker:leg.underlying})}`);
-      const chain = await response.json();
-      if (!response.ok || chain.error) throw new Error(chain.error || "Listed puts unavailable.");
-      const expiries = Object.keys(chain.expiries || {}).filter(date =>
-        date > tradeDate && Array.isArray(chain.expiries[date]?.puts) &&
-        chain.expiries[date].puts.some(put => Number(put.strike) > 0));
-      expiries.sort((a,b) => Math.abs(Date.parse(a)-Date.parse(targetDate)) -
-        Math.abs(Date.parse(b)-Date.parse(targetDate)) || a.localeCompare(b));
-      if (!expiries.length) throw new Error(`No listed puts for ${leg.underlying}.`);
-      const expiry = expiries[0];
-      const desired = prices[leg.underlying] * leg.strikeRatio;
-      const puts = chain.expiries[expiry].puts.filter(put => Number(put.strike) > 0);
-      puts.sort((a,b) => Math.abs(Number(a.strike)-desired) - Math.abs(Number(b.strike)-desired));
-      return {underlying:leg.underlying, tradeDate, expiry, strike:Number(puts[0].strike),
-        optionType:"put", contracts:leg.contracts, multiplier:100};
-    }));
-    if (requestId !== holdingPresetRequest) return;
-    activeYahooPreset = key;
-    document.getElementById("equitySymbols").value = YAHOO_PRESETS[key];
-    portfolioAutoEqualWeight = false;
-    portfolioShares = {...recipe.shares};
-    portfolioFuturesAgreedPrices = Object.fromEntries(symbols.filter(isFuturesAsset).map(symbol => [symbol, prices[symbol]]));
-    portfolioFuturesInitialMargins = {};
-    portfolioOptions = options;
-    document.getElementById("portfolioSavedList").value = "";
-    document.getElementById("portfolioName").value = "Equity Growth with Hedges";
-    document.getElementById("portfolioBookValue").value = symbols.filter(symbol => !isFuturesAsset(symbol))
-      .reduce((sum,symbol) => sum + recipe.shares[symbol]*prices[symbol],0).toFixed(2);
-    saveActiveSelection({type:"preset",key});
-    updatePresetHighlight();
-    saveCurrentSettings();
-    updateSaveDefaultsState();
-    setPortfolioStorageStatus("Loaded illustrative holdings. Book Cost starts at current share cost; add purchased put premiums and fees. Save Portfolio to retain these exact dates and strikes. Puts protect SPY and XOM only; Treasury futures can also lose value.");
-    scheduleCorrelationRefresh();
-  } catch (error) {
-    if (requestId === holdingPresetRequest) setPortfolioStorageStatus(`Preset not loaded: ${error.message}`);
-  }
-}
-
-document.getElementById("presetButtons").addEventListener("click", async event => {
+document.getElementById("presetButtons").addEventListener("click", event => {
   const button = event.target.closest(".preset-button");
   if (!button) return;
   const key = button.dataset.preset;
   if (!YAHOO_PRESETS[key]) return;
-  const requestId = ++holdingPresetRequest;
-  if (HOLDING_PRESETS[key]) {
-    await loadHoldingPreset(key, requestId);
-    return;
-  }
   activeYahooPreset = key;
   document.getElementById("equitySymbols").value = YAHOO_PRESETS[key];
   saveActiveSelection({ type: "preset", key });
@@ -1088,7 +1021,6 @@ document.getElementById("presetButtons").addEventListener("click", async event =
 });
 
 document.getElementById("equitySymbols").addEventListener("input", debounce(() => {
-  ++holdingPresetRequest;
   const symbolText = document.getElementById("equitySymbols").value;
   activeYahooPreset = matchingPresetKey(symbolText);
   updatePresetHighlight();
@@ -1214,10 +1146,6 @@ function restoreActiveSelectionAndLoad() {
   }
 
   if (active && active.type === "preset" && YAHOO_PRESETS[active.key]) {
-    if (HOLDING_PRESETS[active.key]) {
-      loadHoldingPreset(active.key, ++holdingPresetRequest);
-      return;
-    }
     activeYahooPreset = active.key;
     document.getElementById("equitySymbols").value = YAHOO_PRESETS[active.key];
     updatePresetHighlight();
@@ -4700,7 +4628,6 @@ function savePortfolio() {
 }
 
 function loadPortfolio() {
-  ++holdingPresetRequest;
   const list = document.getElementById("portfolioSavedList");
   const nameInput = document.getElementById("portfolioName");
   const name = String((list && list.value) || (nameInput && nameInput.value) || "").trim();
