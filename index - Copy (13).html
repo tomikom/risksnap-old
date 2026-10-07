@@ -948,7 +948,7 @@ div.c {
     : `<button type="button" class="rs-market-card__chart" data-rs-chart-symbol="${safe(market.symbol)}" data-rs-chart-name="${safe(market.name)}">Chart</button>`;
   const card = market => `<article class="rs-market-card" data-symbol="${safe(market.symbol)}">
     <div class="rs-market-card__top"><div><p class="rs-market-card__place">${safe(market.place)}</p><h3>${safe(market.name)}</h3></div><span class="rs-market-card__state">Waiting</span></div>
-    <p class="rs-market-card__level">&mdash;</p><p class="rs-market-card__change is-flat">loading</p>
+    <p class="rs-market-card__level">&mdash;</p><p class="rs-market-card__change is-flat">Latest change unavailable</p>
     <div class="rs-market-card__details"><div><span class="rs-market-card__label">Exchange capitalization</span><span class="rs-market-card__detail">Exchange cap ${safe(market.size)}</span></div></div>
     <div class="rs-market-card__links">${chartLink(market)}<a class="rs-market-card__news" href="https://news.google.com/search?q=${encodeURIComponent(`${market.name} ${market.place} stock market`)}" target="_blank" rel="noopener noreferrer">Related news <span aria-hidden="true">↗</span></a></div>
   </article>`;
@@ -1453,7 +1453,7 @@ div.c {
   grid.innerHTML = indicators.map(item => `<article class="rs-market-card" data-indicator="${safe(item.symbol)}">
     <div class="rs-market-card__top"><h3>${safe(item.name)}</h3><span class="rs-market-card__state">${item.type === "periodic" ? "Periodic" : (item.state || "Waiting")}</span></div>
     <p class="rs-market-card__level">${item.value ? safe(item.value) : "&mdash;"}</p>
-    <p class="rs-market-card__change is-flat">${item.detail ? safe(item.detail) : "loading"}</p>
+    <p class="rs-market-card__change is-flat">${item.detail ? safe(item.detail) : "Latest change unavailable"}</p>
     <div class="rs-market-card__links">${item.type !== "periodic" ? `<button type="button" class="rs-market-card__chart" data-rs-chart-symbol="${safe(item.symbol)}" data-rs-chart-name="${safe(item.name)}">Chart</button>` : ""}<a class="rs-market-card__news" href="https://news.google.com/search?q=${encodeURIComponent(item.news)}" target="_blank" rel="noopener noreferrer">Related news <span aria-hidden="true">↗</span></a></div>
   </article>`).join("");
 
