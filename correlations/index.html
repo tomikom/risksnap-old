@@ -299,6 +299,7 @@ Changes:
       </div>
       <div class="matrix-history-actions">
         <div class="matrix-history-buttons">
+          <span id="matrixHistoryCalculating" role="status" aria-live="polite" style="font-size:13px;align-self:center">Calculating...</span>
           <button id="matrixHistoryReset" type="button">Reset</button>
           <button id="matrixHistoryPlay" type="button">▶ Play</button>
           <button id="matrixHistoryPause" type="button" disabled>❚❚ Pause</button>
@@ -1810,6 +1811,8 @@ function pauseMatrixHistoryPlayback() {
 function setMatrixHistoryStatus(message) {
   const box = document.getElementById("matrixHistoryStatus");
   if (box) box.textContent = message || "";
+  const indicator = document.getElementById("matrixHistoryCalculating");
+  if (indicator) indicator.hidden = !/^(Loading|Calculating)/i.test(message || "");
 }
 
 function resetMatrixHistoryPanel(message = "Matrix history will load after correlations are calculated.") {
