@@ -1431,6 +1431,18 @@ div.c {
 </style>
 
 <script>
+function rsFillBreakevenRows(rows) {
+  let last = null;
+  return (rows || []).filter(row => row && (row.Date || row.date))
+    .slice().sort((a, b) => String(a.Date || a.date).localeCompare(String(b.Date || b.date)))
+    .map(row => {
+      const raw = row.Breakeven10Y;
+      const value = raw == null || String(raw).trim() === "" ? NaN : Number(raw);
+      if (Number.isFinite(value)) last = value;
+      return last == null ? null : { ...row, Breakeven10Y: last };
+    }).filter(Boolean);
+}
+
 (function () {
   const indicators = [
     { name: "U.S. 10-Year Yield", symbol: "^TNX", type: "market", suffix: "%", news: "U.S. 10-year Treasury yield bond market" },
@@ -1500,7 +1512,7 @@ div.c {
 
       if (breakevenResponse.ok) {
         const breakeven = await breakevenResponse.json();
-        const rows = (breakeven.rows || []).filter(row => Number.isFinite(Number(row.Breakeven10Y)));
+        const rows = rsFillBreakevenRows(breakeven.rows);
         const latest = rows[rows.length - 1];
         const prior = rows[rows.length - 2];
         if (latest) {
@@ -1604,7 +1616,7 @@ div.c {
 
   async function loadChart() {
     title.textContent = `${selectedName || selectedSymbol} History`;
-    status.textContent = "Loading…";
+    status.textContent = "Loading...";
     container.innerHTML = "";
     const key = `${selectedSymbol}|${selectedRange}`;
     try {
@@ -1617,6 +1629,7 @@ div.c {
         const payload = await response.json().catch(() => ({}));
         if (!response.ok) throw new Error(payload.error || `HTTP ${response.status}`);
         rows = Array.isArray(payload) ? payload : (payload.rows || payload.history || payload.data || []);
+        if (isBreakeven) rows = rsFillBreakevenRows(rows);
         if (isBreakeven && selectedRange === "3m") rows = rows.slice(-66);
         if (isBreakeven && selectedRange === "6m") rows = rows.slice(-130);
         cache.set(key, rows);
