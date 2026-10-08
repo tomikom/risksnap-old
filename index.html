@@ -722,7 +722,7 @@ div.c {
       <p class="rs-global-markets__eyebrow">Global market snapshot</p>
       <h2 id="rs-global-markets-title">Equity markets</h2>
     </div>
-    <div class="rs-global-markets__actions"><p id="rs-global-markets-status" class="rs-global-markets__status" aria-live="polite">Loading latest readings&hellip;</p><button id="rs-markets-refresh" class="rs-markets-refresh" type="button">Refresh</button></div>
+    <div class="rs-global-markets__actions"><p id="rs-global-markets-status" class="rs-global-markets__status" aria-live="polite">Loading...</p><button id="rs-markets-refresh" class="rs-markets-refresh" type="button">Refresh</button></div>
   </div>
   <div id="rs-global-markets-grid" class="rs-global-markets__grid"></div>
   <p class="rs-global-markets__note">* <span id="rs-global-markets-date">Date loading</span>. <sup>&dagger;</sup>Exchange capitalization is domestic equity market capitalization in U.S. dollars from the <a href="https://focus.world-exchanges.org/issue/july-2026/market-statistics" target="_blank" rel="noopener">World Federation of Exchanges</a> (May 2026); it is not the capitalization of the displayed benchmark index. U.S. benchmark cards overlap and must not be added together.</p>
@@ -957,7 +957,7 @@ div.c {
   async function loadMarkets() {
     const refreshButton = document.getElementById("rs-markets-refresh");
     if (refreshButton) refreshButton.disabled = true;
-    status.textContent = "Refreshing market readings…";
+    status.textContent = "Loading...";
     const symbols = markets.map(market => market.symbol);
     let latest = {};
     try {
