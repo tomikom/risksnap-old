@@ -4,7 +4,10 @@ title: Correlations, Portfolios
 ---
 <!--
 RiskSnap Correlations
-Version: index(154)
+Version: index(157)
+- Added U.S. Treasury note (ZN=F) and bond (ZB=F) futures selectors and contract sizing
+- Included long and short futures in the risk contribution chart using signed EOD notional exposure
+- Added share of equity portfolio risk chart using the existing EOD volatility calculation
 Changes:
 - Added an Agreed price field for futures; positive units mean bought and negative units mean sold, and current and historical futures values use (market price - agreed price) × signed contracts ×  factor
 - Changed the futures button to "+1 contract" so repeated clicks add successive contract-sized unit quantities; the input arrows continue to move by one contract up or down
@@ -105,7 +108,7 @@ Changes:
       </div>
 
       <div class="selector-card commodity-card">
-        <div class="selector-title">Commodities</div>
+        <div class="selector-title">Commodities / Treasury Futures</div>
         <div class="mini-buttons">
           <button type="button" data-target="commodity" data-action="all">Select all</button>
           <button type="button" data-target="commodity" data-action="none">Clear all</button>
@@ -126,6 +129,8 @@ Changes:
         <label><input type="checkbox" class="fx-check commodity-check" value="SUGAR #11"> SUGAR #11 <span class="yahoo-code">SB=F</span></label>
         <label><input type="checkbox" class="fx-check commodity-check" value="ORANGE JUICE"> ORANGE JUICE <span class="yahoo-code">OJ=F</span></label>
         <label><input type="checkbox" class="fx-check commodity-check" value="LUMBER"> LUMBER <span class="yahoo-code">LBR=F</span></label>
+        <label><input type="checkbox" class="treasury-check commodity-check" value="ZN=F"> US 10Y T-NOTE <span class="yahoo-code">ZN=F</span></label>
+        <label><input type="checkbox" class="treasury-check commodity-check" value="ZB=F"> US 30Y T-BOND <span class="yahoo-code">ZB=F</span></label>
       </div>
 
       <div class="selector-card equity-card">
@@ -157,7 +162,7 @@ Changes:
 
     <div class="portfolio-header">
       <div>
-        <div class="portfolio-note">Use the Correlations section to select holdings, then enter the number of units held and the portfolio’s Book Cost. For equities, units are shares; for futures, enter the quantity of the underlying commodity represented by the position and its initial margin. Equity options may be added below. If desired the portfolio may be saved locally in your cache. When no saved portfolio is loaded, RiskSnap creates an approximately equal-notional portfolio from the selected holdings, using one or more whole contracts for futures. Click the chart button beside a holding for price history.</div>
+        <div class="portfolio-note">Use the Correlations section to select holdings, then enter the number of units held and the portfolio’s Book Cost. For equities, units are shares; for futures, enter the underlying units represented by the position (Treasury futures: 1,000 units per contract; use the +1/−1 contract buttons). Equity options may be added below. If desired the portfolio may be saved locally in your cache. When no saved portfolio is loaded, RiskSnap creates an approximately equal-notional portfolio from the selected holdings, using one or more whole contracts for futures. Click the chart button beside a holding for price history.</div>
       </div>
       <div class="portfolio-controls">
         <label>Book Cost:
@@ -219,11 +224,6 @@ Changes:
         </tfoot>
       </table>
     </div>
-    <div class="portfolio-footnote"><sup>1</sup> Div is the trailing twelve-month (TTM) dividend or distribution yield for the selected EOD date: split-adjusted cash dividends or ETF distributions during the preceding 12 months divided by that EOD price.</div>
-    <div class="portfolio-footnote"><strong>5Y rate sensitivity:</strong> A coefficient of 0.0541 means an estimated 0.541% asset return for a 10 basis point rise in the US 5-year yield. Yield changes are measured in percentage points; this is a historical relationship, not a forecast.</div>
-    <div class="portfolio-footnote futures-note"><strong>Book Cost:</strong> Enter the net cost of the positions: share purchase prices plus fees, futures fees, and option premiums plus fees. Premiums paid are positive; premiums received for written options are negative. Exclude margin deposits, which are collateral. Gain/Loss equals signed Market Value less Book Cost. Enter the combined Book Cost for all positions above.</div>
-    <div class="portfolio-footnote futures-note"><strong>Futures:</strong> Enter the agreed price and a signed quantity: positive units are bought and negative units are sold. Futures value equals (market price − agreed price) × signed contracts × contract factor. Initial-margin defaults are IBKR Canada/US overnight requirements in USD as of September 20, 2026 and remain editable.</div>
-
     <div class="portfolio-options-panel">
       <div class="portfolio-subheading">Equity Options</div>
       <div class="portfolio-option-entry">
@@ -244,6 +244,11 @@ Changes:
         </table>
       </div>
     </div>
+
+    <div class="portfolio-footnote"><sup>1</sup> Div is the trailing twelve-month (TTM) dividend or distribution yield for the selected EOD date: split-adjusted cash dividends or ETF distributions during the preceding 12 months divided by that EOD price.</div>
+    <div class="portfolio-footnote"><strong>5Y rate sensitivity:</strong> A coefficient of 0.0541 means an estimated 0.541% asset return for a 10 basis point rise in the US 5-year yield. Yield changes are measured in percentage points; this is a historical relationship, not a forecast.</div>
+    <div class="portfolio-footnote futures-note"><strong>Book Cost:</strong> Enter the net cost of the positions: share purchase prices plus fees, futures fees, and option premiums plus fees. Premiums paid are positive; premiums received for written options are negative. Exclude margin deposits, which are collateral. Gain/Loss equals signed Market Value less Book Cost. Enter the combined Book Cost for all positions above.</div>
+    <div class="portfolio-footnote futures-note"><strong>Futures:</strong> Enter the agreed price and a signed quantity: positive units are bought and negative units are sold. Futures value equals (market price − agreed price) × signed contracts × contract factor. Initial-margin defaults are IBKR Canada/US overnight requirements in USD as of September 20, 2026 and remain editable.</div>
 
     <div id="securityChartPanel" class="portfolio-chart-panel" hidden>
       <div class="portfolio-chart-header">
@@ -604,6 +609,14 @@ h1 { color: white; text-align: center; background-color: #3A5FCD; }
 .chart-drawdown-peak-label { fill:#2e8b57; }
 .chart-drawdown-trough-label { fill:#b3261e; }
 
+.risk-contribution-panel {margin-top:18px;padding:14px;border:1px solid #ccd6df;border-radius:6px;}
+.risk-contribution-row {display:grid;grid-template-columns:100px minmax(80px,1fr) 85px;gap:12px;align-items:center;margin:10px 0;font-size:13px;}
+.risk-contribution-code {overflow-wrap:anywhere;}
+.risk-contribution-track {position:relative;height:24px;background:#f3f5f7;}
+.risk-contribution-zero {position:absolute;top:-3px;bottom:-3px;width:1px;background:#485460;z-index:2;}
+.risk-contribution-bar {position:absolute;top:3px;height:18px;}
+.risk-contribution-value {text-align:right;font-variant-numeric:tabular-nums;}
+.risk-contribution-total {margin-top:14px;font-weight:600;font-size:13px;}
 </style>
 
 <script>
@@ -624,6 +637,8 @@ const BETA_BENCHMARK = "SPY";
 const INFLATION_BETA_BENCHMARK = "^FVX";
 let DEFAULT_EQUITIES = "";
 let YAHOO_PRESETS = {};
+let HOLDING_PRESETS = {};
+let holdingPresetRequest = 0;
 let RISK_SNAP_SECURITY_META = {};
 const RISK_SNAP_CONFIG_ENDPOINT = "https://surface-203178530029.northamerica-northeast2.run.app/risksnap_config";
 
@@ -632,6 +647,7 @@ async function loadRiskSnapConfig() {
   const data = await response.json();
   if (!response.ok) throw new Error(data.error || response.statusText);
   YAHOO_PRESETS = data.portfolio_presets || {};
+  HOLDING_PRESETS = data.portfolio_holding_presets || {};
   RISK_SNAP_SECURITY_META = data.security_metadata || {};
   const labels = data.preset_labels || {};
   const keys = (data.preset_surfaces || {}).correlations || Object.keys(YAHOO_PRESETS);
@@ -652,6 +668,8 @@ const NON_HOLDING_SYMBOLS = new Set([
   "DX-Y.NYB", "EURUSD=X", "GC=F", "BTC-USD", "ETH-USD"
 ]);
 const FUTURES_SPECS = {
+  "ZN=F": { yahoo: "ZN=F", name: "US 10Y Treasury Note", factor: 1000, contract: "$100,000 face value", tick: 1/64, decimals: 6 },
+  "ZB=F": { yahoo: "ZB=F", name: "US 30Y Treasury Bond", factor: 1000, contract: "$100,000 face value", tick: 1/32, decimals: 5 },
   "GOLD":          { yahoo: "MGC=F", name: "Micro Gold", factor: 10,     contract: "10 troy oz",       tick: 0.1,     decimals: 1, marginLong:4145.34, marginShort:4205.34 },
   "OIL":           { yahoo: "CL=F",  name: "Crude Oil", factor: 1000,   contract: "1,000 barrels",     tick: 0.01,    decimals: 2, marginLong:19459.21, marginShort:19519.21 },
   "CORN":          { yahoo: "ZC=F",  name: "Corn", factor: 5000,        contract: "5,000 bu",          tick: 0.0025,  decimals: 4, marginLong:2079.61, marginShort:2279.61 },
@@ -787,6 +805,7 @@ function futuresPriceDisplay(asset, price) {
   const p = futuresUnitPrice(asset, n);
   const decimals = Number.isInteger(Number(spec.decimals)) ? Number(spec.decimals) : 2;
 
+  if (["ZN=F", "ZB=F"].includes(yahoo)) return `${p.toFixed(decimals)} points`;
   if (["ZC=F", "ZS=F", "KE=F"].includes(yahoo)) return `$${p.toFixed(decimals)}/bu`;
   if (yahoo === "NG=F") return `$${p.toFixed(decimals)}/MMBtu`;
   if (["HG=F", "LE=F", "GF=F", "KC=F", "CT=F", "SB=F", "OJ=F"].includes(yahoo)) return `$${p.toFixed(decimals)}/lb`;
@@ -971,16 +990,80 @@ document.querySelectorAll(".mini-buttons button").forEach(btn => {
     scheduleCorrelationRefresh();
   });
 });
-document.querySelectorAll(".fx-check,.yield-check").forEach(cb => cb.addEventListener("change", () => {
+document.querySelectorAll(".fx-check,.yield-check,.treasury-check").forEach(cb => cb.addEventListener("change", () => {
   saveCurrentSettings();
   updateSaveDefaultsState();
   scheduleCorrelationRefresh();
 }));
-document.getElementById("presetButtons").addEventListener("click", event => {
+async function loadHoldingPreset(key, requestId) {
+  const recipe = HOLDING_PRESETS[key];
+  setPortfolioStorageStatus("Loading preset quotes and listed protective puts…");
+  try {
+    const symbols = Object.keys(recipe.shares);
+    const quoteResponse = await fetch(LATEST_PRICES_ENDPOINT, {
+      method:"POST", headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({symbols})
+    });
+    const quoteData = await quoteResponse.json();
+    if (!quoteResponse.ok) throw new Error(quoteData.error || "Preset quotes unavailable.");
+    const prices = parseLatestPriceResponse(quoteData, "prices");
+    if (symbols.some(symbol => !(Number(prices[symbol]) > 0)))
+      throw new Error("A required preset quote is unavailable. Existing holdings were retained.");
+    const tradeDate = torontoDateKey(new Date().toISOString());
+    const target = new Date(tradeDate + "T12:00:00Z");
+    target.setUTCMonth(target.getUTCMonth() + recipe.months);
+    const targetDate = target.toISOString().slice(0,10);
+    const options = await Promise.all(recipe.puts.map(async leg => {
+      const url = OPTION_SURFACE_ENDPOINT.replace(/\/surface$/, "/listed_options");
+      const response = await fetch(`${url}?${new URLSearchParams({ticker:leg.underlying})}`);
+      const chain = await response.json();
+      if (!response.ok || chain.error) throw new Error(chain.error || "Listed puts unavailable.");
+      const expiries = Object.keys(chain.expiries || {}).filter(date =>
+        date > tradeDate && Array.isArray(chain.expiries[date]?.puts) &&
+        chain.expiries[date].puts.some(put => Number(put.strike) > 0));
+      expiries.sort((a,b) => Math.abs(Date.parse(a)-Date.parse(targetDate)) -
+        Math.abs(Date.parse(b)-Date.parse(targetDate)) || a.localeCompare(b));
+      if (!expiries.length) throw new Error(`No listed puts for ${leg.underlying}.`);
+      const expiry = expiries[0];
+      const desired = prices[leg.underlying] * leg.strikeRatio;
+      const puts = chain.expiries[expiry].puts.filter(put => Number(put.strike) > 0);
+      puts.sort((a,b) => Math.abs(Number(a.strike)-desired) - Math.abs(Number(b.strike)-desired));
+      return {underlying:leg.underlying, tradeDate, expiry, strike:Number(puts[0].strike),
+        optionType:"put", contracts:leg.contracts, multiplier:100};
+    }));
+    if (requestId !== holdingPresetRequest) return;
+    activeYahooPreset = key;
+    document.getElementById("equitySymbols").value = YAHOO_PRESETS[key];
+    portfolioAutoEqualWeight = false;
+    portfolioShares = {...recipe.shares};
+    portfolioFuturesAgreedPrices = Object.fromEntries(symbols.filter(isFuturesAsset).map(symbol => [symbol, prices[symbol]]));
+    portfolioFuturesInitialMargins = {};
+    portfolioOptions = options;
+    document.getElementById("portfolioSavedList").value = "";
+    document.getElementById("portfolioName").value = "Equity Growth with Hedges";
+    document.getElementById("portfolioBookValue").value = symbols.filter(symbol => !isFuturesAsset(symbol))
+      .reduce((sum,symbol) => sum + recipe.shares[symbol]*prices[symbol],0).toFixed(2);
+    saveActiveSelection({type:"preset",key});
+    updatePresetHighlight();
+    saveCurrentSettings();
+    updateSaveDefaultsState();
+    setPortfolioStorageStatus("Loaded illustrative holdings. Book Cost starts at current share cost; add purchased put premiums and fees. Save Portfolio to retain these exact dates and strikes. Puts protect SPY and XOM only; Treasury futures can also lose value.");
+    scheduleCorrelationRefresh();
+  } catch (error) {
+    if (requestId === holdingPresetRequest) setPortfolioStorageStatus(`Preset not loaded: ${error.message}`);
+  }
+}
+
+document.getElementById("presetButtons").addEventListener("click", async event => {
   const button = event.target.closest(".preset-button");
   if (!button) return;
   const key = button.dataset.preset;
   if (!YAHOO_PRESETS[key]) return;
+  const requestId = ++holdingPresetRequest;
+  if (HOLDING_PRESETS[key]) {
+    await loadHoldingPreset(key, requestId);
+    return;
+  }
   activeYahooPreset = key;
   document.getElementById("equitySymbols").value = YAHOO_PRESETS[key];
   saveActiveSelection({ type: "preset", key });
@@ -1005,6 +1088,7 @@ document.getElementById("presetButtons").addEventListener("click", event => {
 });
 
 document.getElementById("equitySymbols").addEventListener("input", debounce(() => {
+  ++holdingPresetRequest;
   const symbolText = document.getElementById("equitySymbols").value;
   activeYahooPreset = matchingPresetKey(symbolText);
   updatePresetHighlight();
@@ -1023,6 +1107,7 @@ function getCurrentSettings() {
   return {
     period: document.getElementById("corrPeriod").value,
     fx: selectedValues(".fx-check"),
+    treasuries: selectedValues(".treasury-check"),
     yields: selectedValues(".yield-check"),
     equities: document.getElementById("equitySymbols").value
   };
@@ -1034,6 +1119,9 @@ function applySettings(settings) {
 
   const fxSet = new Set(s.fx || []);
   document.querySelectorAll(".fx-check").forEach(cb => cb.checked = fxSet.has(cb.value));
+
+  const treasurySet = new Set(s.treasuries || []);
+  document.querySelectorAll(".treasury-check").forEach(cb => cb.checked = treasurySet.has(cb.value));
 
   const yieldSet = new Set(s.yields || []);
   document.querySelectorAll(".yield-check").forEach(cb => cb.checked = yieldSet.has(cb.value));
@@ -1126,6 +1214,10 @@ function restoreActiveSelectionAndLoad() {
   }
 
   if (active && active.type === "preset" && YAHOO_PRESETS[active.key]) {
+    if (HOLDING_PRESETS[active.key]) {
+      loadHoldingPreset(active.key, ++holdingPresetRequest);
+      return;
+    }
     activeYahooPreset = active.key;
     document.getElementById("equitySymbols").value = YAHOO_PRESETS[active.key];
     updatePresetHighlight();
@@ -1239,7 +1331,7 @@ function normalizeDisplaySymbol(symbol) {
 function getSelectedInputs() {
   const fx = selectedValues(".fx-check");
   const yields = selectedValues(".yield-check");
-  const equities = parseEquities(document.getElementById("equitySymbols").value);
+  const equities = [...new Set([...parseEquities(document.getElementById("equitySymbols").value), ...selectedValues(".treasury-check")])];
   // Option underlyings need price history even when no shares are held.
   portfolioOptions.forEach(option => {
     const underlying = normalizeDisplaySymbol(option.underlying);
@@ -2506,13 +2598,62 @@ function calculatePortfolioBeta(payload, benchmark = BETA_BENCHMARK) {
 }
 
 
-function calculatePortfolioVolatility(payload) {
+function optionRiskExposure(option, payload) {
+  const contracts = Number(option.contracts);
+  if (!Number.isFinite(contracts)) return null;
+  if (contracts === 0) return { marketValue: 0 };
+  const index = payload.assets.indexOf(option.underlying);
+  const spot = index >= 0 ? Number(payload.prices?.[index]) : NaN;
+  const record = portfolioOptionSurfaces.get(option.underlying);
+  if (!(spot > 0) || record?.status !== "ready") return null;
+  let years, rate, dividend, iv;
+  if (portfolioViewMode === "historical") {
+    const frame = matrixHistoryFrames[matrixHistoryIndex];
+    const inputs = historicalOptionRateAndDividend(frame, option, frame?.assets?.indexOf(option.underlying));
+    if (!inputs) return null;
+    years = optionCalendarDays(optionValuationDateToday(), option.expiry) / 365;
+    rate = inputs.rate;
+    dividend = inputs.dividend;
+    iv = portfolioOptionSurfaceIv(record.data, Number(option.strike), spot, years);
+  } else {
+    const valuation = portfolioOptionValuation(option);
+    if (valuation.status !== "ready") return null;
+    years = optionCalendarDays(payload.date || portfolioLatestEodDate, option.expiry) / 365;
+    rate = Number(record.data.r);
+    dividend = valuation.dividend;
+    iv = valuation.iv;
+  }
+  const model = iv === null ? null : optionBlackScholes(option.optionType, spot,
+    Number(option.strike), years, rate, dividend, iv);
+  if (!model || !Number.isFinite(model.delta)) return null;
+  return { asset: option.underlying, marketValue: contracts * 100 * model.delta * spot,
+    delta: model.delta, isOption: true,
+    label: `${option.underlying} ${option.optionType.toUpperCase()} ${option.strike} ${option.expiry}` };
+}
+
+function calculatePortfolioRiskContributions(payload, includeFutures = false) {
   if (!payload || !payload.assets || !payload.volatility) return null;
 
   // Risk calculations always use the EOD prices carried by the selected
   // correlation-matrix frame. Current quotes are valuation-only.
-  const rows = riskPortfolioRows(payload).filter(row => row.marketValue > 0 && !isFuturesAsset(row.asset));
-  const totalMarketValue = rows.reduce((sum, row) => sum + (Number.isFinite(row.marketValue) ? row.marketValue : 0), 0);
+  const rows = riskPortfolioRows(payload).filter(row => includeFutures
+    ? Number.isFinite(row.marketValue) && row.marketValue !== 0
+    : row.marketValue > 0 && !isFuturesAsset(row.asset));
+  if (includeFutures) {
+    const activeAssets = portfolioSecurities.filter(asset => isFuturesAsset(asset)
+      ? (Number(portfolioShares[asset]) || 0) !== 0
+      : (Number(portfolioShares[asset]) || 0) > 0);
+    if (activeAssets.some(asset => !rows.some(row => row.asset === asset))) return null;
+    for (const option of portfolioOptions) {
+      const exposure = optionRiskExposure(option, payload);
+      if (!exposure) return null;
+      if (exposure.marketValue !== 0) rows.push(exposure);
+    }
+  }
+  // Gross exposure is positive even for net-short or fully hedged portfolios.
+  // Scaling by this common denominator leaves percentage risk shares unchanged.
+  const totalMarketValue = rows.reduce((sum, row) => sum + (Number.isFinite(row.marketValue)
+    ? (includeFutures ? Math.abs(row.marketValue) : row.marketValue) : 0), 0);
   if (totalMarketValue <= 0) return null;
 
   const positions = rows.map(row => {
@@ -2520,8 +2661,12 @@ function calculatePortfolioVolatility(payload) {
     const volatility = index >= 0 ? Number(payload.volatility[index]) : NaN;
     return {
       asset: row.asset,
+      label: row.label,
+      delta: row.delta,
+      isOption: !!row.isOption,
       index,
       volatility,
+      exposure: row.marketValue,
       weight: row.marketValue / totalMarketValue
     };
   });
@@ -2529,15 +2674,55 @@ function calculatePortfolioVolatility(payload) {
   if (positions.some(p => p.index < 0 || !Number.isFinite(p.volatility))) return null;
 
   let variance = 0;
+  const weightedCovariances = positions.map(() => 0);
   for (let i = 0; i < positions.length; i++) {
     for (let j = 0; j < positions.length; j++) {
       const corr = portfolioCorrelation(payload, positions[i].index, positions[j].index);
       if (corr === null) return null;
-      variance += positions[i].weight * positions[j].weight
+      const term = positions[i].weight * positions[j].weight
         * positions[i].volatility * positions[j].volatility * corr;
+      variance += term;
+      weightedCovariances[i] += term;
     }
   }
-  return variance >= -1e-12 ? Math.sqrt(Math.max(variance, 0)) : null;
+  if (variance < -1e-12) return null;
+  const volatility = Math.sqrt(Math.max(variance, 0));
+  return { volatility, grossExposure: totalMarketValue, hasFutures: positions.some(p => isFuturesAsset(p.asset)), hasOptions: positions.some(p => p.isOption), positions: positions.map((position, i) => ({
+    ...position,
+    contribution: volatility > 0 ? weightedCovariances[i] / volatility : null,
+    riskShare: volatility > 0 ? weightedCovariances[i] / variance : null
+  })) };
+}
+
+function calculatePortfolioVolatility(payload) {
+  return calculatePortfolioRiskContributions(payload)?.volatility ?? null;
+}
+
+function portfolioRiskContributionChart(payload, selectedDays) {
+  const risk = calculatePortfolioRiskContributions(payload, true);
+  const heading = `<div class="portfolio-summary-heading">Share of Portfolio Risk — Equities, Futures and Delta-adjusted Options (${selectedDays}d)</div>`;
+  if (!risk) return heading + '<p>Risk contributions unavailable: complete prices, risk data and option delta inputs are required for every active holding.</p>';
+  if (!(risk.volatility > 0)) return heading + '<p>Portfolio volatility is zero; percentage risk shares are undefined.</p>';
+  const positions = risk.positions.slice().sort((a, b) => b.riskShare - a.riskShare);
+  const lower = Math.min(0, ...positions.map(p => p.riskShare));
+  const upper = Math.max(0, ...positions.map(p => p.riskShare));
+  const span = upper - lower;
+  const zero = -lower / span * 100;
+  const bars = positions.map(p => {
+    const value = p.riskShare * 100;
+    const left = (Math.min(0, p.riskShare) - lower) / span * 100;
+    const width = Math.abs(p.riskShare) / span * 100;
+    const label = escapeHtml(p.label || displayAsset(p.asset));
+    const details = escapeHtml(`${p.label || displayAsset(p.asset)}: ${p.isOption ? `delta ${p.delta.toFixed(4)}; underlying ${displayAsset(p.asset)}; ` : ""}signed EOD exposure ${formatMoney(p.exposure)}; weight in gross exposure ${(p.weight * 100).toFixed(2)}%; individual annual volatility ${(p.volatility * 100).toFixed(2)}%; annual dollar risk contribution ${formatMoney(p.contribution * risk.grossExposure)}; contribution ${(p.contribution * 100).toFixed(2)} percentage points of gross exposure; share of total risk ${value.toFixed(2)}%`);
+    return `<div class="risk-contribution-row" title="${details}" tabindex="0" aria-label="${details}">
+      <span class="risk-contribution-code">${label}</span>
+      <span class="risk-contribution-track"><span class="risk-contribution-zero" style="left:${zero}%"></span><span class="risk-contribution-bar" style="left:${left}%;width:${width}%;background:${value < 0 ? '#e58b2a' : '#287bb5'}"></span></span>
+      <span class="risk-contribution-value">${value.toFixed(2)}%</span>
+    </div>`;
+  }).join('');
+  const total = positions.reduce((sum, p) => sum + p.riskShare, 0);
+  return heading + bars + `<div class="risk-contribution-total">Total risk share ${(total * 100).toFixed(2)}% · ${risk.hasFutures || risk.hasOptions ? `Annual dollar risk ${formatMoney(risk.volatility * risk.grossExposure)} · Gross EOD exposure ${formatMoney(risk.grossExposure)}` : `Annual portfolio volatility ${(risk.volatility * 100).toFixed(2)}%`}</div>
+    <div class="portfolio-footnote">Uses the selected EOD prices, volatilities, correlations and return window. Futures exposure is EOD price × signed contracts × contract factor; short contracts have negative exposure. Weights use gross absolute exposure. Risk share for holding i (%) = 100 &times; w<sub>i</sub>(&Sigma;w)<sub>i</sub> / (w<sup>T</sup>&Sigma;w), where w<sub>i</sub> is signed EOD exposure divided by total gross absolute exposure, and &Sigma; is the annualized return covariance matrix. Risk shares sum to 100%; a negative share means the holding reduces total risk. Annual dollar risk is the standard deviation of annual P&amp;L. Option exposure = signed contracts &times; 100 &times; delta &times; underlying spot. Each option uses its underlying's historical volatility and correlations. Delta uses the existing option valuation assumptions at the selected risk date; historical scenarios keep contracts, strike and remaining term fixed and recalculate delta at historical spot. This is a first-order delta estimate; gamma and changes in implied volatility are not included. Orange bars left of zero reduce total risk; a short future can contribute positive or negative risk. Hover or focus a row for exposure, volatility and risk contribution.</div>`;
 }
 
 function calculatePortfolioAnalyticsLocally(totalMarketValue) {
@@ -2949,7 +3134,8 @@ function updatePortfolioSummary(totalMarketValue) {
           <div class="portfolio-summary-value">${sharpeText}</div>
         </div>
       </section>
-    </div>`;
+    </div>
+    <section class="risk-contribution-panel" aria-label="Equity, futures and delta-adjusted option portfolio risk contributions">${portfolioRiskContributionChart(portfolioRiskPayload, selectedDays)}</section>`;
 
   if (stickySummary) {
     const dateText = portfolioViewMode === "historical" && portfolioRiskPayload && portfolioRiskPayload.date
@@ -3446,7 +3632,7 @@ function renderPortfolioTable() {
             marketFxPair,
             marketFxRate
           )}</td>
-      <td><input class="portfolio-shares" data-asset="${row.asset}" type="number" ${isFuturesAsset(row.asset) ? "" : 'min="0"'} step="${isFuturesAsset(row.asset) ? contractFactor(row.asset) : 1}" value="${formatShares(displayedHoldingUnits(row.asset, row.shares))}"><div class="portfolio-unit-label">${isFuturesAsset(row.asset) ? "Units (+ bought / − sold)" : "Shares"}</div>${isFuturesAsset(row.asset) ? `<button type="button" class="one-contract-button" data-asset="${row.asset}" data-change="1" title="Add one bought contract (${formatShares(contractFactor(row.asset))} units)">+1 contract</button> <button type="button" class="one-contract-button" data-asset="${row.asset}" data-change="-1" title="Add one sold contract (-${formatShares(contractFactor(row.asset))} units)">−1 contract</button>` : ""}</td>
+      <td><input class="portfolio-shares" data-asset="${row.asset}" type="number" ${isFuturesAsset(row.asset) ? "" : 'min="0"'} step="${isFuturesAsset(row.asset) ? contractFactor(row.asset) : 1}" value="${formatShares(displayedHoldingUnits(row.asset, row.shares))}"><div class="portfolio-unit-label">${isFuturesAsset(row.asset) ? `${formatShares(row.shares)} contract${Math.abs(row.shares) === 1 ? "" : "s"} · units (+ bought / − sold)` : "Shares"}</div>${isFuturesAsset(row.asset) ? `<button type="button" class="one-contract-button" data-asset="${row.asset}" data-change="1" title="Add one bought contract (${formatShares(contractFactor(row.asset))} units)">+1 contract</button> <button type="button" class="one-contract-button" data-asset="${row.asset}" data-change="-1" title="Add one sold contract (-${formatShares(contractFactor(row.asset))} units)">−1 contract</button>` : ""}</td>
       <td>${futuresHolding ? `<input class="futures-agreed-price" data-asset="${row.asset}" type="number" min="0" step="any" placeholder="Required" value="${Number(portfolioFuturesAgreedPrices[row.asset]) > 0 ? Number(portfolioFuturesAgreedPrices[row.asset]) : ""}">` : "—"}</td>
       <td>${futuresHolding ? `<input class="futures-initial-margin" data-asset="${row.asset}" type="number" min="0" step="0.01" value="${futuresInitialMargin(row.asset, row.shares).toFixed(2)}" title="Editable total initial margin in USD">` : "—"}</td>
       <td>${Number.isFinite(eodValue) ? formatMoney(eodValue) : "—"}</td>
@@ -4514,6 +4700,7 @@ function savePortfolio() {
 }
 
 function loadPortfolio() {
+  ++holdingPresetRequest;
   const list = document.getElementById("portfolioSavedList");
   const nameInput = document.getElementById("portfolioName");
   const name = String((list && list.value) || (nameInput && nameInput.value) || "").trim();
