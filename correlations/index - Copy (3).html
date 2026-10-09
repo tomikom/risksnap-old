@@ -153,7 +153,7 @@ Changes:
 
   <div id="portfolioPanel" class="portfolio-panel">
     <div class="portfolio-band">Portfolio Analytics</div>
-    <div class="portfolio-subheading"><a href="correlations-help.html#holdings" target="_blank" rel="noopener" style="color:inherit; text-decoration:underline;">Holdings</a></div>
+    <div class="portfolio-subheading">Holdings</div>
 
     <div id="worldIndexCharts" class="world-index-charts" hidden>
       <div class="world-index-charts-label">World Index Charts</div>
@@ -161,8 +161,11 @@ Changes:
     </div>
 
     <div class="portfolio-header">
+      <div>
+        <div class="portfolio-note">Use the Correlations section to select holdings, then enter the number of units held and the portfolio’s Book Cost. For equities, units are shares; for futures, enter the underlying units represented by the position (Treasury futures: 1,000 units per contract; use the +1/−1 contract buttons). Equity options may be added below. If desired the portfolio may be saved locally in your cache. When no saved portfolio is loaded, RiskSnap creates an approximately equal-notional portfolio from the selected holdings, using one or more whole contracts for futures. Click the chart button beside a holding for price history.</div>
+      </div>
       <div class="portfolio-controls">
-        <label><a href="correlations-help.html#book-cost" target="_blank" rel="noopener" style="color:inherit; text-decoration:underline;">Book Cost:</a>
+        <label>Book Cost:
           <input id="portfolioBookValue" type="number" step="any" value="100000">
         </label>
       </div>
@@ -244,7 +247,7 @@ Changes:
 
     <div class="portfolio-footnote"><sup>1</sup> Div is the trailing twelve-month (TTM) dividend or distribution yield for the selected EOD date: split-adjusted cash dividends or ETF distributions during the preceding 12 months divided by that EOD price.</div>
     <div class="portfolio-footnote"><strong>5Y rate sensitivity:</strong> A coefficient of 0.0541 means an estimated 0.541% asset return for a 10 basis point rise in the US 5-year yield. Yield changes are measured in percentage points; this is a historical relationship, not a forecast.</div>
-
+    <div class="portfolio-footnote futures-note"><strong>Book Cost:</strong> Enter the net cost of the positions: share purchase prices plus fees, futures fees, and option premiums plus fees. Premiums paid are positive; premiums received for written options are negative. Exclude margin deposits, which are collateral. Gain/Loss equals signed Market Value less Book Cost. Enter the combined Book Cost for all positions above.</div>
     <div class="portfolio-footnote futures-note"><strong>Futures:</strong> Enter the agreed price and a signed quantity: positive units are bought and negative units are sold. Futures value equals (market price − agreed price) × signed contracts × contract factor. Initial-margin defaults are IBKR Canada/US overnight requirements in USD as of September 20, 2026 and remain editable.</div>
 
     <div id="securityChartPanel" class="portfolio-chart-panel" hidden>
