@@ -2728,7 +2728,7 @@ function calculatePortfolioVolatility(payload) {
 
 function portfolioRiskContributionChart(payload, selectedDays) {
   const risk = calculatePortfolioRiskContributions(payload, true);
-  const heading = `<div class="portfolio-summary-heading"><a href="correlations-help.html#portfolio-risk" target="_blank" rel="noopener" style="color:inherit; text-decoration:underline;">Share of Portfolio Risk — Equities, Futures and Delta-adjusted Options (${selectedDays}d)</a></div>`;
+  const heading = `<div class="portfolio-summary-heading">Share of Portfolio Risk — Equities, Futures and Delta-adjusted Options (${selectedDays}d)</div>`;
   if (!risk) return heading + '<p>Risk contributions unavailable: complete prices, risk data and option delta inputs are required for every active holding.</p>';
   if (!(risk.volatility > 0)) return heading + '<p>Portfolio volatility is zero; percentage risk shares are undefined.</p>';
   const positions = risk.positions.slice().sort((a, b) => b.riskShare - a.riskShare);
@@ -2749,7 +2749,8 @@ function portfolioRiskContributionChart(payload, selectedDays) {
     </div>`;
   }).join('');
   const total = positions.reduce((sum, p) => sum + p.riskShare, 0);
-  return heading + bars + `<div class="risk-contribution-total">Total risk share ${(total * 100).toFixed(2)}% · ${risk.hasFutures || risk.hasOptions ? `Annual dollar risk ${formatMoney(risk.volatility * risk.grossExposure)} · Gross EOD exposure ${formatMoney(risk.grossExposure)}` : `Annual portfolio volatility ${(risk.volatility * 100).toFixed(2)}%`}</div>`;
+  return heading + bars + `<div class="risk-contribution-total">Total risk share ${(total * 100).toFixed(2)}% · ${risk.hasFutures || risk.hasOptions ? `Annual dollar risk ${formatMoney(risk.volatility * risk.grossExposure)} · Gross EOD exposure ${formatMoney(risk.grossExposure)}` : `Annual portfolio volatility ${(risk.volatility * 100).toFixed(2)}%`}</div>
+    <div class="portfolio-footnote">Uses the selected EOD prices, volatilities, correlations and return window. Futures exposure is EOD price × signed contracts × contract factor; short contracts have negative exposure. Weights use gross absolute exposure. Risk share for holding i (%) = 100 &times; w<sub>i</sub>(&Sigma;w)<sub>i</sub> / (w<sup>T</sup>&Sigma;w), where w<sub>i</sub> is signed EOD exposure divided by total gross absolute exposure, and &Sigma; is the annualized return covariance matrix. Risk shares sum to 100%; a negative share means the holding reduces total risk. Annual dollar risk is the standard deviation of annual P&amp;L. Option exposure = signed contracts &times; 100 &times; delta &times; underlying spot. Each option uses its underlying's historical volatility and correlations. Delta uses the existing option valuation assumptions at the selected risk date; historical scenarios keep contracts, strike and remaining term fixed and recalculate delta at historical spot. This is a first-order delta estimate; gamma and changes in implied volatility are not included. Orange bars left of zero reduce total risk; a short future can contribute positive or negative risk. Hover or focus a row for exposure, volatility and risk contribution.</div>`;
 }
 
 function calculatePortfolioAnalyticsLocally(totalMarketValue) {
@@ -3351,7 +3352,10 @@ function renderPortfolioOptionMtm(baseCurrentValue) {
     panel.textContent = `Portfolio value awaits option prices: ${valuations.filter(row => row.status !== "ready").map(row => row.status).join("; ")}`;
     return;
   }
-  panel.hidden = true;
+  panel.innerHTML = `Option values use the smoothed volatility surface. EOD options use the EOD stock price and remaining time with current IV, rate and dividend yield. ` +
+    (portfolioOptions.some(option => option.tradeDate > portfolioLatestEodDate)
+      ? `An option entered after EOD is included as an as-if-held EOD comparison. ` : "") +
+    `EOD option values are model estimates, not historical option quotes.`;
 }
 
 let optionStrikeSuggestionId = 0;
