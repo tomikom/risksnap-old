@@ -64,8 +64,8 @@ Changes:
   </div>
 
   <div id="correlationsSection" class="analytics-section-heading">Correlation Lens</div>
-  <p><strong>Multi-Horizon Correlation Map.</strong> Correlations are calculated over selectable 25, 90, or 250 business-day horizons for a variety of assets. Historical volatilities are shown on the diagonal. Click play below to examine the relationship through time. For pairs, click on the bubble first.</p>
-<p class="input-note"><strong>Calendar note:</strong> RiskSnap currently uses a Monday-Friday analytical calendar. Some exchanges, including Saudi Arabia, trade Sunday-Thursday. </p>
+  <p><strong>Multi-Horizon Correlation Map.</strong> Correlations are calculated over selectable 25, 90, or 250 <a href="correlations-help.html#business-days" target="_blank" rel="noopener" style="color:inherit; text-decoration:underline;">business-day</a> horizons for a variety of assets. Historical volatilities are shown on the diagonal. Click play below to examine the relationship through time. For pairs, click on the bubble first.</p>
+
 
   <div class="corr-input-panel">
     <div class="corr-controls main-controls">
@@ -201,11 +201,11 @@ Changes:
             <th>EOD Value</th>
             <th>Current Value</th>
             <th>Vol (EOD)</th>
-            <th>TTM Yield<sup>1</sup></th>
+            <th><a href="correlations-help.html#ttm-yield" target="_blank" rel="noopener" style="color:inherit; text-decoration:underline;">TTM Yield</a></th>
             <th>An. Wtd. Total Return</th>
             <th>Sharpe Ratio</th>
             <th>Beta vs SPY</th>
-            <th>Beta vs ^FVX (5Y yield)</th>
+            <th><a href="correlations-help.html#five-year-beta" target="_blank" rel="noopener" style="color:inherit; text-decoration:underline;">Beta vs ^FVX (5Y yield)</a></th>
           </tr>
         </thead>
         <tbody id="portfolioBody"></tbody>
@@ -239,8 +239,6 @@ Changes:
       </div>
     </div>
 
-    <div class="portfolio-footnote"><sup>1</sup> Div is the trailing twelve-month (TTM) dividend or distribution yield for the selected EOD date: split-adjusted cash dividends or ETF distributions during the preceding 12 months divided by that EOD price.</div>
-    <div class="portfolio-footnote"><strong>5Y rate sensitivity:</strong> A coefficient of 0.0541 means an estimated 0.541% asset return for a 10 basis point rise in the US 5-year yield. Yield changes are measured in percentage points; this is a historical relationship, not a forecast.</div>
 
 
     <div id="securityChartPanel" class="portfolio-chart-panel" hidden>
@@ -474,15 +472,26 @@ h1 { color: white; text-align: center; background-color: #3A5FCD; }
 .matrix-history-header { margin-bottom: 4px; }
 #matrixHistorySlider { width: 100%; }
 
-/* On phones the sticky panel covers the lower correlation bubbles.
-   Keep it in the normal page flow beneath the matrix instead. */
+/* Compact playback banner on phones. */
 @media (max-width: 800px) {
+  body { padding-bottom: calc(115px + env(safe-area-inset-bottom)); }
   .matrix-history-panel {
-    position: static;
-    bottom: auto;
-    z-index: auto;
-    box-shadow: none;
+    position: fixed; left: 6px; right: 6px; bottom: 0; z-index: 50;
+    margin: 0; padding: 6px 8px calc(6px + env(safe-area-inset-bottom));
+    background: #fff;
   }
+  .matrix-history-panel .matrix-history-title,
+  .matrix-history-panel .matrix-history-speed,
+  .matrix-history-panel .matrix-portfolio-summary,
+  .matrix-history-panel .matrix-history-status,
+  .matrix-history-panel .matrix-history-note { display: none; }
+  .matrix-history-panel .matrix-history-header { gap: 4px; flex-wrap: wrap; margin-bottom: 0; }
+  .matrix-history-panel .matrix-history-date { font-size: 11px; margin: 0; }
+  .matrix-history-panel .matrix-history-actions { gap: 3px; }
+  .matrix-history-panel .matrix-history-buttons { gap: 3px; }
+  .matrix-history-panel .matrix-history-buttons button { padding: 5px 7px; font-size: 12px; min-height: 30px; }
+  .matrix-history-panel #matrixHistoryCalculating { font-size: 11px !important; }
+  .matrix-history-panel .matrix-history-slider-row { margin: 21px 8px 0; }
 }
 
 
@@ -1061,7 +1070,7 @@ async function loadHoldingPreset(key, requestId) {
     updatePresetHighlight();
     saveCurrentSettings();
     updateSaveDefaultsState();
-    setPortfolioStorageStatus("Loaded illustrative holdings. Book Cost starts at current share cost; add purchased put premiums and fees. Save Portfolio to retain these exact dates and strikes. Puts protect SPY and XOM only; Treasury futures can also lose value.");
+    setPortfolioStorageStatus("Loaded illustrative holdings. Book Cost starts at current share cost and can be adjusted for premiums paid/received and other fees, as desired. Save Portfolio to retain these exact dates and strikes.");
     scheduleCorrelationRefresh();
   } catch (error) {
     if (requestId === holdingPresetRequest) setPortfolioStorageStatus(`Preset not loaded: ${error.message}`);
