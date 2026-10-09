@@ -889,7 +889,7 @@ let portfolioFuturesAgreedPrices = {};
 let portfolioFuturesInitialMargins = {};
 let portfolioOptions = [];
 const portfolioOptionSurfaces = new Map();
-const OPTION_SURFACE_ENDPOINT = "https://surface-203178530029.northamerica-northeast2.run.app/surface";
+const OPTION_SURFACE_ENDPOINT = "https://surface-203178530029.northamerica-northeast2.run.app";
 let portfolioSecurities = [];
 let portfolioPrices = {};
 let portfolioCurrentPrices = {};       // USD prices used for valuation/calculation
@@ -1037,7 +1037,7 @@ async function loadHoldingPreset(key, requestId) {
     target.setUTCMonth(target.getUTCMonth() + recipe.months);
     const targetDate = target.toISOString().slice(0,10);
     const options = await Promise.all(recipe.puts.map(async leg => {
-      const url = OPTION_SURFACE_ENDPOINT.replace(/\/surface$/, "/listed_options");
+      const url = `${OPTION_SURFACE_ENDPOINT}/listed_options`;
       const response = await fetch(`${url}?${new URLSearchParams({ticker:leg.underlying})}`);
       const chain = await response.json();
       if (!response.ok || chain.error) throw new Error(chain.error || "Listed puts unavailable.");
