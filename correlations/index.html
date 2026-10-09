@@ -15,7 +15,7 @@ Changes:
 - Changed futures holding inputs from contract counts to underlying unit quantities (for example, corn defaults to 5000); equity and ETF share inputs are unchanged, and existing saved portfolios remain compatible
 - Kept risk analytics on completed EOD data while correcting live chart and current-valuation futures lookups to use exact Yahoo codes (for example CORN to ZC=F and OIL to CL=F); generic labels remain presentation/news terms only
 - Replaced portfolio Beta vs T10YIE with Beta vs ^FVX (5Y yield); T10YIE remains available only as an optional correlation-matrix series
-- Corrected TTM dividend yield for all non-USD equities by keeping the dividend/price ratio in the security's native currency; FX conversion is not applied to the yield ratio
+- Corrected  TTM dividend yield for all non-USD equities by keeping the dividend/price ratio in the security's native currency; FX conversion is not applied to the yield ratio
 - Corrected Yahoo cent-quoted futures EOD prices (including ZC=F corn) to dollars per unit and applied contract notional sizing to EOD portfolio values
 - Pairwise rolling history now keeps the full Matrix History range and follows Matrix History playback/slider movement without truncating at the originally clicked date
 - Latest Risk Data now remains tied to the authoritative /correlations_data EOD even when Matrix History ends on an older date
