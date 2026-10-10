@@ -566,6 +566,7 @@ h1 { color: white; text-align: center; background-color: #3A5FCD; }
 .portfolio-option-entry { display:flex; gap:9px; align-items:flex-end; flex-wrap:wrap; margin-bottom:7px; }
 .portfolio-option-entry label { display:flex; flex-direction:column; gap:3px; font-size:11px; color:#555; }
 .portfolio-option-entry input, .portfolio-option-entry select { padding:4px 6px; min-height:30px; box-sizing:border-box; }
+.portfolio-news-link { margin-left:4px; font-size:13px; white-space:nowrap; }
 #optionUnderlying { min-width:120px; }
 #optionStrike { width:95px; }
 #optionContracts { width:80px; }
@@ -586,8 +587,8 @@ h1 { color: white; text-align: center; background-color: #3A5FCD; }
 .portfolio-dividend-history-table .dividend-events { text-align:left; white-space:normal; min-width:300px; }
 
 
-.portfolio-chart-button, .security-chart-actions button { cursor:pointer; border:1px solid #aaa; border-radius:4px; background:#fff; padding:4px 8px; }
-.portfolio-chart-button:hover, .security-chart-actions button:hover { background:#f0f4ff; border-color:#7188c7; }
+.portfolio-chart-button, .option-chart, .security-chart-actions button { cursor:pointer; border:1px solid #aaa; border-radius:4px; background:#fff; padding:4px 8px; }
+.portfolio-chart-button:hover, .option-chart:hover, .security-chart-actions button:hover { background:#f0f4ff; border-color:#7188c7; }
 .security-chart-actions button.is-active { background:#dce7ff; border-color:#3A5FCD; }
 .portfolio-chart-panel { margin-top:14px; border-top:1px solid #ddd; padding-top:12px; }
 .portfolio-chart-header { display:flex; justify-content:space-between; align-items:flex-start; gap:12px; flex-wrap:wrap; margin-bottom:6px; }
@@ -3387,6 +3388,14 @@ async function suggestOptionEntryStrike() {
   }
 }
 
+function securityNewsLink(asset) {
+  const symbol = normalizeDisplaySymbol(asset);
+  const spec = futuresSpec(symbol);
+  const query = spec ? `${spec.name} futures` : `${symbol} stock`;
+  const href = `https://news.google.com/search?q=${encodeURIComponent(query)}&hl=en-CA&gl=CA&ceid=CA:en`;
+  return `<a class="portfolio-news-link" href="${escapeHtml(href)}" target="_blank" rel="noopener noreferrer" title="Open external news for ${escapeHtml(displayAsset(symbol))}">News</a>`;
+}
+
 function renderPortfolioOptions() {
   const underlyingSelect = document.getElementById("optionUnderlying");
   const body = document.getElementById("portfolioOptionsBody");
@@ -3419,7 +3428,7 @@ function renderPortfolioOptions() {
       ${(() => { const v = portfolioOptionValuation(option); return v.status === "ready"
         ? `<td>${Number.isFinite(v.eodSpot) ? formatMoney(v.eodSpot) : "—"}</td><td>${formatMoney(v.currentSpot)}</td><td>${(v.dividend * 100).toFixed(2)}%</td><td>${(v.iv * 100).toFixed(2)}%</td><td>${Number.isFinite(v.eodPrice) ? formatMoney(v.eodPrice) : "—"}</td><td>${formatMoney(v.currentPrice)}</td><td>${Number.isFinite(v.deltaShares) ? v.deltaShares.toFixed(2) : "—"}</td><td>${Number.isFinite(v.eodValue) ? formatMoney(v.eodValue) : "—"}</td><td>${formatMoney(v.currentValue)}</td>`
         : `<td colspan="9">${escapeHtml(v.status)}</td>`; })()}
-      <td><button type="button" class="option-price" data-index="${index}">Price</button> <button type="button" class="option-gamma" data-index="${index}" title="Open this option in the Gamma Ladder">Gamma Ladder</button> <button type="button" class="option-remove" data-index="${index}">Remove</button></td>
+      <td><button type="button" class="option-price" data-index="${index}">Price</button> <button type="button" class="option-chart" data-asset="${escapeHtml(option.underlying)}" title="View underlying price chart">📈</button> ${securityNewsLink(option.underlying)} <button type="button" class="option-gamma" data-index="${index}" title="Open this option in the Gamma Ladder">Gamma Ladder</button> <button type="button" class="option-remove" data-index="${index}">Remove</button></td>
     </tr>`).join("");
 
   body.querySelectorAll(".option-field").forEach(input => {
@@ -3453,6 +3462,9 @@ function renderPortfolioOptions() {
       });
       window.open(`/options/?${params.toString()}#OptionPricer`, "_blank", "noopener");
     });
+  });
+  body.querySelectorAll(".option-chart").forEach(button => {
+    button.addEventListener("click", () => openSecurityChart(button.dataset.asset));
   });
   body.querySelectorAll(".option-gamma").forEach(button => {
     button.addEventListener("click", () => {
@@ -3630,7 +3642,7 @@ function renderPortfolioTable() {
     const tr = document.createElement("tr");
     tr.innerHTML = `
       <td>${rowIndex + 1}. ${isFuturesAsset(row.asset) ? futuresSecurityDisplay(row.asset) : displayAsset(row.asset)}</td>
-      <td><button type="button" class="portfolio-chart-button" data-asset="${row.asset}" title="View price chart" aria-label="View ${displayAsset(row.asset)} price chart">📈</button></td>
+      <td><button type="button" class="portfolio-chart-button" data-asset="${row.asset}" title="View price chart" aria-label="View ${displayAsset(row.asset)} price chart">📈</button> ${securityNewsLink(row.asset)}</td>
       <td>${isFuturesAsset(row.asset)
         ? futuresPriceDisplay(row.asset, futuresEodUnitPrice(row.asset, Number.isFinite(eodLocalPrice) ? eodLocalPrice : eodPrice))
         : foreignPriceDisplay(eodLocalPrice, eodPrice, eodCurrency, eodFxPair, eodFxRate)}</td>

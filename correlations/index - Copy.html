@@ -64,8 +64,8 @@ Changes:
   </div>
 
   <div id="correlationsSection" class="analytics-section-heading">Correlation Lens</div>
-  <p><strong>Multi-Horizon Correlation Map.</strong> Correlations are calculated over selectable 25, 90, or 250 business-day horizons for a variety of assets. Historical volatilities are shown on the diagonal. Click play below to examine the relationship through time. For pairs, click on the bubble first.</p>
-<p class="input-note"><strong>Calendar note:</strong> RiskSnap currently uses a Monday-Friday analytical calendar. Some exchanges, including Saudi Arabia, trade Sunday-Thursday. </p>
+  <p><strong>Multi-Horizon Correlation Map.</strong> Correlations are calculated over selectable 25, 90, or 250 <a href="correlations-help.html#business-days" target="_blank" rel="noopener" style="color:inherit; text-decoration:underline;">business-day</a> horizons for a variety of assets. Historical volatilities are shown on the diagonal. Click play below to examine the relationship through time. For pairs, click on the bubble first.</p>
+
 
   <div class="corr-input-panel">
     <div class="corr-controls main-controls">
@@ -153,7 +153,7 @@ Changes:
 
   <div id="portfolioPanel" class="portfolio-panel">
     <div class="portfolio-band">Portfolio Analytics</div>
-    <div class="portfolio-subheading">Holdings</div>
+    <div class="portfolio-subheading"><a href="correlations-help.html#holdings" target="_blank" rel="noopener" style="color:inherit; text-decoration:underline;">Holdings</a></div>
 
     <div id="worldIndexCharts" class="world-index-charts" hidden>
       <div class="world-index-charts-label">World Index Charts</div>
@@ -161,11 +161,8 @@ Changes:
     </div>
 
     <div class="portfolio-header">
-      <div>
-        <div class="portfolio-note">Use the Correlations section to select holdings, then enter the number of units held and the portfolio’s Book Cost. For equities, units are shares; for futures, enter the underlying units represented by the position (Treasury futures: 1,000 units per contract; use the +1/−1 contract buttons). Equity options may be added below. If desired the portfolio may be saved locally in your cache. When no saved portfolio is loaded, RiskSnap creates an approximately equal-notional portfolio from the selected holdings, using one or more whole contracts for futures. Click the chart button beside a holding for price history.</div>
-      </div>
       <div class="portfolio-controls">
-        <label>Book Cost:
+        <label><a href="correlations-help.html#book-cost" target="_blank" rel="noopener" style="color:inherit; text-decoration:underline;">Book Cost:</a>
           <input id="portfolioBookValue" type="number" step="any" value="100000">
         </label>
       </div>
@@ -184,7 +181,6 @@ Changes:
     </div>
     <div id="portfolioSummary" class="portfolio-summary"></div>
     <div id="portfolioOptionMtm" class="portfolio-option-mtm" hidden></div>
-    <div id="portfolioOptionPositions" class="portfolio-option-positions" hidden></div>
     <div class="portfolio-data-status">
       <span><strong>Market Prices:</strong> <span id="portfolioPriceTimestamp">Not refreshed</span></span>
       <button id="portfolioRefreshPrices" type="button"><span class="portfolio-refresh-label">Refresh Prices</span></button>
@@ -205,11 +201,11 @@ Changes:
             <th>EOD Value</th>
             <th>Current Value</th>
             <th>Vol (EOD)</th>
-            <th>TTM Yield<sup>1</sup></th>
+            <th><a href="correlations-help.html#ttm-yield" target="_blank" rel="noopener" style="color:inherit; text-decoration:underline;">TTM Yield</a></th>
             <th>An. Wtd. Total Return</th>
             <th>Sharpe Ratio</th>
             <th>Beta vs SPY</th>
-            <th>Beta vs ^FVX (5Y yield)</th>
+            <th><a href="correlations-help.html#five-year-beta" target="_blank" rel="noopener" style="color:inherit; text-decoration:underline;">Beta vs ^FVX (5Y yield)</a></th>
           </tr>
         </thead>
         <tbody id="portfolioBody"></tbody>
@@ -225,7 +221,7 @@ Changes:
       </table>
     </div>
     <div class="portfolio-options-panel">
-      <div class="portfolio-subheading">Equity Options</div>
+      <div class="portfolio-subheading"><a href="correlations-help.html#equity-options" target="_blank" rel="noopener" style="color:inherit; text-decoration:underline;">Equity Options</a></div>
       <div class="portfolio-option-entry">
         <label>Underlying <input id="optionUnderlying" type="text" list="optionUnderlyingSuggestions" maxlength="15" autocomplete="off" placeholder="e.g. AAPL"><datalist id="optionUnderlyingSuggestions"></datalist></label>
         <label>Trade date <input id="optionTradeDate" type="date"></label>
@@ -235,8 +231,6 @@ Changes:
         <label>Contracts <input id="optionContracts" type="number" step="1" value="1"></label>
         <button id="optionAdd" type="button">Add option</button>
       </div>
-    <div class="portfolio-footnote">Contracts are signed: positive is long and negative is short. The multiplier is fixed at 100. EOD Value = EOD model price × signed contracts × 100. Delta-equivalent shares = signed contracts × 100 × option delta; these are risk exposure, not shares owned.</div>
-    <div class="portfolio-footnote"><strong>Option prices versus risk volatility:</strong> Current and EOD option prices use implied volatility (IV) from the currently loaded smoothed surface, selected at the strike relative to the current stock price. Outside the grid, IV uses the nearest moneyness or tenor boundary. EOD uses the EOD stock price and time remaining from the EOD date, but the same current IV, rate and forward dividend yield from the surface; it is a model estimate, not an EOD option quote. The Price button loads the surface again in the pricer, so its result may differ if market inputs have changed. Portfolio volatility in Analytics is calculated from historical equity returns, not this option IV. Options and futures are excluded from equity-only volatility, beta and Sharpe.</div>
       <div class="portfolio-table-wrap">
         <table class="portfolio-table option-table">
           <thead><tr><th>Underlying</th><th>Trade date</th><th>Expiry</th><th>Strike</th><th>Put/Call</th><th>Contracts</th><th>Multiplier</th><th>EOD Spot</th><th>Current Spot</th><th>Fwd Yield</th><th>IV (current)</th><th>EOD model price</th><th>Current model price</th><th>Delta-equiv. shares</th><th>EOD Value</th><th>Current Value</th><th></th></tr></thead>
@@ -245,10 +239,7 @@ Changes:
       </div>
     </div>
 
-    <div class="portfolio-footnote"><sup>1</sup> Div is the trailing twelve-month (TTM) dividend or distribution yield for the selected EOD date: split-adjusted cash dividends or ETF distributions during the preceding 12 months divided by that EOD price.</div>
-    <div class="portfolio-footnote"><strong>5Y rate sensitivity:</strong> A coefficient of 0.0541 means an estimated 0.541% asset return for a 10 basis point rise in the US 5-year yield. Yield changes are measured in percentage points; this is a historical relationship, not a forecast.</div>
-    <div class="portfolio-footnote futures-note"><strong>Book Cost:</strong> Enter the net cost of the positions: share purchase prices plus fees, futures fees, and option premiums plus fees. Premiums paid are positive; premiums received for written options are negative. Exclude margin deposits, which are collateral. Gain/Loss equals signed Market Value less Book Cost. Enter the combined Book Cost for all positions above.</div>
-    <div class="portfolio-footnote futures-note"><strong>Futures:</strong> Enter the agreed price and a signed quantity: positive units are bought and negative units are sold. Futures value equals (market price − agreed price) × signed contracts × contract factor. Initial-margin defaults are IBKR Canada/US overnight requirements in USD as of September 20, 2026 and remain editable.</div>
+
 
     <div id="securityChartPanel" class="portfolio-chart-panel" hidden>
       <div class="portfolio-chart-header">
@@ -299,6 +290,7 @@ Changes:
       </div>
       <div class="matrix-history-actions">
         <div class="matrix-history-buttons">
+          <span id="matrixHistoryCalculating" role="status" aria-live="polite" style="font-size:13px;align-self:center">Calculating...</span>
           <button id="matrixHistoryReset" type="button">Reset</button>
           <button id="matrixHistoryPlay" type="button">▶ Play</button>
           <button id="matrixHistoryPause" type="button" disabled>❚❚ Pause</button>
@@ -480,15 +472,26 @@ h1 { color: white; text-align: center; background-color: #3A5FCD; }
 .matrix-history-header { margin-bottom: 4px; }
 #matrixHistorySlider { width: 100%; }
 
-/* On phones the sticky panel covers the lower correlation bubbles.
-   Keep it in the normal page flow beneath the matrix instead. */
+/* Compact playback banner on phones. */
 @media (max-width: 800px) {
+  body { padding-bottom: calc(115px + env(safe-area-inset-bottom)); }
   .matrix-history-panel {
-    position: static;
-    bottom: auto;
-    z-index: auto;
-    box-shadow: none;
+    position: fixed; left: 6px; right: 6px; bottom: 0; z-index: 50;
+    margin: 0; padding: 6px 8px calc(6px + env(safe-area-inset-bottom));
+    background: #fff;
   }
+  .matrix-history-panel .matrix-history-title,
+  .matrix-history-panel .matrix-history-speed,
+  .matrix-history-panel .matrix-portfolio-summary,
+  .matrix-history-panel .matrix-history-status,
+  .matrix-history-panel .matrix-history-note { display: none; }
+  .matrix-history-panel .matrix-history-header { gap: 4px; flex-wrap: wrap; margin-bottom: 0; }
+  .matrix-history-panel .matrix-history-date { font-size: 11px; margin: 0; }
+  .matrix-history-panel .matrix-history-actions { gap: 3px; }
+  .matrix-history-panel .matrix-history-buttons { gap: 3px; }
+  .matrix-history-panel .matrix-history-buttons button { padding: 5px 7px; font-size: 12px; min-height: 30px; }
+  .matrix-history-panel #matrixHistoryCalculating { font-size: 11px !important; }
+  .matrix-history-panel .matrix-history-slider-row { margin: 21px 8px 0; }
 }
 
 
@@ -847,6 +850,26 @@ let FACTORY_DEFAULTS = {
 };
 let lastSavedDefaultsText = "";
 
+let correlationRequestId = 0;
+let correlationController = null;
+let matrixHistoryController = null;
+
+// Bound both response headers and body downloads; cancel superseded work.
+async function fetchCorrelationJson(url, options = {}, controller = new AbortController()) {
+  const timer = setTimeout(() => controller.abort(), 120000);
+  try {
+    const response = await fetch(url, { ...options, signal: controller.signal });
+    const data = await response.json();
+    if (!response.ok) throw new Error((data.messages || [data.message || response.statusText]).join(" "));
+    return data;
+  } catch (error) {
+    if (error.name === "AbortError") throw new Error("Request cancelled or timed out. Click Calculate correlations to retry.");
+    throw error;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 let activePayload = null;
 let activeIsLive = false;
 let rollingRows = [];
@@ -866,7 +889,7 @@ let portfolioFuturesAgreedPrices = {};
 let portfolioFuturesInitialMargins = {};
 let portfolioOptions = [];
 const portfolioOptionSurfaces = new Map();
-const OPTION_SURFACE_ENDPOINT = "https://surface-203178530029.northamerica-northeast2.run.app/surface";
+const OPTION_SURFACE_ENDPOINT = "https://surface-203178530029.northamerica-northeast2.run.app";
 let portfolioSecurities = [];
 let portfolioPrices = {};
 let portfolioCurrentPrices = {};       // USD prices used for valuation/calculation
@@ -1014,7 +1037,7 @@ async function loadHoldingPreset(key, requestId) {
     target.setUTCMonth(target.getUTCMonth() + recipe.months);
     const targetDate = target.toISOString().slice(0,10);
     const options = await Promise.all(recipe.puts.map(async leg => {
-      const url = OPTION_SURFACE_ENDPOINT.replace(/\/surface$/, "/listed_options");
+      const url = `${OPTION_SURFACE_ENDPOINT}/listed_options`;
       const response = await fetch(`${url}?${new URLSearchParams({ticker:leg.underlying})}`);
       const chain = await response.json();
       if (!response.ok || chain.error) throw new Error(chain.error || "Listed puts unavailable.");
@@ -1047,7 +1070,7 @@ async function loadHoldingPreset(key, requestId) {
     updatePresetHighlight();
     saveCurrentSettings();
     updateSaveDefaultsState();
-    setPortfolioStorageStatus("Loaded illustrative holdings. Book Cost starts at current share cost; add purchased put premiums and fees. Save Portfolio to retain these exact dates and strikes. Puts protect SPY and XOM only; Treasury futures can also lose value.");
+    setPortfolioStorageStatus("Loaded illustrative holdings. Book Cost starts at current share cost and can be adjusted for premiums paid/received and other fees, as desired. Save Portfolio to retain these exact dates and strikes.");
     scheduleCorrelationRefresh();
   } catch (error) {
     if (requestId === holdingPresetRequest) setPortfolioStorageStatus(`Preset not loaded: ${error.message}`);
@@ -1372,10 +1395,8 @@ async function loadUsdOneYearRates() {
   if (usdOneYearRates) return usdOneYearRates;
   if (usdOneYearRatesPromise) return usdOneYearRatesPromise;
 
-  usdOneYearRatesPromise = fetch(USD_YIELD_ENDPOINT)
-    .then(async response => {
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.message || response.statusText);
+  usdOneYearRatesPromise = fetchCorrelationJson(USD_YIELD_ENDPOINT)
+    .then(data => {
       const rows = Array.isArray(data.rows) ? data.rows : [];
       const rates = new Map();
       rows.forEach(row => {
@@ -1421,6 +1442,13 @@ function applyCanonicalRiskFreeRate(payload, dateText = "") {
 }
 
 async function fetchCorrelationData() {
+  const requestId = ++correlationRequestId;
+  if (correlationController) correlationController.abort();
+  correlationController = new AbortController();
+  const controller = correlationController;
+  ++matrixHistoryRequestId;
+  if (matrixHistoryController) matrixHistoryController.abort();
+  resetMatrixHistoryPanel("Loading matrix history...");
   const period = document.getElementById("corrPeriod").value;
   const lookback = parseInt(period, 10);
   const inputs = getSelectedInputs();
@@ -1443,14 +1471,14 @@ async function fetchCorrelationData() {
   setStatus("Calculating correlations...");
   showMessages(["Calculating correlations..."]);
   try {
-    const response = await fetch("https://surface-203178530029.northamerica-northeast2.run.app/correlations_data", {
+    const data = await fetchCorrelationJson("https://surface-203178530029.northamerica-northeast2.run.app/correlations_data", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(requestPayload)
-    });
-    const data = await response.json();
-    if (!response.ok) throw new Error((data.messages || [response.statusText]).join(" "));
+    }, controller);
+    if (requestId !== correlationRequestId) return;
     await loadUsdOneYearRates();
+    if (requestId !== correlationRequestId) return;
     activePayload = applyCanonicalRiskFreeRate(normalizePayload(data, period), data.date || data.risk_free_as_of || data.ewma_as_of);
     activeIsLive = true;
     if (inputs.omitted.length) {
@@ -1464,6 +1492,7 @@ async function fetchCorrelationData() {
     showMessages(activePayload.messages || []);
     fetchRollingMatrix(requestPayload, period);
   } catch (err) {
+    if (requestId !== correlationRequestId) return;
     activePayload = getFilteredFallbackPayload(period);
     activeIsLive = false;
     drawCorrelationChart(activePayload);
@@ -1471,13 +1500,16 @@ async function fetchCorrelationData() {
     showMessages(["Live calculation unavailable: " + err.message, "This usually means the Cloud Run endpoint did not respond, or the browser blocked the cross-site request.", "Filtered preview can only show assets already embedded in the sample data.", ...(activePayload.messages || [])]);
     resetMatrixHistoryPanel("Matrix history requires the live rolling-matrix endpoint.");
   } finally {
-    setLoading(false);
+    if (requestId === correlationRequestId) setLoading(false);
   }
 }
 
 async function fetchRollingMatrix(requestPayload, periodLabel) {
   pauseMatrixHistoryPlayback();
   const requestId = ++matrixHistoryRequestId;
+  if (matrixHistoryController) matrixHistoryController.abort();
+  matrixHistoryController = new AbortController();
+  const controller = matrixHistoryController;
   const slider = document.getElementById("matrixHistorySlider");
   const latestBtn = document.getElementById("matrixHistoryLatest");
   const resetBtn = document.getElementById("matrixHistoryReset");
@@ -1493,17 +1525,16 @@ async function fetchRollingMatrix(requestPayload, periodLabel) {
   setMatrixHistoryStatus(`Calculating matrix history using the ${periodLabel} lookback...`);
 
   try {
-    const response = await fetch(ROLLING_MATRIX_ENDPOINT, {
+    const data = await fetchCorrelationJson(ROLLING_MATRIX_ENDPOINT, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ ...requestPayload, frames: requestedFrames })
-    });
-    const data = await response.json();
-    if (!response.ok) throw new Error((data.messages || [response.statusText]).join(" "));
+    }, controller);
     if (requestId !== matrixHistoryRequestId) return;
 
     matrixHistoryAssets = (data.assets || activePayload?.assets || []).slice(0, MAX_INTERNAL_ASSETS);
     await loadUsdOneYearRates();
+    if (requestId !== matrixHistoryRequestId) return;
     rawMatrixHistoryFrames = (data.frames || []).map(frame => applyCanonicalRiskFreeRate(normalizeMatrixFrame(frame, periodLabel), frame.date));
     matrixHistoryLookback = lookback;
     if (!rawMatrixHistoryFrames.length) throw new Error("No matrix-history frames were returned.");
@@ -1782,6 +1813,8 @@ function pauseMatrixHistoryPlayback() {
 function setMatrixHistoryStatus(message) {
   const box = document.getElementById("matrixHistoryStatus");
   if (box) box.textContent = message || "";
+  const indicator = document.getElementById("matrixHistoryCalculating");
+  if (indicator) indicator.hidden = !/^(Loading|Calculating)/i.test(message || "");
 }
 
 function resetMatrixHistoryPanel(message = "Matrix history will load after correlations are calculated.") {
@@ -2700,7 +2733,7 @@ function calculatePortfolioVolatility(payload) {
 
 function portfolioRiskContributionChart(payload, selectedDays) {
   const risk = calculatePortfolioRiskContributions(payload, true);
-  const heading = `<div class="portfolio-summary-heading">Share of Portfolio Risk — Equities, Futures and Delta-adjusted Options (${selectedDays}d)</div>`;
+  const heading = `<div class="portfolio-summary-heading"><a href="correlations-help.html#portfolio-risk" target="_blank" rel="noopener" style="color:inherit; text-decoration:underline;">Share of Portfolio Risk — Equities, Futures and Delta-adjusted Options (${selectedDays}d)</a></div>`;
   if (!risk) return heading + '<p>Risk contributions unavailable: complete prices, risk data and option delta inputs are required for every active holding.</p>';
   if (!(risk.volatility > 0)) return heading + '<p>Portfolio volatility is zero; percentage risk shares are undefined.</p>';
   const positions = risk.positions.slice().sort((a, b) => b.riskShare - a.riskShare);
@@ -2721,8 +2754,7 @@ function portfolioRiskContributionChart(payload, selectedDays) {
     </div>`;
   }).join('');
   const total = positions.reduce((sum, p) => sum + p.riskShare, 0);
-  return heading + bars + `<div class="risk-contribution-total">Total risk share ${(total * 100).toFixed(2)}% · ${risk.hasFutures || risk.hasOptions ? `Annual dollar risk ${formatMoney(risk.volatility * risk.grossExposure)} · Gross EOD exposure ${formatMoney(risk.grossExposure)}` : `Annual portfolio volatility ${(risk.volatility * 100).toFixed(2)}%`}</div>
-    <div class="portfolio-footnote">Uses the selected EOD prices, volatilities, correlations and return window. Futures exposure is EOD price × signed contracts × contract factor; short contracts have negative exposure. Weights use gross absolute exposure. Risk share for holding i (%) = 100 &times; w<sub>i</sub>(&Sigma;w)<sub>i</sub> / (w<sup>T</sup>&Sigma;w), where w<sub>i</sub> is signed EOD exposure divided by total gross absolute exposure, and &Sigma; is the annualized return covariance matrix. Risk shares sum to 100%; a negative share means the holding reduces total risk. Annual dollar risk is the standard deviation of annual P&amp;L. Option exposure = signed contracts &times; 100 &times; delta &times; underlying spot. Each option uses its underlying's historical volatility and correlations. Delta uses the existing option valuation assumptions at the selected risk date; historical scenarios keep contracts, strike and remaining term fixed and recalculate delta at historical spot. This is a first-order delta estimate; gamma and changes in implied volatility are not included. Orange bars left of zero reduce total risk; a short future can contribute positive or negative risk. Hover or focus a row for exposure, volatility and risk contribution.</div>`;
+  return heading + bars + `<div class="risk-contribution-total">Total risk share ${(total * 100).toFixed(2)}% · ${risk.hasFutures || risk.hasOptions ? `Annual dollar risk ${formatMoney(risk.volatility * risk.grossExposure)} · Gross EOD exposure ${formatMoney(risk.grossExposure)}` : `Annual portfolio volatility ${(risk.volatility * 100).toFixed(2)}%`}</div>`;
 }
 
 function calculatePortfolioAnalyticsLocally(totalMarketValue) {
@@ -3324,10 +3356,7 @@ function renderPortfolioOptionMtm(baseCurrentValue) {
     panel.textContent = `Portfolio value awaits option prices: ${valuations.filter(row => row.status !== "ready").map(row => row.status).join("; ")}`;
     return;
   }
-  panel.innerHTML = `Option values use the smoothed volatility surface. EOD options use the EOD stock price and remaining time with current IV, rate and dividend yield. ` +
-    (portfolioOptions.some(option => option.tradeDate > portfolioLatestEodDate)
-      ? `An option entered after EOD is included as an as-if-held EOD comparison. ` : "") +
-    `EOD option values are model estimates, not historical option quotes.`;
+  panel.hidden = true;
 }
 
 let optionStrikeSuggestionId = 0;
@@ -3361,23 +3390,7 @@ async function suggestOptionEntryStrike() {
 function renderPortfolioOptions() {
   const underlyingSelect = document.getElementById("optionUnderlying");
   const body = document.getElementById("portfolioOptionsBody");
-  const positions = document.getElementById("portfolioOptionPositions");
   if (!underlyingSelect || !body) return;
-
-  if (positions) {
-    positions.hidden = !portfolioOptions.length;
-    positions.innerHTML = portfolioOptions.length
-      ? `<strong>Equity options (${portfolioOptions.length}):</strong> ` + portfolioOptions.map(option =>
-          `${escapeHtml(displayAsset(option.underlying))} ${escapeHtml(option.expiry || "expiry missing")} ` +
-          `${escapeHtml(String(option.strike))} ${option.optionType === "put" ? "put" : "call"} ` +
-          `(${Number(option.contracts) > 0 ? "+" : ""}${escapeHtml(String(option.contracts))} contract${Math.abs(Number(option.contracts)) === 1 ? "" : "s"})`
-        ).join("; ") +
-        ' · <button type="button" id="portfolioEditOptions">View / edit options</button>'
-      : "";
-    positions.querySelector("#portfolioEditOptions")?.addEventListener("click", () => {
-      document.querySelector(".portfolio-options-panel")?.scrollIntoView({ behavior:"smooth", block:"start" });
-    });
-  }
 
   const priorUnderlying = underlyingSelect.value;
   const equities = portfolioSecurities.filter(asset => !isFuturesAsset(asset));
