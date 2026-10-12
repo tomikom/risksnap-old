@@ -64,8 +64,8 @@ Version: Equities 3
           <th>Country</th>
           <th>Exchange</th>
           <th>Ccy</th>
-          <th>Price<br><span style="font-weight:400">Local / USD</span></th>
           <th>EOD<br>USD</th>
+          <th>Current Value<br><span style="font-weight:400">Local / USD</span></th>
           <th>Change $<br><span style="font-weight:400">USD</span></th>
           <th>Mkt Cap /<br>Net Assets</th>
           <th>P/E</th>
@@ -105,7 +105,7 @@ Version: Equities 3
     <p><strong>Market Cap / Net Assets:</strong> Market capitalization is shown for operating companies; fund net assets are shown for ETFs/funds when Yahoo supplies them.</p>
     <p><strong>P/E:</strong> An ETF may have no Yahoo P/E even though its underlying holdings have earnings. Missing values are shown as N/A rather than inferred.</p>
     <p>Sector, industry, fund category, P/E and beta depend on what Yahoo makes available for each security.</p>
-    <p><strong>Daily Move:</strong> (Price USD − EOD USD) ÷ EOD USD; Change $ is the USD price difference per share or underlying unit. EOD uses the same completed market date as Portfolio Analytics; hover over its price to see the date.</p>
+    <p><strong>Daily Move:</strong> (Current Value USD − EOD USD) ÷ EOD USD; Change $ is the USD price difference per share or underlying unit. EOD uses the same completed market date as Portfolio Analytics; hover over its price to see the date.</p>
     <p><strong>σ Move:</strong> last completed trading-day return in the security’s quoted currency, compared with the preceding 25 daily returns. Moves with |σ| of at least 2.5 are highlighted as unusual. RiskSnap performs this calculation; the news links open external Google News searches in a separate tab and do not republish article content. For an unusual move, <strong>News around move</strong> searches around that trading date. This calculation is independent of the Correlation Lens and portfolio analytics.</p>
   </div>
 </div>
@@ -183,7 +183,7 @@ Version: Equities 3
 .equities-table th:nth-child(6), .equities-table td:nth-child(6) { max-width:86px; }
 .equities-table th:nth-child(7), .equities-table td:nth-child(7) { max-width:72px; }
 .equities-table th:nth-child(8), .equities-table td:nth-child(8) { width:42px; min-width:38px; max-width:44px; }
-.equities-table th:nth-child(9), .equities-table td:nth-child(9) { width:78px; min-width:72px; max-width:88px; }
+.equities-table th:nth-child(10), .equities-table td:nth-child(10) { width:78px; min-width:72px; max-width:88px; }
 .equities-table th:nth-child(12), .equities-table td:nth-child(12) { min-width:72px; }
 .equities-table th:nth-child(13), .equities-table td:nth-child(13),
 .equities-table th:nth-child(14), .equities-table td:nth-child(14),
@@ -603,8 +603,8 @@ function renderRows(rows) {
       ${td(row.country)}
       ${td(row.exchange)}
       ${td(row.currency)}
-      <td>${fmtLocalUsdPriceHtml(row)}</td>
       <td title="${escapeHtml(row.eod_date || "Completed EOD")}">${row.eod_usd_price > 0 ? escapeHtml(fmtMoney(row.eod_usd_price, "USD", priceDisplayDecimals(symbol))) : '<span class="equities-na">N/A</span>'}</td>
+      <td>${fmtLocalUsdPriceHtml(row)}</td>
       <td>${fmtEquityMove(move?.change)}</td>
       ${td(fmtMarketCapOrAssets(row))}
       ${td(fmtNumber(row.trailing_pe))}
