@@ -200,6 +200,8 @@ Changes:
             <th>Initial margin (USD)</th>
             <th>EOD Value</th>
             <th>Current Value</th>
+            <th>Change $</th>
+            <th>Change %</th>
             <th>Vol (EOD)</th>
             <th><a href="correlations-help.html#ttm-yield" target="_blank" rel="noopener" style="color:inherit; text-decoration:underline;">TTM Yield</a></th>
             <th>An. Wtd. Total Return</th>
@@ -215,6 +217,8 @@ Changes:
             <td id="portfolioTotalInitialMargin">—</td>
             <td id="portfolioTotalEodValue">—</td>
             <td id="portfolioTotalMarketValue">—</td>
+            <td id="portfolioTotalChange">—</td>
+            <td id="portfolioTotalChangePct">—</td>
             <td colspan="6"></td>
           </tr>
         </tfoot>
@@ -2081,7 +2085,9 @@ function initializePortfolio(payload, selectedEquities, selectedCommodities = []
   const signature = portfolioSecurities.join("|");
   if (portfolioOptions.some(option => !(Number(portfolioLatestEodPrices[option.underlying]) > 0)))
     fetchMissingOptionEodPrices(payload);
-  if (signature && signature !== portfolioPriceRefreshSignature) {
+  if (signature && (signature !== portfolioPriceRefreshSignature
+      || !portfolioPriceTimestamp
+      || Date.now() - new Date(portfolioPriceTimestamp).getTime() > 5 * 60 * 1000)) {
     portfolioPriceRefreshSignature = signature;
     refreshPortfolioPrices();
   }
@@ -2377,11 +2383,12 @@ async function refreshPortfolioPrices() {
     portfolioPrices = { ...portfolioCurrentPrices };
     renderPortfolioTable();
     updatePortfolioDataLabels();
-    if (status) status.textContent = `Refresh failed at ${formatPriceTimestamp(portfolioPriceLastAttempt)}; live quotes unavailable, using the latest available EOD prices.`;
+    if (status) status.textContent = `Refresh failed at ${formatPriceTimestamp(portfolioPriceLastAttempt)}; live quotes unavailable; retaining previously displayed prices.`;
   } finally {
     portfolioPriceRefreshInProgress = false;
     if (button) {
-          button.classList.remove("is-loading");
+      button.disabled = false;
+      button.classList.remove("is-loading");
       button.title = "Download the latest available prices.";
     }
     if (label) label.textContent = "Refresh Prices";
@@ -3547,7 +3554,9 @@ function renderPortfolioTable() {
     summary.textContent = "";
     const stickySummary = document.getElementById("matrixPortfolioSummary");
     if (stickySummary) stickySummary.textContent = "";
-    body.innerHTML = `<tr><td colspan="15" class="portfolio-empty">No selected securities with current prices are available.</td></tr>`;
+    body.innerHTML = `<tr><td colspan="17" class="portfolio-empty">No selected securities with current prices are available.</td></tr>`;
+    document.getElementById("portfolioTotalChange").textContent = "—";
+    document.getElementById("portfolioTotalChangePct").textContent = "—";
     const totalValueCell = document.getElementById("portfolioTotalMarketValue");
     if (totalValueCell) totalValueCell.textContent = "—";
     const totalEodCell = document.getElementById("portfolioTotalEodValue");
@@ -3662,6 +3671,8 @@ function renderPortfolioTable() {
       <td>${futuresHolding ? `<input class="futures-initial-margin" data-asset="${row.asset}" type="number" min="0" step="0.01" value="${futuresInitialMargin(row.asset, row.shares).toFixed(2)}" title="Editable total initial margin in USD">` : "—"}</td>
       <td>${Number.isFinite(eodValue) ? formatMoney(eodValue) : "—"}</td>
       <td>${Number.isFinite(row.marketValue) ? formatMoney(row.marketValue) : "Enter agreed price"}</td>
+      <td>${Number.isFinite(row.marketValue) && Number.isFinite(eodValue) ? formatMoney(row.marketValue - eodValue) : "—"}</td>
+      <td>${Number.isFinite(row.marketValue) && Number.isFinite(eodValue) && eodValue !== 0 ? `${((row.marketValue - eodValue) / Math.abs(eodValue) * 100).toFixed(2)}%` : "—"}</td>
       <td>${volatilityText}</td>
       <td>${dividendYieldText}</td>
       <td>${annualReturnText}</td>
@@ -3726,6 +3737,8 @@ function renderPortfolioTable() {
   if (totalValueCell) totalValueCell.textContent = formatMoney(totalMarketValue);
   const totalEodCell = document.getElementById("portfolioTotalEodValue");
   if (totalEodCell) totalEodCell.textContent = completeEodValues ? formatMoney(totalEodValue) : "—";
+  document.getElementById("portfolioTotalChange").textContent = completeEodValues ? formatMoney(totalMarketValue - totalEodValue) : "—";
+  document.getElementById("portfolioTotalChangePct").textContent = completeEodValues && totalEodValue !== 0 ? `${((totalMarketValue - totalEodValue) / Math.abs(totalEodValue) * 100).toFixed(2)}%` : "—";
   const totalMarginCell = document.getElementById("portfolioTotalInitialMargin");
   if (totalMarginCell) {
     const totalInitialMargin = rows.reduce((sum,row) =>
