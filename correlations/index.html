@@ -905,6 +905,14 @@ function updatePortfolioExclusionViews() {
   renderPortfolioTable();
   renderPortfolioMarketValueChart();
   renderPortfolioDividendHistory();
+  if (selectedRollingPair && (portfolioExcluded.has(selectedRollingPair.assetA)
+      || portfolioExcluded.has(selectedRollingPair.assetB))) closeRollingPanel();
+  const displayedFrame = matrixHistoryFrames[matrixHistoryIndex] || activePayload;
+  if (displayedFrame) drawCorrelationChart(displayedFrame);
+  if (portfolioExcluded.has(selectedSecurityChartAsset)) {
+    const panel = document.getElementById("securityChartPanel");
+    if (panel) panel.hidden = true;
+  }
 }
 let portfolioFuturesAgreedPrices = {};
 let portfolioFuturesInitialMargins = {};
@@ -2845,8 +2853,8 @@ function calculatePortfolioAnalyticsLocally(totalMarketValue) {
   return {
     market_value: marketValue,
     book_value: bookValue,
-    gain_loss: hasPortfolioExclusions() ? null : marketValue - bookValue,
-    gain_loss_pct: !hasPortfolioExclusions() && bookValue !== 0 ? (marketValue - bookValue) / Math.abs(bookValue) : null,
+    gain_loss: marketValue - bookValue,
+    gain_loss_pct: bookValue !== 0 ? (marketValue - bookValue) / Math.abs(bookValue) : null,
     volatility,
     beta,
     inflation_beta: inflationBeta,
@@ -3143,13 +3151,13 @@ function updatePortfolioSummary(totalMarketValue) {
   const riskPrefix = hasExcludedDerivatives ? "Equity-only " : "";
   const optionExclusionLabel = "";
   const displayedValue = optionsPending ? "—" : formatMoney(fullMarketValue);
-  const displayedGain = optionsPending || hasPortfolioExclusions() ? "—" : signedMoney(gainLoss);
-  const displayedReturn = optionsPending || hasPortfolioExclusions() ? "—" : signedPct(returnOnBookCost);
+  const displayedGain = optionsPending ? "—" : signedMoney(gainLoss);
+  const displayedReturn = optionsPending ? "—" : signedPct(returnOnBookCost);
   const displayedEod = optionsPending ? "—" : eodValueText;
   const displayedChange = optionsPending ? "—" : dailyChangeText;
 
   summary.innerHTML = `
-    ${hasPortfolioExclusions() ? '<p style="font-size:0.85em; margin:4px 0">Checked holdings are excluded. Gain/Loss and Return on Book Cost are unavailable because Book Cost is entered for the whole portfolio.</p>' : ""}
+    ${hasPortfolioExclusions() ? '<p style="font-size:0.85em; margin:4px 0">Calculations and graphs use unchecked holdings. Book Cost is unchanged.</p>' : ""}
     <div class="portfolio-summary-columns">
       <section class="portfolio-summary-section" aria-label="Current Portfolio Valuation">
         <div class="portfolio-summary-heading">${portfolioViewMode === "historical" && matrixHistoryFrames[matrixHistoryIndex]?.date ? `Portfolio Valuation (${formatLongDate(matrixHistoryFrames[matrixHistoryIndex].date)})` : "Current Portfolio Valuation"}</div>
@@ -4133,7 +4141,7 @@ function formatShares(value) {
 
 function visibleCorrelationPayload(payload) {
   if (!payload || !Array.isArray(payload.assets)) return payload;
-  const hidden = new Set();
+  const hidden = new Set(portfolioExcluded);
   if (hideInternalSpyBenchmark) hidden.add(BETA_BENCHMARK);
   if (hideInternalInflationBenchmark) hidden.add(INFLATION_BETA_BENCHMARK);
   if (!hidden.size) return payload;
@@ -4143,6 +4151,9 @@ function visibleCorrelationPayload(payload) {
   result.assets = keep.map(i => payload.assets[i]);
   result.volatility = keep.map(i => (payload.volatility || [])[i]);
   result.prices = keep.map(i => (payload.prices || [])[i]);
+  for (const key of ["local_prices", "currencies", "fx_pairs", "fx_rates"]) {
+    if (Array.isArray(payload[key])) result[key] = keep.map(i => payload[key][i]);
+  }
   result.matrix = keep.map(i => keep.map(j => {
     const row = (payload.matrix || [])[i] || [];
     if (j >= i) return row[j];
@@ -4394,6 +4405,7 @@ async function fetchRollingCorrelation(assetA, assetB, corr, volA, volB, asOfDat
 	})
     });
     const data = await response.json();
+    if (portfolioExcluded.has(assetA) || portfolioExcluded.has(assetB)) return;
     if (!response.ok) throw new Error((data.messages || [response.statusText]).join(" "));
     const allRollingRows = data.rows || [];
 
