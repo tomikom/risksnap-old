@@ -485,7 +485,7 @@ function fmtLocalUsdPriceHtml(row) {
     ? `GBp ${local.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}`
     : `${currency} ${local.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}`;
   const usdText = Number.isFinite(usd)
-    ? `US$${usd.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}`
+    ? `US$${usd.toLocaleString(undefined,{minimumFractionDigits:4,maximumFractionDigits:4})}`
     : "USD N/A";
   const fx = fmtFxRate(row);
   return `<div class="equities-price-stack"><div>${escapeHtml(localText)}</div><div class="equities-price-usd">${escapeHtml(usdText)}</div>${fx ? `<div class="equities-price-fx">${escapeHtml(fx)}</div>` : ""}</div>`;
@@ -603,7 +603,7 @@ function renderRows(rows) {
       ${td(row.country)}
       ${td(row.exchange)}
       ${td(row.currency)}
-      <td title="${escapeHtml(row.eod_date || "Completed EOD")}">${row.eod_usd_price > 0 ? escapeHtml(fmtMoney(row.eod_usd_price, "USD", priceDisplayDecimals(symbol))) : '<span class="equities-na">N/A</span>'}</td>
+      <td title="${escapeHtml(row.eod_date || "Completed EOD")}">${row.eod_usd_price > 0 ? escapeHtml(fmtMoney(row.eod_usd_price, "USD", row.currency && row.currency !== "USD" ? 4 : priceDisplayDecimals(symbol))) : '<span class="equities-na">N/A</span>'}</td>
       <td>${fmtLocalUsdPriceHtml(row)}</td>
       <td>${fmtEquityMove(move?.change)}</td>
       ${td(fmtMarketCapOrAssets(row))}
