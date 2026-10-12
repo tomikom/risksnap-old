@@ -191,7 +191,7 @@ Changes:
       <table class="portfolio-table holdings-table">
         <thead>
           <tr>
-            <th>Security</th>
+            <th><span title="Checked = excluded from portfolio calculations">Exclude</span> / Security</th>
             <th aria-label="Price chart"></th>
             <th>EOD price</th>
             <th>Market price</th>
@@ -237,7 +237,7 @@ Changes:
       </div>
       <div class="portfolio-table-wrap">
         <table class="portfolio-table option-table">
-          <thead><tr><th>Underlying</th><th>Trade date</th><th>Expiry</th><th>Strike</th><th>Put/Call</th><th>Contracts</th><th>Multiplier</th><th>EOD Spot</th><th>Current Spot</th><th>Fwd Yield</th><th>IV (current)</th><th>EOD model price</th><th>Current model price</th><th>Delta-equiv. shares</th><th>EOD Value</th><th>Current Value</th><th></th></tr></thead>
+          <thead><tr><th>Exclude / Underlying</th><th>Trade date</th><th>Expiry</th><th>Strike</th><th>Put/Call</th><th>Contracts</th><th>Multiplier</th><th>EOD Spot</th><th>Current Spot</th><th>Fwd Yield</th><th>IV (current)</th><th>EOD model price</th><th>Current model price</th><th>Delta-equiv. shares</th><th>EOD Value</th><th>Current Value</th><th></th></tr></thead>
           <tbody id="portfolioOptionsBody"><tr><td colspan="17" class="portfolio-empty">No equity options added.</td></tr></tbody>
         </table>
       </div>
@@ -890,6 +890,22 @@ let matrixHistoryReadyStatus = "";
 let matrixHistoryLookback = 25;
 let matrixHistoryPlayDelayMs = 250;
 let portfolioShares = {};
+let portfolioExcluded = new Set();
+function includedPortfolioSecurities() {
+  return portfolioSecurities.filter(asset => !portfolioExcluded.has(asset));
+}
+function includedPortfolioOptions() {
+  return portfolioOptions.filter(option => !option.excluded);
+}
+function hasPortfolioExclusions() {
+  return portfolioSecurities.some(asset => portfolioExcluded.has(asset))
+    || portfolioOptions.some(option => option.excluded);
+}
+function updatePortfolioExclusionViews() {
+  renderPortfolioTable();
+  renderPortfolioMarketValueChart();
+  renderPortfolioDividendHistory();
+}
 let portfolioFuturesAgreedPrices = {};
 let portfolioFuturesInitialMargins = {};
 let portfolioOptions = [];
@@ -1064,6 +1080,7 @@ async function loadHoldingPreset(key, requestId) {
     document.getElementById("equitySymbols").value = YAHOO_PRESETS[key];
     portfolioAutoEqualWeight = false;
     portfolioShares = {...recipe.shares};
+    portfolioExcluded = new Set();
     portfolioFuturesAgreedPrices = Object.fromEntries(symbols.filter(isFuturesAsset).map(symbol => [symbol, prices[symbol]]));
     portfolioFuturesInitialMargins = {};
     portfolioOptions = options;
@@ -1099,6 +1116,7 @@ document.getElementById("presetButtons").addEventListener("click", async event =
   // A preset is a fresh ticker selection, not a loaded saved portfolio.
   portfolioAutoEqualWeight = true;
   portfolioShares = {};
+  portfolioExcluded = new Set();
   portfolioFuturesAgreedPrices = {};
   portfolioFuturesInitialMargins = {};
   portfolioOptions = [];
@@ -2062,6 +2080,9 @@ function initializePortfolio(payload, selectedEquities, selectedCommodities = []
   portfolioViewMode = "current";
   portfolioPrices = { ...portfolioCurrentPrices };
 
+  for (const asset of portfolioExcluded) {
+    if (!portfolioSecurities.includes(asset)) portfolioExcluded.delete(asset);
+  }
   Object.keys(portfolioShares).forEach(asset => {
     if (!portfolioSecurities.includes(asset)) delete portfolioShares[asset];
   });
@@ -2130,7 +2151,7 @@ function renderWorldIndexChartButtons(assets, equitySet) {
 }
 
 function setEqualMarketValueShares() {
-  const valid = portfolioSecurities.filter(asset =>
+  const valid = includedPortfolioSecurities().filter(asset =>
     Number.isFinite(Number(portfolioCurrentPrices[asset])) && Number(portfolioCurrentPrices[asset]) > 0
   );
   const totalBookValue = Math.max(
@@ -2156,10 +2177,10 @@ function setEqualMarketValueShares() {
   });
 }
 
-function currentPortfolioRows() {
+function currentPortfolioRows(includeExcluded = false) {
   // portfolioPrices is the active valuation map: live quotes in Current mode,
   // or the selected Matrix History market-date prices in historical mode.
-  return portfolioSecurities
+  return (includeExcluded ? portfolioSecurities : includedPortfolioSecurities())
     .filter(asset =>
       Number.isFinite(Number(portfolioPrices[asset])) &&
       Number(portfolioPrices[asset]) > 0
@@ -2183,7 +2204,7 @@ function currentPortfolioRows() {
 
 function riskPortfolioRows(payload) {
   if (!payload || !payload.assets || !payload.prices) return [];
-  return portfolioSecurities.map(asset => {
+  return includedPortfolioSecurities().map(asset => {
     const index = payload.assets.indexOf(asset);
     const rawPrice = index >= 0 ? Number(payload.prices[index]) : NaN;
     const price = isFuturesAsset(asset) ? futuresEodUnitPrice(asset, rawPrice) : rawPrice;
@@ -2512,7 +2533,7 @@ function renderPortfolioDividendHistory() {
     status.textContent = "Available after holdings and Matrix History load.";
     return;
   }
-  portfolioDividendHistoryRows = portfolioSecurities.filter(asset => !isFuturesAsset(asset)).map(dividendDetailForAsset).filter(Boolean);
+  portfolioDividendHistoryRows = includedPortfolioSecurities().filter(asset => !isFuturesAsset(asset)).map(dividendDetailForAsset).filter(Boolean);
   if (!portfolioDividendHistoryRows.length) {
     box.innerHTML = "";
     status.textContent = `No dividend history has loaded for EOD ${formatLongDate(asOfDate)}.`;
@@ -2681,11 +2702,11 @@ function calculatePortfolioRiskContributions(payload, includeFutures = false) {
     ? Number.isFinite(row.marketValue) && row.marketValue !== 0
     : row.marketValue > 0 && !isFuturesAsset(row.asset));
   if (includeFutures) {
-    const activeAssets = portfolioSecurities.filter(asset => isFuturesAsset(asset)
+    const activeAssets = includedPortfolioSecurities().filter(asset => isFuturesAsset(asset)
       ? (Number(portfolioShares[asset]) || 0) !== 0
       : (Number(portfolioShares[asset]) || 0) > 0);
     if (activeAssets.some(asset => !rows.some(row => row.asset === asset))) return null;
-    for (const option of portfolioOptions) {
+    for (const option of includedPortfolioOptions()) {
       const exposure = optionRiskExposure(option, payload);
       if (!exposure) return null;
       if (exposure.marketValue !== 0) rows.push(exposure);
@@ -2788,7 +2809,7 @@ function calculatePortfolioAnalyticsLocally(totalMarketValue) {
   if (portfolioRiskPayload) {
     const ewma = portfolioRiskPayload.ewma_returns || {};
     missingEwma = Array.isArray(portfolioRiskPayload.missing_ewma)
-      ? portfolioRiskPayload.missing_ewma.slice()
+      ? portfolioRiskPayload.missing_ewma.filter(asset => riskRows.some(row => row.asset === asset))
       : [];
 
     const totalEodMarketValue = riskRows.reduce((sum, row) => sum + row.marketValue, 0);
@@ -2824,8 +2845,8 @@ function calculatePortfolioAnalyticsLocally(totalMarketValue) {
   return {
     market_value: marketValue,
     book_value: bookValue,
-    gain_loss: marketValue - bookValue,
-    gain_loss_pct: bookValue !== 0 ? (marketValue - bookValue) / Math.abs(bookValue) : null,
+    gain_loss: hasPortfolioExclusions() ? null : marketValue - bookValue,
+    gain_loss_pct: !hasPortfolioExclusions() && bookValue !== 0 ? (marketValue - bookValue) / Math.abs(bookValue) : null,
     volatility,
     beta,
     inflation_beta: inflationBeta,
@@ -2845,7 +2866,7 @@ function portfolioMarketValueForFrame(frame) {
   let total = 0;
   let found = false;
   frame.assets.forEach((asset, i) => {
-    if (!portfolioSecurities.includes(asset)) return;
+    if (!portfolioSecurities.includes(asset) || portfolioExcluded.has(asset)) return;
     const rawPrice = Number(frame.prices[i]);
     const price = isFuturesAsset(asset) ? futuresEodUnitPrice(asset, rawPrice) : rawPrice;
     const rawShares = Number(portfolioShares[asset]) || 0;
@@ -2856,7 +2877,7 @@ function portfolioMarketValueForFrame(frame) {
     total += value;
     found = true;
   });
-  if (portfolioOptions.length) {
+  if (includedPortfolioOptions().length) {
     const optionValue = portfolioOptionsValueForFrame(frame);
     if (optionValue === null) return null;
     total += optionValue;
@@ -2888,7 +2909,7 @@ function historicalOptionRateAndDividend(frame, option, index) {
   return {rate:Number(rate), dividend};
 }
 
-function portfolioOptionsValueForFrame(frame, options = portfolioOptions) {
+function portfolioOptionsValueForFrame(frame, options = includedPortfolioOptions()) {
   const date = String(frame?.date || "").slice(0, 10);
   if (!date || !Array.isArray(frame?.assets) || !Array.isArray(frame?.prices)) return null;
   let total = 0;
@@ -2985,7 +3006,7 @@ function selectedPortfolioDailyChange(totalMarketValue) {
     // Matrix History is deliberately excluded because it can lag.
     let total = 0;
     let found = false;
-    portfolioSecurities.forEach(asset => {
+    includedPortfolioSecurities().forEach(asset => {
       const rawPrice = Number(portfolioLatestEodPrices[asset]);
       const price = isFuturesAsset(asset) ? futuresEodUnitPrice(asset, rawPrice) : rawPrice;
       const rawShares = Number(portfolioShares[asset]) || 0;
@@ -3021,13 +3042,13 @@ function selectedPortfolioDailyChange(totalMarketValue) {
 }
 
 function currentOptionTotals() {
-  if (!portfolioOptions.length) return null;
+  if (!includedPortfolioOptions().length) return null;
   if (portfolioViewMode === "historical") {
     const frame = matrixHistoryFrames[matrixHistoryIndex];
     const current = portfolioOptionsValueForFrame(frame);
     return current === null ? null : { current, eod: 0 };
   }
-  const values = portfolioOptions.map(portfolioOptionValuation);
+  const values = includedPortfolioOptions().map(portfolioOptionValuation);
   if (values.some(value => value.status !== "ready")) return null;
   return {
     current: values.reduce((sum, value) => sum + value.currentValue, 0),
@@ -3046,7 +3067,7 @@ function updatePortfolioSummary(totalMarketValue) {
   totalMarketValue = Number(totalMarketValue);
 
   const options = currentOptionTotals();
-  const optionsPending = portfolioOptions.length && !options;
+  const optionsPending = includedPortfolioOptions().length && !options;
   const fullMarketValue = totalMarketValue + (options?.current || 0);
   const a = calculatePortfolioAnalyticsLocally(fullMarketValue);
   const bookCost = Number(a.book_value);
@@ -3064,7 +3085,7 @@ function updatePortfolioSummary(totalMarketValue) {
   if (options && portfolioViewMode === "current") {
     if (dailyChange) dailyChange.eodValue += options.eod;
     else if (Number.isFinite(options.eod)) {
-      const equitiesEod = portfolioSecurities.reduce((sum, asset) => {
+      const equitiesEod = includedPortfolioSecurities().reduce((sum, asset) => {
         const price = Number(portfolioLatestEodPrices[asset]);
         const shares = Number(portfolioShares[asset]) || 0;
         if (!(price > 0) || !shares) return sum;
@@ -3116,18 +3137,19 @@ function updatePortfolioSummary(totalMarketValue) {
   const maximumDrawdownDates = maximumDrawdown
     ? `${formatShortDate(maximumDrawdown.peakDate)} → ${formatShortDate(maximumDrawdown.troughDate)}`
     : "—";
-  const hasExcludedDerivatives = portfolioOptions.length > 0 || portfolioSecurities.some(asset =>
+  const hasExcludedDerivatives = includedPortfolioOptions().length > 0 || includedPortfolioSecurities().some(asset =>
     isFuturesAsset(asset) && (Number(portfolioShares[asset]) || 0) !== 0
   );
   const riskPrefix = hasExcludedDerivatives ? "Equity-only " : "";
   const optionExclusionLabel = "";
   const displayedValue = optionsPending ? "—" : formatMoney(fullMarketValue);
-  const displayedGain = optionsPending ? "—" : signedMoney(gainLoss);
-  const displayedReturn = optionsPending ? "—" : signedPct(returnOnBookCost);
+  const displayedGain = optionsPending || hasPortfolioExclusions() ? "—" : signedMoney(gainLoss);
+  const displayedReturn = optionsPending || hasPortfolioExclusions() ? "—" : signedPct(returnOnBookCost);
   const displayedEod = optionsPending ? "—" : eodValueText;
   const displayedChange = optionsPending ? "—" : dailyChangeText;
 
   summary.innerHTML = `
+    ${hasPortfolioExclusions() ? '<p style="font-size:0.85em; margin:4px 0">Checked holdings are excluded. Gain/Loss and Return on Book Cost are unavailable because Book Cost is entered for the whole portfolio.</p>' : ""}
     <div class="portfolio-summary-columns">
       <section class="portfolio-summary-section" aria-label="Current Portfolio Valuation">
         <div class="portfolio-summary-heading">${portfolioViewMode === "historical" && matrixHistoryFrames[matrixHistoryIndex]?.date ? `Portfolio Valuation (${formatLongDate(matrixHistoryFrames[matrixHistoryIndex].date)})` : "Current Portfolio Valuation"}</div>
@@ -3353,13 +3375,13 @@ function portfolioOptionValuation(option) {
 function renderPortfolioOptionMtm(baseCurrentValue) {
   const panel = document.getElementById("portfolioOptionMtm");
   if (!panel) return;
-  panel.hidden = !portfolioOptions.length;
-  if (!portfolioOptions.length) return;
+  panel.hidden = !includedPortfolioOptions().length;
+  if (!includedPortfolioOptions().length) return;
   if (portfolioViewMode !== "current") {
     panel.textContent = "Each historical option price uses that date’s stock price, USD 1Y rate (r) and trailing twelve-month dividend yield (d). IV comes from today’s smoothed grid at historical strike/spot moneyness; remaining time to expiry stays fixed. These are model estimates, not historical option quotes.";
     return;
   }
-  const valuations = portfolioOptions.map(portfolioOptionValuation);
+  const valuations = includedPortfolioOptions().map(portfolioOptionValuation);
   if (valuations.some(row => row.status !== "ready")) {
     panel.textContent = `Portfolio value awaits option prices: ${valuations.filter(row => row.status !== "ready").map(row => row.status).join("; ")}`;
     return;
@@ -3425,7 +3447,7 @@ function renderPortfolioOptions() {
 
   body.innerHTML = portfolioOptions.map((option, index) => `
     <tr data-option-index="${index}">
-      <td>${escapeHtml(displayAsset(option.underlying))}</td>
+      <td><input class="option-exclude" type="checkbox" ${option.excluded ? "checked" : ""} title="Exclude this option from portfolio calculations" aria-label="Exclude ${escapeHtml(displayAsset(option.underlying))} option from portfolio calculations"> ${escapeHtml(displayAsset(option.underlying))}</td>
       <td><input class="option-field" data-field="tradeDate" type="date" value="${option.tradeDate || ""}"></td>
       <td><input class="option-field" data-field="expiry" type="date" value="${option.expiry || ""}"></td>
       <td><input class="option-field" data-field="strike" type="number" min="0" step="any" value="${Number(option.strike) || ""}"></td>
@@ -3438,6 +3460,14 @@ function renderPortfolioOptions() {
       <td><button type="button" class="option-price" data-index="${index}">Price</button> <button type="button" class="option-chart" data-asset="${escapeHtml(option.underlying)}" title="View underlying price chart">📈</button> ${securityNewsLink(option.underlying)} <button type="button" class="option-gamma" data-index="${index}" title="Open this option in the Gamma Ladder">Gamma Ladder</button> <button type="button" class="option-remove" data-index="${index}">Remove</button></td>
     </tr>`).join("");
 
+  body.querySelectorAll(".option-exclude").forEach(input => {
+    input.addEventListener("change", () => {
+      const option = portfolioOptions[Number(input.closest("tr").dataset.optionIndex)];
+      if (!option) return;
+      option.excluded = input.checked;
+      updatePortfolioExclusionViews();
+    });
+  });
   body.querySelectorAll(".option-field").forEach(input => {
     input.addEventListener("change", () => {
       const row = input.closest("tr");
@@ -3548,7 +3578,8 @@ function renderPortfolioTable() {
   if (!body || !summary) return;
 
   body.innerHTML = "";
-  const rows = currentPortfolioRows();
+  const rows = currentPortfolioRows(true);
+  const includedRows = rows.filter(row => !portfolioExcluded.has(row.asset));
 
   if (!rows.length && !portfolioOptions.length) {
     summary.textContent = "";
@@ -3568,7 +3599,7 @@ function renderPortfolioTable() {
     return;
   }
 
-  const totalMarketValue = rows.reduce((sum, row) => sum + (Number.isFinite(row.marketValue) ? row.marketValue : 0), 0);
+  const totalMarketValue = includedRows.reduce((sum, row) => sum + (Number.isFinite(row.marketValue) ? row.marketValue : 0), 0);
   let totalEodValue = 0;
   let completeEodValues = true;
 
@@ -3632,8 +3663,10 @@ function renderPortfolioTable() {
       ? holdingValuation(row.asset, isFuturesAsset(row.asset)
           ? futuresEodUnitPrice(row.asset, eodPrice) : eodPrice, row.shares)
       : NaN;
-    if (Number.isFinite(eodValue)) totalEodValue += eodValue;
-    else completeEodValues = false;
+    if (!portfolioExcluded.has(row.asset)) {
+      if (Number.isFinite(eodValue)) totalEodValue += eodValue;
+      else completeEodValues = false;
+    }
     const eodLocalPrice = riskIndex >= 0 && Array.isArray(portfolioRiskPayload?.local_prices)
       ? Number(portfolioRiskPayload.local_prices[riskIndex]) : eodPrice;
     const eodCurrency = riskIndex >= 0 && Array.isArray(portfolioRiskPayload?.currencies)
@@ -3650,7 +3683,7 @@ function renderPortfolioTable() {
 
     const tr = document.createElement("tr");
     tr.innerHTML = `
-      <td>${rowIndex + 1}. ${isFuturesAsset(row.asset) ? futuresSecurityDisplay(row.asset) : displayAsset(row.asset)}</td>
+      <td><input class="portfolio-exclude" data-asset="${escapeHtml(row.asset)}" type="checkbox" ${portfolioExcluded.has(row.asset) ? "checked" : ""} title="Exclude ${escapeHtml(displayAsset(row.asset))} from portfolio calculations" aria-label="Exclude ${escapeHtml(displayAsset(row.asset))} from portfolio calculations"> ${rowIndex + 1}. ${isFuturesAsset(row.asset) ? futuresSecurityDisplay(row.asset) : displayAsset(row.asset)}</td>
       <td><button type="button" class="portfolio-chart-button" data-asset="${row.asset}" title="View price chart" aria-label="View ${displayAsset(row.asset)} price chart">📈</button> ${securityNewsLink(row.asset)}</td>
       <td>${isFuturesAsset(row.asset)
         ? futuresPriceDisplay(row.asset, futuresEodUnitPrice(row.asset, Number.isFinite(eodLocalPrice) ? eodLocalPrice : eodPrice))
@@ -3681,6 +3714,14 @@ function renderPortfolioTable() {
       <td>${securityInflationBetaText}</td>
     `;
     body.appendChild(tr);
+  });
+
+  body.querySelectorAll(".portfolio-exclude").forEach(input => {
+    input.addEventListener("change", () => {
+      if (input.checked) portfolioExcluded.add(input.dataset.asset);
+      else portfolioExcluded.delete(input.dataset.asset);
+      updatePortfolioExclusionViews();
+    });
   });
 
   body.querySelectorAll(".portfolio-shares").forEach(input => {
@@ -3741,7 +3782,7 @@ function renderPortfolioTable() {
   document.getElementById("portfolioTotalChangePct").textContent = completeEodValues && totalEodValue !== 0 ? `${((totalMarketValue - totalEodValue) / Math.abs(totalEodValue) * 100).toFixed(2)}%` : "—";
   const totalMarginCell = document.getElementById("portfolioTotalInitialMargin");
   if (totalMarginCell) {
-    const totalInitialMargin = rows.reduce((sum,row) =>
+    const totalInitialMargin = includedRows.reduce((sum,row) =>
       sum + (isFuturesAsset(row.asset) ? futuresInitialMargin(row.asset,row.shares) : 0), 0);
     totalMarginCell.textContent = formatMoney(totalInitialMargin);
   }
@@ -3939,7 +3980,7 @@ function drawLineChart(container, rows, valueKey, options = {}) {
 
 function portfolioMarketValueSeries() {
   const rows = matrixHistoryFrames.map(frame => ({ date: frame.date, value: portfolioMarketValueForFrame(frame) }));
-  return portfolioOptions.length && rows.some(row => !Number.isFinite(row.value))
+  return includedPortfolioOptions().length && rows.some(row => !Number.isFinite(row.value))
     ? [] : rows.filter(row => Number.isFinite(row.value));
 }
 
@@ -4717,6 +4758,7 @@ function savePortfolio() {
     name: saveName,
     securities: heldSecurities,
     shares: holdings,
+    excluded: heldSecurities.filter(asset => portfolioExcluded.has(asset)),
     futuresAgreedPrices,
     futuresInitialMargins,
     options: portfolioOptions.map(option => ({
@@ -4726,7 +4768,8 @@ function savePortfolio() {
       strike: Number(option.strike),
       optionType: option.optionType === "put" ? "put" : "call",
       contracts: Math.trunc(Number(option.contracts) || 0),
-      multiplier: 100
+      multiplier: 100,
+      excluded: !!option.excluded
     })),
     bookValue: Number(document.getElementById("portfolioBookValue").value) || 0
   };
@@ -4767,6 +4810,7 @@ function loadPortfolio() {
   saveLastPortfolioBookCost();
   portfolioAutoEqualWeight = false;
   portfolioShares = { ...(saved.shares || {}) };
+  portfolioExcluded = new Set((Array.isArray(saved.excluded) ? saved.excluded : []).map(normalizeDisplaySymbol));
   portfolioFuturesAgreedPrices = { ...(saved.futuresAgreedPrices || {}) };
   portfolioFuturesInitialMargins = { ...(saved.futuresInitialMargins || {}) };
   portfolioOptions = savedOptions.map(option => ({
@@ -4776,7 +4820,8 @@ function loadPortfolio() {
     strike: Number(option.strike) || 0,
     optionType: option.optionType === "put" ? "put" : "call",
     contracts: Math.trunc(Number(option.contracts) || 0),
-    multiplier: 100
+    multiplier: 100,
+    excluded: !!option.excluded
   }));
 
   // A saved portfolio stores only its identity, holdings, shares and Book Cost.
