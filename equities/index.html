@@ -65,6 +65,8 @@ Version: Equities 3
           <th>Exchange</th>
           <th>Ccy</th>
           <th>Price<br><span style="font-weight:400">Local / USD</span></th>
+          <th>EOD<br>USD</th>
+          <th>Change $<br><span style="font-weight:400">USD</span></th>
           <th>Mkt Cap /<br>Net Assets</th>
           <th>P/E</th>
           <th>Fwd P/E</th>
@@ -77,7 +79,7 @@ Version: Equities 3
         </tr>
       </thead>
       <tbody id="equitiesBody">
-        <tr><td colspan="18" class="equities-empty">Choose a preset or saved portfolio, then load the securities.</td></tr>
+        <tr><td colspan="20" class="equities-empty">Choose a preset or saved portfolio, then load the securities.</td></tr>
       </tbody>
     </table>
   </div>
@@ -103,7 +105,8 @@ Version: Equities 3
     <p><strong>Market Cap / Net Assets:</strong> Market capitalization is shown for operating companies; fund net assets are shown for ETFs/funds when Yahoo supplies them.</p>
     <p><strong>P/E:</strong> An ETF may have no Yahoo P/E even though its underlying holdings have earnings. Missing values are shown as N/A rather than inferred.</p>
     <p>Sector, industry, fund category, P/E and beta depend on what Yahoo makes available for each security.</p>
-    <p><strong>σ Move:</strong> latest daily return compared with the preceding 25 daily returns. Moves with |σ| of at least 2.5 are highlighted as unusual. RiskSnap performs this calculation; the news links open external Google News searches in a separate tab and do not republish article content. For an unusual move, <strong>News around move</strong> searches around that trading date. This calculation is independent of the Correlation Lens and portfolio analytics.</p>
+    <p><strong>Daily Move:</strong> (Price USD − EOD USD) ÷ EOD USD; Change $ is the USD price difference per share or underlying unit. EOD uses the same completed market date as Portfolio Analytics; hover over its price to see the date.</p>
+    <p><strong>σ Move:</strong> last completed trading-day return in the security’s quoted currency, compared with the preceding 25 daily returns. Moves with |σ| of at least 2.5 are highlighted as unusual. RiskSnap performs this calculation; the news links open external Google News searches in a separate tab and do not republish article content. For an unusual move, <strong>News around move</strong> searches around that trading date. This calculation is independent of the Correlation Lens and portfolio analytics.</p>
   </div>
 </div>
 
@@ -181,21 +184,21 @@ Version: Equities 3
 .equities-table th:nth-child(7), .equities-table td:nth-child(7) { max-width:72px; }
 .equities-table th:nth-child(8), .equities-table td:nth-child(8) { width:42px; min-width:38px; max-width:44px; }
 .equities-table th:nth-child(9), .equities-table td:nth-child(9) { width:78px; min-width:72px; max-width:88px; }
-.equities-table th:nth-child(10), .equities-table td:nth-child(10) { min-width:72px; }
-.equities-table th:nth-child(11), .equities-table td:nth-child(11),
-.equities-table th:nth-child(12), .equities-table td:nth-child(12),
+.equities-table th:nth-child(12), .equities-table td:nth-child(12) { min-width:72px; }
 .equities-table th:nth-child(13), .equities-table td:nth-child(13),
 .equities-table th:nth-child(14), .equities-table td:nth-child(14),
 .equities-table th:nth-child(15), .equities-table td:nth-child(15),
 .equities-table th:nth-child(16), .equities-table td:nth-child(16),
-.equities-table th:nth-child(17), .equities-table td:nth-child(17) {
+.equities-table th:nth-child(17), .equities-table td:nth-child(17),
+.equities-table th:nth-child(18), .equities-table td:nth-child(18),
+.equities-table th:nth-child(19), .equities-table td:nth-child(19) {
   padding-left:4px;
   padding-right:4px;
 }
-.equities-table th:nth-child(15), .equities-table td:nth-child(15) { min-width:48px; width:52px; text-align:center; }
-.equities-table th:nth-child(16), .equities-table td:nth-child(16) { min-width:56px; }
-.equities-table th:nth-child(17), .equities-table td:nth-child(17) { min-width:47px; }
-.equities-table th:nth-child(18), .equities-table td:nth-child(18) { min-width:86px; }
+.equities-table th:nth-child(17), .equities-table td:nth-child(17) { min-width:48px; width:52px; text-align:center; }
+.equities-table th:nth-child(18), .equities-table td:nth-child(18) { min-width:56px; }
+.equities-table th:nth-child(19), .equities-table td:nth-child(19) { min-width:47px; }
+.equities-table th:nth-child(20), .equities-table td:nth-child(20) { min-width:86px; }
 
 .equities-table th:nth-child(-n+8), .equities-table td:nth-child(-n+8) { text-align:left; }
 .equities-table td:nth-child(2) {
@@ -285,11 +288,14 @@ Version: Equities 3
   .equities-table { font-size:10.5px; }
   .equities-table th, .equities-table td { padding-left:3px; padding-right:3px; }
 }
+
+.equities-table th:nth-child(10), .equities-table td:nth-child(10), .equities-table th:nth-child(11), .equities-table td:nth-child(11) { min-width:70px; }
 </style>
 
 <script>
 const EQUITIES_ENDPOINT = "https://surface-203178530029.northamerica-northeast2.run.app/equity_info";
 const EQUITIES_HISTORY_ENDPOINT = "https://surface-203178530029.northamerica-northeast2.run.app/asset_history";
+const EQUITIES_EOD_ENDPOINT = "https://surface-203178530029.northamerica-northeast2.run.app/correlations_data";
 const EQUITIES_LATEST_PRICES_ENDPOINT = "https://surface-203178530029.northamerica-northeast2.run.app/latest_prices";
 const UNUSUAL_MOVE_LOOKBACK = 25;
 const UNUSUAL_MOVE_THRESHOLD = 2.5;
@@ -470,7 +476,7 @@ function fmtFxRate(row) {
 
 function fmtLocalUsdPriceHtml(row) {
   const local = Number(row && row.price);
-  const usd = Number(row && row.usd_price);
+  const usd = row && row.usd_price != null ? Number(row.usd_price) : NaN;
   const currency = String(row && row.currency || "USD");
   const decimals = priceDisplayDecimals(row && row.symbol);
   if (!Number.isFinite(local)) return '<span class="equities-na">N/A</span>';
@@ -536,15 +542,58 @@ function td(value, extraClass = "") {
   return `<td class="${isNA ? "equities-na " : ""}${extraClass}">${escapeHtml(isNA ? "N/A" : value)}</td>`;
 }
 
+function equityUsdMove(row) {
+  const rawCurrent = row.usd_price ?? (row.currency === "USD" ? row.price : null);
+  const current = rawCurrent == null ? NaN : Number(rawCurrent);
+  const eod = row.eod_usd_price == null ? NaN : Number(row.eod_usd_price);
+  if (!(current > 0) || !(eod > 0)) return null;
+  return {change: current - eod, pct: (current - eod) / eod * 100};
+}
+
+function fmtEquityMove(value, percent = false) {
+  if (!Number.isFinite(value)) return '<span class="equities-na">N/A</span>';
+  const tone = value >= 0 ? "equities-move-positive" : "equities-move-negative";
+  return `<span class="${tone}">${value >= 0 ? "+" : ""}${value.toFixed(percent ? 2 : 4)}${percent ? "%" : ""}</span>`;
+}
+
+async function fetchEquitiesEod(symbols) {
+  // The same completed-EOD USD prices used by Portfolio Analytics.
+  // Leave room for the correlation engine's two internal benchmarks.
+  const batches = [];
+  for (let i = 0; i < symbols.length; i += 20) batches.push(symbols.slice(i, i + 20));
+  const results = await Promise.allSettled(batches.map(async equities => {
+    const response = await fetch(EQUITIES_EOD_ENDPOINT, {
+      method: "POST", headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({lookback:25, equities:equities.join(", "), fx_gold_oil:[], yields:[]})
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || `HTTP ${response.status}`);
+    return data;
+  }));
+  const bySymbol = new Map();
+  for (const result of results) {
+    if (result.status !== "fulfilled") continue;
+    const data = result.value;
+    const date = String(data.date || data.as_of || data.ewma_as_of || data.risk_free_as_of || "").slice(0,10);
+    (data.assets || []).forEach((symbol, i) => {
+      const value = data.prices?.[i];
+      if (value != null && Number.isFinite(Number(value)) && Number(value) > 0)
+        bySymbol.set(String(symbol).toUpperCase(), {price:Number(value), date});
+    });
+  }
+  return bySymbol;
+}
+
 function renderRows(rows) {
   const body = document.getElementById("equitiesBody");
   if (!Array.isArray(rows) || !rows.length) {
-    body.innerHTML = '<tr><td colspan="18" class="equities-empty">No security information was returned.</td></tr>';
+    body.innerHTML = '<tr><td colspan="20" class="equities-empty">No security information was returned.</td></tr>';
     return;
   }
 
   body.innerHTML = rows.map(row => {
     const symbol = String(row.symbol || "").trim().toUpperCase();
+    const move = equityUsdMove(row);
     return `<tr data-symbol="${escapeHtml(symbol)}">
       <td class="equities-code">${escapeHtml(row.flag || "")} ${escapeHtml(symbol)}</td>
       ${td(row.description)}
@@ -555,13 +604,15 @@ function renderRows(rows) {
       ${td(row.exchange)}
       ${td(row.currency)}
       <td>${fmtLocalUsdPriceHtml(row)}</td>
+      <td title="${escapeHtml(row.eod_date || "Completed EOD")}">${row.eod_usd_price > 0 ? escapeHtml(fmtMoney(row.eod_usd_price, "USD", priceDisplayDecimals(symbol))) : '<span class="equities-na">N/A</span>'}</td>
+      <td>${fmtEquityMove(move?.change)}</td>
       ${td(fmtMarketCapOrAssets(row))}
       ${td(fmtNumber(row.trailing_pe))}
       ${td(fmtNumber(row.forward_pe))}
       ${td(fmtPercent(row.dividend_yield))}
       ${td(fmtNumber(row.beta))}
       <td><button type="button" class="equities-chart-link" data-symbol="${escapeHtml(symbol)}">Chart</button></td>
-      <td class="equities-daily-move"><span class="equities-move-pending">…</span></td>
+      <td class="equities-daily-move">${fmtEquityMove(move?.pct, true)}</td>
       <td class="equities-sigma-move"><span class="equities-move-pending">…</span></td>
       <td class="equities-news"><span class="equities-move-pending">…</span></td>
     </tr>`;
@@ -788,21 +839,16 @@ function renderUnusualMove(symbol, result, security) {
   const row = document.querySelector(`tr[data-symbol="${CSS.escape(symbol)}"]`);
   if (!row) return;
 
-  const moveCell = row.querySelector(".equities-daily-move");
   const sigmaCell = row.querySelector(".equities-sigma-move");
   const newsCell = row.querySelector(".equities-news");
 
   if (!result || !Number.isFinite(result.dailyReturn)) {
-    moveCell.textContent = "N/A";
     sigmaCell.textContent = "N/A";
     const href = googleLatestNewsUrl(security);
     newsCell.innerHTML = `<a class="equities-news-link" href="${escapeHtml(href)}" target="_blank" rel="noopener noreferrer" title="Open an external Google News search for this security">Latest News →</a>`;
     return;
   }
 
-  const pct = result.dailyReturn * 100;
-  const moveClass = pct >= 0 ? "equities-move-positive" : "equities-move-negative";
-  moveCell.innerHTML = `<span class="${moveClass}" title="${escapeHtml(result.date)}">${pct >= 0 ? "+" : ""}${pct.toFixed(2)}%</span>`;
 
   if (!Number.isFinite(result.z)) {
     sigmaCell.textContent = "N/A";
@@ -863,7 +909,7 @@ async function loadEquities() {
   button.disabled = true;
   setStatus(`Loading ${symbols.length} securit${symbols.length === 1 ? "y" : "ies"}...`);
   try {
-    const [infoResponse, latestResponse] = await Promise.all([
+    const [infoResponse, latestResponse, eodBySymbol] = await Promise.all([
       fetch(EQUITIES_ENDPOINT, {
         method: "POST",
         headers: {"Content-Type": "application/json"},
@@ -873,7 +919,8 @@ async function loadEquities() {
         method: "POST",
         headers: {"Content-Type": "application/json"},
         body: JSON.stringify({symbols})
-      })
+      }),
+      fetchEquitiesEod(symbols)
     ]);
 
     const payload = await infoResponse.json().catch(() => ({}));
@@ -903,23 +950,33 @@ async function loadEquities() {
     const rows = (payload.rows || []).map(row => {
       const symbol = String(row.symbol || "").trim().toUpperCase();
       const latest = latestBySymbol.get(symbol);
-      if (!latest) return row;
-      const marketPrice = Number(latest.price ?? latest.market_price ?? latest.usd_price);
-      if (!Number.isFinite(marketPrice)) return row;
-      return {
-        ...row,
-        price: marketPrice,
-        usd_price: String(row.currency || "USD") === "USD" ? marketPrice : row.usd_price
-      };
+      const rawLocal = latest?.price ?? latest?.market_price;
+      const local = rawLocal == null ? NaN : Number(rawLocal);
+      const isFuture = symbol.endsWith("=F");
+      const currency = isFuture ? "USD" : String(latestPayload.currencies?.[symbol] || row.currency || "USD");
+      const rawUsd = latestPayload.usd_prices?.[symbol] ?? latest?.usd_price;
+      const usd = rawUsd == null ? NaN : Number(rawUsd);
+      const market = {...row, currency};
+      if (local > 0) {
+        market.price = local;
+        // /latest_prices already returns futures in dollars per underlying unit.
+        market.usd_price = isFuture || currency === "USD" ? local : (usd > 0 ? usd : null);
+        market.fx_rate = latestPayload.fx_rates?.[symbol] ?? latest?.fx_rate ?? null;
+        market.fx_pair = latestPayload.fx_pairs?.[symbol] ?? latest?.fx_pair ?? null;
+      }
+      const eod = eodBySymbol.get(symbol);
+      return {...market, eod_usd_price:eod?.price ?? null, eod_date:eod?.date || ""};
     });
 
     renderRows(rows);
     const failed = Array.isArray(payload.failed) ? payload.failed : [];
-    const time = payload.timestamp ? new Date(payload.timestamp).toLocaleString() : "";
-    setStatus(`Loaded ${Array.isArray(payload.rows) ? payload.rows.length : 0} securities${time ? ` — ${time}` : ""}${failed.length ? `; unavailable: ${failed.join(", ")}` : ""}.`);
+    const timestamp = latestPayload.timestamp || payload.timestamp;
+    const time = timestamp ? new Date(timestamp).toLocaleString() : "";
+    const missingEod = rows.filter(row => !(row.eod_usd_price > 0)).map(row => row.symbol);
+    setStatus(`Loaded ${Array.isArray(payload.rows) ? payload.rows.length : 0} securities${time ? ` — ${time}` : ""}${failed.length ? `; unavailable: ${failed.join(", ")}` : ""}${missingEod.length ? `; EOD unavailable: ${missingEod.join(", ")}` : ""}.`);
   } catch (err) {
     console.log(err);
-    document.getElementById("equitiesBody").innerHTML = '<tr><td colspan="18" class="equities-empty">Unable to load Equity information. The Cloud Run equity_info endpoint must be deployed.</td></tr>';
+    document.getElementById("equitiesBody").innerHTML = '<tr><td colspan="20" class="equities-empty">Unable to load Equity information. The Cloud Run equity_info endpoint must be deployed.</td></tr>';
     setStatus(`Unable to load data: ${err.message || err}`);
   } finally {
     button.disabled = false;
