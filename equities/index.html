@@ -21,7 +21,7 @@ Version: Equities 3
 <div class="text-section equities-page">
   <p class="equities-intro">
     Select a RiskSnap preset or a saved portfolio to view descriptive information about its securities.
-    Portfolios can be created and saved on the <strong>Correlations, Portfolios</strong> page.
+    Save a set here for easy price viewing or to open in Correlations. Enter actual holdings in <a href="/correlations#portfolioPanel">Portfolio Analytics</a>.
   </p>
 
   <div class="equities-selectors">
@@ -51,6 +51,15 @@ Version: Equities 3
     <button id="equitiesRefreshPortfolios" type="button">Refresh Saved Portfolios</button>
     <span id="equitiesStatus" class="equities-status">Ready.</span>
   </div>
+
+  <form id="equitiesSaveForm" class="equities-actions">
+    <label for="equitiesSaveName"><strong>Portfolio name</strong></label>
+    <input id="equitiesSaveName" type="text" maxlength="60" placeholder="e.g. My watchlist" style="padding:7px;min-width:0;max-width:100%;box-sizing:border-box;" autocomplete="off">
+    <button type="submit">Save Portfolio</button>
+    <a href="/correlations#portfolioPanel">Open in Portfolio Analytics</a>
+    <div class="selector-note" style="flex-basis:100%">Saves the symbols above with 1 unit each and book cost 0. For actual portfolio calculations, enter your holdings, costs and futures agreed prices in Portfolio Analytics. Saved sets stay in this browser.</div>
+    <span id="equitiesSaveStatus" class="equities-status" style="flex-basis:100%" role="status" aria-live="polite"></span>
+  </form>
 
   <div class="equities-table-wrap">
     <table class="equities-table">
@@ -412,8 +421,40 @@ function refreshPortfolioSelector(selectedName = "") {
   if (selectedName && portfolios[selectedName]) select.value = selectedName;
   document.getElementById("portfolioNote").textContent = names.length
     ? `${names.length} saved portfolio${names.length === 1 ? "" : "s"} found in this browser.`
-    : 'No saved portfolios found. Portfolios can be saved on the "Correlations, Portfolios" page.';
+    : 'No saved portfolios found. Enter a name below to save this set.';
 }
+
+function saveEquitiesPortfolio(event) {
+  event.preventDefault();
+  const input = document.getElementById("equitiesSaveName");
+  const status = document.getElementById("equitiesSaveStatus");
+  const name = input.value.trim();
+  const securities = parseSymbols(document.getElementById("equitiesSymbols").value);
+  if (!name) { status.textContent = "Enter a portfolio name first."; input.focus(); return; }
+  if (!securities.length) { status.textContent = "Choose a preset or enter symbols first."; return; }
+  try {
+    const raw = localStorage.getItem(EQUITIES_PORTFOLIOS_KEY);
+    const portfolios = raw ? JSON.parse(raw) : {};
+    if (!portfolios || typeof portfolios !== "object" || Array.isArray(portfolios)) throw new Error("Invalid saved portfolio data");
+    const existing = Object.keys(portfolios).find(key => key.toLowerCase() === name.toLowerCase());
+    if (existing) {
+      status.textContent = `“${existing}” already exists. Use a different name to save this set.`;
+      input.focus(); return;
+    }
+    const saved = { name, securities, shares: Object.fromEntries(securities.map(symbol => [symbol, 1])),
+      excluded: [], futuresAgreedPrices: {}, futuresInitialMargins: {}, options: [], bookValue: 0 };
+    Object.defineProperty(portfolios, name, { value: saved, enumerable: true, configurable: true, writable: true });
+    localStorage.setItem(EQUITIES_PORTFOLIOS_KEY, JSON.stringify(portfolios));
+    refreshPortfolioSelector(name);
+    document.getElementById("equitiesPreset").value = "";
+    saveActiveSelection({ type: "portfolio", name });
+    status.textContent = `Saved “${name}” with ${securities.length} securities, 1 unit each. Available in Equities and Correlations.`;
+  } catch (err) {
+    status.textContent = "Unable to save. Browser storage may be unavailable, full or contain unreadable portfolio data.";
+  }
+}
+
+document.getElementById("equitiesSaveForm").addEventListener("submit", saveEquitiesPortfolio);
 
 function symbolsFromPortfolio(name) {
   const saved = readSavedPortfolios()[name];
