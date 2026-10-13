@@ -55,12 +55,10 @@ Version: Equities 3
   <form id="equitiesSaveForm" class="equities-actions">
     <label for="equitiesSaveName"><strong>Portfolio name</strong></label>
     <input id="equitiesSaveName" type="text" maxlength="60" placeholder="e.g. My watchlist" style="padding:7px;min-width:0;max-width:100%;box-sizing:border-box;" autocomplete="off">
-    <div class="equities-save-feedback">
-      <button type="submit">Save Portfolio</button>
-      <span id="equitiesSaveStatus" class="equities-status" role="status" aria-live="polite"></span>
-    </div>
+    <button type="submit">Save Portfolio</button>
     <a href="/correlations#portfolioPanel">Open in Portfolio Analytics</a>
     <div class="selector-note" style="flex-basis:100%">Saves the symbols above with 1 unit each and book cost 0. For actual portfolio calculations, enter your holdings, costs and futures agreed prices in Portfolio Analytics. Saved sets stay in this browser.</div>
+    <span id="equitiesSaveStatus" class="equities-status" style="flex-basis:100%" role="status" aria-live="polite"></span>
   </form>
 
   <div class="equities-table-wrap">
@@ -175,9 +173,6 @@ Version: Equities 3
   padding:6px 11px;
   font-size:13px;
 }
-.equities-save-feedback { display:flex; flex-direction:column; align-items:flex-start; gap:4px; max-width:100%; }
-#equitiesSaveStatus:empty { display:none; }
-#equitiesSaveForm button { color:#244b9b; }
 .equities-actions button:hover { background:#f0f4ff; border-color:#7188c7; }
 .equities-actions button:disabled { cursor:default; opacity:.55; }
 .equities-status { color:#555; font-size:12px; }
@@ -442,18 +437,22 @@ function saveEquitiesPortfolio(event) {
     const portfolios = raw ? JSON.parse(raw) : {};
     if (!portfolios || typeof portfolios !== "object" || Array.isArray(portfolios)) throw new Error("Invalid saved portfolio data");
     const existing = Object.keys(portfolios).find(key => key.toLowerCase() === name.toLowerCase());
-    if (existing) {
-      status.textContent = `“${existing}” already exists. Use a different name to save this set.`;
-      input.focus(); return;
-    }
-    const saved = { name, securities, shares: Object.fromEntries(securities.map(symbol => [symbol, 1])),
-      excluded: [], futuresAgreedPrices: {}, futuresInitialMargins: {}, options: [], bookValue: 0 };
-    Object.defineProperty(portfolios, name, { value: saved, enumerable: true, configurable: true, writable: true });
+    const savedName = existing || name;
+    const previous = existing ? portfolios[existing] : {};
+    const saved = { ...previous, name: savedName, securities,
+      shares: Object.fromEntries(securities.map(symbol => [symbol,
+        Object.prototype.hasOwnProperty.call(previous.shares || {}, symbol) ? previous.shares[symbol] : 1])),
+      excluded: (previous.excluded || []).filter(symbol => securities.includes(symbol)),
+      futuresAgreedPrices: previous.futuresAgreedPrices || {},
+      futuresInitialMargins: previous.futuresInitialMargins || {},
+      options: previous.options || [], bookValue: previous.bookValue ?? 0 };
+    Object.defineProperty(portfolios, savedName, { value: saved, enumerable: true, configurable: true, writable: true });
     localStorage.setItem(EQUITIES_PORTFOLIOS_KEY, JSON.stringify(portfolios));
-    refreshPortfolioSelector(name);
+    input.value = savedName;
+    refreshPortfolioSelector(savedName);
     document.getElementById("equitiesPreset").value = "";
-    saveActiveSelection({ type: "portfolio", name });
-    status.textContent = `Saved “${name}” with ${securities.length} securities, 1 unit each. Available in Equities and Correlations.`;
+    saveActiveSelection({ type: "portfolio", name: savedName });
+    status.textContent = `${existing ? "Updated" : "Saved"} “${savedName}” with ${securities.length} securities. ${existing ? "Existing holdings and costs retained; new securities use 1 unit." : "1 unit each."} Available in Equities and Correlations.`;
   } catch (err) {
     status.textContent = "Unable to save. Browser storage may be unavailable, full or contain unreadable portfolio data.";
   }
