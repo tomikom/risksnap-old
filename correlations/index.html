@@ -531,8 +531,8 @@ h1 { color: white; text-align: center; background-color: #3A5FCD; }
 .portfolio-summary-value { text-align:right; font-variant-numeric:tabular-nums; }
 .portfolio-summary-break { grid-column:1 / -1; height:7px; }
 @media (max-width:760px) { .portfolio-summary-columns { grid-template-columns:1fr; gap:18px; } }
-.portfolio-summary-value.positive { color:#137333; }
-.portfolio-summary-value.negative { color:#b3261e; }
+.portfolio-summary-value.positive, .portfolio-number-positive { color:#137333; }
+.portfolio-summary-value.negative, .portfolio-number-negative { color:#b3261e; }
 .matrix-portfolio-summary { margin:3px 0 5px; font-size:12px; font-weight:600; color:#333; white-space:normal; }
 .portfolio-table-wrap { overflow-x:auto; }
 .portfolio-table { width:100%; border-collapse:collapse; font-size:13px; }
@@ -3207,6 +3207,7 @@ function updatePortfolioSummary(totalMarketValue) {
     </div>
     <section class="risk-contribution-panel" aria-label="Equity, futures and delta-adjusted option portfolio risk contributions">${portfolioRiskContributionChart(portfolioRiskPayload, selectedDays)}</section>`;
 
+  colourPortfolioNumbers(summary.querySelectorAll(".portfolio-summary-value"));
   if (stickySummary) {
     const dateText = portfolioViewMode === "historical" && portfolioRiskPayload && portfolioRiskPayload.date
       ? formatCompactDate(portfolioRiskPayload.date)
@@ -3580,6 +3581,21 @@ async function addPortfolioOption() {
   if (needsPriceHistory) scheduleCorrelationRefresh();
 }
 
+function colourPortfolioNumbers(elements) {
+  elements.forEach(element => {
+    element.classList.remove("portfolio-number-positive", "portfolio-number-negative");
+    const text = element.textContent.trim();
+    // Dates and missing values remain neutral; use the displayed numeric sign.
+    if (text.includes("→")) return;
+    const match = text.replace(/[$,]/g, "").replace(/−/g, "-")
+      .match(/^([+-]?\d+(?:\.\d+)?)(?:%|\s|$)/);
+    if (!match) return;
+    const value = Number(match[1]);
+    if (value > 0) element.classList.add("portfolio-number-positive");
+    else if (value < 0) element.classList.add("portfolio-number-negative");
+  });
+}
+
 function renderPortfolioTable() {
   const body = document.getElementById("portfolioBody");
   const summary = document.getElementById("portfolioSummary");
@@ -3721,6 +3737,7 @@ function renderPortfolioTable() {
       <td>${securityBetaText}</td>
       <td>${securityInflationBetaText}</td>
     `;
+    colourPortfolioNumbers(Array.from(tr.cells).slice(7));
     body.appendChild(tr);
   });
 
@@ -3794,6 +3811,7 @@ function renderPortfolioTable() {
       sum + (isFuturesAsset(row.asset) ? futuresInitialMargin(row.asset,row.shares) : 0), 0);
     totalMarginCell.textContent = formatMoney(totalInitialMargin);
   }
+  colourPortfolioNumbers(document.querySelectorAll(".holdings-table tfoot td[id]"));
   updatePortfolioSummary(totalMarketValue);
   updatePortfolioDataLabels();
   updateFundamentalHeadings();
