@@ -3743,6 +3743,13 @@ function renderPortfolioTable() {
       <td>${securityInflationBetaText}</td>
     `;
     colourPortfolioNumbers(Array.from(tr.cells).slice(7));
+    const priceChange = Number.isFinite(row.price) && eodPrice > 0
+      ? row.price - (isFuturesAsset(row.asset) ? futuresEodUnitPrice(row.asset, eodPrice) : eodPrice)
+      : NaN;
+    // Colour from the number directly, independent of browser currency formatting.
+    const priceChangeCell = tr.cells[7];
+    priceChangeCell.classList.remove("portfolio-number-positive", "portfolio-number-negative");
+    priceChangeCell.style.color = priceChange > 0 ? "#137333" : priceChange < 0 ? "#b3261e" : "#000";
     body.appendChild(tr);
   });
 
