@@ -78,14 +78,14 @@ Version: Equities 3
           <th>EOD<br>USD</th>
           <th>Current Value<br><span style="font-weight:400">Local / USD</span></th>
           <th>Change $<br><span style="font-weight:400">USD</span></th>
+          <th>Daily<br>Move</th>
+          <th>σ<br>Move</th>
           <th>Mkt Cap /<br>Net Assets</th>
           <th>P/E</th>
           <th>Fwd P/E</th>
           <th>Div Yield</th>
           <th>Beta</th>
           <th>Chart</th>
-          <th>Daily<br>Move</th>
-          <th>σ<br>Move</th>
           <th>External<br>News</th>
         </tr>
       </thead>
@@ -117,7 +117,7 @@ Version: Equities 3
     <p><strong>P/E:</strong> An ETF may have no Yahoo P/E even though its underlying holdings have earnings. Missing values are shown as N/A rather than inferred.</p>
     <p>Sector, industry, fund category, P/E and beta depend on what Yahoo makes available for each security.</p>
     <p><strong>Daily Move:</strong> (Current Value USD − EOD USD) ÷ EOD USD; Change $ is the USD price difference per share or underlying unit. EOD uses the same completed market date as Portfolio Analytics; hover over its price to see the date.</p>
-    <p><strong>σ Move:</strong> last completed trading-day return in the security’s quoted currency, compared with the preceding 25 daily returns. Moves with |σ| of at least 2.5 are highlighted as unusual. RiskSnap performs this calculation; the news links open external Google News searches in a separate tab and do not republish article content. For an unusual move, <strong>News around move</strong> searches around that trading date. This calculation is independent of the Correlation Lens and portfolio analytics.</p>
+    <p><strong>σ Move:</strong> (last completed trading-day return − average of the preceding 25 daily returns) ÷ sample standard deviation of those 25 returns, using the security’s quoted currency and simple price returns. This uses daily volatility, not annual volatility. For example, a −1.70% return, a +0.10% prior average and 1.25% daily volatility give (−1.70% − 0.10%) ÷ 1.25% = −1.44σ. Unlike Daily Move, this is a completed-day local-currency measure, not a live USD move. Moves with |σ| of at least 2.5 are highlighted as unusual. RiskSnap performs this calculation; the news links open external Google News searches in a separate tab and do not republish article content. For an unusual move, <strong>News around move</strong> searches around that trading date. This calculation is independent of the Correlation Lens and portfolio analytics.</p>
   </div>
 </div>
 
@@ -656,14 +656,14 @@ function renderRows(rows) {
       <td title="${escapeHtml(row.eod_date || "Completed EOD")}">${row.eod_usd_price > 0 ? escapeHtml(fmtMoney(row.eod_usd_price, "USD", row.currency && row.currency !== "USD" ? 4 : priceDisplayDecimals(symbol))) : '<span class="equities-na">N/A</span>'}</td>
       <td>${fmtLocalUsdPriceHtml(row)}</td>
       <td>${fmtEquityMove(move?.change)}</td>
+      <td class="equities-daily-move">${fmtEquityMove(move?.pct, true)}</td>
+      <td class="equities-sigma-move"><span class="equities-move-pending">…</span></td>
       ${td(fmtMarketCapOrAssets(row))}
       ${td(fmtNumber(row.trailing_pe))}
       ${td(fmtNumber(row.forward_pe))}
       ${td(fmtPercent(row.dividend_yield))}
       ${td(fmtNumber(row.beta))}
       <td><button type="button" class="equities-chart-link" data-symbol="${escapeHtml(symbol)}">Chart</button></td>
-      <td class="equities-daily-move">${fmtEquityMove(move?.pct, true)}</td>
-      <td class="equities-sigma-move"><span class="equities-move-pending">…</span></td>
       <td class="equities-news"><span class="equities-move-pending">…</span></td>
     </tr>`;
   }).join("");
