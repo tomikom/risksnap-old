@@ -175,6 +175,8 @@ Changes:
         </select>
         <button id="portfolioSave" type="button">Save</button>
         <button id="portfolioLoad" type="button">Load</button>
+        <button id="portfolioImportCsv" type="button" title="CSV columns, in this exact order:&#10;portfolio_name,symbol,shares,book_cost_usd&#10;&#10;portfolio_name: same name on every row, maximum 60 characters.&#10;symbol: Yahoo ticker, e.g. TSLA, SHOP or LIF.TO.&#10;shares: positive number; fractional shares allowed.&#10;book_cost_usd: total USD cost of that holding including fees, not cost per share; use 0 for a model.&#10;&#10;One row per ticker; no duplicates or total row. One portfolio per file. Equities and ETFs only. Book costs are added together.&#10;In Excel, save as CSV UTF-8 (Comma delimited).">Import CSV</button>
+        <input id="portfolioCsvFile" type="file" accept=".csv,text/csv" hidden>
         <button id="portfolioDelete" type="button">Delete</button>
         <span id="portfolioStorageStatus" class="portfolio-storage-status"></span>
       </div>
@@ -1004,6 +1006,64 @@ document.getElementById("portfolioBookValue").addEventListener("input", () => {
 });
 document.getElementById("portfolioSave").addEventListener("click", savePortfolio);
 document.getElementById("portfolioLoad").addEventListener("click", loadPortfolio);
+document.getElementById("portfolioImportCsv").addEventListener("click", () => document.getElementById("portfolioCsvFile").click());
+document.getElementById("portfolioCsvFile").addEventListener("change", async event => {
+  const input = event.target;
+  const file = input.files[0];
+  if (!file) return;
+  try {
+    const saved = parseEquityPortfolioCsv(await file.text());
+    const portfolios = readSavedPortfolios();
+    const existing = Object.keys(portfolios).find(name => name.toLowerCase() === saved.name.toLowerCase());
+    if (existing && !window.confirm(`Replace saved portfolio “${existing}” with this CSV?`)) return;
+    const name = existing || saved.name;
+    saved.name = name;
+    portfolios[name] = saved;
+    if (!writeSavedPortfolios(portfolios)) return;
+    refreshSavedPortfolioList(name);
+    document.getElementById("portfolioName").value = name;
+    setPortfolioStorageStatus(`Imported “${name}”. Click Load to open it.`);
+  } catch (error) {
+    setPortfolioStorageStatus(`CSV import failed: ${error.message}`);
+  } finally { input.value = ""; }
+});
+
+function parseEquityPortfolioCsv(text) {
+  // CSV supports quoted fields, commas and doubled quotes.
+  const rows = []; let row = [], field = "", quoted = false;
+  text = text.replace(/^\uFEFF/, "");
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (ch === '"') {
+      if (quoted && text[i + 1] === '"') { field += '"'; i++; }
+      else quoted = !quoted;
+    } else if (ch === ',' && !quoted) { row.push(field.trim()); field = ""; }
+    else if ((ch === '\n' || ch === '\r') && !quoted) {
+      if (ch === '\r' && text[i + 1] === '\n') i++;
+      row.push(field.trim()); if (row.some(Boolean)) rows.push(row);
+      row = []; field = "";
+    } else field += ch;
+  }
+  if (quoted) throw new Error("Unclosed quoted field.");
+  row.push(field.trim()); if (row.some(Boolean)) rows.push(row);
+  const headers = rows.shift() || [];
+  const required = ["portfolio_name", "symbol", "shares", "book_cost_usd"];
+  if (headers.join(",") !== required.join(",")) throw new Error("Use headers: " + required.join(","));
+  if (!rows.length) throw new Error("No holdings found.");
+  const name = rows[0][0];
+  if (!name || name.length > 60) throw new Error("Portfolio name must contain 1–60 characters.");
+  const shares = {}; let bookValue = 0;
+  for (const [index, cells] of rows.entries()) {
+    const [portfolioName, rawSymbol, units, cost] = cells;
+    const symbol = String(rawSymbol || "").toUpperCase();
+    if (cells.length !== 4 || portfolioName !== name || !/^[A-Z0-9.^=-]+$/.test(symbol) || symbol.endsWith("=F") || !units || !cost || !Number.isFinite(Number(units)) || Number(units) <= 0 || !Number.isFinite(Number(cost)) || Number(cost) < 0)
+      throw new Error(`Invalid equity holding on line ${index + 2}; use positive shares and nonnegative book cost.`);
+    if (Object.prototype.hasOwnProperty.call(shares, symbol)) throw new Error("Duplicate symbol: " + symbol);
+    shares[symbol] = Number(units); bookValue += Number(cost);
+  }
+  return {name, securities:Object.keys(shares), shares, bookValue, excluded:[], options:[], futuresAgreedPrices:{}, futuresInitialMargins:{}};
+}
+
 document.getElementById("portfolioDelete").addEventListener("click", deletePortfolio);
 document.getElementById("optionAdd").addEventListener("click", addPortfolioOption);
 document.getElementById("optionUnderlying").addEventListener("change", () => {
@@ -1525,14 +1585,19 @@ async function fetchCorrelationData() {
     setStatus(`Updated ${activePayload.assets.length} assets for ${period}.`);
     showMessages(activePayload.messages || []);
     fetchRollingMatrix(requestPayload, period);
+    return true;
   } catch (err) {
     if (requestId !== correlationRequestId) return;
-    activePayload = getFilteredFallbackPayload(period);
     activeIsLive = false;
-    drawCorrelationChart(activePayload);
-    setStatus("Live calculation unavailable; showing embedded preview.");
-    showMessages(["Live calculation unavailable: " + err.message, "This usually means the Cloud Run endpoint did not respond, or the browser blocked the cross-site request.", "Filtered preview can only show assets already embedded in the sample data.", ...(activePayload.messages || [])]);
-    resetMatrixHistoryPanel("Matrix history requires the live rolling-matrix endpoint.");
+    activePayload = null;
+    Plotly.purge("corrChart");
+    document.getElementById("corrChart").textContent = "Correlation data unavailable for the selected portfolio and lookback.";
+    setStatus("Correlation calculation failed; portfolio selection retained.");
+    showMessages(["Live calculation unavailable: " + err.message]);
+    setPortfolioStorageStatus("Portfolio retained; correlation calculation failed: " + err.message);
+    resetMatrixHistoryPanel("Matrix history unavailable: " + err.message);
+    renderPortfolioTable();
+    return false;
   } finally {
     if (requestId === correlationRequestId) setLoading(false);
   }
@@ -3743,6 +3808,13 @@ function renderPortfolioTable() {
       <td>${securityInflationBetaText}</td>
     `;
     colourPortfolioNumbers(Array.from(tr.cells).slice(7));
+    const priceChange = Number.isFinite(row.price) && eodPrice > 0
+      ? row.price - (isFuturesAsset(row.asset) ? futuresEodUnitPrice(row.asset, eodPrice) : eodPrice)
+      : NaN;
+    // Colour from the number directly, independent of browser currency formatting.
+    const priceChangeCell = tr.cells[7];
+    priceChangeCell.classList.remove("portfolio-number-positive", "portfolio-number-negative");
+    priceChangeCell.style.color = priceChange > 0 ? "#137333" : priceChange < 0 ? "#b3261e" : "#000";
     body.appendChild(tr);
   });
 
@@ -4844,6 +4916,7 @@ function loadPortfolio() {
   document.getElementById("portfolioBookValue").value = Number(saved.bookValue) || 0;
   saveLastPortfolioBookCost();
   portfolioAutoEqualWeight = false;
+  portfolioSecurities = [...securities];
   portfolioShares = { ...(saved.shares || {}) };
   portfolioExcluded = new Set((Array.isArray(saved.excluded) ? saved.excluded : []).map(normalizeDisplaySymbol));
   portfolioFuturesAgreedPrices = { ...(saved.futuresAgreedPrices || {}) };
@@ -4893,7 +4966,12 @@ function loadPortfolio() {
   saveCurrentSettings();
   updateSaveDefaultsState();
   setPortfolioStorageStatus(`Loading “${name}”...`);
-  fetchCorrelationData().then(() => setPortfolioStorageStatus(`Loaded “${name}”.`));
+  renderPortfolioTable();
+  refreshPortfolioPrices();
+  fetchCorrelationData().then(success => {
+    if (success && readActiveSelection()?.name === name)
+      setPortfolioStorageStatus(`Loaded “${name}”.`);
+  });
 }
 
 function deletePortfolio() {
