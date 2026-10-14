@@ -198,6 +198,7 @@ Changes:
             <th>Units</th>
             <th>Agreed price</th>
             <th>Initial margin (USD)</th>
+            <th title="Market price USD minus EOD price USD, per share or underlying futures unit">Change pr</th>
             <th>EOD Value</th>
             <th>Current Value</th>
             <th>Change $</th>
@@ -215,8 +216,9 @@ Changes:
           <tr>
             <td colspan="6">Equities/futures subtotal</td>
             <td id="portfolioTotalInitialMargin">—</td>
-            <td id="portfolioTotalEodValue">—</td>
-            <td id="portfolioTotalMarketValue">—</td>
+            <td>—</td>
+            <td class="portfolio-number-neutral" id="portfolioTotalEodValue">—</td>
+            <td class="portfolio-number-neutral" id="portfolioTotalMarketValue">—</td>
             <td id="portfolioTotalChange">—</td>
             <td id="portfolioTotalChangePct">—</td>
             <td colspan="6"></td>
@@ -531,6 +533,7 @@ h1 { color: white; text-align: center; background-color: #3A5FCD; }
 .portfolio-summary-value { text-align:right; font-variant-numeric:tabular-nums; }
 .portfolio-summary-break { grid-column:1 / -1; height:7px; }
 @media (max-width:760px) { .portfolio-summary-columns { grid-template-columns:1fr; gap:18px; } }
+.portfolio-number-neutral { color:#000 !important; }
 .portfolio-summary-value.positive, .portfolio-number-positive { color:#137333; }
 .portfolio-summary-value.negative, .portfolio-number-negative { color:#b3261e; }
 .matrix-portfolio-summary { margin:3px 0 5px; font-size:12px; font-weight:600; color:#333; white-space:normal; }
@@ -3165,14 +3168,14 @@ function updatePortfolioSummary(totalMarketValue) {
           <div class="portfolio-summary-label">Book Cost</div>
           <div class="portfolio-summary-value">${formatMoney(bookCost)}</div>
           <div class="portfolio-summary-label">${portfolioViewMode === "historical" && matrixHistoryFrames[matrixHistoryIndex]?.date ? `Market Value (${formatShortDate(matrixHistoryFrames[matrixHistoryIndex].date)})` : "Current Market Value"}${optionExclusionLabel}</div>
-          <div class="portfolio-summary-value">${displayedValue}</div>
+          <div class="portfolio-summary-value portfolio-number-neutral">${displayedValue}</div>
           <div class="portfolio-summary-label">Gain/Loss${optionExclusionLabel}</div>
           <div class="portfolio-summary-value ${tone(gainLoss)}">${displayedGain}</div>
           <div class="portfolio-summary-label">Return on Book Cost</div>
           <div class="portfolio-summary-value ${tone(returnOnBookCost || 0)}">${displayedReturn}</div>
           <div class="portfolio-summary-break"></div>
           <div class="portfolio-summary-label">${eodValueLabel}${optionExclusionLabel}</div>
-          <div class="portfolio-summary-value">${displayedEod}</div>
+          <div class="portfolio-summary-value portfolio-number-neutral">${displayedEod}</div>
           <div class="portfolio-summary-label">Change vs EOD${optionExclusionLabel}</div>
           <div class="portfolio-summary-value ${dailyChange ? tone(dailyChange.change) : ""}">${displayedChange}</div>
           <div class="portfolio-summary-break"></div>
@@ -3191,9 +3194,9 @@ function updatePortfolioSummary(totalMarketValue) {
           <div class="portfolio-summary-label">${riskPrefix}Annual Weighted Return (EWMA)</div>
           <div class="portfolio-summary-value">${ewmaText}</div>
           <div class="portfolio-summary-label">Portfolio Trailing (TTM) Dividend Yield</div>
-          <div class="portfolio-summary-value">${dividendText}</div>
+          <div class="portfolio-summary-value portfolio-number-neutral">${dividendText}</div>
           <div class="portfolio-summary-label">${riskPrefix}Portfolio Volatility (${selectedDays}d)</div>
-          <div class="portfolio-summary-value">${pct(volatility)}</div>
+          <div class="portfolio-summary-value portfolio-number-neutral">${pct(volatility)}</div>
           <div class="portfolio-summary-label">${riskPrefix}Beta vs SPY (${selectedDays}d)</div>
           <div class="portfolio-summary-value">${betaText}</div>
           <div class="portfolio-summary-label">${riskPrefix}Beta vs ^FVX (5Y yield) (${selectedDays}d)</div>
@@ -3584,6 +3587,7 @@ async function addPortfolioOption() {
 function colourPortfolioNumbers(elements) {
   elements.forEach(element => {
     element.classList.remove("portfolio-number-positive", "portfolio-number-negative");
+    if (element.classList.contains("portfolio-number-neutral")) return;
     const text = element.textContent.trim();
     // Dates and missing values remain neutral; use the displayed numeric sign.
     if (text.includes("→")) return;
@@ -3609,7 +3613,7 @@ function renderPortfolioTable() {
     summary.textContent = "";
     const stickySummary = document.getElementById("matrixPortfolioSummary");
     if (stickySummary) stickySummary.textContent = "";
-    body.innerHTML = `<tr><td colspan="17" class="portfolio-empty">No selected securities with current prices are available.</td></tr>`;
+    body.innerHTML = `<tr><td colspan="18" class="portfolio-empty">No selected securities with current prices are available.</td></tr>`;
     document.getElementById("portfolioTotalChange").textContent = "—";
     document.getElementById("portfolioTotalChangePct").textContent = "—";
     const totalValueCell = document.getElementById("portfolioTotalMarketValue");
@@ -3726,12 +3730,13 @@ function renderPortfolioTable() {
       <td><input class="portfolio-shares" data-asset="${row.asset}" type="number" ${isFuturesAsset(row.asset) ? "" : 'min="0"'} step="${isFuturesAsset(row.asset) ? contractFactor(row.asset) : 1}" value="${formatShares(displayedHoldingUnits(row.asset, row.shares))}"><div class="portfolio-unit-label">${isFuturesAsset(row.asset) ? `${formatShares(row.shares)} contract${Math.abs(row.shares) === 1 ? "" : "s"} · units (+ bought / − sold)` : "Shares"}</div>${isFuturesAsset(row.asset) ? `<button type="button" class="one-contract-button" data-asset="${row.asset}" data-change="1" title="Add one bought contract (${formatShares(contractFactor(row.asset))} units)">+1 contract</button> <button type="button" class="one-contract-button" data-asset="${row.asset}" data-change="-1" title="Add one sold contract (-${formatShares(contractFactor(row.asset))} units)">−1 contract</button>` : ""}</td>
       <td>${futuresHolding ? `<input class="futures-agreed-price" data-asset="${row.asset}" type="number" min="0" step="any" placeholder="Required" value="${Number(portfolioFuturesAgreedPrices[row.asset]) > 0 ? Number(portfolioFuturesAgreedPrices[row.asset]) : ""}">` : "—"}</td>
       <td>${futuresHolding ? `<input class="futures-initial-margin" data-asset="${row.asset}" type="number" min="0" step="0.01" value="${futuresInitialMargin(row.asset, row.shares).toFixed(2)}" title="Editable total initial margin in USD">` : "—"}</td>
-      <td>${Number.isFinite(eodValue) ? formatMoney(eodValue) : "—"}</td>
-      <td>${Number.isFinite(row.marketValue) ? formatMoney(row.marketValue) : "Enter agreed price"}</td>
+      <td title="USD price change per share or underlying futures unit">${Number.isFinite(row.price) && eodPrice > 0 ? formatMoney(row.price - (isFuturesAsset(row.asset) ? futuresEodUnitPrice(row.asset, eodPrice) : eodPrice)) : "—"}</td>
+      <td class="portfolio-number-neutral">${Number.isFinite(eodValue) ? formatMoney(eodValue) : "—"}</td>
+      <td class="portfolio-number-neutral">${Number.isFinite(row.marketValue) ? formatMoney(row.marketValue) : "Enter agreed price"}</td>
       <td>${Number.isFinite(row.marketValue) && Number.isFinite(eodValue) ? formatMoney(row.marketValue - eodValue) : "—"}</td>
       <td>${Number.isFinite(row.marketValue) && Number.isFinite(eodValue) && eodValue !== 0 ? `${((row.marketValue - eodValue) / Math.abs(eodValue) * 100).toFixed(2)}%` : "—"}</td>
-      <td>${volatilityText}</td>
-      <td>${dividendYieldText}</td>
+      <td class="portfolio-number-neutral">${volatilityText}</td>
+      <td class="portfolio-number-neutral">${dividendYieldText}</td>
       <td>${annualReturnText}</td>
       <td>${securitySharpeText}</td>
       <td>${securityBetaText}</td>

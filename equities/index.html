@@ -239,7 +239,7 @@ Version: Equities 3
   border:1px solid #d39b24;
   border-radius:999px;
   background:#fff7df;
-  color:#7a5200;
+  color:inherit;
   font-weight:700;
 }
 .equities-news-link {
@@ -909,6 +909,9 @@ function renderUnusualMove(symbol, result, security) {
 
   const absZ = Math.abs(result.z);
   const sigmaText = `${result.z >= 0 ? "+" : ""}${result.z.toFixed(2)}σ`;
+  sigmaCell.classList.remove("equities-move-positive", "equities-move-negative");
+  if (result.z > 0) sigmaCell.classList.add("equities-move-positive");
+  else if (result.z < 0) sigmaCell.classList.add("equities-move-negative");
   sigmaCell.innerHTML = absZ >= UNUSUAL_MOVE_THRESHOLD
     ? `<span class="equities-sigma-unusual" title="Unusual move: |σ| is at least 2.5">${sigmaText}</span>`
     : escapeHtml(sigmaText);
