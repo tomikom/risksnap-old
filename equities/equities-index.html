@@ -228,6 +228,21 @@ Version: Equities 3
   max-width:155px;
 }
 .equities-code { font-weight:700; color:#244b9b; }
+/* Keep security codes visible during horizontal scrolling. */
+.equities-table th:first-child,
+.equities-table td.equities-code {
+  position:sticky;
+  left:0;
+  z-index:2;
+  background:#fff;
+  box-shadow:1px 0 0 #ddd;
+  white-space:nowrap;
+}
+.equities-table th:first-child {
+  z-index:3;
+  background:#f4f6fa;
+}
+
 .equities-empty { text-align:left !important; color:#666; padding:14px !important; }
 .equities-na { color:#888; }
 
@@ -239,7 +254,7 @@ Version: Equities 3
   border:1px solid #d39b24;
   border-radius:999px;
   background:#fff7df;
-  color:#7a5200;
+  color:inherit;
   font-weight:700;
 }
 .equities-news-link {
@@ -909,6 +924,9 @@ function renderUnusualMove(symbol, result, security) {
 
   const absZ = Math.abs(result.z);
   const sigmaText = `${result.z >= 0 ? "+" : ""}${result.z.toFixed(2)}σ`;
+  sigmaCell.classList.remove("equities-move-positive", "equities-move-negative");
+  if (result.z > 0) sigmaCell.classList.add("equities-move-positive");
+  else if (result.z < 0) sigmaCell.classList.add("equities-move-negative");
   sigmaCell.innerHTML = absZ >= UNUSUAL_MOVE_THRESHOLD
     ? `<span class="equities-sigma-unusual" title="Unusual move: |σ| is at least 2.5">${sigmaText}</span>`
     : escapeHtml(sigmaText);

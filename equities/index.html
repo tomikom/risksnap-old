@@ -228,6 +228,21 @@ Version: Equities 3
   max-width:155px;
 }
 .equities-code { font-weight:700; color:#244b9b; }
+/* Keep security codes visible during horizontal scrolling. */
+.equities-table th:first-child,
+.equities-table td.equities-code {
+  position:sticky;
+  left:0;
+  z-index:2;
+  background:#fff;
+  box-shadow:1px 0 0 #ddd;
+  white-space:nowrap;
+}
+.equities-table th:first-child {
+  z-index:3;
+  background:#f4f6fa;
+}
+
 .equities-empty { text-align:left !important; color:#666; padding:14px !important; }
 .equities-na { color:#888; }
 
