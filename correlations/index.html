@@ -1582,7 +1582,7 @@ async function fetchCorrelationData() {
     initializePortfolio(activePayload,
       parseEquities(document.getElementById("equitySymbols").value), selectedValues(".commodity-check"));
     refreshSelectedRollingPair(activePayload);
-    setStatus(`Updated ${activePayload.assets.length} assets for ${period}.`);
+    setStatus(`Updated ${visibleCorrelationPayload(activePayload).assets.length} assets for ${period}.`);
     showMessages(activePayload.messages || []);
     fetchRollingMatrix(requestPayload, period);
     return true;
@@ -1651,8 +1651,9 @@ async function fetchRollingMatrix(requestPayload, periodLabel) {
     resetBtn.disabled = false;
     playBtn.disabled = false;
     pauseBtn.disabled = true;
-    matrixHistoryReadyStatus = "";
-    setMatrixHistoryStatus("");
+    matrixHistoryReadyStatus = (data.messages || []).filter(message =>
+      /omitted:|requested historical matrices were available/.test(message)).join(" ");
+    setMatrixHistoryStatus(matrixHistoryReadyStatus);
     renderPortfolioMarketValueChart();
   } catch (err) {
     if (requestId !== matrixHistoryRequestId) return;
@@ -2105,7 +2106,8 @@ function initializePortfolio(payload, selectedEquities, selectedCommodities = []
   const commoditySet = new Set((selectedCommodities || []).map(normalizeDisplaySymbol));
 
   portfolioRiskPayload = payload;
-  portfolioSecurities = assets.filter(asset => {
+  // Keep requested holdings and their units even when risk history is too short.
+  portfolioSecurities = [...new Set([...assets, ...equitySet, ...commoditySet])].filter(asset => {
     const normalized = normalizeDisplaySymbol(asset);
     const selectedHolding = equitySet.has(normalized) || commoditySet.has(normalized);
     // SPY is intentionally NOT excluded here: when selected by the user it is a normal equity holding.
@@ -2276,6 +2278,19 @@ function currentPortfolioRows(includeExcluded = false) {
       const shares = isFuturesAsset(asset) ? rawShares : Math.max(0, rawShares);
       return { asset, price, shares, marketValue: holdingValuation(asset, price, shares) };
     });
+}
+
+function insufficientHistoryAssets(payload) {
+  return (payload?.messages || []).map(message =>
+    String(message).match(/^(.+?) omitted: insufficient price history/)
+  ).filter(Boolean).map(match => match[1]);
+}
+
+function portfolioHistoryNotice(payload) {
+  const omitted = insufficientHistoryAssets(activePayload).filter(asset =>
+    portfolioSecurities.includes(asset) && !portfolioExcluded.has(asset));
+  if (!omitted.length) return "";
+  return `<p role="status" style="font-size:0.9em;margin:6px 0;color:#8a4b08">${escapeHtml(omitted.join(", "))} omitted from correlations and portfolio risk figures: insufficient history for the selected lookback. Remaining holdings are reweighted for risk. Saved holdings and units are retained; valuation includes available quotes.</p>`;
 }
 
 function riskPortfolioRows(payload) {
@@ -2778,11 +2793,13 @@ function calculatePortfolioRiskContributions(payload, includeFutures = false) {
     ? Number.isFinite(row.marketValue) && row.marketValue !== 0
     : row.marketValue > 0 && !isFuturesAsset(row.asset));
   if (includeFutures) {
-    const activeAssets = includedPortfolioSecurities().filter(asset => isFuturesAsset(asset)
+    const omittedHistory = new Set(insufficientHistoryAssets(activePayload));
+    const activeAssets = includedPortfolioSecurities().filter(asset => !omittedHistory.has(asset)).filter(asset => isFuturesAsset(asset)
       ? (Number(portfolioShares[asset]) || 0) !== 0
       : (Number(portfolioShares[asset]) || 0) > 0);
     if (activeAssets.some(asset => !rows.some(row => row.asset === asset))) return null;
     for (const option of includedPortfolioOptions()) {
+      if (omittedHistory.has(option.underlying)) continue;
       const exposure = optionRiskExposure(option, payload);
       if (!exposure) return null;
       if (exposure.marketValue !== 0) rows.push(exposure);
@@ -3225,6 +3242,7 @@ function updatePortfolioSummary(totalMarketValue) {
   const displayedChange = optionsPending ? "—" : dailyChangeText;
 
   summary.innerHTML = `
+    ${portfolioHistoryNotice(portfolioRiskPayload)}
     ${hasPortfolioExclusions() ? '<p style="font-size:0.85em; margin:4px 0">Calculations and graphs use unchecked holdings. Book Cost is unchanged.</p>' : ""}
     <div class="portfolio-summary-columns">
       <section class="portfolio-summary-section" aria-label="Current Portfolio Valuation">
