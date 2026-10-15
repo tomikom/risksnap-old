@@ -200,8 +200,8 @@ Changes:
             <th>Units</th>
             <th>Agreed price</th>
             <th>Initial margin (USD)</th>
-            <th title="Market price USD minus EOD price USD, per share or underlying futures unit">Change pr</th>
-            <th>EOD Value</th>
+            <th title="Market price USD minus previous close USD, per share or underlying futures unit">Change pr</th>
+            <th>Previous Close Value</th>
             <th>Current Value</th>
             <th>Change $</th>
             <th>Change %</th><th title="Total USD book value for this holding; enter the amount you prefer">Book Value (USD)</th><th>Change to-date $</th><th>Change to-date %</th>
@@ -241,7 +241,7 @@ Changes:
       </div>
       <div class="portfolio-table-wrap">
         <table class="portfolio-table option-table">
-          <thead><tr><th>Exclude / Underlying</th><th>Trade date</th><th>Expiry</th><th>Strike</th><th>Put/Call</th><th>Contracts</th><th>Multiplier</th><th>EOD Spot</th><th>Current Spot</th><th>Fwd Yield</th><th>IV (current)</th><th>EOD model price</th><th>Current model price</th><th>Delta-equiv. shares</th><th>EOD Value</th><th>Current Value</th><th>Book Value (USD)</th><th>Change to-date $</th><th>Change to-date %</th><th></th></tr></thead>
+          <thead><tr><th>Exclude / Underlying</th><th>Trade date</th><th>Expiry</th><th>Strike</th><th>Put/Call</th><th>Contracts</th><th>Multiplier</th><th>EOD Spot</th><th>Current Spot</th><th>Fwd Yield</th><th>IV (current)</th><th>EOD model price</th><th>Current model price</th><th>Delta-equiv. shares</th><th>Previous Close Value</th><th>Current Value</th><th>Book Value (USD)</th><th>Change to-date $</th><th>Change to-date %</th><th></th></tr></thead>
           <tbody id="portfolioOptionsBody"><tr><td colspan="20" class="portfolio-empty">No equity options added.</td></tr></tbody>
         </table>
       </div>
@@ -3104,24 +3104,39 @@ function selectedPortfolioMaximumDrawdown(selectedDays) {
   };
 }
 
+// Daily valuation has its own comparison source; never mutate risk payloads.
+function portfolioDailyCloseSource() {
+  let sessionDate = torontoDateKey(portfolioPriceTimestamp || new Date());
+  // Keep Friday's daily move visible over the weekend.
+  const weekday = new Date(sessionDate + "T12:00:00Z").getUTCDay();
+  if (weekday === 0 || weekday === 6) sessionDate = isoDateMinusDays(sessionDate, weekday === 0 ? 2 : 1);
+  if (portfolioLatestEodDate && portfolioLatestEodDate < sessionDate) {
+    return {date:portfolioLatestEodDate, prices:portfolioLatestEodPrices};
+  }
+  const frames = rawMatrixHistoryFrames.length ? rawMatrixHistoryFrames : matrixHistoryFrames;
+  const frame = frames.filter(f => String(f.date || "").slice(0, 10) < sessionDate)
+    .sort((a,b) => String(a.date).localeCompare(String(b.date))).at(-1);
+  return frame ? {date:String(frame.date).slice(0,10), prices:pricesFromPayload(frame), frame}
+    : {date:"", prices:{}};
+}
+
 function selectedPortfolioDailyChange(totalMarketValue) {
-  if (!matrixHistoryFrames.length) return null;
+  if (portfolioViewMode === "historical" && !matrixHistoryFrames.length) return null;
+  const dailyClose = portfolioDailyCloseSource();
 
   // Historical mode compares the selected EOD frame with its preceding frame.
-  // Current mode compares current valuation with the latest completed EOD value.
+  // Current mode compares current valuation with the previous session close.
   let previousValue;
   if (portfolioViewMode === "historical") {
     const index = matrixHistoryIndex;
     if (index <= 0) return null;
     previousValue = portfolioMarketValueForFrame(matrixHistoryFrames[index - 1]);
   } else {
-    // Current mode compares against the EOD prices shown in the holdings
-    // table. This map is populated only from the main correlation payload;
-    // Matrix History is deliberately excluded because it can lag.
+    // Use the separate daily comparison source, leaving statistical EOD intact.
     let total = 0;
     let found = false;
     includedPortfolioSecurities().forEach(asset => {
-      const rawPrice = Number(portfolioLatestEodPrices[asset]);
+      const rawPrice = Number(dailyClose.prices[asset]);
       const price = isFuturesAsset(asset) ? futuresEodUnitPrice(asset, rawPrice) : rawPrice;
       const rawShares = Number(portfolioShares[asset]) || 0;
       const shares = isFuturesAsset(asset) ? rawShares : Math.max(0, rawShares);
@@ -3133,14 +3148,7 @@ function selectedPortfolioDailyChange(totalMarketValue) {
     });
     previousValue = found ? total : null;
 
-    // Fallbacks apply only during the short interval before the authoritative
-    // latest-EOD map has been populated.
-    if (!Number.isFinite(previousValue) || previousValue <= 0) {
-      previousValue = portfolioMarketValueForFrame(activePayload);
-    }
-    if (!Number.isFinite(previousValue) || previousValue <= 0) {
-      previousValue = portfolioMarketValueForFrame(portfolioRiskPayload);
-    }
+
   }
 
   if (!Number.isFinite(previousValue) || previousValue <= 0) return null;
@@ -3150,7 +3158,7 @@ function selectedPortfolioDailyChange(totalMarketValue) {
     const priorFrame = matrixHistoryFrames[matrixHistoryIndex - 1];
     comparisonDate = priorFrame && priorFrame.date ? String(priorFrame.date).slice(0, 10) : "";
   } else {
-    comparisonDate = portfolioLatestEodDate || String(activePayload?.date || "").slice(0, 10);
+    comparisonDate = dailyClose.date;
   }
   return { change, pct: change / previousValue, eodValue: previousValue, eodDate: comparisonDate };
 }
@@ -3200,14 +3208,14 @@ function updatePortfolioSummary(totalMarketValue) {
     if (dailyChange) dailyChange.eodValue += options.eod;
     else if (Number.isFinite(options.eod)) {
       const equitiesEod = includedPortfolioSecurities().reduce((sum, asset) => {
-        const price = Number(portfolioLatestEodPrices[asset]);
+        const price = Number(portfolioDailyCloseSource().prices[asset]);
         const shares = Number(portfolioShares[asset]) || 0;
         if (!(price > 0) || !shares) return sum;
         const value = holdingValuation(asset, isFuturesAsset(asset) ? futuresEodUnitPrice(asset, price) : price,
           isFuturesAsset(asset) ? shares : Math.max(0, shares));
         return sum + (Number.isFinite(value) ? value : 0);
       }, 0);
-      dailyChange = {eodValue:equitiesEod + options.eod, eodDate:portfolioLatestEodDate};
+      dailyChange = {eodValue:equitiesEod + options.eod, eodDate:portfolioDailyCloseSource().date};
     }
     if (dailyChange) {
       dailyChange.change = fullMarketValue - dailyChange.eodValue;
@@ -3231,8 +3239,8 @@ function updatePortfolioSummary(totalMarketValue) {
   const dailyChangeText = dailyChange ? `${signedMoney(dailyChange.change)} (${signedPct(dailyChange.pct)})` : "—";
   const eodValueText = dailyChange && Number.isFinite(dailyChange.eodValue) ? formatMoney(dailyChange.eodValue) : "—";
   const eodValueLabel = dailyChange && dailyChange.eodDate
-    ? `EOD Value (${formatShortDate(dailyChange.eodDate)})`
-    : "EOD Value";
+    ? `Previous Close Value (${formatShortDate(dailyChange.eodDate)})`
+    : "Previous Close Value";
   let sharpeText = Number.isFinite(sharpe) ? sharpe.toFixed(2) : "—";
   const betaText = Number.isFinite(beta) ? beta.toFixed(2) : "—";
   const inflationBetaText = Number.isFinite(inflationBeta) ? inflationBeta.toFixed(4) : "—";
@@ -3463,9 +3471,9 @@ function portfolioOptionValuation(option) {
   if (!record || record.status !== "ready") return {status:record?.message || "Loading IV…"};
   const currentSpot = Number(portfolioPrices[option.underlying]) > 0
     ? Number(portfolioPrices[option.underlying]) : Number(record.data.underlying);
-  const eodSpot = Number(portfolioLatestEodPrices[option.underlying]);
+  const eodSpot = Number(portfolioDailyCloseSource().prices[option.underlying]);
   const today = optionValuationDateToday();
-  const eodDate = portfolioLatestEodDate;
+  const eodDate = portfolioDailyCloseSource().date;
   const currentYears = optionCalendarDays(today, option.expiry) / 365;
   const eodYears = optionCalendarDays(eodDate, option.expiry) / 365;
   if (!Number.isFinite(currentSpot) || currentSpot <= 0 || !Number.isFinite(eodSpot) || eodSpot <= 0 ||
@@ -3739,6 +3747,11 @@ function renderPortfolioTable() {
     return;
   }
 
+  const closeDate = portfolioViewMode === "current" ? portfolioDailyCloseSource().date : selectedPortfolioEodDate();
+  document.querySelectorAll('th').forEach(th => {
+    if (th.textContent.startsWith("Previous Close Value"))
+      th.textContent = `Previous Close Value${closeDate ? " (" + formatShortDate(closeDate) + ")" : ""}`;
+  });
   const totalMarketValue = includedRows.reduce((sum, row) => sum + (Number.isFinite(row.marketValue) ? row.marketValue : 0), 0);
   let totalEodValue = 0;
   let completeEodValues = true;
@@ -3796,9 +3809,11 @@ function renderPortfolioTable() {
       ? trailingPe.toFixed(1)
       : "N/A";
 
-    const eodPrice = riskIndex >= 0 && portfolioRiskPayload && Array.isArray(portfolioRiskPayload.prices)
-      ? Number(portfolioRiskPayload.prices[riskIndex])
-      : NaN;
+    const closeSource = portfolioViewMode === "current" ? portfolioDailyCloseSource() : null;
+    const closePayload = closeSource ? closeSource.frame : portfolioRiskPayload;
+    const closeIndex = closePayload?.assets?.indexOf(row.asset) ?? -1;
+    const eodPrice = closeSource ? Number(closeSource.prices[row.asset])
+      : Number(closePayload?.prices?.[closeIndex]);
     const eodValue = eodPrice > 0
       ? holdingValuation(row.asset, isFuturesAsset(row.asset)
           ? futuresEodUnitPrice(row.asset, eodPrice) : eodPrice, row.shares)
@@ -3807,14 +3822,14 @@ function renderPortfolioTable() {
       if (Number.isFinite(eodValue)) totalEodValue += eodValue;
       else completeEodValues = false;
     }
-    const eodLocalPrice = riskIndex >= 0 && Array.isArray(portfolioRiskPayload?.local_prices)
-      ? Number(portfolioRiskPayload.local_prices[riskIndex]) : eodPrice;
-    const eodCurrency = riskIndex >= 0 && Array.isArray(portfolioRiskPayload?.currencies)
-      ? String(portfolioRiskPayload.currencies[riskIndex] || "USD") : "USD";
-    const eodFxPair = riskIndex >= 0 && Array.isArray(portfolioRiskPayload?.fx_pairs)
-      ? String(portfolioRiskPayload.fx_pairs[riskIndex] || "") : "";
-    const eodFxRate = riskIndex >= 0 && Array.isArray(portfolioRiskPayload?.fx_rates)
-      ? Number(portfolioRiskPayload.fx_rates[riskIndex]) : NaN;
+    const eodLocalPrice = closeIndex >= 0 && Array.isArray(closePayload?.local_prices)
+      ? Number(closePayload.local_prices[closeIndex]) : eodPrice;
+    const eodCurrency = closeIndex >= 0 && Array.isArray(closePayload?.currencies)
+      ? String(closePayload.currencies[closeIndex] || "USD") : "USD";
+    const eodFxPair = closeIndex >= 0 && Array.isArray(closePayload?.fx_pairs)
+      ? String(closePayload.fx_pairs[closeIndex] || "") : "";
+    const eodFxRate = closeIndex >= 0 && Array.isArray(closePayload?.fx_rates)
+      ? Number(closePayload.fx_rates[closeIndex]) : NaN;
 
     const marketLocalPrice = Number(portfolioCurrentLocalPrices[row.asset]);
     const marketCurrency = String(portfolioCurrentCurrencies[row.asset] || eodCurrency || "USD");
