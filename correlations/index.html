@@ -162,8 +162,8 @@ Changes:
 
     <div class="portfolio-header">
       <div class="portfolio-controls">
-        <label><a href="correlations-help.html#book-cost" target="_blank" rel="noopener" style="color:inherit; text-decoration:underline;">Book Cost:</a>
-          <input id="portfolioBookValue" type="number" step="any" value="100000">
+        <label><a href="correlations-help.html#book-cost" target="_blank" rel="noopener" style="color:inherit; text-decoration:underline;">Book Value (USD):</a>
+          <input id="portfolioBookValue" title="User-adjusted total in USD. When every holding has a Book Value, editing a holding updates this total. Older portfolio totals are retained until then." type="number" step="any" value="100000">
         </label>
       </div>
       <div class="portfolio-storage">
@@ -204,7 +204,7 @@ Changes:
             <th>EOD Value</th>
             <th>Current Value</th>
             <th>Change $</th>
-            <th>Change %</th>
+            <th>Change %</th><th title="Total USD book value for this holding; enter the amount you prefer">Book Value (USD)</th><th>Change to-date $</th><th>Change to-date %</th>
             <th>Vol (EOD)</th>
             <th><a href="correlations-help.html#ttm-yield" target="_blank" rel="noopener" style="color:inherit; text-decoration:underline;">TTM Yield</a></th>
             <th>An. Wtd. Total Return</th>
@@ -222,7 +222,7 @@ Changes:
             <td class="portfolio-number-neutral" id="portfolioTotalEodValue">—</td>
             <td class="portfolio-number-neutral" id="portfolioTotalMarketValue">—</td>
             <td id="portfolioTotalChange">—</td>
-            <td id="portfolioTotalChangePct">—</td>
+            <td id="portfolioTotalChangePct">—</td><td id="portfolioTotalBookValues">—</td><td id="portfolioTotalToDate">—</td><td id="portfolioTotalToDatePct">—</td>
             <td colspan="6"></td>
           </tr>
         </tfoot>
@@ -241,8 +241,8 @@ Changes:
       </div>
       <div class="portfolio-table-wrap">
         <table class="portfolio-table option-table">
-          <thead><tr><th>Exclude / Underlying</th><th>Trade date</th><th>Expiry</th><th>Strike</th><th>Put/Call</th><th>Contracts</th><th>Multiplier</th><th>EOD Spot</th><th>Current Spot</th><th>Fwd Yield</th><th>IV (current)</th><th>EOD model price</th><th>Current model price</th><th>Delta-equiv. shares</th><th>EOD Value</th><th>Current Value</th><th></th></tr></thead>
-          <tbody id="portfolioOptionsBody"><tr><td colspan="17" class="portfolio-empty">No equity options added.</td></tr></tbody>
+          <thead><tr><th>Exclude / Underlying</th><th>Trade date</th><th>Expiry</th><th>Strike</th><th>Put/Call</th><th>Contracts</th><th>Multiplier</th><th>EOD Spot</th><th>Current Spot</th><th>Fwd Yield</th><th>IV (current)</th><th>EOD model price</th><th>Current model price</th><th>Delta-equiv. shares</th><th>EOD Value</th><th>Current Value</th><th>Book Value (USD)</th><th>Change to-date $</th><th>Change to-date %</th><th></th></tr></thead>
+          <tbody id="portfolioOptionsBody"><tr><td colspan="20" class="portfolio-empty">No equity options added.</td></tr></tbody>
         </table>
       </div>
     </div>
@@ -895,6 +895,7 @@ let matrixHistoryReadyStatus = "";
 let matrixHistoryLookback = 25;
 let matrixHistoryPlayDelayMs = 250;
 let portfolioShares = {};
+let portfolioBookValues = {};
 let portfolioExcluded = new Set();
 function includedPortfolioSecurities() {
   return portfolioSecurities.filter(asset => !portfolioExcluded.has(asset));
@@ -1151,6 +1152,7 @@ async function loadHoldingPreset(key, requestId) {
     document.getElementById("equitySymbols").value = YAHOO_PRESETS[key];
     portfolioAutoEqualWeight = false;
     portfolioShares = {...recipe.shares};
+    portfolioBookValues = {};
     portfolioExcluded = new Set();
     portfolioFuturesAgreedPrices = Object.fromEntries(symbols.filter(isFuturesAsset).map(symbol => [symbol, prices[symbol]]));
     portfolioFuturesInitialMargins = {};
@@ -1187,6 +1189,7 @@ document.getElementById("presetButtons").addEventListener("click", async event =
   // A preset is a fresh ticker selection, not a loaded saved portfolio.
   portfolioAutoEqualWeight = true;
   portfolioShares = {};
+  portfolioBookValues = {};
   portfolioExcluded = new Set();
   portfolioFuturesAgreedPrices = {};
   portfolioFuturesInitialMargins = {};
@@ -2280,6 +2283,24 @@ function currentPortfolioRows(includeExcluded = false) {
     });
 }
 
+function enteredBookValue(value) {
+  return value !== "" && value !== null && value !== undefined && Number.isFinite(Number(value)) ? Number(value) : null;
+}
+function bookValueChangeCells(current, value) {
+  const book = enteredBookValue(value);
+  const change = book !== null && Number.isFinite(current) ? current - book : null;
+  return `<td>${change === null ? "—" : formatMoney(change)}</td><td>${change !== null && book !== 0 ? (change / Math.abs(book) * 100).toFixed(2) + "%" : "—"}</td>`;
+}
+function syncHoldingBookTotal() {
+  const values = portfolioSecurities.filter(asset => (Number(portfolioShares[asset]) || 0) !== 0)
+    .map(asset => enteredBookValue(portfolioBookValues[asset]));
+  values.push(...portfolioOptions.map(option => enteredBookValue(option.bookValue)));
+  if (values.length && values.every(value => value !== null)) {
+    document.getElementById("portfolioBookValue").value = values.reduce((sum, value) => sum + value, 0);
+    saveLastPortfolioBookCost();
+  }
+}
+
 function insufficientHistoryAssets(payload) {
   return (payload?.messages || []).map(message =>
     String(message).match(/^(.+?) omitted: insufficient price history/)
@@ -3248,13 +3269,13 @@ function updatePortfolioSummary(totalMarketValue) {
       <section class="portfolio-summary-section" aria-label="Current Portfolio Valuation">
         <div class="portfolio-summary-heading">${portfolioViewMode === "historical" && matrixHistoryFrames[matrixHistoryIndex]?.date ? `Portfolio Valuation (${formatLongDate(matrixHistoryFrames[matrixHistoryIndex].date)})` : "Current Portfolio Valuation"}</div>
         <div class="portfolio-summary-grid">
-          <div class="portfolio-summary-label">Book Cost</div>
+          <div class="portfolio-summary-label">Book Value</div>
           <div class="portfolio-summary-value">${formatMoney(bookCost)}</div>
           <div class="portfolio-summary-label">${portfolioViewMode === "historical" && matrixHistoryFrames[matrixHistoryIndex]?.date ? `Market Value (${formatShortDate(matrixHistoryFrames[matrixHistoryIndex].date)})` : "Current Market Value"}${optionExclusionLabel}</div>
           <div class="portfolio-summary-value portfolio-number-neutral">${displayedValue}</div>
-          <div class="portfolio-summary-label">Gain/Loss${optionExclusionLabel}</div>
+          <div class="portfolio-summary-label">Change to-date $${optionExclusionLabel}</div>
           <div class="portfolio-summary-value ${tone(gainLoss)}">${displayedGain}</div>
-          <div class="portfolio-summary-label">Return on Book Cost</div>
+          <div class="portfolio-summary-label">Change to-date %</div>
           <div class="portfolio-summary-value ${tone(returnOnBookCost || 0)}">${displayedReturn}</div>
           <div class="portfolio-summary-break"></div>
           <div class="portfolio-summary-label">${eodValueLabel}${optionExclusionLabel}</div>
@@ -3534,7 +3555,7 @@ function renderPortfolioOptions() {
   if (!document.getElementById("optionStrike").value) suggestOptionEntryStrike();
 
   if (!portfolioOptions.length) {
-    body.innerHTML = '<tr><td colspan="17" class="portfolio-empty">No equity options added.</td></tr>';
+    body.innerHTML = '<tr><td colspan="20" class="portfolio-empty">No equity options added.</td></tr>';
     return;
   }
 
@@ -3552,6 +3573,8 @@ function renderPortfolioOptions() {
       ${(() => { const v = portfolioOptionValuation(option); return v.status === "ready"
         ? `<td>${Number.isFinite(v.eodSpot) ? formatMoney(v.eodSpot) : "—"}</td><td>${formatMoney(v.currentSpot)}</td><td>${(v.dividend * 100).toFixed(2)}%</td><td>${(v.iv * 100).toFixed(2)}%</td><td>${Number.isFinite(v.eodPrice) ? formatMoney(v.eodPrice) : "—"}</td><td>${formatMoney(v.currentPrice)}</td><td>${Number.isFinite(v.deltaShares) ? v.deltaShares.toFixed(2) : "—"}</td><td>${Number.isFinite(v.eodValue) ? formatMoney(v.eodValue) : "—"}</td><td>${formatMoney(v.currentValue)}</td>`
         : `<td colspan="9">${escapeHtml(v.status)}</td>`; })()}
+      <td><input class="option-field" data-field="bookValue" type="number" step="any" placeholder="Enter value" value="${enteredBookValue(option.bookValue) ?? ""}" title="Total USD book value, adjusted as you prefer"></td>
+      ${bookValueChangeCells(portfolioOptionValuation(option).status === "ready" ? portfolioOptionValuation(option).currentValue : NaN, option.bookValue)}
       <td><button type="button" class="option-price" data-index="${index}">Price</button> <button type="button" class="option-chart" data-asset="${escapeHtml(option.underlying)}" title="View underlying price chart">📈</button> ${securityNewsLink(option.underlying)} <button type="button" class="option-gamma" data-index="${index}" title="Open this option in the Gamma Ladder">Gamma Ladder</button> <button type="button" class="option-remove" data-index="${index}">Remove</button></td>
     </tr>`).join("");
 
@@ -3570,6 +3593,12 @@ function renderPortfolioOptions() {
       const option = portfolioOptions[index];
       if (!option) return;
       const field = input.dataset.field;
+      if (field === "bookValue") {
+        option.bookValue = enteredBookValue(input.value);
+        syncHoldingBookTotal();
+        renderPortfolioTable();
+        return;
+      }
       option[field] = field === "strike" || field === "contracts" ? Number(input.value) || 0 : input.value;
       renderPortfolioTable();
     });
@@ -3696,7 +3725,7 @@ function renderPortfolioTable() {
     summary.textContent = "";
     const stickySummary = document.getElementById("matrixPortfolioSummary");
     if (stickySummary) stickySummary.textContent = "";
-    body.innerHTML = `<tr><td colspan="18" class="portfolio-empty">No selected securities with current prices are available.</td></tr>`;
+    body.innerHTML = `<tr><td colspan="21" class="portfolio-empty">No selected securities with current prices are available.</td></tr>`;
     document.getElementById("portfolioTotalChange").textContent = "—";
     document.getElementById("portfolioTotalChangePct").textContent = "—";
     const totalValueCell = document.getElementById("portfolioTotalMarketValue");
@@ -3818,6 +3847,8 @@ function renderPortfolioTable() {
       <td class="portfolio-number-neutral">${Number.isFinite(row.marketValue) ? formatMoney(row.marketValue) : "Enter agreed price"}</td>
       <td>${Number.isFinite(row.marketValue) && Number.isFinite(eodValue) ? formatMoney(row.marketValue - eodValue) : "—"}</td>
       <td>${Number.isFinite(row.marketValue) && Number.isFinite(eodValue) && eodValue !== 0 ? `${((row.marketValue - eodValue) / Math.abs(eodValue) * 100).toFixed(2)}%` : "—"}</td>
+      <td><input class="holding-book-value" data-asset="${escapeHtml(row.asset)}" type="number" step="any" placeholder="Enter value" style="width:110px" value="${enteredBookValue(portfolioBookValues[row.asset]) ?? ""}" title="Total USD book value, adjusted as you prefer"></td>
+      ${bookValueChangeCells(row.marketValue, portfolioBookValues[row.asset])}
       <td class="portfolio-number-neutral">${volatilityText}</td>
       <td class="portfolio-number-neutral">${dividendYieldText}</td>
       <td>${annualReturnText}</td>
@@ -3843,6 +3874,20 @@ function renderPortfolioTable() {
       updatePortfolioExclusionViews();
     });
   });
+
+  body.querySelectorAll(".holding-book-value").forEach(input => {
+    input.addEventListener("change", () => {
+      portfolioBookValues[input.dataset.asset] = enteredBookValue(input.value);
+      syncHoldingBookTotal();
+      renderPortfolioTable();
+    });
+  });
+  const subtotalBooks = includedRows.map(row => enteredBookValue(portfolioBookValues[row.asset]));
+  const subtotalBook = subtotalBooks.length && subtotalBooks.every(value => value !== null)
+    ? subtotalBooks.reduce((sum, value) => sum + value, 0) : null;
+  document.getElementById("portfolioTotalBookValues").textContent = subtotalBook === null ? "—" : formatMoney(subtotalBook);
+  document.getElementById("portfolioTotalToDate").textContent = subtotalBook === null ? "—" : formatMoney(totalMarketValue - subtotalBook);
+  document.getElementById("portfolioTotalToDatePct").textContent = subtotalBook === null || subtotalBook === 0 ? "—" : ((totalMarketValue - subtotalBook) / Math.abs(subtotalBook) * 100).toFixed(2) + "%";
 
   body.querySelectorAll(".portfolio-shares").forEach(input => {
     const commit = () => {
@@ -4936,6 +4981,7 @@ function loadPortfolio() {
   portfolioAutoEqualWeight = false;
   portfolioSecurities = [...securities];
   portfolioShares = { ...(saved.shares || {}) };
+  portfolioBookValues = {};
   portfolioExcluded = new Set((Array.isArray(saved.excluded) ? saved.excluded : []).map(normalizeDisplaySymbol));
   portfolioFuturesAgreedPrices = { ...(saved.futuresAgreedPrices || {}) };
   portfolioFuturesInitialMargins = { ...(saved.futuresInitialMargins || {}) };
