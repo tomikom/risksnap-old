@@ -175,7 +175,8 @@ Changes:
         </select>
         <button id="portfolioSave" type="button">Save</button>
         <button id="portfolioLoad" type="button">Load</button>
-        <button id="portfolioImportCsv" type="button" title="CSV columns, in this exact order:&#10;portfolio_name,symbol,shares,book_cost_usd&#10;&#10;portfolio_name: same name on every row, maximum 60 characters.&#10;symbol: Yahoo ticker, e.g. TSLA, SHOP or LIF.TO.&#10;shares: positive number; fractional shares allowed.&#10;book_cost_usd: total USD cost of that holding including fees, not cost per share; use 0 for a model.&#10;&#10;One row per ticker; no duplicates or total row. One portfolio per file. Equities and ETFs only. Book costs are added together.&#10;In Excel, save as CSV UTF-8 (Comma delimited).">Import CSV</button>
+        <button id="portfolioImportCsv" type="button" title="Import an exported RiskSnap CSV, including Book Values, equities, futures and options. Older equity CSVs also work: portfolio_name,symbol,shares,book_cost_usd. Book cost is the total USD value per holding. In Excel, save as CSV UTF-8 (Comma delimited).">Import CSV</button>
+        <button id="portfolioExportCsv" type="button" title="Download current holdings and Book Values as a CSV that can be imported again.">Export CSV</button>
         <input id="portfolioCsvFile" type="file" accept=".csv,text/csv" hidden>
         <button id="portfolioDelete" type="button">Delete</button>
         <span id="portfolioStorageStatus" class="portfolio-storage-status"></span>
@@ -1049,21 +1050,80 @@ function parseEquityPortfolioCsv(text) {
   row.push(field.trim()); if (row.some(Boolean)) rows.push(row);
   const headers = rows.shift() || [];
   const required = ["portfolio_name", "symbol", "shares", "book_cost_usd"];
+  if (headers.join(",") === PORTFOLIO_CSV_HEADERS.join(",")) return parseFullPortfolioCsv(rows);
   if (headers.join(",") !== required.join(",")) throw new Error("Use headers: " + required.join(","));
   if (!rows.length) throw new Error("No holdings found.");
   const name = rows[0][0];
   if (!name || name.length > 60) throw new Error("Portfolio name must contain 1–60 characters.");
-  const shares = {}; let bookValue = 0;
+  const shares = {}; const bookValues = {}; let bookValue = 0;
   for (const [index, cells] of rows.entries()) {
     const [portfolioName, rawSymbol, units, cost] = cells;
     const symbol = String(rawSymbol || "").toUpperCase();
     if (cells.length !== 4 || portfolioName !== name || !/^[A-Z0-9.^=-]+$/.test(symbol) || symbol.endsWith("=F") || !units || !cost || !Number.isFinite(Number(units)) || Number(units) <= 0 || !Number.isFinite(Number(cost)) || Number(cost) < 0)
       throw new Error(`Invalid equity holding on line ${index + 2}; use positive shares and nonnegative book cost.`);
     if (Object.prototype.hasOwnProperty.call(shares, symbol)) throw new Error("Duplicate symbol: " + symbol);
-    shares[symbol] = Number(units); bookValue += Number(cost);
+    shares[symbol] = Number(units); bookValues[symbol] = Number(cost); bookValue += Number(cost);
   }
-  return {name, securities:Object.keys(shares), shares, bookValue, excluded:[], options:[], futuresAgreedPrices:{}, futuresInitialMargins:{}};
+  return {name, securities:Object.keys(shares), shares, bookValues, bookValue, excluded:[], options:[], futuresAgreedPrices:{}, futuresInitialMargins:{}};
 }
+
+const PORTFOLIO_CSV_HEADERS = ["portfolio_name","type","symbol","shares","book_cost_usd","agreed_price","initial_margin_usd","trade_date","expiry","strike","put_call","excluded","portfolio_book_value_usd"];
+
+function portfolioCsvRows(name) {
+  const total = Number(document.getElementById("portfolioBookValue").value) || 0;
+  const rows = portfolioSecurities.filter(asset => Number(portfolioShares[asset]) !== 0).map(asset => [
+    name, isFuturesAsset(asset) ? "future" : "equity", asset, portfolioShares[asset],
+    enteredBookValue(portfolioBookValues[asset]), portfolioFuturesAgreedPrices[asset] ?? "",
+    portfolioFuturesInitialMargins[asset] ?? "", "", "", "", "", portfolioExcluded.has(asset) ? 1 : 0, total
+  ]);
+  rows.push(...portfolioOptions.map(o => [name,"option",o.underlying,o.contracts,enteredBookValue(o.bookValue),
+    "","",o.tradeDate,o.expiry,o.strike,o.optionType,o.excluded ? 1 : 0,total]));
+  return rows;
+}
+
+function parseFullPortfolioCsv(rows) {
+  const name = rows[0]?.[0];
+  if (!name || name.length > 60) throw new Error("Portfolio name must contain 1–60 characters.");
+  const saved = {name,securities:[],shares:{},bookValues:{},excluded:[],options:[],futuresAgreedPrices:{},futuresInitialMargins:{},bookValue:0};
+  rows.forEach((cells,index) => {
+    const [n,type,rawSymbol,quantity,cost,agreed,margin,tradeDate,expiry,strike,putCall,excluded,total] = cells;
+    const symbol = String(rawSymbol || "").toUpperCase();
+    const invalid = message => {throw new Error(`Line ${index + 2}: ${message}`);};
+    if (cells.length !== PORTFOLIO_CSV_HEADERS.length || n !== name || !/^[A-Z0-9.^=-]+$/.test(symbol)) invalid("invalid holding or portfolio name.");
+    if (!quantity || !Number.isFinite(Number(quantity)) || Number(quantity) === 0) invalid("enter non-zero units.");
+    if (cost !== "" && !Number.isFinite(Number(cost))) invalid("invalid Book Value.");
+    if (!["0","1"].includes(excluded) || !Number.isFinite(Number(total)) || (index && Number(total) !== saved.bookValue)) invalid("invalid exclusion or portfolio Book Value.");
+    saved.bookValue = Number(total);
+    if (type === "option") {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(tradeDate) || !/^\d{4}-\d{2}-\d{2}$/.test(expiry) || expiry < tradeDate || !(Number(strike)>0) || !["put","call"].includes(putCall) || !Number.isInteger(Number(quantity))) invalid("invalid option terms.");
+      saved.options.push({underlying:symbol,contracts:Number(quantity),bookValue:enteredBookValue(cost),tradeDate,expiry,strike:Number(strike),optionType:putCall,multiplier:100,excluded:excluded === "1"});
+    } else {
+      if (!["equity","future"].includes(type) || (type === "future") !== isFuturesAsset(symbol) || (type === "equity" && Number(quantity)<0)) invalid("invalid security type or units.");
+      if (Object.prototype.hasOwnProperty.call(saved.shares,symbol)) invalid("duplicate symbol.");
+      if (type === "future") {
+        if (!(Number(agreed)>0) || (margin !== "" && (!Number.isFinite(Number(margin)) || Number(margin)<0))) invalid("invalid futures price or margin.");
+        saved.futuresAgreedPrices[symbol]=Number(agreed);
+        if (margin !== "") saved.futuresInitialMargins[symbol]=Number(margin);
+      }
+      saved.securities.push(symbol); saved.shares[symbol]=Number(quantity);
+      saved.bookValues[symbol]=enteredBookValue(cost);
+      if (excluded === "1") saved.excluded.push(symbol);
+    }
+  });
+  return saved;
+}
+
+document.getElementById("portfolioExportCsv").addEventListener("click", () => {
+  const name = document.getElementById("portfolioName").value.trim() || "Portfolio";
+  const rows = portfolioCsvRows(name);
+  if (!rows.length) {setPortfolioStorageStatus("No holdings to export."); return;}
+  const text = "\uFEFF" + [PORTFOLIO_CSV_HEADERS,...rows].map(row => row.map(csvCell).join(",")).join("\r\n");
+  const url = URL.createObjectURL(new Blob([text], {type:"text/csv;charset=utf-8"}));
+  const link = document.createElement("a"); link.href=url; link.download=name.replace(/[^a-z0-9_-]/gi,"_") + ".csv";
+  document.body.appendChild(link); link.click(); link.remove();
+  setTimeout(() => URL.revokeObjectURL(url),1000);
+  setPortfolioStorageStatus(`Exported “${name}” with Book Values.`);
+});
 
 document.getElementById("portfolioDelete").addEventListener("click", deletePortfolio);
 document.getElementById("optionAdd").addEventListener("click", addPortfolioOption);
@@ -4943,6 +5003,7 @@ function savePortfolio() {
     name: saveName,
     securities: heldSecurities,
     shares: holdings,
+    bookValues: Object.fromEntries(heldSecurities.map(asset => [asset, enteredBookValue(portfolioBookValues[asset])])),
     excluded: heldSecurities.filter(asset => portfolioExcluded.has(asset)),
     futuresAgreedPrices,
     futuresInitialMargins,
@@ -4954,7 +5015,8 @@ function savePortfolio() {
       optionType: option.optionType === "put" ? "put" : "call",
       contracts: Math.trunc(Number(option.contracts) || 0),
       multiplier: 100,
-      excluded: !!option.excluded
+      bookValue: enteredBookValue(option.bookValue),
+    excluded: !!option.excluded
     })),
     bookValue: Number(document.getElementById("portfolioBookValue").value) || 0
   };
@@ -4996,7 +5058,7 @@ function loadPortfolio() {
   portfolioAutoEqualWeight = false;
   portfolioSecurities = [...securities];
   portfolioShares = { ...(saved.shares || {}) };
-  portfolioBookValues = {};
+  portfolioBookValues = { ...(saved.bookValues || {}) };
   portfolioExcluded = new Set((Array.isArray(saved.excluded) ? saved.excluded : []).map(normalizeDisplaySymbol));
   portfolioFuturesAgreedPrices = { ...(saved.futuresAgreedPrices || {}) };
   portfolioFuturesInitialMargins = { ...(saved.futuresInitialMargins || {}) };
@@ -5008,6 +5070,7 @@ function loadPortfolio() {
     optionType: option.optionType === "put" ? "put" : "call",
     contracts: Math.trunc(Number(option.contracts) || 0),
     multiplier: 100,
+    bookValue: enteredBookValue(option.bookValue),
     excluded: !!option.excluded
   }));
 
