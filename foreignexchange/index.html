@@ -226,10 +226,37 @@ function drawCombined(items){
  Plotly.newPlot("fx_SELECTED",traces,{title:{text:"FX rates and Gold normalized to 100",x:.03},paper_bgcolor:"white",plot_bgcolor:"white",hovermode:"x unified",legend:{orientation:"h",x:.02,y:-.18},xaxis:{showgrid:true,gridcolor:"#edf1f7",fixedrange:true},yaxis:{title:"Index, first date = 100",showgrid:true,gridcolor:"#edf1f7",fixedrange:true}},fxPlotConfig())
 }
 async function fetchOne(pair,force){
- if(!force&&fxBrowserCache.has(key(pair)))return fxBrowserCache.get(key(pair));
- const r=await fetch(`${FX_API_URL}?period=${encodeURIComponent(fxRange)}&pair=${encodeURIComponent(pair)}`,{cache:"no-store"});
- if(!r.ok)throw new Error("HTTP "+r.status);
- const p=await r.json(); fxBrowserCache.set(key(pair),p); return p
+ const range=fxRange,cacheKey=pair+":"+range;
+ let p= !force&&fxBrowserCache.has(cacheKey) ? fxBrowserCache.get(cacheKey) : null;
+ const currency=fxPairs.find(x=>x.key===pair&&x.key!=="OIL"&&x.key!=="GOLD");
+ const latestPromise=range==="1y"&&currency ? fetch(FX_API_URL.replace("/fx_history","/latest_prices"),{
+   method:"POST",headers:{"Content-Type":"application/json"},
+   body:JSON.stringify({symbols:[currency.ticker]})
+ }).then(r=>r.ok?r.json():null).catch(()=>null) : Promise.resolve(null);
+ if(!p){
+   const r=await fetch(`${FX_API_URL}?period=${encodeURIComponent(range)}&pair=${encodeURIComponent(pair)}`,{cache:"no-store"});
+   if(!r.ok)throw new Error("HTTP "+r.status);
+   p=await r.json();fxBrowserCache.set(cacheKey,p);
+ }
+ const latest=await latestPromise;
+ // Copy cached history so every chart request can add a fresh quote independently.
+ const result=JSON.parse(JSON.stringify(p));
+ if(range==="1y"&&currency){
+   const price=Number(latest&&latest.prices&&latest.prices[currency.ticker]);
+   const stamp=new Date(latest&&latest.timestamp||Date.now());
+   const date=Number.isFinite(stamp.getTime())?new Intl.DateTimeFormat("en-CA",{timeZone:"America/New_York",year:"numeric",month:"2-digit",day:"2-digit"}).format(stamp):"";
+   const item=(result.series||[]).find(x=>x.pair===pair);
+   if(item&&!item.error&&price>0&&date){
+     const q=clean(item),last=String(q.x[q.x.length-1]||"").slice(0,10);
+     if(date>=last){
+       if(last===date)q.y[q.y.length-1]=price;
+       else {q.x.push(date);q.y.push(price)}
+       item.dates=q.x;item.rates=q.y;result.latest_currency_quote=true;
+     }
+   }
+   if(!result.latest_currency_quote)result.latest_currency_unavailable=true;
+ }
+ return result
 }
 async function loadSelectedFx(force=false){
  updateButtons(); const s=document.getElementById("fxStatus");
@@ -246,7 +273,7 @@ async function loadSelectedFx(force=false){
    if(!item)throw new Error("Selected instrument was not returned");
    drawSingle(item);
    if(selectedFxInstrument==="OIL"&&payload.oil_fred_through)document.getElementById("oilSourceNote").textContent=`Oil data source: FRED DCOILWTICO through ${payload.oil_fred_through}; Yahoo Finance (CL=F) thereafter.`;
-   s.textContent=`${p.label} ready. Range: ${fxRange}. ${payload.cached?"Cloud Run cache":"Downloaded"}. ${payload.updated_at||""}`;
+   s.textContent=`${p.label} ready. Range: ${fxRange}. ${payload.cached?"Cloud Run cache":"Downloaded"}. ${payload.updated_at||""}${payload.latest_currency_quote?" · Includes latest available quote.":payload.latest_currency_unavailable?" · Latest quote unavailable.":""}`;
  }catch(e){s.textContent=`Could not load data: ${e.message}`;placeholder(selectedFxInstrument,"Could not load data")}
 }
 window.addEventListener("load",()=>{updateButtons();loadSelectedFx(false)});
