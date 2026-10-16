@@ -15,7 +15,7 @@
 	<meta name="google-site-verification" content="kO9DAjiPgMvebkKvDvBeeIEj8IFRIKbyZF115wiSvyw" />
     <meta charset="UTF-8">
 	<!-- end verification added 09 Jan 2018 -->
-		<title>RiskSnap — OilPrice Link</title>
+		<title>RiskSnap — Animated Volatility Surface</title>
 
         <meta name="viewport" content="width=device-width, initial-scale=1">
 
@@ -669,11 +669,35 @@
     </svg>
   </div>
 
+  <div class="rs-correlation-hero rs-feature-slide rs-vol-hero" aria-label="Animated illustrative volatility surface" aria-hidden="true">
+    <div class="rs-correlation-hero__copy">
+      <div class="rs-correlation-hero__title">Volatility Surface</div>
+      <div class="rs-correlation-hero__text">Watch the smile, skew and term structure shift across strikes and expiries.</div>
+      <a class="rs-correlation-hero__prompt" href="/surface/">Explore Volatility Surfaces <span aria-hidden="true">›</span></a>
+    </div>
+    <svg id="rsVolAnimation" class="rs-correlation-hero__graphic" viewBox="0 0 930 430" role="img" aria-labelledby="rsVolTitle rsVolDesc">
+      <title id="rsVolTitle">Animated volatility surface with walls</title>
+      <desc id="rsVolDesc">An illustrative implied volatility surface changes smoothly above a gridded floor, with back and side walls and projected boundary curves. This is not live market data.</desc>
+      <rect width="930" height="430" fill="#f3f7fc"/>
+      <g id="rsVolWalls"></g><g id="rsVolMesh"></g><g id="rsVolProjections"></g>
+      <g fill="#425b79" font-family="Arial,Helvetica,sans-serif" font-size="14">
+        <text x="410" y="411">Strike / spot</text>
+        <text x="780" y="335" transform="rotate(-30 780 335)">Expiry</text>
+        <text x="117" y="185" transform="rotate(-90 117 185)">Implied volatility</text>
+        <text x="145" y="353">80%</text><text x="420" y="399">100%</text><text x="670" y="399">120%</text>
+        <text x="755" y="366">1m</text><text x="833" y="294">12m</text>
+        <text x="95" y="317">15%</text><text x="95" y="213">30%</text><text x="95" y="109">45%</text>
+        <text x="145" y="38" font-size="15" font-weight="700">Illustrative surface · changing skew and curvature</text>
+      </g>
+    </svg>
+  </div>
+
   <div class="rs-feature-carousel__controls" aria-label="Choose featured view">
     <button class="rs-feature-carousel__dot is-active" type="button" aria-label="Show correlations" aria-pressed="true"></button>
     <button class="rs-feature-carousel__dot" type="button" aria-label="Show portfolio market value" aria-pressed="false"></button>
     <button class="rs-feature-carousel__dot" type="button" aria-label="Show market dispersion" aria-pressed="false"></button>
     <button class="rs-feature-carousel__dot" type="button" aria-label="Show option strategies" aria-pressed="false"></button>
+    <button class="rs-feature-carousel__dot" type="button" aria-label="Show volatility surface" aria-pressed="false"></button>
   </div>
   </div>
 
@@ -2115,6 +2139,61 @@ VaR calculations can be done on the <a href="/portfolio_optimization/">Portfolio
   }
   requestAnimationFrame(frame);
 }());
+</script>
+
+<script>
+(function(){
+  const svg=document.getElementById("rsVolAnimation");
+  if(!svg)return;
+  const slide=svg.closest(".rs-feature-slide"),ns="http://www.w3.org/2000/svg";
+  const mesh=document.getElementById("rsVolMesh"),walls=document.getElementById("rsVolWalls"),projections=document.getElementById("rsVolProjections");
+  const reduced=window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const project=(u,v,z)=>[145+550*u+145*v,325+65*u-100*v-210*z];
+  const points=a=>a.map(p=>p.map(n=>n.toFixed(2)).join(",")).join(" ");
+  function node(tag,attrs,parent){const n=document.createElementNS(ns,tag);Object.entries(attrs).forEach(([k,v])=>n.setAttribute(k,v));parent.appendChild(n);return n}
+  // Two vertical walls and a floor; the mesh remains in front of their grids.
+  node("polygon",{points:points([project(0,0,0),project(0,1,0),project(1,1,0),project(1,0,0)]),fill:"#e5edf7"},walls);
+  node("polygon",{points:points([project(0,1,0),project(0,1,1),project(1,1,1),project(1,1,0)]),fill:"#e1eaf6"},walls);
+  node("polygon",{points:points([project(0,0,0),project(0,0,1),project(0,1,1),project(0,1,0)]),fill:"#d7e3f2"},walls);
+  function line(a,b){node("polyline",{points:points([a,b]),fill:"none",stroke:"#a9bbd3","stroke-width":1,opacity:.65},walls)}
+  for(let i=0;i<=8;i++){const t=i/8;
+    line(project(t,0,0),project(t,1,0));line(project(0,t,0),project(1,t,0));
+    line(project(t,1,0),project(t,1,1));line(project(0,t,0),project(0,t,1));
+    line(project(0,1,t),project(1,1,t));line(project(0,0,t),project(0,1,t));
+  }
+  const cells=[],nx=24,ny=14;
+  for(let j=ny-1;j>=0;j--)for(let i=0;i<nx;i++){
+    cells.push({i,j,n:node("polygon",{stroke:"#f5fbff","stroke-width":.45,"stroke-opacity":.55},mesh)});
+  }
+  const back=node("polyline",{fill:"none",stroke:"#5366aa","stroke-width":2.5},projections);
+  const side=node("polyline",{fill:"none",stroke:"#346b91","stroke-width":2.5},projections);
+  function height(u,v,t){
+    const x=2*u-1;
+    return .27+.35*x*x-.15*x+.12*(1-v)+.05*Math.sin(t+v*3)*(1-.4*x*x)+.025*Math.sin(t*1.3+u*5+v*3);
+  }
+  function draw(t){
+    cells.forEach(c=>{
+      const u=c.i/nx,v=c.j/ny,du=1/nx,dv=1/ny;
+      const corners=[[u,v],[u+du,v],[u+du,v+dv],[u,v+dv]];
+      c.n.setAttribute("points",points(corners.map(([a,b])=>project(a,b,height(a,b,t)))));
+      const z=height(u+du/2,v+dv/2,t);
+      c.n.setAttribute("fill","hsl("+(215-z*185).toFixed(1)+" 66% "+(58-z*9).toFixed(1)+"%)");
+    });
+    back.setAttribute("points",points(Array.from({length:nx+1},(_,i)=>project(i/nx,1,height(i/nx,1,t)))));
+    side.setAttribute("points",points(Array.from({length:ny+1},(_,j)=>project(0,j/ny,height(0,j/ny,t)))));
+  }
+  draw(0);
+  let phase=0,last=0,frame=0;
+  function tick(now){
+    frame=0;
+    if(document.hidden||!slide.classList.contains("is-active")){last=0;return}
+    if(!last||now-last>=45){phase+=last?Math.min(now-last,100)/1600:0;last=now;draw(phase)}
+    frame=requestAnimationFrame(tick);
+  }
+  function resume(){if(!reduced&&!document.hidden&&slide.classList.contains("is-active")&&!frame)frame=requestAnimationFrame(tick)}
+  new MutationObserver(resume).observe(slide,{attributes:true,attributeFilter:["class"]});
+  document.addEventListener("visibilitychange",resume);resume();
+})();
 </script>
 
 </body>
