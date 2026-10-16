@@ -356,6 +356,40 @@ layout: home-template
         width: 100%;
     }
 }
+
+/* Home banner animation — 16 Oct 2026 */
+@keyframes rsBubblePulse {
+  0%, 100% { transform: scale(.70); opacity: .48; }
+  50% { transform: scale(1.12); opacity: .82; }
+}
+.rs-corr-bubble {
+  animation: rsBubblePulse 7s ease-in-out infinite;
+  animation-play-state: paused;
+}
+.rs-feature-slide.is-active .rs-corr-bubble { animation-play-state: running; }
+.rs-corr-bubble--2, .rs-corr-bubble--7 { animation-delay: -2s; }
+.rs-corr-bubble--3, .rs-corr-bubble--8 { animation-delay: -4s; }
+.rs-corr-bubble--4, .rs-corr-bubble--9 { animation-delay: -1s; }
+.rs-corr-bubble--5, .rs-corr-bubble--10 { animation-delay: -5s; }
+.rs-corr-bubble--6 { animation-delay: -3s; }
+@keyframes rsDispersionSpread {
+  0%, 100% { transform: translateY(246px) scaleY(.45) translateY(-246px); }
+  50% { transform: translateY(246px) scaleY(1) translateY(-246px); }
+}
+.rs-dispersion-hero__paths, .rs-dispersion-hero__fan {
+  transform-box: view-box;
+  transform-origin: 0 0;
+  animation: rsDispersionSpread 8s ease-in-out infinite;
+  animation-play-state: paused;
+}
+.rs-feature-slide.is-active .rs-dispersion-hero__paths,
+.rs-feature-slide.is-active .rs-dispersion-hero__fan { animation-play-state: running; }
+@media (prefers-reduced-motion: reduce) {
+  .rs-corr-bubble, .rs-dispersion-hero__paths, .rs-dispersion-hero__fan {
+    animation: none;
+  }
+}
+
 </style>
 
 <div class ="image-section rs-hero-section">
