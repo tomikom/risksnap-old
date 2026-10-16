@@ -693,6 +693,22 @@ function renderRows(rows) {
 let selectedEquitiesChartSymbol = "";
 let selectedEquitiesChartRange = "1y";
 const equitiesChartCache = new Map();
+const equitiesChartQuotes = new Map();
+
+// Display-only points: never modify cached EOD history or statistical inputs.
+function equitiesDisplayHistory(rows, symbol) {
+  const points = (rows || []).map(r => ({date:String(r.date || ""), price:Number(r.price)}))
+    .filter(r => r.date && Number.isFinite(r.price) && r.price > 0)
+    .sort((a,b) => a.date.localeCompare(b.date));
+  const quote = equitiesChartQuotes.get(symbol);
+  if (!points.length || !quote || !(quote.price > 0)) return points;
+  const last = points[points.length - 1];
+  if (quote.date < last.date) return points;
+  const current = {date:quote.date, price:quote.price, current:true};
+  if (quote.date === last.date) points[points.length - 1] = current;
+  else points.push(current);
+  return points;
+}
 
 function eqSvg(name, attrs = {}, text = "") {
   const node = document.createElementNS("http://www.w3.org/2000/svg", name);
@@ -710,7 +726,7 @@ function drawEquitiesPriceChart(rows, symbol) {
   const container = document.getElementById("equitiesPriceChart");
   container.innerHTML = "";
   container.style.position = "relative";
-  const clean = (rows || []).map(row => ({date:String(row.date || ""), price:Number(row.price)}))
+  const clean = (rows || []).map(row => ({date:String(row.date || ""), price:Number(row.price), current:!!row.current}))
     .filter(row => row.date && Number.isFinite(row.price) && row.price > 0)
     .sort((a,b) => a.date.localeCompare(b.date));
   if (clean.length < 2) return false;
@@ -738,6 +754,9 @@ function drawEquitiesPriceChart(rows, symbol) {
   });
   const points=clean.map((r,i)=>`${i?"L":"M"}${x(i).toFixed(2)},${y(r.price).toFixed(2)}`).join(" ");
   svg.appendChild(eqSvg("path",{d:points,class:"eq-chart-line"}));
+  if (clean[clean.length-1].current) {
+    svg.appendChild(eqSvg("circle",{cx:x(clean.length-1),cy:y(clean[clean.length-1].price),r:4,fill:"#3A5FCD",stroke:"#fff","stroke-width":1.5}));
+  }
 
   const hoverLine=eqSvg("line",{x1:0,y1:margin.top,x2:0,y2:height-margin.bottom,class:"eq-chart-hover-line",visibility:"hidden"});
   const hoverPoint=eqSvg("circle",{cx:0,cy:0,r:4,class:"eq-chart-hover-point",visibility:"hidden"});
@@ -753,7 +772,7 @@ function drawEquitiesPriceChart(rows, symbol) {
     const row=clean[idx], xx=x(idx), yy=y(row.price);
     hoverLine.setAttribute("x1",xx); hoverLine.setAttribute("x2",xx); hoverLine.setAttribute("visibility","visible");
     hoverPoint.setAttribute("cx",xx); hoverPoint.setAttribute("cy",yy); hoverPoint.setAttribute("visibility","visible");
-    tip.innerHTML=`<strong>${escapeHtml(symbol)}</strong><br>${escapeHtml(eqChartDateLabel(row.date))}<br>${escapeHtml(row.price.toLocaleString(undefined,{minimumFractionDigits:priceDecimals,maximumFractionDigits:priceDecimals}))}`;
+    tip.innerHTML=`<strong>${escapeHtml(symbol)}</strong><br>${escapeHtml(eqChartDateLabel(row.date))}${row.current ? " · Current" : " · EOD"}<br>${escapeHtml(row.price.toLocaleString(undefined,{minimumFractionDigits:priceDecimals,maximumFractionDigits:priceDecimals}))}`;
     tip.style.display="block";
     const containerRect=container.getBoundingClientRect();
     const cx=(rect.left-containerRect.left)+(xx/width)*rect.width;
@@ -788,9 +807,12 @@ async function loadEquitiesChart(symbol, range) {
       rows=Array.isArray(payload)?payload:(payload.rows || payload.history || payload.data || []);
       equitiesChartCache.set(key,rows);
     }
-    const ok=drawEquitiesPriceChart(rows,symbol);
-    const clean=(rows||[]).filter(r=>r&&r.date&&Number.isFinite(Number(r.price)));
-    status.textContent=ok && clean.length ? `${eqChartDateLabel(clean[0].date)} to ${eqChartDateLabel(clean[clean.length-1].date)} · ${clean.length} EOD observations` : "No usable price history returned.";
+    if (symbol !== selectedEquitiesChartSymbol || range !== selectedEquitiesChartRange) return;
+    const clean=equitiesDisplayHistory(rows,symbol);
+    const ok=drawEquitiesPriceChart(clean,symbol);
+    const quote=equitiesChartQuotes.get(symbol);
+    const current=clean[clean.length-1];
+    status.textContent=ok && clean.length ? `${eqChartDateLabel(clean[0].date)} to ${eqChartDateLabel(current.date)} · ${quote?.currency || "Local currency"}${current.current ? ` · Current ${current.price.toLocaleString(undefined,{maximumFractionDigits:priceDisplayDecimals(symbol)})}` : " · EOD only"}` : "No usable price history returned.";
   } catch(err) {
     status.textContent=`Chart unavailable: ${err.message}`; chart.innerHTML="";
   }
@@ -1036,7 +1058,15 @@ async function loadEquities() {
       return {...market, eod_usd_price:eod?.price ?? null, eod_date:eod?.date || ""};
     });
 
+    equitiesChartQuotes.clear();
+    const quoteTime = new Date(latestPayload.timestamp || payload.timestamp || Date.now());
+    const quoteDate = new Intl.DateTimeFormat("en-CA", {timeZone:"America/New_York",year:"numeric",month:"2-digit",day:"2-digit"}).format(Number.isNaN(quoteTime.getTime()) ? new Date() : quoteTime);
+    rows.forEach(row => {
+      const symbol=String(row.symbol || "").trim().toUpperCase();
+      if (Number(row.price)>0 && latestBySymbol.has(symbol)) equitiesChartQuotes.set(symbol,{price:Number(row.price),date:quoteDate,currency:row.currency || "USD"});
+    });
     renderRows(rows);
+    if (selectedEquitiesChartSymbol && !document.getElementById("equitiesChartPanel").hidden) loadEquitiesChart(selectedEquitiesChartSymbol,selectedEquitiesChartRange);
     const failed = Array.isArray(payload.failed) ? payload.failed : [];
     const timestamp = latestPayload.timestamp || payload.timestamp;
     const time = timestamp ? new Date(timestamp).toLocaleString() : "";
