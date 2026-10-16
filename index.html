@@ -357,6 +357,15 @@ layout: home-template
     }
 }
 
+
+@keyframes rsPortfolioDrift {
+  0%, 100% { transform: translateX(-10px); }
+  50% { transform: translateX(10px); }
+}
+.rs-portfolio-hero__motion { animation: rsPortfolioDrift 6s ease-in-out infinite; animation-play-state: paused; }
+.rs-feature-slide.is-active .rs-portfolio-hero__motion { animation-play-state: running; }
+@media (prefers-reduced-motion: reduce) { .rs-portfolio-hero__motion { animation: none; } }
+
 /* Home banner animation — 16 Oct 2026 */
 @keyframes rsBubblePulse {
   0%, 100% { transform: scale(.70); opacity: .48; }
@@ -486,6 +495,7 @@ layout: home-template
         <text x="65" y="251">$185K</text><text x="65" y="331">$165K</text>
         <text x="78" y="382">Sep 25</text><text x="481" y="382">Mar 18</text><text x="884" y="382">Sep 9</text>
       </g>
+      <g class="rs-portfolio-hero__motion">
       <path class="rs-portfolio-hero__line" d="M78 321 L112 334 L146 317 L180 329 L214 309 L248 313 L282 292 L316 267 L350 235 L384 201 L418 219 L452 186 L486 132 L520 164 L554 101 L588 76 L622 125 L656 110 L690 130 L724 176 L758 160 L792 169 L826 151 L858 158 L884 142"/>
       <g filter="url(#rsPortfolioPointShadow)" aria-hidden="true">
         <circle class="rs-portfolio-hero__peak" cx="588" cy="76" r="11"/>
@@ -495,6 +505,7 @@ layout: home-template
       <g class="rs-portfolio-hero__annotations" aria-hidden="true">
         <text class="is-peak" x="588" y="48">Peak $221,649</text>
         <text class="is-trough" x="724" y="211">Trough $204,128</text>
+      </g>
       </g>
       <text class="rs-portfolio-hero__note" x="82" y="40">Illustrative Portfolio Market Value (EOD) · 250 observations</text>
     </svg>
@@ -1586,6 +1597,7 @@ function rsFillBreakevenRows(rows) {
   let selectedName = "";
   let selectedRange = "1y";
   const cache = new Map();
+  let chartRequest = 0;
   const safe = value => String(value == null ? "" : value).replace(/[&<>"']/g, character => ({
     "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;"
   })[character]);
@@ -1602,7 +1614,7 @@ function rsFillBreakevenRows(rows) {
 
   function draw(rows, label) {
     container.innerHTML = "";
-    const clean = (rows || []).map(row => ({ date: String(row.date || row.Date || ""), price: Number(row.price ?? row.value ?? row.Breakeven10Y) }))
+    const clean = (rows || []).map(row => ({ date: String(row.date || row.Date || ""), latest: !!row.latest, price: Number(row.price ?? row.value ?? row.Breakeven10Y) }))
       .filter(row => row.date && Number.isFinite(row.price))
       .sort((a, b) => a.date.localeCompare(b.date));
     if (clean.length < 2) return false;
@@ -1625,6 +1637,10 @@ function rsFillBreakevenRows(rows) {
       svg.appendChild(svgNode("text", { x: x(index), y: height - 15, class: "rs-chart-label", "text-anchor": index === 0 ? "start" : (index === clean.length - 1 ? "end" : "middle") }, dateLabel(clean[index].date)));
     });
     svg.appendChild(svgNode("path", { d: clean.map((row, index) => `${index ? "L" : "M"}${x(index).toFixed(2)},${y(row.price).toFixed(2)}`).join(" "), class: "rs-chart-line" }));
+    const last = clean[clean.length - 1];
+    if (last.latest) {
+      svg.appendChild(svgNode("circle", { cx: x(clean.length - 1), cy: y(last.price), r: 4, fill: "#3A5FCD" }));
+    }
     const hoverLine = svgNode("line", { x1: 0, y1: margin.top, x2: 0, y2: height - margin.bottom, class: "rs-chart-hover-line", visibility: "hidden" });
     const hoverPoint = svgNode("circle", { cx: 0, cy: 0, r: 4, class: "rs-chart-hover-point", visibility: "hidden" });
     const overlay = svgNode("rect", { x: margin.left, y: margin.top, width: iw, height: ih, class: "rs-chart-overlay" });
@@ -1637,7 +1653,7 @@ function rsFillBreakevenRows(rows) {
       const row = clean[index], xx = x(index), yy = y(row.price);
       hoverLine.setAttribute("x1", xx); hoverLine.setAttribute("x2", xx); hoverLine.setAttribute("visibility", "visible");
       hoverPoint.setAttribute("cx", xx); hoverPoint.setAttribute("cy", yy); hoverPoint.setAttribute("visibility", "visible");
-      tip.innerHTML = `<strong>${safe(label)}</strong><br>${safe(dateLabel(row.date))}<br>${safe(row.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }))}`;
+      tip.innerHTML = `<strong>${safe(label)}</strong><br>${safe(dateLabel(row.date))}${row.latest ? " · latest available quote" : ""}<br>${safe(row.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }))}`;
       tip.style.display = "block";
       const chartRect = container.getBoundingClientRect();
       const cx = (rect.left - chartRect.left) + (xx / width) * rect.width;
@@ -1653,29 +1669,50 @@ function rsFillBreakevenRows(rows) {
   }
 
   async function loadChart() {
-    title.textContent = `${selectedName || selectedSymbol} History`;
+    const request = ++chartRequest;
+    const symbol = selectedSymbol, range = selectedRange, name = selectedName || symbol;
+    const isBreakeven = symbol === "T10YIE";
+    const latestPromise = isBreakeven ? Promise.resolve(null) : fetch(endpoint.replace("/asset_history", "/latest_prices"), {
+      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ symbols: [symbol] })
+    }).then(response => response.ok ? response.json() : null).catch(() => null);
+    title.textContent = `${name} History`;
     status.textContent = "Loading...";
     container.innerHTML = "";
-    const key = `${selectedSymbol}|${selectedRange}`;
+    const key = `${symbol}|${range}`;
     try {
       let rows = cache.get(key);
       if (!rows) {
-        const isBreakeven = selectedSymbol === "T10YIE";
         const response = isBreakeven
-          ? await fetch(`https://surface-203178530029.northamerica-northeast2.run.app/breakeven_inflation?period=${selectedRange === "3y" ? "3y" : "1y"}`)
-          : await fetch(endpoint, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ symbol: selectedSymbol, range: selectedRange }) });
+          ? await fetch(`https://surface-203178530029.northamerica-northeast2.run.app/breakeven_inflation?period=${range === "3y" ? "3y" : "1y"}`)
+          : await fetch(endpoint, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ symbol, range }) });
         const payload = await response.json().catch(() => ({}));
         if (!response.ok) throw new Error(payload.error || `HTTP ${response.status}`);
         rows = Array.isArray(payload) ? payload : (payload.rows || payload.history || payload.data || []);
         if (isBreakeven) rows = rsFillBreakevenRows(rows);
-        if (isBreakeven && selectedRange === "3m") rows = rows.slice(-66);
-        if (isBreakeven && selectedRange === "6m") rows = rows.slice(-130);
+        if (isBreakeven && range === "3m") rows = rows.slice(-66);
+        if (isBreakeven && range === "6m") rows = rows.slice(-130);
         cache.set(key, rows);
       }
-      const ok = draw(rows, selectedName || selectedSymbol);
+      const quote = await latestPromise;
+      if (request !== chartRequest) return;
+      rows = rows.map(row => ({ ...row }));
+      const price = Number(quote && quote.prices && quote.prices[symbol]);
+      let latestAdded = false;
+      if (Number.isFinite(price) && price > 0) {
+        const stamp = new Date(quote.timestamp || Date.now());
+        const quoteDate = new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York", year: "numeric", month: "2-digit", day: "2-digit" }).format(stamp);
+        const lastDate = rows.reduce((last, row) => { const date = String(row.date || row.Date || "").slice(0,10); return date > last ? date : last; }, "");
+        if (quoteDate >= lastDate) {
+          // Preserve the historical close, even when the quote is retrieved on the same date.
+          rows.push({ date: quoteDate, price, latest: true });
+          latestAdded = true;
+        }
+      }
+      const ok = draw(rows, name);
       const clean = (rows || []).filter(row => row && (row.date || row.Date) && Number.isFinite(Number(row.price ?? row.value ?? row.Breakeven10Y)));
-      status.textContent = ok && clean.length ? `${dateLabel(clean[0].date || clean[0].Date)} to ${dateLabel(clean[clean.length - 1].date || clean[clean.length - 1].Date)} · ${clean.length} EOD observations` : "No usable history returned.";
+      status.textContent = ok && clean.length ? `${dateLabel(clean[0].date || clean[0].Date)} to ${dateLabel(clean[clean.length - 1].date || clean[clean.length - 1].Date)} · ${clean.length - (latestAdded ? 1 : 0)} EOD observations${latestAdded ? " + latest available quote (retrieved today)" : (!isBreakeven ? " · latest quote unavailable" : "")}` : "No usable history returned.";
     } catch (error) {
+      if (request !== chartRequest) return;
       status.textContent = `Chart unavailable: ${error.message}`;
     }
   }
