@@ -1,7 +1,91 @@
----
-layout: home-template
----
-<!-- Home banner styling loaded before graphics: 2026-10-16 -->
+<!DOCTYPE html>
+<html>
+	<head>
+	<!-- Global site tag (gtag.js) - Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-162894652-1"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'UA-162894652-1');
+</script>
+
+	<!-- begin verification added 09 Jan 2018-->
+	<meta name="google-site-verification" content="kO9DAjiPgMvebkKvDvBeeIEj8IFRIKbyZF115wiSvyw" />
+    <meta charset="UTF-8">
+	<!-- end verification added 09 Jan 2018 -->
+		<title>RiskSnap — OilPrice Link</title>
+
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+
+		<!-- link to main stylesheet -->
+        <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.5.0/css/all.css" integrity="sha384-B4dIYHKNBt8Bc12p+WXckhzcICo0wtJAoU8YZTY5qE0Id1GSseTk6S+L3BlXeVIU" crossorigin="anonymous">
+        <!-- link rel="stylesheet" type="text/css" href="http://maxcdn.bootstrapcdn.com/font-awesome/4.1.0/css/font-awesome.min.css" -->
+			<link rel="stylesheet" type="text/css" href="/css/main.css">
+			<style>
+			  nav .menufont,
+			  nav .dropbtn {
+			    font-weight: 400 !important;
+			  }
+			  /* Slightly strengthen the visible navigation row without enlarging
+			     the home icon or the Risk dropdown contents. */
+			  nav > ul > li:not(:first-child) > .menufont,
+			  nav > ul > li > .dropbtn {
+			    font-size: 17px !important;
+			    font-weight: 600 !important;
+			  }
+			  @media (max-width: 700px) {
+			    nav > ul > li:not(:first-child) > .menufont,
+			    nav > ul > li > .dropbtn {
+			      font-size: 14px !important;
+			    }
+			  }
+			</style>
+        <!-- Global site tag (gtag.js) - Google Analytics -->
+        <script async src="https://www.googletagmanager.com/gtag/js?id=UA-111540481-1"></script>
+        <script>
+          window.dataLayer = window.dataLayer || [];
+          function gtag(){dataLayer.push(arguments);}
+          gtag('js', new Date());
+
+          gtag('config', 'UA-111540481-1');
+        </script>
+		<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+	</head>
+	<body>
+        <img alt="risksnap-icon" src="/images/RiskSnap.png" style="width:125px; height:auto;" />
+		<nav>
+    		<ul>
+                <li><a class="menufont" href="/"><i class="fas fa-home fa-2x" aria-hidden="true"></i></a></li>
+  			    <li class="dropdown">
+                  <button class="dropbtn">Risk</button>
+                  <div class="dropdown-content">
+					<a class="menufont" href="/netting">Portfolio</a>
+                    <a class="menufont" href="/metrics">Metrics</a>
+					<a class="menufont" href="/marketriskfactors">Market</a>
+					<a class="menufont" href="/structuredproducts">Structured Products</a>
+					<a class="menufont" href="/regulations">Regulations</a>
+					<a class="menufont" href="/resources">Resources</a>
+                  </div>
+                </li>
+				<li><a class="menufont" href="/products">Solutions</a></li>
+				<li><a class="menufont" href="/newsworthy">Newsworthy</a></li>
+				<li><a class="menufont" href="/rates_and_inflation">Rates and Inflation</a></li>
+				<li><a class="menufont" href="/foreignexchange">Foreign Exchange, Gold and Oil</a></li>
+				<li><a class="menufont" href="/equities">Equities and Futures</a></li>
+				<li><a class="menufont" href="/correlations" style="color:#0000FF !important; font-weight:bold;">Correlations, Portfolios</a></li>
+				<li><a class="menufont" href="/portfolio_optimization">Portfolio Optimization</a></li>
+				<li><a class="menufont" href="/dispersion">Dispersion Index</a></li>
+				<li><a class="menufont" href="/stockselection">Stock Selection</a></li>
+				<li><a class="menufont" href="/options">Options &amp; Strategies</a></li>
+				<li><a class="menufont" href="/gamma">Gamma</a></li>
+				<li><a class="menufont" href="/surface">Surface</a></li>
+				<li><a class="menufont" href="/contact">Contact</a></li>
+    		</ul>
+		</nav>
+		<div class="page-content">
+               <!-- Home banner styling loaded before graphics: 2026-10-16 -->
 <style>
 
 .rs-correlation-hero {
@@ -1515,7 +1599,7 @@ function rsFillBreakevenRows(rows) {
     <div class="rs-market-card__top"><h3>${safe(item.name)}</h3><span class="rs-market-card__state">${item.type === "periodic" ? "Periodic" : (item.state || "Waiting")}</span></div>
     <p class="rs-market-card__level">${item.value ? safe(item.value) : "&mdash;"}</p>
     <p class="rs-market-card__change is-flat">${item.detail ? safe(item.detail) : "loading..."}</p>
-    <div class="rs-market-card__links">${item.type !== "periodic" ? `<button type="button" class="rs-market-card__chart" data-rs-chart-symbol="${safe(item.symbol)}" data-rs-chart-name="${safe(item.name)}">Chart</button>` : ""}<a class="rs-market-card__news" href="https://news.google.com/search?q=${encodeURIComponent(item.news)}" target="_blank" rel="noopener noreferrer">Related news <span aria-hidden="true">↗</span></a></div>
+    <div class="rs-market-card__links">${item.symbol === "CL=F" ? `<a class="rs-market-card__news" href="https://oilprice.com" target="_blank" rel="noopener noreferrer">OilPrice <span aria-hidden="true">↗</span></a>` : ""}${item.type !== "periodic" ? `<button type="button" class="rs-market-card__chart" data-rs-chart-symbol="${safe(item.symbol)}" data-rs-chart-name="${safe(item.name)}">Chart</button>` : ""}<a class="rs-market-card__news" href="https://news.google.com/search?q=${encodeURIComponent(item.news)}" target="_blank" rel="noopener noreferrer">Related news <span aria-hidden="true">↗</span></a></div>
   </article>`).join("");
 
   function updateMarket(item, latestPrices, previousCloses, changes, changePercents, timestamp) {
@@ -2034,4 +2118,17 @@ VaR calculations can be done on the <a href="/portfolio_optimization/">Portfolio
 </script>
 
 </body>
+</html>
+
+
+
+
+	    </div><!-- page-content -->
+		<footer>
+        <div>
+            <span class=""><i class="fas fa-envelope fa-2x" aria-hidden="true"></i></span>
+            <span>We can be contacted at team@risksnap.com</span>
+        </div>
+		</footer>
+	</body>
 </html>
