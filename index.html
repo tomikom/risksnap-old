@@ -15,7 +15,7 @@
 	<meta name="google-site-verification" content="kO9DAjiPgMvebkKvDvBeeIEj8IFRIKbyZF115wiSvyw" />
     <meta charset="UTF-8">
 	<!-- end verification added 09 Jan 2018 -->
-		<title>RiskSnap — Compact Blue Panel Market Note</title>
+		<title>RiskSnap — Sky and Teal Colour Trial</title>
 
         <meta name="viewport" content="width=device-width, initial-scale=1">
 
@@ -498,6 +498,18 @@
 @media(max-width:700px){.rs-correlation-hero__copy{grid-template-columns:minmax(0,1fr) 185px;gap:14px;padding:20px 18px}.rs-inline-note{padding-left:12px}.rs-inline-note__prices{font-size:11px}.rs-correlation-hero__text{font-size:13px}.rs-correlation-hero__title{font-size:20px}}
 @media(max-width:380px){.rs-correlation-hero__copy{grid-template-columns:1fr}.rs-inline-note{border-left:0;border-top:1px solid #ffffff66;padding:12px 0 0}.rs-inline-note__prices{font-size:12px}}
 </style>
+<style>
+/* Colour trial: sky blue/lavender graphics and a distinct teal Market Note. */
+.rs-correlation-hero__graphic{background:linear-gradient(125deg,#c5e7ff,#d4c8f2)}
+.rs-inline-note{box-sizing:border-box;background:#07545d;border:1px solid #5a9ba1;border-radius:10px;padding:14px 16px;box-shadow:0 3px 12px #001c4533}
+.rs-inline-note__date{color:#ffda75}
+.rs-inline-note__headline,.rs-inline-note__prices{color:#fff}
+.rs-inline-note__yikes{background:#fff0bc;color:#173841}
+@media(max-width:1000px) and (min-width:701px){.rs-inline-note{padding:12px}}
+@media(max-width:700px){.rs-inline-note{padding:12px}}
+@media(max-width:380px){.rs-inline-note{border:1px solid #5a9ba1;padding:12px}}
+</style>
+
 <div class ="image-section rs-hero-section">
   <div class="rs-feature-carousel" aria-roledescription="carousel" aria-label="RiskSnap analytics highlights">
   <div class="rs-correlation-hero rs-feature-slide is-active" aria-label="RiskSnap correlations" aria-hidden="false">
@@ -518,9 +530,9 @@
       <desc id="rsCorrHeroDesc">Blue and purple bubbles represent positive correlations; coral bubbles represent negative correlations. Bubble size changes gently over time.</desc>
       <defs>
         <linearGradient id="rsCorrHeroBg" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stop-color="#f8fbff"/>
-          <stop offset="55%" stop-color="#eaf2ff"/>
-          <stop offset="100%" stop-color="#dfe9fb"/>
+          <stop offset="0%" stop-color="#c5e7ff"/>
+          <stop offset="55%" stop-color="#d4ddff"/>
+          <stop offset="100%" stop-color="#c9bff1"/>
         </linearGradient>
         <filter id="rsCorrHeroShadow" x="-30%" y="-30%" width="160%" height="160%">
           <feDropShadow dx="0" dy="5" stdDeviation="7" flood-color="#23395d" flood-opacity=".16"/>
@@ -587,8 +599,8 @@
       <desc id="rsPortfolioHeroDesc">A portfolio market value line rises to a marked peak, falls to a marked trough, and then recovers.</desc>
       <defs>
         <linearGradient id="rsPortfolioHeroBg" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stop-color="#fbfdff"/>
-          <stop offset="100%" stop-color="#e8f0fb"/>
+          <stop offset="0%" stop-color="#c5e7ff"/>
+          <stop offset="100%" stop-color="#d4c8f2"/>
         </linearGradient>
         <filter id="rsPortfolioPointShadow" x="-50%" y="-50%" width="200%" height="200%">
           <feDropShadow dx="0" dy="3" stdDeviation="4" flood-color="#23395d" flood-opacity=".18"/>
@@ -638,8 +650,8 @@
       <desc id="rsDispersionHeroDesc">Several asset paths begin together and spread into a widening fan, while a dark line shows the portfolio path.</desc>
       <defs>
         <linearGradient id="rsDispersionHeroBg" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stop-color="#fbfdff"/>
-          <stop offset="100%" stop-color="#e8f0fb"/>
+          <stop offset="0%" stop-color="#c5e7ff"/>
+          <stop offset="100%" stop-color="#d4c8f2"/>
         </linearGradient>
         <linearGradient id="rsDispersionFanFill" x1="0" y1="0" x2="1" y2="0">
           <stop offset="0%" stop-color="#5f86cf" stop-opacity=".05"/>
@@ -721,7 +733,7 @@
     <svg id="rsVolAnimation" class="rs-correlation-hero__graphic" viewBox="0 0 930 430" role="img" aria-labelledby="rsVolTitle rsVolDesc">
       <title id="rsVolTitle">Animated volatility surface with walls</title>
       <desc id="rsVolDesc">An illustrative implied volatility surface changes smoothly above a gridded floor, with back and side walls and projected boundary curves. This is not live market data.</desc>
-      <rect width="930" height="430" fill="#f3f7fc"/>
+      <defs><linearGradient id="rsVolColorBg" x2="1" y2="1"><stop stop-color="#c5e7ff"/><stop offset="1" stop-color="#d4c8f2"/></linearGradient></defs><rect width="930" height="430" fill="url(#rsVolColorBg)"/>
       <g id="rsVolWalls"></g><g id="rsVolMesh"></g><g id="rsVolProjections"></g>
       <g fill="#425b79" font-family="Arial,Helvetica,sans-serif" font-size="14">
         <text x="410" y="411">Strike / spot</text>
