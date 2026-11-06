@@ -523,7 +523,7 @@ body > nav > ul > li.dropdown > button.dropbtn {
 .rs-inline-note__date{font-size:12px;font-weight:700;color:#ffe18b;margin-bottom:6px}
 .rs-inline-note__yikes{display:inline-block;padding:6px 18px;border-radius:50%;background:#fff;color:#172536;font-size:30px;line-height:1.2;font-weight:800;font-style:italic;margin-bottom:8px}
 .rs-inline-note__headline{font-size:13px;font-weight:700;line-height:1.4;margin-bottom:5px}
-.rs-inline-note__prices{font-size:12px;line-height:1.65;white-space:nowrap}
+.rs-inline-note__prices{font-size:12px;line-height:1.45;white-space:normal;overflow-wrap:break-word}
 .rs-inline-note__source{display:block;color:#fff!important;font-size:10px;line-height:1.4;margin-top:6px;text-decoration:underline}
 @media(max-width:1000px) and (min-width:701px){.rs-correlation-hero__copy{gap:14px;padding:20px;grid-template-columns:minmax(0,1fr) 195px}.rs-correlation-hero__text{font-size:13px}.rs-correlation-hero__title{font-size:20px}.rs-inline-note{padding-left:12px}}
 @media(max-width:700px){.rs-correlation-hero__copy{grid-template-columns:minmax(0,1fr) 185px;gap:14px;padding:20px 18px}.rs-inline-note{padding-left:12px}.rs-inline-note__prices{font-size:11px}.rs-correlation-hero__text{font-size:13px}.rs-correlation-hero__title{font-size:20px}}
@@ -535,7 +535,7 @@ body > nav > ul > li.dropdown > button.dropbtn {
 .rs-inline-note{box-sizing:border-box;background:#07545d;border:1px solid #5a9ba1;border-radius:10px;padding:14px 16px;box-shadow:0 3px 12px #001c4533}
 .rs-inline-note__date{color:#ffda75}
 .rs-inline-note__headline,.rs-inline-note__prices{color:#fff}
-.rs-inline-note__yikes{background:#fff0bc;color:#173841}
+.rs-inline-note__yikes{box-sizing:border-box;max-width:100%;background:#fff0bc;color:#173841;font-size:24px;padding:6px 12px;text-align:center}
 @media(max-width:1000px) and (min-width:701px){.rs-inline-note{padding:12px}}
 @media(max-width:700px){.rs-inline-note{padding:12px}}
 @media(max-width:380px){.rs-inline-note{border:1px solid #5a9ba1;padding:12px}}
@@ -552,8 +552,9 @@ body > nav > ul > li.dropdown > button.dropbtn {
 <div class="rs-inline-note__date">Market Note · 5 Nov 2026</div>
 <div class="rs-inline-note__yikes"><span role="img" aria-label="grimacing face">😬</span> Super Intelligent?</div>
 <div class="rs-inline-note__headline">About US$1.7 trillion lost</div>
-<div class="rs-inline-note__prices">By 10:55 a.m. ET, 10 companies linked to attendees of the Sept. 29 “superintelligence” meeting had lost about US$1.7 trillion in combined market value.</div>
-<a class="rs-inline-note__source" href="https://www.benzinga.com/markets/tech/26/11/62934964/us-tech-stocks-wipe-out-1-7-trillion-thursday-nvidia-amd-micron" target="_blank" rel="noopener noreferrer">Source: Benzinga · intraday snapshot ↗</a>
+<div class="rs-inline-note__prices">By 10:55 a.m. ET, 10 companies linked to attendees of the Sept. 29 “superintelligence” meeting had shed US$1.7 trillion in market value.</div>
+<a class="rs-inline-note__source" href="https://www.benzinga.com/markets/tech/26/11/62934964/us-tech-stocks-wipe-out-1-7-trillion-thursday-nvidia-amd-micron" target="_blank" rel="noopener noreferrer">Market-loss figures: Benzinga ↗</a>
+<div class="rs-inline-note__source" style="text-decoration:none">RiskSnap calculation: equivalent to roughly 19 days of U.S. GDP, using US$33 trillion annually. <a href="https://fred.stlouisfed.org/series/GDP" target="_blank" rel="noopener noreferrer" style="color:inherit">GDP source: BEA/FRED ↗</a></div>
 </aside>
     </div>
     <svg class="rs-correlation-hero__graphic" viewBox="180 0 930 430" role="img" aria-labelledby="rsCorrHeroTitle rsCorrHeroDesc" preserveAspectRatio="xMidYMid meet">
@@ -621,8 +622,9 @@ body > nav > ul > li.dropdown > button.dropbtn {
 <div class="rs-inline-note__date">Market Note · 5 Nov 2026</div>
 <div class="rs-inline-note__yikes"><span role="img" aria-label="grimacing face">😬</span> Super Intelligent?</div>
 <div class="rs-inline-note__headline">About US$1.7 trillion lost</div>
-<div class="rs-inline-note__prices">By 10:55 a.m. ET, 10 companies linked to attendees of the Sept. 29 “superintelligence” meeting had lost about US$1.7 trillion in combined market value.</div>
-<a class="rs-inline-note__source" href="https://www.benzinga.com/markets/tech/26/11/62934964/us-tech-stocks-wipe-out-1-7-trillion-thursday-nvidia-amd-micron" target="_blank" rel="noopener noreferrer">Source: Benzinga · intraday snapshot ↗</a>
+<div class="rs-inline-note__prices">By 10:55 a.m. ET, 10 companies linked to attendees of the Sept. 29 “superintelligence” meeting had shed US$1.7 trillion in market value.</div>
+<a class="rs-inline-note__source" href="https://www.benzinga.com/markets/tech/26/11/62934964/us-tech-stocks-wipe-out-1-7-trillion-thursday-nvidia-amd-micron" target="_blank" rel="noopener noreferrer">Market-loss figures: Benzinga ↗</a>
+<div class="rs-inline-note__source" style="text-decoration:none">RiskSnap calculation: equivalent to roughly 19 days of U.S. GDP, using US$33 trillion annually. <a href="https://fred.stlouisfed.org/series/GDP" target="_blank" rel="noopener noreferrer" style="color:inherit">GDP source: BEA/FRED ↗</a></div>
 </aside>
     </div>
     <svg class="rs-correlation-hero__graphic rs-portfolio-hero__graphic" viewBox="0 0 930 430" role="img" aria-labelledby="rsPortfolioHeroTitle rsPortfolioHeroDesc" preserveAspectRatio="xMidYMid meet">
@@ -672,8 +674,9 @@ body > nav > ul > li.dropdown > button.dropbtn {
 <div class="rs-inline-note__date">Market Note · 5 Nov 2026</div>
 <div class="rs-inline-note__yikes"><span role="img" aria-label="grimacing face">😬</span> Super Intelligent?</div>
 <div class="rs-inline-note__headline">About US$1.7 trillion lost</div>
-<div class="rs-inline-note__prices">By 10:55 a.m. ET, 10 companies linked to attendees of the Sept. 29 “superintelligence” meeting had lost about US$1.7 trillion in combined market value.</div>
-<a class="rs-inline-note__source" href="https://www.benzinga.com/markets/tech/26/11/62934964/us-tech-stocks-wipe-out-1-7-trillion-thursday-nvidia-amd-micron" target="_blank" rel="noopener noreferrer">Source: Benzinga · intraday snapshot ↗</a>
+<div class="rs-inline-note__prices">By 10:55 a.m. ET, 10 companies linked to attendees of the Sept. 29 “superintelligence” meeting had shed US$1.7 trillion in market value.</div>
+<a class="rs-inline-note__source" href="https://www.benzinga.com/markets/tech/26/11/62934964/us-tech-stocks-wipe-out-1-7-trillion-thursday-nvidia-amd-micron" target="_blank" rel="noopener noreferrer">Market-loss figures: Benzinga ↗</a>
+<div class="rs-inline-note__source" style="text-decoration:none">RiskSnap calculation: equivalent to roughly 19 days of U.S. GDP, using US$33 trillion annually. <a href="https://fred.stlouisfed.org/series/GDP" target="_blank" rel="noopener noreferrer" style="color:inherit">GDP source: BEA/FRED ↗</a></div>
 </aside>
     </div>
     <svg class="rs-correlation-hero__graphic rs-dispersion-hero__graphic" viewBox="0 0 930 430" role="img" aria-labelledby="rsDispersionHeroTitle rsDispersionHeroDesc" preserveAspectRatio="xMidYMid meet">
@@ -725,8 +728,9 @@ body > nav > ul > li.dropdown > button.dropbtn {
 <div class="rs-inline-note__date">Market Note · 5 Nov 2026</div>
 <div class="rs-inline-note__yikes"><span role="img" aria-label="grimacing face">😬</span> Super Intelligent?</div>
 <div class="rs-inline-note__headline">About US$1.7 trillion lost</div>
-<div class="rs-inline-note__prices">By 10:55 a.m. ET, 10 companies linked to attendees of the Sept. 29 “superintelligence” meeting had lost about US$1.7 trillion in combined market value.</div>
-<a class="rs-inline-note__source" href="https://www.benzinga.com/markets/tech/26/11/62934964/us-tech-stocks-wipe-out-1-7-trillion-thursday-nvidia-amd-micron" target="_blank" rel="noopener noreferrer">Source: Benzinga · intraday snapshot ↗</a>
+<div class="rs-inline-note__prices">By 10:55 a.m. ET, 10 companies linked to attendees of the Sept. 29 “superintelligence” meeting had shed US$1.7 trillion in market value.</div>
+<a class="rs-inline-note__source" href="https://www.benzinga.com/markets/tech/26/11/62934964/us-tech-stocks-wipe-out-1-7-trillion-thursday-nvidia-amd-micron" target="_blank" rel="noopener noreferrer">Market-loss figures: Benzinga ↗</a>
+<div class="rs-inline-note__source" style="text-decoration:none">RiskSnap calculation: equivalent to roughly 19 days of U.S. GDP, using US$33 trillion annually. <a href="https://fred.stlouisfed.org/series/GDP" target="_blank" rel="noopener noreferrer" style="color:inherit">GDP source: BEA/FRED ↗</a></div>
 </aside>
     </div>
     <svg class="rs-correlation-hero__graphic rs-options-hero__graphic" viewBox="0 0 1916 821" role="img" aria-labelledby="rsOptionsHeroTitle rsOptionsHeroDesc" preserveAspectRatio="xMidYMid meet">
@@ -757,8 +761,9 @@ body > nav > ul > li.dropdown > button.dropbtn {
 <div class="rs-inline-note__date">Market Note · 5 Nov 2026</div>
 <div class="rs-inline-note__yikes"><span role="img" aria-label="grimacing face">😬</span> Super Intelligent?</div>
 <div class="rs-inline-note__headline">About US$1.7 trillion lost</div>
-<div class="rs-inline-note__prices">By 10:55 a.m. ET, 10 companies linked to attendees of the Sept. 29 “superintelligence” meeting had lost about US$1.7 trillion in combined market value.</div>
-<a class="rs-inline-note__source" href="https://www.benzinga.com/markets/tech/26/11/62934964/us-tech-stocks-wipe-out-1-7-trillion-thursday-nvidia-amd-micron" target="_blank" rel="noopener noreferrer">Source: Benzinga · intraday snapshot ↗</a>
+<div class="rs-inline-note__prices">By 10:55 a.m. ET, 10 companies linked to attendees of the Sept. 29 “superintelligence” meeting had shed US$1.7 trillion in market value.</div>
+<a class="rs-inline-note__source" href="https://www.benzinga.com/markets/tech/26/11/62934964/us-tech-stocks-wipe-out-1-7-trillion-thursday-nvidia-amd-micron" target="_blank" rel="noopener noreferrer">Market-loss figures: Benzinga ↗</a>
+<div class="rs-inline-note__source" style="text-decoration:none">RiskSnap calculation: equivalent to roughly 19 days of U.S. GDP, using US$33 trillion annually. <a href="https://fred.stlouisfed.org/series/GDP" target="_blank" rel="noopener noreferrer" style="color:inherit">GDP source: BEA/FRED ↗</a></div>
 </aside>
     </div>
     <svg id="rsVolAnimation" class="rs-correlation-hero__graphic" viewBox="0 0 930 430" role="img" aria-labelledby="rsVolTitle rsVolDesc">
@@ -959,13 +964,14 @@ div.c {
   box-sizing: border-box !important;
 }
 </style>
+<div class="rs-markets-toolbar"><button id="rs-markets-refresh" class="rs-markets-refresh" type="button">Refresh all markets</button></div>
 <section class="rs-global-markets" aria-labelledby="rs-global-markets-title">
   <div class="rs-global-markets__heading">
     <div>
       <p class="rs-global-markets__eyebrow">Global market snapshot</p>
       <h2 id="rs-global-markets-title">Equity markets</h2>
     </div>
-    <div class="rs-global-markets__actions"><p id="rs-global-markets-status" class="rs-global-markets__status" aria-live="polite">Loading...</p><button id="rs-markets-refresh" class="rs-markets-refresh" type="button">Refresh</button></div>
+    <div class="rs-global-markets__actions"><p id="rs-global-markets-status" class="rs-global-markets__status" aria-live="polite">Loading...</p></div>
   </div>
   <div id="rs-global-markets-grid" class="rs-global-markets__grid"></div>
   <p class="rs-global-markets__note">* <span id="rs-global-markets-date">Date loading</span>. <sup>&dagger;</sup>Exchange capitalization is domestic equity market capitalization in U.S. dollars from the <a href="https://focus.world-exchanges.org/issue/july-2026/market-statistics" target="_blank" rel="noopener">World Federation of Exchanges</a> (May 2026); it is not the capitalization of the displayed benchmark index. U.S. benchmark cards overlap and must not be added together.</p>
@@ -2372,6 +2378,15 @@ section.rs-global-markets.rs-market-indicators h2,
 section.rs-global-markets.rs-market-indicators > .rs-global-markets__note,
 section.rs-global-markets.rs-market-indicators .rs-global-markets__status {
   color: #102e25 !important;
+}
+</style>
+<style id="rs-home-refresh-and-banner">
+body > nav { background: linear-gradient(90deg, #ffe45c 0%, #ffab36 50%, #ef5350 100%) !important; }
+.rs-markets-toolbar { display:flex; justify-content:flex-end; padding:0 12px 8px; }
+.rs-markets-toolbar .rs-markets-refresh { min-height:40px; padding:8px 16px; font-size:13px; }
+@media (max-width:700px) {
+  .rs-markets-toolbar { padding:0 10px 10px; }
+  .rs-markets-toolbar .rs-markets-refresh { min-height:44px; }
 }
 </style>
 </body>
