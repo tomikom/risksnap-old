@@ -199,13 +199,13 @@ Changes:
             <th>EOD price</th>
             <th>Market price</th>
             <th>Units</th>
-            <th>Agreed price</th>
-            <th>Initial margin (USD)</th>
             <th title="Market price USD minus previous close USD, per share or underlying futures unit">Change pr</th>
             <th>Previous Close Value</th>
             <th>Current Value</th>
             <th>Change $</th>
-            <th>Change %</th><th title="Total USD book value for this holding; enter the amount you prefer">Book Value (USD)</th><th>Change to-date $</th><th>Change to-date %</th>
+            <th>Change %</th><th title="Total USD book value for this holding; enter the amount you prefer">Book Value (USD)</th>            <th>Futures agreed price</th>
+            <th>Futures initial margin (USD)</th>
+<th>Change to-date $</th><th>Change to-date %</th>
             <th>Vol (EOD)</th>
             <th><a href="correlations-help.html#ttm-yield" target="_blank" rel="noopener" style="color:inherit; text-decoration:underline;">TTM Yield</a></th>
             <th>An. Wtd. Total Return</th>
@@ -217,13 +217,12 @@ Changes:
         <tbody id="portfolioBody"></tbody>
         <tfoot>
           <tr>
-            <td colspan="6">Equities/futures subtotal</td>
-            <td id="portfolioTotalInitialMargin">—</td>
+            <td colspan="5">Equities/futures subtotal</td>
             <td>—</td>
             <td class="portfolio-number-neutral" id="portfolioTotalEodValue">—</td>
             <td class="portfolio-number-neutral" id="portfolioTotalMarketValue">—</td>
             <td id="portfolioTotalChange">—</td>
-            <td id="portfolioTotalChangePct">—</td><td id="portfolioTotalBookValues">—</td><td id="portfolioTotalToDate">—</td><td id="portfolioTotalToDatePct">—</td>
+            <td id="portfolioTotalChangePct">—</td><td id="portfolioTotalBookValues">—</td><td>—</td><td id="portfolioTotalInitialMargin">—</td><td id="portfolioTotalToDate">—</td><td id="portfolioTotalToDatePct">—</td>
             <td colspan="6"></td>
           </tr>
         </tfoot>
@@ -561,7 +560,7 @@ h1 { color: white; text-align: center; background-color: #3A5FCD; }
 .portfolio-table input.portfolio-shares { width:90px; padding:4px 6px; text-align:right; box-sizing:border-box; }
 .portfolio-table input.futures-agreed-price { width:100px; padding:4px 6px; text-align:right; box-sizing:border-box; }
 .portfolio-table input.futures-initial-margin { width:112px; padding:4px 6px; text-align:right; box-sizing:border-box; }
-.portfolio-table td:nth-child(8) { text-align:left; font-size:12px; color:#555; }
+.portfolio-table td:nth-child(6) { text-align:left; font-size:12px; color:#555; }
 .portfolio-unit-label { margin-top:2px; font-size:10px; color:#666; text-align:center; }
 .one-contract-button { margin-top:4px; padding:2px 7px; border:1px solid #9eb6ce; border-radius:4px; background:#edf5ff; color:#244c73; font-size:10px; cursor:pointer; }
 .one-contract-button:hover, .one-contract-button:focus { background:#dcecff; }
@@ -3915,14 +3914,15 @@ function renderPortfolioTable() {
             marketFxRate
           )}</td>
       <td><input class="portfolio-shares" data-asset="${row.asset}" type="number" ${isFuturesAsset(row.asset) ? "" : 'min="0"'} step="${isFuturesAsset(row.asset) ? contractFactor(row.asset) : 1}" value="${formatShares(displayedHoldingUnits(row.asset, row.shares))}"><div class="portfolio-unit-label">${isFuturesAsset(row.asset) ? `${formatShares(row.shares)} contract${Math.abs(row.shares) === 1 ? "" : "s"} · units (+ bought / − sold)` : "Shares"}</div>${isFuturesAsset(row.asset) ? `<button type="button" class="one-contract-button" data-asset="${row.asset}" data-change="1" title="Add one bought contract (${formatShares(contractFactor(row.asset))} units)">+1 contract</button> <button type="button" class="one-contract-button" data-asset="${row.asset}" data-change="-1" title="Add one sold contract (-${formatShares(contractFactor(row.asset))} units)">−1 contract</button>` : ""}</td>
-      <td>${futuresHolding ? `<input class="futures-agreed-price" data-asset="${row.asset}" type="number" min="0" step="any" placeholder="Required" value="${Number(portfolioFuturesAgreedPrices[row.asset]) > 0 ? Number(portfolioFuturesAgreedPrices[row.asset]) : ""}">` : "—"}</td>
-      <td>${futuresHolding ? `<input class="futures-initial-margin" data-asset="${row.asset}" type="number" min="0" step="0.01" value="${futuresInitialMargin(row.asset, row.shares).toFixed(2)}" title="Editable total initial margin in USD">` : "—"}</td>
       <td title="USD price change per share or underlying futures unit">${Number.isFinite(row.price) && eodPrice > 0 ? formatMoney(row.price - (isFuturesAsset(row.asset) ? futuresEodUnitPrice(row.asset, eodPrice) : eodPrice)) : "—"}</td>
       <td class="portfolio-number-neutral">${Number.isFinite(eodValue) ? formatMoney(eodValue) : "—"}</td>
       <td class="portfolio-number-neutral">${Number.isFinite(row.marketValue) ? formatMoney(row.marketValue) : "Enter agreed price"}</td>
       <td>${Number.isFinite(row.marketValue) && Number.isFinite(eodValue) ? formatMoney(row.marketValue - eodValue) : "—"}</td>
       <td>${Number.isFinite(row.marketValue) && Number.isFinite(eodValue) && eodValue !== 0 ? `${((row.marketValue - eodValue) / Math.abs(eodValue) * 100).toFixed(2)}%` : "—"}</td>
-      <td><input class="holding-book-value" data-asset="${escapeHtml(row.asset)}" type="number" step="any" placeholder="Enter value" style="width:110px" value="${enteredBookValue(portfolioBookValues[row.asset]) ?? ""}" title="Total USD book value, adjusted as you prefer"></td>
+      <td>${futuresHolding ? '<input class="futures-book-na" type="text" value="N/A" disabled aria-label="Book Value is not applicable to futures" title="Use Futures agreed price and Futures initial margin">' : `<input class="holding-book-value" data-asset="${escapeHtml(row.asset)}" type="number" step="any" placeholder="Enter value" style="width:110px" value="${enteredBookValue(portfolioBookValues[row.asset]) ?? ""}" title="Total USD book value, adjusted as you prefer">`}</td>
+      <td>${futuresHolding ? `<input class="futures-agreed-price" data-asset="${row.asset}" type="number" min="0" step="any" placeholder="Required" value="${Number(portfolioFuturesAgreedPrices[row.asset]) > 0 ? Number(portfolioFuturesAgreedPrices[row.asset]) : ""}">` : "—"}</td>
+      <td>${futuresHolding ? `<input class="futures-initial-margin" data-asset="${row.asset}" type="number" min="0" step="0.01" value="${futuresInitialMargin(row.asset, row.shares).toFixed(2)}" title="Editable total initial margin in USD">` : "—"}</td>
+
       ${bookValueChangeCells(row.marketValue, portfolioBookValues[row.asset])}
       <td class="portfolio-number-neutral">${volatilityText}</td>
       <td class="portfolio-number-neutral">${dividendYieldText}</td>
@@ -3931,12 +3931,12 @@ function renderPortfolioTable() {
       <td>${securityBetaText}</td>
       <td>${securityInflationBetaText}</td>
     `;
-    colourPortfolioNumbers(Array.from(tr.cells).slice(7));
+    colourPortfolioNumbers(Array.from(tr.cells).slice(5));
     const priceChange = Number.isFinite(row.price) && eodPrice > 0
       ? row.price - (isFuturesAsset(row.asset) ? futuresEodUnitPrice(row.asset, eodPrice) : eodPrice)
       : NaN;
     // Colour from the number directly, independent of browser currency formatting.
-    const priceChangeCell = tr.cells[7];
+    const priceChangeCell = tr.cells[5];
     priceChangeCell.classList.remove("portfolio-number-positive", "portfolio-number-negative");
     priceChangeCell.style.color = priceChange > 0 ? "#137333" : priceChange < 0 ? "#b3261e" : "#000";
     body.appendChild(tr);
@@ -5166,3 +5166,5 @@ document.querySelectorAll(".security-range").forEach(button => {
   });
 });
 </script>
+
+<style>.futures-book-na{width:110px;background:#e9ecef!important;color:#777!important;border:1px solid #ccd0d5;cursor:not-allowed;}</style>
