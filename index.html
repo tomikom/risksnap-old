@@ -1351,8 +1351,8 @@ div.c {
 <section class="rs-portfolio-quotes" style="background:#E5F1FF !important;" aria-labelledby="rs-portfolio-quotes-title">
   <div class="rs-portfolio-quotes__heading">
     <div>
-      <p class="rs-global-markets__eyebrow">Before the U.S. opening bell</p>
-      <h2 id="rs-portfolio-quotes-title">Portfolio and preset pre-market quotes</h2>
+      <p class="rs-global-markets__eyebrow">Pre-market and regular-session quotes</p>
+      <h2 id="rs-portfolio-quotes-title">Portfolio and preset market quotes</h2>
     </div>
     <div class="rs-portfolio-quotes__controls">
       <span class="rs-portfolio-choice-label">Portfolio or preset</span>
@@ -1372,11 +1372,11 @@ div.c {
   <p class="rs-portfolio-create-note">A portfolio can be created in <a href="/correlations/">Portfolio Analytics</a>. It is saved only in the user&rsquo;s browser cache and is not retained by RiskSnap.com.</p>
   <div class="rs-portfolio-table-wrap" hidden>
     <table class="rs-portfolio-table">
-      <thead><tr><th>Symbol</th><th>Shares</th><th id="rs-portfolio-eod-heading">EOD</th><th>Pre-market</th><th>Pre-market change</th></tr></thead>
+      <thead><tr><th>Symbol</th><th>Shares</th><th id="rs-portfolio-eod-heading">EOD</th><th>Pre-market</th><th>Pre-market change</th><th>Market</th><th>Market change</th></tr></thead>
       <tbody id="rs-portfolio-quote-rows"></tbody>
     </table>
   </div>
-  <p class="rs-global-markets__note">Pre-market applies to eligible U.S.-listed equities and funds. Foreign equities, foreign exchange, futures, indices and Bitcoin display N/A. Missing U.S. pre-market quotes remain unavailable until Yahoo publishes them.</p>
+  <p class="rs-global-markets__note">Pre-market applies to eligible U.S.-listed equities and funds. Foreign equities, foreign exchange, futures, indices and Bitcoin display N/A. Missing U.S. pre-market quotes remain unavailable until Yahoo publishes them. Market shows the latest regular-session reading supplied by RiskSnap; Market change is versus the previous regular-session close. Quotes may be delayed. Unavailable values appear as —.</p>
 </section>
 
 <p class="rs-broker-access-note"><strong>Broker access note:</strong> Markets commonly accessible to retail investors through international brokers include the United States (NYSE and Nasdaq), Canada (TMX), United Kingdom (London Stock Exchange), Germany (Deutsche Börse), Japan (JPX), Hong Kong (HKEX), Switzerland (SIX) and Australia (ASX). Mainland China is generally accessed through eligible Stock Connect securities; India, South Korea, Taiwan, Brazil, Dubai and Saudi Arabia may require participating brokers, registration, custody arrangements or local onboarding. Availability varies by jurisdiction, security and account type.</p>
@@ -1585,14 +1585,20 @@ div.c {
     const holdings = selections.get(choice.value) || [];
     if (!holdings.length) { status.textContent = "Select a portfolio or preset first."; return; }
     button.disabled = true;
-    status.textContent = "Loading EOD and pre-market quotes…";
+    status.textContent = "Loading EOD, pre-market and market quotes…";
     rows.innerHTML = "";
     wrap.hidden = false;
     if (resultsCloseButton) resultsCloseButton.hidden = false;
     try {
       const response = await fetch(`${endpoint}/latest_prices`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ symbols: holdings.map(item => item.symbol) }) });
       const payload = await response.json();
-      const eod = payload.eod_prices || payload.prices || {};
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const eod = payload.eod_prices || {};
+      const marketPrices = payload.regular_market_prices || payload.prices || {};
+      const marketChanges = payload.regular_market_changes || payload.changes || {};
+      const marketPercents = payload.regular_market_change_percents || payload.change_percents || {};
+      const previousCloses = payload.previous_closes || {};
+      const numeric = value => value == null || value === "" ? NaN : Number(value);
       const pre = payload.pre_market_prices || {};
       const changes = payload.pre_market_changes || {};
       const percents = payload.pre_market_change_percents || {};
@@ -1602,13 +1608,20 @@ div.c {
       if (eodHeading) eodHeading.innerHTML = `EOD${eodAsOf ? `<br><small>${safe(dateLabel(eodAsOf))}</small>` : ""}`;
       rows.innerHTML = holdings.map(item => {
         const eligible = preMarketEligible(item.symbol);
-        const eodValue = Number(eod[item.symbol]);
-        const preValue = Number(pre[item.symbol]);
-        const change = Number(changes[item.symbol]);
-        const percent = Number(percents[item.symbol]);
-        const changeText = eligible && Number.isFinite(change) ? `${change > 0 ? "+" : ""}${money(change)} (${change > 0 ? "+" : ""}${percent.toFixed(2)}%)` : (eligible ? "—" : "N/A");
-        const changeClass = Number.isFinite(change) ? (change > 0 ? "is-up" : change < 0 ? "is-down" : "") : "";
-        return `<tr><td>${safe(item.symbol)}</td><td>${item.shares == null ? "—" : safe(item.shares)}</td><td>${Number.isFinite(eodValue) ? money(eodValue) : "—"}</td><td>${eligible ? (Number.isFinite(preValue) ? money(preValue) : "—") : "N/A"}</td><td class="rs-portfolio-change ${changeClass}">${changeText}</td></tr>`;
+        const eodValue = numeric(eod[item.symbol]);
+        const preValue = numeric(pre[item.symbol]);
+        const change = numeric(changes[item.symbol]);
+        const percent = numeric(percents[item.symbol]);
+        const marketValue = numeric(marketPrices[item.symbol]);
+        const previous = numeric(previousCloses[item.symbol]);
+        const suppliedMarketChange = numeric(marketChanges[item.symbol]);
+        const marketChange = Number.isFinite(suppliedMarketChange) ? suppliedMarketChange : (Number.isFinite(marketValue) && previous > 0 ? marketValue - previous : NaN);
+        const suppliedMarketPercent = numeric(marketPercents[item.symbol]);
+        const marketPercent = Number.isFinite(suppliedMarketPercent) ? suppliedMarketPercent : (Number.isFinite(marketChange) && previous > 0 ? marketChange / previous * 100 : NaN);
+        const formatChange = (value, pct) => Number.isFinite(value) ? `${value > 0 ? "+" : ""}${money(value)}${Number.isFinite(pct) ? ` (${pct > 0 ? "+" : ""}${pct.toFixed(2)}%)` : ""}` : "—";
+        const colour = value => Number.isFinite(value) ? (value > 0 ? "is-up" : value < 0 ? "is-down" : "") : "";
+        const changeText = eligible ? formatChange(change, percent) : "N/A";
+        return `<tr><td>${safe(item.symbol)}</td><td>${item.shares == null ? "—" : safe(item.shares)}</td><td>${Number.isFinite(eodValue) ? money(eodValue) : "—"}</td><td>${eligible ? (Number.isFinite(preValue) ? money(preValue) : "—") : "N/A"}</td><td class="rs-portfolio-change ${colour(change)}">${changeText}</td><td>${Number.isFinite(marketValue) ? money(marketValue) : "—"}</td><td class="rs-portfolio-change ${colour(marketChange)}">${formatChange(marketChange, marketPercent)}</td></tr>`;
       }).join("");
       status.textContent = `Quotes requested ${payload.timestamp ? new Date(payload.timestamp).toLocaleString() : "now"}.`;
     } catch (error) {
