@@ -63,16 +63,20 @@ Version: Equities 3
     <div class="selector-note" style="flex-basis:100%">Saves the symbols above with 1 unit each and book cost 0. For actual portfolio calculations, enter your holdings, costs and futures agreed prices in Portfolio Analytics. Saved sets stay in this browser.</div>
   </form>
 
+  <div id="equitiesView">
+  <div class="equities-view-controls">
+    <details><summary>Columns</summary><div id="equitiesColumns"></div><button id="equitiesColumnsReset" type="button">Reset columns</button></details>
+    <button id="equitiesExpand" type="button" aria-label="Expand equities view" aria-pressed="false" title="Expand view"><svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3H3v6M3 3l7 7M15 21h6v-6m0 6-7-7" fill="none" stroke="currentColor" stroke-width="2.5"/></svg><span>Expand</span></button>
+    <button id="equitiesRotate" type="button" hidden aria-pressed="false">Horizontal view</button>
+    <span>Drag a header edge to resize. Use Columns to hide or show fields.</span>
+  </div>
   <div class="equities-table-wrap">
     <table class="equities-table">
       <thead>
         <tr>
           <th>Code</th>
-          <th>Description</th>
-          <th>Type</th>
-          <th>Sector</th>
-          <th>Industry / Category</th>
-          <th>Country</th>
+          <th>Chart</th>
+          <th>External<br>News</th>
           <th>Exchange</th>
           <th>Ccy</th>
           <th>EOD<br>USD</th>
@@ -85,8 +89,11 @@ Version: Equities 3
           <th>Fwd P/E</th>
           <th>Div Yield</th>
           <th>Beta</th>
-          <th>Chart</th>
-          <th>External<br>News</th>
+          <th>Description</th>
+          <th>Type</th>
+          <th>Sector</th>
+          <th>Industry / Category</th>
+          <th>Country</th>
         </tr>
       </thead>
       <tbody id="equitiesBody">
@@ -112,6 +119,7 @@ Version: Equities 3
     <div id="equitiesPriceChart" class="equities-price-chart"></div>
   </div>
 
+  </div><!-- equitiesView -->
   <div class="equities-footnotes">
     <p><strong>Market Cap / Net Assets:</strong> Market capitalization is shown for operating companies; fund net assets are shown for ETFs/funds when Yahoo supplies them.</p>
     <p><strong>P/E:</strong> An ETF may have no Yahoo P/E even though its underlying holdings have earnings. Missing values are shown as N/A rather than inferred.</p>
@@ -193,40 +201,6 @@ Version: Equities 3
 }
 .equities-table th { background:#f4f6fa; font-weight:700; position:sticky; top:0; z-index:1; }
 .equities-table th { white-space:normal; line-height:1.08; }
-.equities-table th:nth-child(1), .equities-table td:nth-child(1) { padding-left:7px; padding-right:5px; }
-.equities-table th:nth-child(6), .equities-table td:nth-child(6) { max-width:86px; }
-.equities-table th:nth-child(7), .equities-table td:nth-child(7) { max-width:72px; }
-.equities-table th:nth-child(8), .equities-table td:nth-child(8) { width:42px; min-width:38px; max-width:44px; }
-.equities-table th:nth-child(10), .equities-table td:nth-child(10) { width:78px; min-width:72px; max-width:88px; }
-.equities-table th:nth-child(12), .equities-table td:nth-child(12) { min-width:72px; }
-.equities-table th:nth-child(13), .equities-table td:nth-child(13),
-.equities-table th:nth-child(14), .equities-table td:nth-child(14),
-.equities-table th:nth-child(15), .equities-table td:nth-child(15),
-.equities-table th:nth-child(16), .equities-table td:nth-child(16),
-.equities-table th:nth-child(17), .equities-table td:nth-child(17),
-.equities-table th:nth-child(18), .equities-table td:nth-child(18),
-.equities-table th:nth-child(19), .equities-table td:nth-child(19) {
-  padding-left:4px;
-  padding-right:4px;
-}
-.equities-table th:nth-child(17), .equities-table td:nth-child(17) { min-width:48px; width:52px; text-align:center; }
-.equities-table th:nth-child(18), .equities-table td:nth-child(18) { min-width:56px; }
-.equities-table th:nth-child(19), .equities-table td:nth-child(19) { min-width:47px; }
-.equities-table th:nth-child(20), .equities-table td:nth-child(20) { min-width:86px; }
-
-.equities-table th:nth-child(-n+8), .equities-table td:nth-child(-n+8) { text-align:left; }
-.equities-table td:nth-child(2) {
-  white-space:normal;
-  min-width:150px;
-  max-width:235px;
-  line-height:1.25;
-}
-.equities-table td:nth-child(4),
-.equities-table td:nth-child(5) {
-  white-space:normal;
-  min-width:90px;
-  max-width:155px;
-}
 .equities-code { font-weight:700; color:#244b9b; }
 /* Keep security codes visible during horizontal scrolling. */
 .equities-table th:first-child,
@@ -299,7 +273,6 @@ Version: Equities 3
 .eq-chart-overlay { fill:transparent; cursor:crosshair; }
 .eq-chart-tooltip { position:absolute; display:none; pointer-events:none; background:#fff; border:1px solid #aaa; border-radius:4px; padding:5px 7px; font-size:11px; box-shadow:0 1px 4px rgba(0,0,0,.12); z-index:5; white-space:nowrap; }
 @media (max-width:600px) {
-  .equities-table th:nth-child(9), .equities-table td:nth-child(9) { width:68px; min-width:65px; max-width:75px; }
   .equities-chart-actions { width:100%; }
 }
 
@@ -308,17 +281,12 @@ Version: Equities 3
 @media (max-width:1180px) {
   .equities-table { font-size:11px; }
   .equities-table th, .equities-table td { padding-top:5px; padding-bottom:5px; }
-  .equities-table td:nth-child(2) { min-width:125px; max-width:190px; }
-  .equities-table td:nth-child(4),
-  .equities-table td:nth-child(5) { min-width:78px; max-width:125px; }
 }
 @media (max-width:900px) {
   .equities-selectors { grid-template-columns:1fr; }
   .equities-table { font-size:10.5px; }
   .equities-table th, .equities-table td { padding-left:3px; padding-right:3px; }
 }
-
-.equities-table th:nth-child(10), .equities-table td:nth-child(10), .equities-table th:nth-child(11), .equities-table td:nth-child(11) { min-width:70px; }
 </style>
 
 <script>
@@ -661,11 +629,8 @@ function renderRows(rows) {
     const move = equityUsdMove(row);
     return `<tr data-symbol="${escapeHtml(symbol)}">
       <td class="equities-code">${escapeHtml(row.flag || "")} ${escapeHtml(symbol)}</td>
-      ${td(row.description)}
-      ${td(row.type)}
-      ${td(row.sector)}
-      ${td(row.industry)}
-      ${td(row.country)}
+      <td><button type="button" class="equities-chart-link" data-symbol="${escapeHtml(symbol)}">Chart</button></td>
+      <td class="equities-news"><span class="equities-move-pending">…</span></td>
       ${td(row.exchange)}
       ${td(row.currency)}
       <td title="${escapeHtml(row.eod_date || "Completed EOD")}">${row.eod_usd_price > 0 ? escapeHtml(fmtMoney(row.eod_usd_price, "USD", row.currency && row.currency !== "USD" ? 4 : priceDisplayDecimals(symbol))) : '<span class="equities-na">N/A</span>'}</td>
@@ -678,14 +643,18 @@ function renderRows(rows) {
       ${td(fmtNumber(row.forward_pe))}
       ${td(fmtPercent(row.dividend_yield))}
       ${td(fmtNumber(row.beta))}
-      <td><button type="button" class="equities-chart-link" data-symbol="${escapeHtml(symbol)}">Chart</button></td>
-      <td class="equities-news"><span class="equities-move-pending">…</span></td>
+      ${td(row.description)}
+      ${td(row.type)}
+      ${td(row.sector)}
+      ${td(row.industry)}
+      ${td(row.country)}
     </tr>`;
   }).join("");
 
   body.querySelectorAll(".equities-chart-link").forEach(button => {
     button.addEventListener("click", () => openEquitiesChart(button.dataset.symbol));
   });
+  window.applyEquitiesColumns?.();
   enrichUnusualMoves(rows);
 }
 
@@ -1167,4 +1136,59 @@ async function initializeEquitiesPage() {
   restoreActiveSelectionAndLoad();
 }
 initializeEquitiesPage();
+</script>
+
+<style>
+.equities-view-controls { display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin:10px 0; font:13px Arial,sans-serif; }
+.equities-view-controls button,.equities-view-controls summary { cursor:pointer; padding:9px; border:1px solid #aab4c4; border-radius:5px; background:#fff; color:#173248; }
+#equitiesExpand { display:flex; align-items:center; gap:6px; }
+.equities-view-controls details { position:relative; }
+#equitiesColumns { display:grid; grid-template-columns:repeat(2,minmax(110px,1fr)); max-height:240px; overflow:auto; padding:8px; gap:6px; }
+.equities-view-controls details[open] { background:#fff; border:1px solid #ccc; }
+#equitiesColumns label { padding:4px; }
+.equities-table { table-layout:fixed; width:max-content; }
+.equities-table th,.equities-table td { box-sizing:border-box; overflow:hidden; text-overflow:ellipsis; }
+.equities-table th { position:sticky; padding-right:12px; }
+.equities-table td:nth-child(n+16) { white-space:normal; overflow-wrap:anywhere; text-align:left; }
+.equities-table th:nth-child(-n+5),.equities-table td:nth-child(-n+5) { text-align:left; }
+.eq-resizer { position:absolute; right:0; top:0; width:12px; height:100%; cursor:col-resize; touch-action:none; border-right:2px solid #bac7db; }
+.eq-resizer:focus { outline:2px solid #244b9b; }
+#equitiesView.eq-expanded { position:fixed; inset:0; z-index:2147483000; background:#fff; padding:12px; box-sizing:border-box; overflow:auto; }
+#equitiesView.eq-expanded .equities-table-wrap { max-height:70vh; overflow:auto; }
+body.eq-view-open { overflow:hidden; }
+@media (orientation:portrait) {
+ #equitiesView.eq-expanded.eq-horizontal { inset:auto; top:50%; left:50%; width:100dvh; height:100dvw; transform:translate(-50%,-50%) rotate(90deg); }
+ #equitiesView.eq-expanded.eq-horizontal .equities-table-wrap { max-height:65vw; }
+}
+</style>
+<script>
+(()=>{
+ const table=document.querySelector('.equities-table'), headers=[...table.tHead.rows[0].cells];
+ const names=headers.map(h=>h.innerText.replace(/\s+/g,' ').trim());
+ const defaults=[100,72,145,85,55,100,115,95,85,80,120,75,85,85,75,200,90,130,170,110];
+ let prefs={};try{prefs=JSON.parse(localStorage.getItem('RiskSnapEquitiesColumnsV1')||'{}')||{};}catch(e){}
+ let widths=defaults.map((w,i)=>Math.max(55,Math.min(600,Number(prefs.widths?.[i])||w)));
+ let hidden=new Set((Array.isArray(prefs.hidden)?prefs.hidden:[]).filter(i=>Number.isInteger(i)&&i>0&&i<20));
+ const group=document.createElement('colgroup');headers.forEach(()=>group.appendChild(document.createElement('col')));table.prepend(group);
+ function save(){try{localStorage.setItem('RiskSnapEquitiesColumnsV1',JSON.stringify({widths,hidden:[...hidden]}));}catch(e){}}
+ window.applyEquitiesColumns=()=>{
+  let total=0;headers.forEach((h,i)=>{group.children[i].style.width=hidden.has(i)?'0px':widths[i]+'px';if(!hidden.has(i))total+=widths[i];});
+  table.style.width=total+'px';[...table.rows].forEach(row=>{if(row.cells.length!==20)return;[...row.cells].forEach((c,i)=>c.style.display=hidden.has(i)?'none':'');});
+ };
+ const menu=document.getElementById('equitiesColumns');
+ headers.forEach((h,i)=>{
+  const label=document.createElement('label'),input=document.createElement('input');input.type='checkbox';input.checked=!hidden.has(i);input.disabled=i===0;
+  input.onchange=()=>{input.checked?hidden.delete(i):hidden.add(i);applyEquitiesColumns();save();};label.append(input,document.createTextNode(' '+names[i]));menu.append(label);
+  const handle=document.createElement('span');handle.className='eq-resizer';handle.tabIndex=0;handle.role='separator';handle.setAttribute('aria-label','Resize '+names[i]);handle.setAttribute('aria-orientation','vertical');
+  handle.onkeydown=e=>{if(!['ArrowLeft','ArrowRight'].includes(e.key))return;e.preventDefault();widths[i]=Math.max(55,Math.min(600,widths[i]+(e.key==='ArrowRight'?10:-10)));applyEquitiesColumns();save();};
+  handle.onpointerdown=e=>{e.preventDefault();handle.setPointerCapture(e.pointerId);let x=e.clientX,y=e.clientY,w=widths[i];const move=ev=>{const rotated=view.classList.contains('eq-horizontal')&&matchMedia('(orientation:portrait)').matches;widths[i]=Math.max(55,Math.min(600,w+(rotated?ev.clientY-y:ev.clientX-x)));applyEquitiesColumns();};const end=()=>{handle.removeEventListener('pointermove',move);save();};handle.addEventListener('pointermove',move);handle.addEventListener('pointerup',end,{once:true});handle.addEventListener('pointercancel',end,{once:true});};h.append(handle);
+ });
+ document.getElementById('equitiesColumnsReset').onclick=()=>{widths=[...defaults];hidden.clear();menu.querySelectorAll('input').forEach(i=>i.checked=true);applyEquitiesColumns();save();};
+ const view=document.getElementById('equitiesView'),expand=document.getElementById('equitiesExpand'),rotate=document.getElementById('equitiesRotate');let previousFocus;
+ function close(){view.classList.remove('eq-expanded','eq-horizontal');document.body.classList.remove('eq-view-open');expand.setAttribute('aria-pressed','false');expand.setAttribute('aria-label','Expand equities view');expand.querySelector('span').textContent='Expand';rotate.hidden=true;rotate.setAttribute('aria-pressed','false');previousFocus?.focus();}
+ expand.onclick=()=>{if(view.classList.contains('eq-expanded'))return close();previousFocus=document.activeElement;view.classList.add('eq-expanded');document.body.classList.add('eq-view-open');expand.setAttribute('aria-pressed','true');expand.setAttribute('aria-label','Close expanded equities view');expand.querySelector('span').textContent='Close';rotate.hidden=false;};
+ rotate.onclick=()=>{const on=view.classList.toggle('eq-horizontal');rotate.setAttribute('aria-pressed',String(on));};
+ document.addEventListener('keydown',e=>{if(e.key==='Escape'&&view.classList.contains('eq-expanded'))close();});
+ applyEquitiesColumns();
+})();
 </script>
