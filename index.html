@@ -2656,5 +2656,53 @@ body > nav { background: linear-gradient(90deg, #ffe45c 0%, #ffab36 50%, #ef5350
 })();
 </script>
 
+<!-- RiskSnap homepage freshness: a new URL bypasses stale iOS Home Screen HTML cache. -->
+<script>
+(function () {
+  'use strict';
+  var key = 'rsfresh';
+  var awayAt = null;
+  var refreshing = false;
+  var minimumAwayMs = 120000; // 2 minutes away from the homepage
+
+  function refreshWithNewURL() {
+    if (refreshing) return;
+    refreshing = true;
+    var url = new URL(window.location.href);
+    url.searchParams.set(key, String(Date.now()));
+    // Replace (rather than push) so Back does not reopen a stale copy.
+    window.location.replace(url.toString());
+  }
+
+  // A cold launch through the iPhone Home Screen icon often reuses the
+  // same cached URL. One cache-busted navigation fetches a new document.
+  // The rsfresh parameter prevents a reload loop.
+  if (!new URL(window.location.href).searchParams.has(key)) {
+    refreshWithNewURL();
+    return;
+  }
+
+  document.addEventListener('visibilitychange', function () {
+    if (document.hidden) {
+      awayAt = Date.now();
+    } else if (awayAt !== null) {
+      var duration = Date.now() - awayAt;
+      awayAt = null;
+      if (duration >= minimumAwayMs) refreshWithNewURL();
+    }
+  });
+
+  // iOS may suspend a standalone Home Screen app without visibilitychange.
+  window.addEventListener('pagehide', function () { awayAt = Date.now(); });
+  window.addEventListener('pageshow', function (event) {
+    if (event.persisted && awayAt !== null) {
+      var duration = Date.now() - awayAt;
+      awayAt = null;
+      if (duration >= minimumAwayMs) refreshWithNewURL();
+    }
+  });
+})();
+</script>
+
 </body>
 </html>
