@@ -1347,6 +1347,49 @@ div.c {
 })();
 </script>
 
+<section class="rs-portfolio-quotes rs-ticker-lookup" aria-labelledby="rs-ticker-title">
+  <div class="rs-portfolio-quotes__heading">
+    <div>
+      <p class="rs-global-markets__eyebrow">Single security</p>
+      <h2 id="rs-ticker-title">Ticker lookup</h2>
+    </div>
+    <form id="rs-ticker-form">
+      <label for="rs-ticker-symbol">Yahoo Finance ticker</label>
+      <input id="rs-ticker-symbol" type="text" placeholder="e.g. AAPL or RY.TO" maxlength="25"
+             autocomplete="off" autocapitalize="characters" spellcheck="false" required>
+      <button type="submit">Look up</button>
+    </form>
+  </div>
+  <p id="rs-ticker-status" class="rs-global-markets__status" role="status"></p>
+  <div id="rs-ticker-result" hidden>
+    <h3 id="rs-ticker-name"></h3>
+    <dl class="rs-ticker-facts">
+      <div><dt>Market cap</dt><dd data-rs-fact="marketCap">—</dd></div>
+      <div><dt>Trailing P/E</dt><dd data-rs-fact="trailingPE">—</dd></div>
+      <div><dt>EOD price</dt><dd data-rs-fact="eod">—</dd></div>
+      <div><dt>Market price</dt><dd data-rs-fact="market">—</dd></div>
+      <div><dt>Price change per share/unit</dt><dd data-rs-fact="change">—</dd></div>
+      <div><dt>Price change (%)</dt><dd data-rs-fact="percent">—</dd></div>
+    </dl>
+    <p class="rs-global-markets__note">EOD is the last completed session close. Market price is the latest regular-session quote. Changes are versus the prior close for that quote. Quotes may be delayed.</p>
+  </div>
+  <div id="rs-ticker-chart-slot"></div>
+</section>
+<style>
+.rs-ticker-lookup form { display:flex; align-items:center; flex-wrap:wrap; gap:7px; }
+.rs-ticker-lookup label { font-size:12px; font-weight:700; }
+.rs-ticker-lookup input, .rs-ticker-lookup button { min-height:36px; box-sizing:border-box; }
+.rs-ticker-lookup input { width:165px; max-width:100%; padding:5px 8px; }
+.rs-ticker-lookup #rs-ticker-status:empty { display:none; }
+.rs-ticker-lookup h3 { margin:8px 0; font-size:16px; }
+.rs-ticker-facts { display:grid; grid-template-columns:repeat(auto-fit,minmax(125px,1fr)); gap:8px; margin:0; }
+.rs-ticker-facts div { background:#fff; border:1px solid #d8e1ec; border-radius:6px; padding:7px; }
+.rs-ticker-facts dt { font-size:12px; }
+.rs-ticker-facts dd { margin:3px 0 0; font-weight:700; }
+.rs-ticker-lookup .rs-market-chart-panel { margin:10px 0 0; }
+.rs-market-chart-actions button[hidden] { display:none; }
+</style>
+
 <!-- RiskSnap landing page correction: exact banner blue and saved-share support, 2026-09-10 -->
 <section class="rs-portfolio-quotes" style="background:#E5F1FF !important;" aria-labelledby="rs-portfolio-quotes-title">
   <div class="rs-portfolio-quotes__heading">
@@ -1651,6 +1694,7 @@ div.c {
 })();
 </script>
 
+<div id="rsMarketChartHome"></div>
 <div id="rsMarketChartPanel" class="rs-market-chart-panel" hidden>
   <div class="rs-market-chart-header">
     <div>
@@ -1658,6 +1702,7 @@ div.c {
       <div id="rsMarketChartStatus" class="rs-market-chart-status"></div>
     </div>
     <div class="rs-market-chart-actions">
+      <button type="button" class="rs-market-chart-range" data-range="1d" hidden>1D</button>
       <button type="button" class="rs-market-chart-range" data-range="3m">3M</button>
       <button type="button" class="rs-market-chart-range" data-range="6m">6M</button>
       <button type="button" class="rs-market-chart-range is-active" data-range="1y">1Y</button>
@@ -1813,6 +1858,95 @@ function rsFillBreakevenRows(rows) {
   let selectedRange = "1y";
   const cache = new Map();
   let chartRequest = 0;
+  let lookupRequest = 0;
+  let lookupData = null;
+  const chartHome = document.getElementById("rsMarketChartHome");
+  const chartSlot = document.getElementById("rs-ticker-chart-slot");
+  const rangeButtons = [...panel.querySelectorAll(".rs-market-chart-range")];
+  const oneDayButton = rangeButtons.find(button => button.dataset.range === "1d");
+  const lookupForm = document.getElementById("rs-ticker-form");
+  const lookupInput = document.getElementById("rs-ticker-symbol");
+  const lookupStatus = document.getElementById("rs-ticker-status");
+  const lookupResult = document.getElementById("rs-ticker-result");
+  const lookupName = document.getElementById("rs-ticker-name");
+  const facts = Object.fromEntries([...lookupResult.querySelectorAll("[data-rs-fact]")]
+    .map(node => [node.dataset.rsFact, node]));
+  const quoteEndpoint = endpoint.replace("/asset_history", "/latest_prices");
+  const intradayEndpoint = endpoint.replace("/asset_history", "/asset_intraday");
+  const formatNumber = (value, options) => Number.isFinite(value)
+    ? value.toLocaleString(undefined, options) : "—";
+
+  async function fetchJson(url, options) {
+    const response = await fetch(url, options);
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(payload.error || `HTTP ${response.status}`);
+    return payload;
+  }
+
+  function selectRange(range) {
+    selectedRange = range;
+    rangeButtons.forEach(button => button.classList.toggle("is-active", button.dataset.range === range));
+  }
+
+  lookupForm.addEventListener("submit", async event => {
+    event.preventDefault();
+    const symbol = lookupInput.value.trim().toUpperCase();
+    const request = ++lookupRequest;
+    if (panel.parentNode === chartSlot) {
+      ++chartRequest;
+      panel.hidden = true;
+    }
+    lookupResult.hidden = true;
+    if (!/^[A-Z0-9^][A-Z0-9.^=\-]{0,24}$/.test(symbol)) {
+      lookupStatus.textContent = "Enter one Yahoo Finance ticker, such as AAPL or RY.TO.";
+      return;
+    }
+
+    lookupStatus.textContent = `Loading ${symbol}…`;
+    selectedSymbol = symbol;
+    selectedName = symbol;
+    const quote = fetchJson(quoteEndpoint, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ symbols: [symbol], include_fundamentals: true })
+    });
+    const intraday = fetchJson(`${intradayEndpoint}?symbol=${encodeURIComponent(symbol)}`);
+    lookupData = { symbol, quote, intraday };
+    chartSlot.appendChild(panel);
+    panel.hidden = false;
+    oneDayButton.hidden = false;
+    selectRange("1d");
+    loadChart();
+
+    const [quoteResult, intradayResult] = await Promise.allSettled([quote, intraday]);
+    if (request !== lookupRequest) return;
+    const payload = quoteResult.value || {};
+    const day = intradayResult.value || {};
+    const name = payload.long_names?.[symbol] || payload.short_names?.[symbol] || symbol;
+    lookupName.textContent = name === symbol ? symbol : `${name} (${symbol})`;
+    if (panel.parentNode === chartSlot && selectedSymbol === symbol) {
+      selectedName = name;
+      title.textContent = `${name} History`;
+    }
+
+    const currency = payload.currencies?.[symbol] || day.currency;
+    const priceOptions = { minimumFractionDigits: 2, maximumFractionDigits: 6 };
+    const money = (value, options = priceOptions) => {
+      const formatted = formatNumber(value, options);
+      return formatted === "—" || !currency ? formatted : `${formatted} ${currency}`;
+    };
+    const regular = payload.quote_fields?.[symbol] === "regularMarketPrice";
+    facts.marketCap.textContent = money(payload.market_caps?.[symbol], { notation: "compact", maximumFractionDigits: 2 });
+    facts.trailingPE.textContent = formatNumber(payload.trailing_pes?.[symbol], { maximumFractionDigits: 2 });
+    facts.eod.textContent = money(day.eod_price);
+    facts.market.textContent = money(regular ? payload.prices?.[symbol] : null);
+    facts.change.textContent = money(regular ? payload.changes?.[symbol] : null, { ...priceOptions, signDisplay: "exceptZero" });
+    const percent = regular ? payload.change_percents?.[symbol] : null;
+    facts.percent.textContent = Number.isFinite(percent)
+      ? formatNumber(percent / 100, { style: "percent", maximumFractionDigits: 2, signDisplay: "exceptZero" }) : "—";
+    lookupResult.hidden = !quoteResult.value && !day.rows?.length;
+    lookupStatus.textContent = quoteResult.status === "rejected" ? "Quote details are unavailable for this ticker." : "";
+  });
   const safe = value => String(value == null ? "" : value).replace(/[&<>"']/g, character => ({
     "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;"
   })[character]);
@@ -1827,7 +1961,7 @@ function rsFillBreakevenRows(rows) {
     return Number.isNaN(date.getTime()) ? String(value || "") : date.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "2-digit" });
   };
 
-  function draw(rows, label) {
+  function draw(rows, label, labelDate = dateLabel) {
     container.innerHTML = "";
     const clean = (rows || []).map(row => ({ date: String(row.date || row.Date || ""), latest: !!row.latest, price: Number(row.price ?? row.value ?? row.Breakeven10Y) }))
       .filter(row => row.date && Number.isFinite(row.price))
@@ -1849,7 +1983,7 @@ function rsFillBreakevenRows(rows) {
     svg.appendChild(svgNode("line", { x1: margin.left, y1: margin.top, x2: margin.left, y2: height - margin.bottom, class: "rs-chart-axis" }));
     svg.appendChild(svgNode("line", { x1: margin.left, y1: height - margin.bottom, x2: width - margin.right, y2: height - margin.bottom, class: "rs-chart-axis" }));
     [0, Math.floor((clean.length - 1) / 2), clean.length - 1].forEach(index => {
-      svg.appendChild(svgNode("text", { x: x(index), y: height - 15, class: "rs-chart-label", "text-anchor": index === 0 ? "start" : (index === clean.length - 1 ? "end" : "middle") }, dateLabel(clean[index].date)));
+      svg.appendChild(svgNode("text", { x: x(index), y: height - 15, class: "rs-chart-label", "text-anchor": index === 0 ? "start" : (index === clean.length - 1 ? "end" : "middle") }, labelDate(clean[index].date)));
     });
     svg.appendChild(svgNode("path", { d: clean.map((row, index) => `${index ? "L" : "M"}${x(index).toFixed(2)},${y(row.price).toFixed(2)}`).join(" "), class: "rs-chart-line" }));
     const last = clean[clean.length - 1];
@@ -1868,7 +2002,7 @@ function rsFillBreakevenRows(rows) {
       const row = clean[index], xx = x(index), yy = y(row.price);
       hoverLine.setAttribute("x1", xx); hoverLine.setAttribute("x2", xx); hoverLine.setAttribute("visibility", "visible");
       hoverPoint.setAttribute("cx", xx); hoverPoint.setAttribute("cy", yy); hoverPoint.setAttribute("visibility", "visible");
-      tip.innerHTML = `<strong>${safe(label)}</strong><br>${safe(dateLabel(row.date))}${row.latest ? " · latest available quote" : ""}<br>${safe(row.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }))}`;
+      tip.innerHTML = `<strong>${safe(label)}</strong><br>${safe(labelDate(row.date))}${row.latest ? " · latest available quote" : ""}<br>${safe(row.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }))}`;
       tip.style.display = "block";
       const chartRect = container.getBoundingClientRect();
       const cx = (rect.left - chartRect.left) + (xx / width) * rect.width;
@@ -1887,12 +2021,29 @@ function rsFillBreakevenRows(rows) {
     const request = ++chartRequest;
     const symbol = selectedSymbol, range = selectedRange, name = selectedName || symbol;
     const isBreakeven = symbol === "T10YIE";
-    const latestPromise = isBreakeven ? Promise.resolve(null) : fetch(endpoint.replace("/asset_history", "/latest_prices"), {
-      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ symbols: [symbol] })
-    }).then(response => response.ok ? response.json() : null).catch(() => null);
     title.textContent = `${name} History`;
     status.textContent = "Loading...";
     container.innerHTML = "";
+    const currentLookup = panel.parentNode === chartSlot && lookupData?.symbol === symbol ? lookupData : null;
+    if (range === "1d" && currentLookup) {
+      try {
+        const day = await currentLookup.intraday;
+        if (request !== chartRequest) return;
+        const clock = new Intl.DateTimeFormat(undefined, { timeZone: day.timezone, hour: "numeric", minute: "2-digit" });
+        const sessionDate = new Intl.DateTimeFormat(undefined, { timeZone: day.timezone, dateStyle: "medium" });
+        const ok = draw(day.rows, selectedName || name, value => clock.format(new Date(value)));
+        status.textContent = ok
+          ? `${sessionDate.format(new Date(day.rows[0].date))} · 5-minute prices · ${day.timezone}`
+          : "No usable intraday history returned.";
+      } catch (error) {
+        if (request === chartRequest) status.textContent = `Chart unavailable: ${error.message}`;
+      }
+      return;
+    }
+    const latestPromise = isBreakeven ? Promise.resolve(null) : currentLookup
+      ? currentLookup.quote.catch(() => null) : fetch(quoteEndpoint, {
+      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ symbols: [symbol] })
+    }).then(response => response.ok ? response.json() : null).catch(() => null);
     const key = `${symbol}|${range}`;
     try {
       let rows = cache.get(key);
@@ -1938,15 +2089,19 @@ function rsFillBreakevenRows(rows) {
     selectedSymbol = String(button.dataset.rsChartSymbol || "").trim().toUpperCase();
     selectedName = String(button.dataset.rsChartName || selectedSymbol).trim();
     if (!selectedSymbol) return;
+    if (panel.parentNode === chartSlot) {
+      chartHome.after(panel);
+      oneDayButton.hidden = true;
+      selectRange("1y");
+    }
     panel.hidden = false;
     panel.scrollIntoView({ behavior: "smooth", block: "nearest" });
     loadChart();
   });
   document.getElementById("rsMarketChartClose").addEventListener("click", () => { panel.hidden = true; });
-  document.querySelectorAll(".rs-market-chart-range").forEach(button => {
+  rangeButtons.forEach(button => {
     button.addEventListener("click", async () => {
-      selectedRange = button.dataset.range || "1y";
-      document.querySelectorAll(".rs-market-chart-range").forEach(item => item.classList.toggle("is-active", item === button));
+      selectRange(button.dataset.range || "1y");
       if (selectedSymbol) await loadChart();
     });
   });
