@@ -1362,7 +1362,10 @@ div.c {
   </div>
   <p id="rs-ticker-status" class="rs-global-markets__status" role="status"></p>
   <div id="rs-ticker-result" hidden>
-    <h3 id="rs-ticker-name"></h3>
+    <div class="rs-ticker-result-heading">
+      <h3 id="rs-ticker-name"></h3>
+      <a id="rs-ticker-news" target="_blank" rel="noopener noreferrer">News</a>
+    </div>
     <dl class="rs-ticker-facts">
       <div><dt>Market cap</dt><dd data-rs-fact="marketCap">—</dd></div>
       <div><dt>Trailing P/E</dt><dd data-rs-fact="trailingPE">—</dd></div>
@@ -1382,11 +1385,15 @@ div.c {
 .rs-ticker-lookup input { width:165px; max-width:100%; padding:5px 8px; }
 .rs-ticker-lookup #rs-ticker-status:empty { display:none; }
 .rs-ticker-lookup h3 { margin:8px 0; font-size:16px; }
+.rs-ticker-result-heading { display:flex; align-items:center; flex-wrap:wrap; column-gap:8px; }
+#rs-ticker-news { font-size:13px; white-space:nowrap; }
 .rs-ticker-facts { display:grid; grid-template-columns:repeat(auto-fit,minmax(125px,1fr)); gap:8px; margin:0; }
 .rs-ticker-facts div { background:#fff; border:1px solid #d8e1ec; border-radius:6px; padding:7px; }
 .rs-ticker-facts dt { font-size:12px; }
 .rs-ticker-facts dd { margin:3px 0 0; font-weight:700; }
 .rs-ticker-lookup .rs-market-chart-panel { margin:10px 0 0; }
+#rs-ticker-chart-slot .rs-market-chart-actions button,
+#rs-top10-chart-slot .rs-market-chart-actions button { color:#000; }
 .rs-market-chart-actions button[hidden] { display:none; }
 </style>
 
@@ -1869,6 +1876,7 @@ function rsFillBreakevenRows(rows) {
   const lookupStatus = document.getElementById("rs-ticker-status");
   const lookupResult = document.getElementById("rs-ticker-result");
   const lookupName = document.getElementById("rs-ticker-name");
+  const lookupNews = document.getElementById("rs-ticker-news");
   const facts = Object.fromEntries([...lookupResult.querySelectorAll("[data-rs-fact]")]
     .map(node => [node.dataset.rsFact, node]));
   const quoteEndpoint = endpoint.replace("/asset_history", "/latest_prices");
@@ -1924,6 +1932,8 @@ function rsFillBreakevenRows(rows) {
     const day = intradayResult.value || {};
     const name = payload.long_names?.[symbol] || payload.short_names?.[symbol] || symbol;
     lookupName.textContent = name === symbol ? symbol : `${name} (${symbol})`;
+    lookupNews.href = `https://news.google.com/search?q=${encodeURIComponent(`${symbol} stock`)}&hl=en-CA&gl=CA&ceid=CA:en`;
+    lookupNews.title = `Open external news for ${symbol}`;
     if (panel.parentNode === chartSlot && selectedSymbol === symbol) {
       selectedName = name;
       title.textContent = `${name} History`;
@@ -2089,7 +2099,12 @@ function rsFillBreakevenRows(rows) {
     selectedSymbol = String(button.dataset.rsChartSymbol || "").trim().toUpperCase();
     selectedName = String(button.dataset.rsChartName || selectedSymbol).trim();
     if (!selectedSymbol) return;
-    if (panel.parentNode === chartSlot) {
+    const top10Slot = button.closest("#rs-top10-dialog")?.querySelector("#rs-top10-chart-slot");
+    if (top10Slot && panel.parentNode !== top10Slot) {
+      top10Slot.appendChild(panel);
+      oneDayButton.hidden = true;
+      selectRange("1y");
+    } else if (!top10Slot && (panel.parentNode === chartSlot || panel.closest("#rs-top10-dialog"))) {
       chartHome.after(panel);
       oneDayButton.hidden = true;
       selectRange("1y");
@@ -2098,7 +2113,10 @@ function rsFillBreakevenRows(rows) {
     panel.scrollIntoView({ behavior: "smooth", block: "nearest" });
     loadChart();
   });
-  document.getElementById("rsMarketChartClose").addEventListener("click", () => { panel.hidden = true; });
+  document.getElementById("rsMarketChartClose").addEventListener("click", () => {
+    ++chartRequest;
+    panel.hidden = true;
+  });
   rangeButtons.forEach(button => {
     button.addEventListener("click", async () => {
       selectRange(button.dataset.range || "1y");
@@ -2574,6 +2592,8 @@ body > nav { background: linear-gradient(90deg, #ffe45c 0%, #ffab36 50%, #ef5350
 .rs-top10-table th:first-child,.rs-top10-table td:first-child,.rs-top10-table th:nth-child(2),.rs-top10-table td:nth-child(2){text-align:left;}
 .rs-top10-company{display:block;font-weight:600;min-width:120px;}
 .rs-top10-symbol{font-size:11px;color:#5a6c80;}
+.rs-top10-company-chart { margin-inline-start: 6px; }
+#rs-top10-chart-slot .rs-market-chart-panel { margin: 12px 0 0; }
 #rs-top10-status,#rs-top10-note,#rs-top10-source{font:12px/1.45 Arial,sans-serif;}
 .rs-top10-up{color:#137333;}.rs-top10-down{color:#b3261e;}
 @media(max-width:600px){.rs-top10-button{min-height:44px;}#rs-top10-dialog{padding:12px;}.rs-top10-table th,.rs-top10-table td{padding:8px 4px;font-size:12px;}}
@@ -2583,6 +2603,7 @@ body > nav { background: linear-gradient(90deg, #ffe45c 0%, #ffab36 50%, #ef5350
  <div class="rs-top10-actions"><button id="rs-top10-refresh" type="button">Refresh</button><button id="rs-top10-close" type="button">Close</button></div>
  <p id="rs-top10-status" role="status" aria-live="polite"></p>
  <div class="rs-top10-scroll"><table class="rs-top10-table"><thead><tr><th>#</th><th>Company / symbol</th><th id="rs-top10-cap-heading">Market cap</th><th>Daily change</th></tr></thead><tbody id="rs-top10-body"></tbody></table></div>
+ <div id="rs-top10-chart-slot"></div>
  <p id="rs-top10-note"></p><p id="rs-top10-source"></p>
 </dialog>
 <script>
@@ -2590,7 +2611,12 @@ body > nav { background: linear-gradient(90deg, #ffe45c 0%, #ffab36 50%, #ef5350
  const groups={'^DJI':['dow','Dow Jones'],'^GSPC':['sp500','S&P 500'],'^IXIC':['nasdaq','Nasdaq Composite'],'^GSPTSE':['tsx','S&P/TSX Composite'],'CL=F':['energy','Oil and energy companies'],'BTC-USD':['crypto','Crypto-related companies']};
  const dialog=document.getElementById('rs-top10-dialog'),body=document.getElementById('rs-top10-body'),status=document.getElementById('rs-top10-status'),refresh=document.getElementById('rs-top10-refresh');
  let active=null,timer=null,controller=null,opener=null;
- function close(){clearInterval(timer);timer=null;controller?.abort();controller=null;active=null;if(dialog.open)dialog.close();opener?.focus();}
+ function close(){
+  clearInterval(timer);timer=null;controller?.abort();controller=null;active=null;
+  dialog.querySelector('#rsMarketChartClose')?.click();
+  if(dialog.open)dialog.close();
+  opener?.focus();
+ }
  const isNumber=v=>typeof v==='number'&&Number.isFinite(v);
  function cap(value){return isNumber(value)?new Intl.NumberFormat(undefined,{notation:'compact',maximumFractionDigits:2}).format(value):'—';}
  async function update(){
@@ -2603,6 +2629,14 @@ body > nav { background: linear-gradient(90deg, #ffe45c 0%, #ffab36 50%, #ef5350
    if(!Array.isArray(data.rows)||data.rows.length!==10)throw new Error('Ten company rankings are not available yet.');
    const fragment=document.createDocumentFragment();data.rows.forEach((row,i)=>{
     const tr=document.createElement('tr');const rank=document.createElement('td');rank.textContent=i+1;const company=document.createElement('td');const name=document.createElement('span');name.className='rs-top10-company';name.textContent=row.company;const symbol=document.createElement('span');symbol.className='rs-top10-symbol';symbol.textContent=row.symbol;company.append(name,symbol);
+    const chartButton=document.createElement('button');
+    chartButton.type='button';
+    chartButton.className='rs-market-card__chart rs-top10-company-chart';
+    chartButton.textContent='Chart';
+    chartButton.dataset.rsChartSymbol=row.symbol;
+    chartButton.dataset.rsChartName=row.company;
+    chartButton.setAttribute('aria-label', 'Chart for '+row.company);
+    company.append(chartButton);
     const marketCap=document.createElement('td');marketCap.textContent=cap(row.market_cap);const change=document.createElement('td');change.textContent=isNumber(row.change_percent)?(row.change_percent>0?'+':'')+row.change_percent.toFixed(2)+'%':'—';change.className=row.change_percent>0?'rs-top10-up':row.change_percent<0?'rs-top10-down':'';tr.append(rank,company,marketCap,change);fragment.append(tr);
    });body.replaceChildren(fragment);document.getElementById('rs-top10-cap-heading').textContent='Market cap ('+data.market_cap_currency+')';
    const date=new Date(data.retrieved_at);status.textContent=(data.stale?'Previous snapshot — ':'Retrieved ')+(Number.isNaN(date.getTime())?'time unavailable':date.toLocaleString())+'. '+(data.warning||'Refreshes every 5 minutes while open.');
