@@ -200,7 +200,7 @@ Changes:
             <th>Market price</th>
             <th>Units</th>
             <th title="Market price USD minus previous close USD, per share or underlying futures unit">Change pr</th>
-            <th>Previous Close Value</th>
+            <th class="portfolio-previous-close">Previous Close Value</th>
             <th>Current Value</th>
             <th>Change $</th>
             <th>Change %</th><th title="Total USD book value for this holding; enter the amount you prefer">Book Value (USD)</th>            <th>Futures agreed price</th>
@@ -543,6 +543,7 @@ h1 { color: white; text-align: center; background-color: #3A5FCD; }
 .portfolio-table { width:100%; border-collapse:collapse; font-size:13px; }
 .portfolio-table th, .portfolio-table td { border-bottom:1px solid #e6e6e6; padding:7px 9px; text-align:right; white-space:nowrap; }
 .portfolio-table th:first-child, .portfolio-table td:first-child { text-align:left; }
+.holdings-table th.portfolio-previous-close { width:10ch; white-space:normal; text-wrap:balance; }
 .holdings-table, .option-table { border-collapse:separate; border-spacing:0; }
 .holdings-table thead th:first-child,
 .holdings-table tbody td:first-child,
