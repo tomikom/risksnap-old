@@ -1,0 +1,18 @@
+---
+layout: default-template
+title: Exotics
+---
+<main class="exotics-page"><h1>Exotics</h1><section class="rs-two-assets" aria-labelledby="rs-two-assets-title"><h2 id="rs-two-assets-title">Two-asset option models</h2><p>Payoff formulas for options on two assets. <strong>24 payoff types · scroll to view ↓</strong></p><div class="rs-payoffs" tabindex="0" role="region" aria-label="24 two-asset payoff alternatives"><ol><li><b>Best of 2 assets, cash</b><span>A1 × max[S1, S2, K1]</span></li><li><b>Best of 2 assets</b><span>A1 × max[0, φ1{max(S1,S2) − K1}]</span></li><li><b>Worst of 2 assets</b><span>A1 × max[0, φ1{min(S1,S2) − K1}]</span></li><li><b>Spread option</b><span>A1 × max[0, φ1{(S2 − S1) − K1}]</span></li><li><b>Dual-strike</b><span>A1 × max[0, φ1(S1 − K1), φ2(S2 − K2)]</span></li><li><b>Down and out (~13) F/C</b><small>If S2 &gt; K2 throughout life</small><span>A1 × max[0, φ1(K1 − S1)]</span></li><li><b>Up and out (~14) F/C</b><small>If S2 &lt; K2 throughout life</small><span>A1 × max[0, φ1(K1 − S1)]</span></li><li><b>Dual-strike, two assets</b><span>max[0, A1×φ1(S1 − K1), A2×φ2(S2 − K2)]</span></li><li><b>Double KO (~15) F/C</b><small>If S2 &lt; K2 and S2 &gt; K3 throughout life</small><span>A1 × max[0, φ1(K1 − S1)]</span></li><li><b>Down and out (~16) D/C</b><small>If S2 &gt; K2 throughout life</small><span>A1 × max[0, φ1(1 − S1/K1)]</span></li><li><b>Up and out (~17) D/C</b><small>If S2 &lt; K2 throughout life</small><span>A1 × max[0, φ1(1 − S1/K1)]</span></li><li><b>Double KO (~18) D/C</b><small>If S2 &lt; K2 and S2 &gt; K3 throughout life</small><span>A1 × max[0, φ1(1 − S1/K1)]</span></li><li><b>Down and in F/C</b><small>If S2 ≤ K2 at any time</small><span>A1 × max[0, φ1(K1 − S1)]</span></li><li><b>Up and in F/C</b><small>If S2 ≥ K2 at any time</small><span>A1 × max[0, φ1(K1 − S1)]</span></li><li><b>Double KI F/C</b><small>If S2 ≥ K2 or S2 ≤ K3 at any time</small><span>A1 × max[0, φ1(K1 − S1)]</span></li><li><b>Down and in D/C</b><small>If S2 ≤ K2 at any time</small><span>A1 × max[0, φ1(1 − S1/K1)]</span></li><li><b>Up and in D/C</b><small>If S2 ≥ K2 at any time</small><span>A1 × max[0, φ1(1 − S1/K1)]</span></li><li><b>Double KI D/C</b><small>If S2 ≥ K2 or S2 ≤ K3 at any time</small><span>A1 × max[0, φ1(1 − S1/K1)]</span></li><li><b>Commodity × F/C spot at inception</b><span>A1 × max[0, φ1(K1 − S1)/K2]</span></li><li><b>Dual-strike (worst)</b><span>A1 × max[0, min(φ1(K1 − S1)/K1, φ2(K2 − S2)/K2)]</span></li><li><b>Percent change</b><span>A1 × max[0, φ1×S1×(K2 − S2)/K2]</span></li><li><b>Two assets</b><span>max[φ1×A1×(K1 − S1) + φ2×A2×(K2 − S2), 0]</span></li><li><b>Dual-strike, 2 assets, type 2</b><span>max[0, A1×φ1(S1 − K1)/K1, A2×φ2(S2 − K2)/K2]</span></li><li><b>Dual-strike, worst of</b><span>A1 × min[max(φ1(S1 − K1),0), max(φ2(S2 − K2),0)]</span></li></ol></div></section></main>
+<style>
+.exotics-page{margin:24px auto;padding:0 18px;max-width:1000px;font-family:Arial,Helvetica,sans-serif;color:#173248;}
+.rs-two-assets h2{font-size:24px;line-height:1.2;margin:0 0 8px;}
+.rs-two-assets p{font-size:14px;line-height:1.4;}
+.rs-payoffs{max-height:65vh;min-height:240px;overflow-y:auto;border:1px solid #b8cddd;border-radius:5px;background:#f3f8fc;padding:12px 18px;}
+.rs-payoffs:focus-visible{outline:2px solid #246b9e;}
+.rs-payoffs ol{margin:0;padding-left:26px;}
+.rs-payoffs li{padding:9px 0;border-bottom:1px solid #d9e5ed;font-size:14px;line-height:1.4;}
+.rs-payoffs li:last-child{border-bottom:0;}
+.rs-payoffs b,.rs-payoffs span,.rs-payoffs small{display:block;}
+.rs-payoffs span{font-family:Consolas,monospace;overflow-wrap:anywhere;}
+.rs-payoffs small{color:#445c6d;}
+</style>
