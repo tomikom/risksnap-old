@@ -1484,7 +1484,7 @@ div.c {
       <tbody id="rs-portfolio-quote-rows"></tbody>
     </table>
   </div>
-  <p class="rs-global-markets__note">Pre-market applies to eligible U.S.-listed equities and funds. Foreign equities, foreign exchange, futures, indices and Bitcoin display N/A. Missing U.S. pre-market quotes remain unavailable until Yahoo publishes them. Market shows the latest regular-session reading supplied by RiskSnap; Market change is versus the previous regular-session close. Quotes may be delayed. Unavailable values appear as —.</p>
+  <p class="rs-global-markets__note">Pre-market applies to eligible U.S.-listed equities and funds. Foreign equities, foreign exchange, futures, indices and Bitcoin display N/A. Missing U.S. pre-market quotes remain unavailable until Yahoo publishes them. Market shows the latest regular-session reading supplied by RiskSnap; Market change compares Market with the EOD price shown. Quotes may be delayed. Unavailable values appear as —.</p>
 </section>
 
 <p class="rs-broker-access-note"><strong>Broker access note:</strong> Markets commonly accessible to retail investors through international brokers include the United States (NYSE and Nasdaq), Canada (TMX), United Kingdom (London Stock Exchange), Germany (Deutsche Börse), Japan (JPX), Hong Kong (HKEX), Switzerland (SIX) and Australia (ASX). Mainland China is generally accessed through eligible Stock Connect securities; India, South Korea, Taiwan, Brazil, Dubai and Saudi Arabia may require participating brokers, registration, custody arrangements or local onboarding. Availability varies by jurisdiction, security and account type.</p>
@@ -1703,9 +1703,6 @@ div.c {
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       const eod = payload.eod_prices || {};
       const marketPrices = payload.regular_market_prices || payload.prices || {};
-      const marketChanges = payload.regular_market_changes || payload.changes || {};
-      const marketPercents = payload.regular_market_change_percents || payload.change_percents || {};
-      const previousCloses = payload.previous_closes || {};
       const numeric = value => value == null || value === "" ? NaN : Number(value);
       const pre = payload.pre_market_prices || {};
       const changes = payload.pre_market_changes || {};
@@ -1721,11 +1718,8 @@ div.c {
         const change = numeric(changes[item.symbol]);
         const percent = numeric(percents[item.symbol]);
         const marketValue = numeric(marketPrices[item.symbol]);
-        const previous = numeric(previousCloses[item.symbol]);
-        const suppliedMarketChange = numeric(marketChanges[item.symbol]);
-        const marketChange = Number.isFinite(suppliedMarketChange) ? suppliedMarketChange : (Number.isFinite(marketValue) && previous > 0 ? marketValue - previous : NaN);
-        const suppliedMarketPercent = numeric(marketPercents[item.symbol]);
-        const marketPercent = Number.isFinite(suppliedMarketPercent) ? suppliedMarketPercent : (Number.isFinite(marketChange) && previous > 0 ? marketChange / previous * 100 : NaN);
+        const marketChange = Number.isFinite(marketValue) && Number.isFinite(eodValue) ? marketValue - eodValue : NaN;
+        const marketPercent = Number.isFinite(marketChange) && eodValue > 0 ? marketChange / eodValue * 100 : NaN;
         const formatChange = (value, pct) => Number.isFinite(value) ? `${value > 0 ? "+" : ""}${money(value)}${Number.isFinite(pct) ? ` (${pct > 0 ? "+" : ""}${pct.toFixed(2)}%)` : ""}` : "—";
         const colour = value => Number.isFinite(value) ? (value > 0 ? "is-up" : value < 0 ? "is-down" : "") : "";
         const changeText = eligible ? formatChange(change, percent) : "N/A";
