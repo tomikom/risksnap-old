@@ -1484,7 +1484,7 @@ div.c {
       <tbody id="rs-portfolio-quote-rows"></tbody>
     </table>
   </div>
-  <p class="rs-global-markets__note">Pre-market applies to eligible U.S.-listed equities and funds. Foreign equities, foreign exchange, futures, indices and Bitcoin display N/A. Missing U.S. pre-market quotes remain unavailable until Yahoo publishes them. Market shows the latest regular-session reading supplied by RiskSnap; Market change compares Market with the EOD price shown. Quotes may be delayed. Unavailable values appear as —.</p>
+  <p class="rs-global-markets__note">Pre-market applies to eligible U.S.-listed equities and funds. Foreign equities, foreign exchange, futures, indices and Bitcoin display N/A. EOD is the latest completed close. Market shows the latest regular-session price and its quote time when available. Quotes may be delayed. Unavailable values appear as —.</p>
 </section>
 
 <p class="rs-broker-access-note"><strong>Broker access note:</strong> Markets commonly accessible to retail investors through international brokers include the United States (NYSE and Nasdaq), Canada (TMX), United Kingdom (London Stock Exchange), Germany (Deutsche Börse), Japan (JPX), Hong Kong (HKEX), Switzerland (SIX) and Australia (ASX). Mainland China is generally accessed through eligible Stock Connect securities; India, South Korea, Taiwan, Brazil, Dubai and Saudi Arabia may require participating brokers, registration, custody arrangements or local onboarding. Availability varies by jurisdiction, security and account type.</p>
@@ -1512,6 +1512,7 @@ div.c {
 .rs-portfolio-table { width: 100%; border-collapse: collapse; color: #172536; font-size: 12px; }
 .rs-portfolio-table th, .rs-portfolio-table td { padding: 6px 8px; border-bottom: 1px solid rgba(23,37,54,.18); text-align: right; }
 .rs-portfolio-table th:first-child, .rs-portfolio-table td:first-child { text-align: left; font-weight: 700; }
+.rs-portfolio-quote-time { display: block; color: #354b63; }
 .rs-portfolio-change.is-up { color: #14733d; }
 .rs-portfolio-change.is-down { color: #a62f25; }
 .rs-portfolio-quotes .rs-global-markets__status, .rs-portfolio-quotes .rs-global-markets__note { color: #354b63; }
@@ -1541,6 +1542,7 @@ div.c {
   if (!choice || !choiceButton || !choiceMenu || !choiceOptions || !button || !status || !rows || !wrap) return;
 
   const selections = new Map();
+  let displayedSelection = "";
   const cleanSymbol = value => String(value || "").trim().toUpperCase();
   const finiteShares = value => value !== null && value !== undefined && value !== "" && Number.isFinite(Number(value)) ? Number(value) : null;
   const holdingShares = value => value && typeof value === "object"
@@ -1649,12 +1651,15 @@ div.c {
   };
 
   async function buildChoices() {
-    choice.innerHTML = '<option value="">Select…</option>';
+    let config = {};
     try {
       const response = await fetch(`${endpoint}/risksnap_config`);
-      const config = await response.json();
-      addGroup("RiskSnap presets", config.portfolio_presets || config.presets || config.PORTFOLIO_PRESETS, "preset", config.preset_labels || config.PRESET_LABELS);
+      config = await response.json() || {};
     } catch (error) { /* saved portfolios can still be shown */ }
+    const selected = choice.value;
+    choice.innerHTML = '<option value="">Select…</option>';
+    selections.clear();
+    addGroup("RiskSnap presets", config.portfolio_presets || config.presets || config.PORTFOLIO_PRESETS, "preset", config.preset_labels || config.PRESET_LABELS);
     addGroup("Saved portfolios", savedPortfolios(), "saved");
     if (choice.options.length === 1) {
       choice.options[0].textContent = "No portfolios found";
@@ -1686,23 +1691,37 @@ div.c {
         choiceOptions.appendChild(group);
       }
     });
-    choiceButton.textContent = choice.options.length > 1 ? "Select…" : choice.options[0].textContent;
+    if (selections.has(selected)) choice.value = selected;
+    choiceButton.textContent = choice.options[choice.selectedIndex].textContent;
+    button.textContent = choice.value ? "Refresh quotes" : "Get quotes";
   }
 
   async function loadQuotes() {
-    const holdings = selections.get(choice.value) || [];
+    if (button.disabled) return;
+    const selected = choice.value;
+    const holdings = selections.get(selected) || [];
     if (!holdings.length) { status.textContent = "Select a portfolio or preset first."; return; }
     button.disabled = true;
-    status.textContent = "Loading EOD, pre-market and market quotes…";
-    rows.innerHTML = "";
+    choiceButton.disabled = true;
+    choiceMenu.hidden = true;
+    choiceButton.setAttribute("aria-expanded", "false");
+    button.textContent = "Refreshing…";
+    status.textContent = "Requesting EOD, pre-market and market quotes…";
+    const retainingQuotes = displayedSelection === selected;
+    if (!retainingQuotes) {
+      rows.innerHTML = "";
+      displayedSelection = "";
+      if (eodHeading) eodHeading.textContent = "EOD";
+    }
     wrap.hidden = false;
     if (resultsCloseButton) resultsCloseButton.hidden = false;
     try {
-      const response = await fetch(`${endpoint}/latest_prices`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ symbols: holdings.map(item => item.symbol) }) });
+      const response = await fetch(`${endpoint}/latest_prices`, { method: "POST", cache: "no-store", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ symbols: holdings.map(item => item.symbol) }) });
       const payload = await response.json();
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       const eod = payload.eod_prices || {};
       const marketPrices = payload.regular_market_prices || payload.prices || {};
+      const marketTimes = payload.regular_market_times || {};
       const numeric = value => value == null || value === "" ? NaN : Number(value);
       const pre = payload.pre_market_prices || {};
       const changes = payload.pre_market_changes || {};
@@ -1718,17 +1737,26 @@ div.c {
         const change = numeric(changes[item.symbol]);
         const percent = numeric(percents[item.symbol]);
         const marketValue = numeric(marketPrices[item.symbol]);
+        const marketTime = new Date(marketTimes[item.symbol]);
+        const marketTimeText = Number.isFinite(marketTime.getTime())
+          ? marketTime.toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit", timeZoneName: "short" })
+          : "";
         const marketChange = Number.isFinite(marketValue) && Number.isFinite(eodValue) ? marketValue - eodValue : NaN;
         const marketPercent = Number.isFinite(marketChange) && eodValue > 0 ? marketChange / eodValue * 100 : NaN;
         const formatChange = (value, pct) => Number.isFinite(value) ? `${value > 0 ? "+" : ""}${money(value)}${Number.isFinite(pct) ? ` (${pct > 0 ? "+" : ""}${pct.toFixed(2)}%)` : ""}` : "—";
         const colour = value => Number.isFinite(value) ? (value > 0 ? "is-up" : value < 0 ? "is-down" : "") : "";
         const changeText = eligible ? formatChange(change, percent) : "N/A";
-        return `<tr><td>${safe(item.symbol)}</td><td>${item.shares == null ? "—" : safe(item.shares)}</td><td>${Number.isFinite(eodValue) ? money(eodValue) : "—"}</td><td>${eligible ? (Number.isFinite(preValue) ? money(preValue) : "—") : "N/A"}</td><td class="rs-portfolio-change ${colour(change)}">${changeText}</td><td>${Number.isFinite(marketValue) ? money(marketValue) : "—"}</td><td class="rs-portfolio-change ${colour(marketChange)}">${formatChange(marketChange, marketPercent)}</td></tr>`;
+        return `<tr><td>${safe(item.symbol)}</td><td>${item.shares == null ? "—" : safe(item.shares)}</td><td>${Number.isFinite(eodValue) ? money(eodValue) : "—"}</td><td>${eligible ? (Number.isFinite(preValue) ? money(preValue) : "—") : "N/A"}</td><td class="rs-portfolio-change ${colour(change)}">${changeText}</td><td>${Number.isFinite(marketValue) ? money(marketValue) : "—"}${marketTimeText ? `<small class="rs-portfolio-quote-time">${safe(marketTimeText)}</small>` : ""}</td><td class="rs-portfolio-change ${colour(marketChange)}">${formatChange(marketChange, marketPercent)}</td></tr>`;
       }).join("");
+      displayedSelection = selected;
       status.textContent = `Quotes requested ${payload.timestamp ? new Date(payload.timestamp).toLocaleString() : "now"}.`;
     } catch (error) {
-      status.textContent = "Portfolio quotes are temporarily unavailable.";
-    } finally { button.disabled = false; }
+      status.textContent = retainingQuotes ? "Refresh failed. Showing the last quotes received." : "Portfolio quotes are temporarily unavailable.";
+    } finally {
+      button.disabled = false;
+      choiceButton.disabled = false;
+      button.textContent = choice.value ? "Refresh quotes" : "Get quotes";
+    }
   }
 
   button.addEventListener("click", loadQuotes);
