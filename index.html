@@ -1330,10 +1330,10 @@ div.c {
   <p class="rs-global-markets__note">* “Latest” uses the newest RiskSnap quote. COMEX gold is the active Globex futures contract; its change is versus the prior futures close. Bitcoin trades 24/7. PPI and geopolitical risk are periodic releases.</p>
   <section class="rs-economic-calendar" aria-labelledby="rs-economic-calendar-title">
     <div class="rs-economic-calendar__heading">
-      <h3 id="rs-economic-calendar-title">Economic calendar <small>Canada &amp; U.S.</small></h3>
-      <button type="button" id="rs-economic-calendar-toggle" aria-expanded="true" aria-controls="rs-economic-calendar-body">Close calendar</button>
+      <h3 id="rs-economic-calendar-title">Economic calendar <small>G7 Countries by default &middot; Entire World available</small></h3>
+      <button type="button" id="rs-economic-calendar-toggle" aria-expanded="false" aria-controls="rs-economic-calendar-body">Show calendar</button>
     </div>
-    <div id="rs-economic-calendar-body">
+    <div id="rs-economic-calendar-body" hidden>
       <p class="rs-economic-calendar__guide"><strong>Latest (Actual)</strong> is the newly released figure. <strong>Forecast</strong> is what economists expected. <strong>Last (Prior)</strong> is the figure from the previous release.</p>
       <div class="tradingview-widget-container">
         <div class="tradingview-widget-container__widget"></div>
@@ -1345,7 +1345,7 @@ div.c {
           "colorTheme": "light",
           "isTransparent": false,
           "locale": "en",
-          "countryFilter": "ca,us",
+          "countryFilter": "ca,fr,de,it,jp,gb,us",
           "importanceFilter": "0,1",
           "width": "100%",
           "height": 720
