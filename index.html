@@ -2935,7 +2935,7 @@ body > nav { background: linear-gradient(90deg, #ffe45c 0%, #ffab36 50%, #ef5350
  <div class="rs-top10-head"><h2 id="rs-top10-title">Top 10 companies</h2></div>
  <div class="rs-top10-actions"><button id="rs-top10-refresh" type="button">Refresh</button><button id="rs-top10-close" type="button">Close</button></div>
  <p id="rs-top10-status" role="status" aria-live="polite"></p>
- <div class="rs-top10-scroll"><table class="rs-top10-table"><thead><tr><th>#</th><th id="rs-top10-asset-heading">Company / symbol</th><th id="rs-top10-cap-heading">Market cap</th><th id="rs-top10-change-heading">Daily change</th></tr></thead><tbody id="rs-top10-body"></tbody></table></div>
+ <div class="rs-top10-scroll"><table class="rs-top10-table"><thead><tr><th>#</th><th id="rs-top10-asset-heading">Company / symbol</th><th id="rs-top10-cap-heading">Market cap</th><th scope="col">Price</th><th id="rs-top10-change-heading">Daily change</th></tr></thead><tbody id="rs-top10-body"></tbody></table></div>
  <div id="rs-top10-chart-slot"></div>
  <p id="rs-top10-note"></p><p id="rs-top10-source"></p>
 </dialog>
@@ -2963,6 +2963,8 @@ body > nav { background: linear-gradient(90deg, #ffe45c 0%, #ffab36 50%, #ef5350
     company: row.name,
     symbol: row.symbol,
     market_cap: coinNumber(row.market_cap_usd),
+    price: coinNumber(row.price_usd),
+    price_currency: "USD",
     change_percent: coinNumber(row.percent_change_24h),
     coin_slug: row.nameid
    })) : [];
@@ -2973,6 +2975,29 @@ body > nav { background: linear-gradient(90deg, #ffe45c 0%, #ffab36 50%, #ef5350
    source_url: 'https://www.coinlore.com/',
    note: 'Ranked by market cap. Change is the percentage price move over the past 24 hours.'
   };
+ }
+ function companyQuoteSymbol(row, group) {
+  const symbol = row.symbol.trim().toUpperCase();
+  if (group === 'tsx' && !symbol.endsWith('.TO')) return symbol.replace(/\./g, '-') + '.TO';
+  return symbol.replace(/^BRK\.([AB])$/, 'BRK-$1').replace(/^BF\.([AB])$/, 'BF-$1');
+ }
+ function companyQuote(row, symbol, quotes) {
+  const regular = quotes.quote_fields?.[symbol] === 'regularMarketPrice';
+  const price = regular ? (quotes.regular_market_prices?.[symbol] ?? quotes.prices?.[symbol]) : null;
+  const close = quotes.previous_closes?.[symbol];
+  return {
+   ...row,
+   price,
+   price_currency: quotes.currencies?.[symbol],
+   change_percent: isNumber(price) && isNumber(close) && close > 0 ? (price / close - 1) * 100 : null
+  };
+ }
+ function displayPrice(row) {
+  if (!isNumber(row.price)) return '—';
+  const price = row.price.toLocaleString(undefined, {
+   minimumFractionDigits: 2, maximumFractionDigits: row.price < 1 ? 8 : 2
+  });
+  return row.price_currency ? price + ' ' + row.price_currency : price;
  }
  async function update(){
   if(!active||document.hidden)return;
@@ -2990,7 +3015,27 @@ body > nav { background: linear-gradient(90deg, #ffe45c 0%, #ffab36 50%, #ef5350
    if(current!==controller||active?.[0]!==group)return;
    const data = coins ? coinRankings(payload) : payload;
    if(!Array.isArray(data.rows)||data.rows.length!==10)throw new Error('Ten rankings are not available yet.');
-   const fragment=document.createDocumentFragment();data.rows.forEach((row,i)=>{
+   let rows = data.rows;
+   let quoteTimestamp;
+   if (!coins) {
+    const symbols = rows.map(row => companyQuoteSymbol(row, group));
+    let quotes = {};
+    try {
+     const response = await fetch('https://surface-203178530029.northamerica-northeast2.run.app/latest_prices', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ symbols: [...new Set(symbols)] }),
+      signal: AbortSignal.any([current.signal, AbortSignal.timeout(15000)])
+     });
+     if (response.ok) quotes = await response.json();
+    } catch {
+     // Keep the company rankings available when the quote feed fails.
+    }
+    if (current !== controller || active?.[0] !== group) return;
+    rows = rows.map((row, index) => companyQuote(row, symbols[index], quotes));
+    quoteTimestamp = quotes.timestamp;
+   }
+   const fragment=document.createDocumentFragment();rows.forEach((row,i)=>{
     const tr=document.createElement('tr');const rank=document.createElement('td');rank.textContent=i+1;const company=document.createElement('td');const name=document.createElement('span');name.className='rs-top10-company';name.textContent=row.company;const symbol=document.createElement('span');symbol.className='rs-top10-symbol';symbol.textContent=row.symbol;company.append(name,symbol);
     if (!coins || (typeof row.coin_slug === 'string' && /^[a-z0-9-]+$/.test(row.coin_slug))) {
      const chart = document.createElement(coins ? 'a' : 'button');
@@ -3008,10 +3053,17 @@ body > nav { background: linear-gradient(90deg, #ffe45c 0%, #ffab36 50%, #ef5350
      }
      company.append(chart);
     }
-    const marketCap=document.createElement('td');marketCap.textContent=cap(row.market_cap);const change=document.createElement('td');change.textContent=isNumber(row.change_percent)?(row.change_percent>0?'+':'')+row.change_percent.toFixed(2)+'%':'—';change.className=row.change_percent>0?'rs-top10-up':row.change_percent<0?'rs-top10-down':'';tr.append(rank,company,marketCap,change);fragment.append(tr);
+    const marketCap=document.createElement('td');marketCap.textContent=cap(row.market_cap);const change=document.createElement('td');change.textContent=isNumber(row.change_percent)?(row.change_percent>0?'+':'')+row.change_percent.toFixed(2)+'%':'—';change.className=row.change_percent>0?'rs-top10-up':row.change_percent<0?'rs-top10-down':'';const price=document.createElement('td');price.textContent=displayPrice(row);tr.append(rank,company,marketCap,price,change);fragment.append(tr);
    });body.replaceChildren(fragment);document.getElementById('rs-top10-cap-heading').textContent='Market cap ('+data.market_cap_currency+')';
    const date=new Date(data.retrieved_at);status.textContent=(data.stale?'Previous snapshot — ':'Retrieved ')+(Number.isNaN(date.getTime())?'time unavailable':date.toLocaleString())+'. '+(data.warning||'Refreshes every 5 minutes while open.');
-   document.getElementById('rs-top10-note').textContent=data.note||'';
+   if (!coins) {
+    const quoteDate = new Date(quoteTimestamp);
+    status.textContent += Number.isFinite(quoteDate.getTime())
+     ? ' Quotes requested ' + quoteDate.toLocaleString() + '.'
+     : ' Stock quotes temporarily unavailable.';
+   }
+   document.getElementById('rs-top10-note').textContent = coins ? data.note :
+    (data.note || '') + ' Price and daily change use the latest available regular-session Yahoo Finance quote, compared with its previous close. Market caps come from the ranking source.';
    const source=document.getElementById('rs-top10-source');source.replaceChildren();try{const url=new URL(data.source_url);if(url.protocol==='https:'){const a=document.createElement('a');a.href=url.href;a.textContent='Data source: '+url.hostname;a.target='_blank';a.rel='noopener noreferrer';source.append(a);}}catch{}
   }catch(error){if(current===controller&&active?.[0]===group)status.textContent=(body.children.length?'Showing the previous snapshot. ':'')+(error.name==='AbortError'?'Request timed out; please try Refresh.':error.message);}
   finally{clearTimeout(timeout);if(current===controller)refresh.disabled=false;}
