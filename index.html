@@ -1528,6 +1528,15 @@ div.c {
 .rs-ticker-lookup input { width:165px; max-width:100%; padding:5px 8px; }
 .rs-ticker-lookup #rs-ticker-status:empty { display:none; }
 .rs-ticker-lookup h3 { margin:8px 0; font-size:16px; }
+.rs-market-card__perp {
+  margin: 5px 0;
+  padding: 5px 0;
+  border-top: 1px solid currentColor;
+  font-size: 11px;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+.rs-market-card__perp > * { display: block; }
 #rs-ticker-perp { margin: 12px 0 0; }
 #rs-ticker-perp-title small { font-size: 12px; font-weight: 400; }
 .rs-ticker-result-heading { display:flex; align-items:center; flex-wrap:wrap; column-gap:8px; }
@@ -1938,13 +1947,47 @@ function rsFillBreakevenRows(rows) {
     }).filter(Boolean);
 }
 
+const rsPerpTimeFormat = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Toronto",
+    month: "short", day: "numeric", year: "numeric",
+    hour: "numeric", minute: "2-digit", second: "2-digit"
+  });
+
+function rsPerpInfo(body) {
+  return fetch("https://api.hyperliquid.xyz/info", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+    signal: AbortSignal.timeout(7000)
+  }).then(response => {
+    if (!response.ok) throw new Error(`Hyperliquid HTTP ${response.status}`);
+    return response.json();
+  });
+}
+
+async function rsReadPerp(coin, metadata) {
+  const [market, trades] = await Promise.all([
+    metadata || rsPerpInfo({ type: "metaAndAssetCtxs", dex: coin.includes(":") ? coin.split(":")[0] : "" }),
+    rsPerpInfo({ type: "recentTrades", coin })
+  ]);
+  const index = market[0]?.universe?.findIndex(asset => asset.name === coin && !asset.isDelisted);
+  const volume = parseFloat(market[1]?.[index]?.dayNtlVlm);
+  const trade = trades.reduce((latest, entry) => {
+    if (entry.coin !== coin || !Number.isFinite(entry.time) || entry.time <= 0 ||
+        !Number.isFinite(Number(entry.px)) || Number(entry.px) <= 0) return latest;
+    return !latest || entry.time > latest.time ? entry : latest;
+  }, null);
+  if (!trade || !Number.isFinite(volume) || volume < 0) return;
+  return { price: Number(trade.px), volume, time: new Date(trade.time) };
+}
+
 (function () {
   const indicators = [
     { name: "U.S. 10-Year Yield", symbol: "^TNX", type: "market", suffix: "%", news: "U.S. 10-year Treasury yield bond market" },
-    { name: "WTI Crude", symbol: "CL=F", type: "market", prefix: "$", suffix: "/bbl", news: "crude oil" },
-    { name: "Gold — COMEX", symbol: "GC=F", type: "market", prefix: "$", suffix: "/oz", state: "Globex*", news: "gold" },
+    { name: "WTI Crude", symbol: "CL=F", type: "market", perp: "xyz:CL", state: "NYMEX futures", prefix: "$", suffix: "/bbl", news: "crude oil" },
+    { name: "Gold — COMEX", symbol: "GC=F", type: "market", perp: "xyz:GOLD", prefix: "$", suffix: "/oz", state: "Globex*", news: "gold" },
     { name: "Crypto-related firms", symbol: "BTC-USD", type: "market", prefix: "$", chartName: "Bitcoin", news: "bitcoin" },
-    { name: "Crypto coins", symbol: "CRYPTO-COINS", quoteSymbol: "BTC-USD", type: "market", prefix: "$", chartName: "Bitcoin", news: "cryptocurrency market" },
+    { name: "Crypto coins", symbol: "CRYPTO-COINS", quoteSymbol: "BTC-USD", perp: "BTC", type: "market", prefix: "$", chartName: "Bitcoin", news: "cryptocurrency market" },
     { name: "U.S. Dollar Index", symbol: "DX-Y.NYB", type: "market", news: "U.S. dollar currency market" },
     { name: "VIX", symbol: "^VIX", type: "market", news: "VIX volatility index stock market" },
     { name: "10Y Breakeven", symbol: "T10YIE", type: "breakeven", suffix: "%", news: "U.S. 10-year breakeven inflation" },
@@ -1963,6 +2006,7 @@ function rsFillBreakevenRows(rows) {
     ${item.chartName ? '<p class="rs-market-card__place">Bitcoin (BTC/USD)</p>' : ""}
     <p class="rs-market-card__level">${item.value ? safe(item.value) : "&mdash;"}</p>
     <p class="rs-market-card__change is-flat">${item.detail ? safe(item.detail) : "loading..."}</p>
+    ${item.perp ? '<div class="rs-market-card__perp" hidden><strong>Hyperliquid perp</strong><span data-perp-price></span><time></time><span data-perp-volume></span></div>' : ""}
     <div class="rs-market-card__links">${item.symbol === "CL=F" ? `<a class="rs-market-card__news" href="https://oilprice.com" target="_blank" rel="noopener noreferrer">OilPrice <span aria-hidden="true">↗</span></a>` : ""}${item.type !== "periodic" ? `<button type="button" class="rs-market-card__chart" data-rs-chart-symbol="${safe(item.quoteSymbol || item.symbol)}" data-rs-chart-name="${safe(item.chartName || item.name)}">Chart</button>` : ""}<a class="rs-market-card__news" href="https://news.google.com/search?q=${encodeURIComponent(item.news)}" target="_blank" rel="noopener noreferrer">Related news <span aria-hidden="true">↗</span></a></div>
   </article>`).join("");
 
@@ -1989,7 +2033,7 @@ function rsFillBreakevenRows(rows) {
       changeElement.textContent = "Latest quote";
       changeElement.className = "rs-market-card__change is-flat";
     }
-    element.querySelector(".rs-market-card__state").textContent = quoteSymbol === "BTC-USD" ? "24/7" : (quoteSymbol === "GC=F" ? "Globex*" : "Latest*");
+    element.querySelector(".rs-market-card__state").textContent = quoteSymbol === "BTC-USD" ? "24/7" : (item.state || "Latest*");
     element.title = timestamp ? `Latest request ${new Date(timestamp).toLocaleString()}` : "Latest quote";
     return true;
   }
@@ -2030,6 +2074,23 @@ function rsFillBreakevenRows(rows) {
   }
   window.addEventListener("risksnap-refresh-markets", loadIndicators);
   loadIndicators();
+  const xyzMetadata = rsPerpInfo({ type: "metaAndAssetCtxs", dex: "xyz" });
+  indicators.filter(item => item.perp).forEach(async item => {
+    try {
+      const quote = await rsReadPerp(item.perp, item.perp.startsWith("xyz:") ? xyzMetadata : undefined);
+      if (!quote) return;
+      const panel = grid.querySelector(`[data-indicator="${CSS.escape(item.symbol)}"] .rs-market-card__perp`);
+      panel.querySelector("[data-perp-price]").textContent = `$${format(quote.price)} ${item.suffix || "/BTC"}`;
+      const time = panel.querySelector("time");
+      time.dateTime = quote.time.toISOString();
+      time.textContent = `${rsPerpTimeFormat.format(quote.time)} ET`;
+      const volume = quote.volume.toLocaleString(undefined, { notation: "compact", maximumFractionDigits: 2 });
+      panel.querySelector("[data-perp-volume]").textContent = `24h vol: $${volume} USD`;
+      panel.hidden = false;
+    } catch {
+      // The main market quote is independent of this supplemental feed.
+    }
+  });
 })();
 </script>
 
@@ -2086,43 +2147,19 @@ function rsFillBreakevenRows(rows) {
   ]);
   const perpPanel = document.getElementById("rs-ticker-perp");
   const perpTradeTime = document.getElementById("rs-ticker-perp-time");
-  const perpTimeFormat = new Intl.DateTimeFormat("en-CA", {
-    timeZone: "America/Toronto",
-    month: "short", day: "numeric", year: "numeric",
-    hour: "numeric", minute: "2-digit", second: "2-digit"
-  });
-
   async function loadPerpQuote(symbol, request) {
     if (!perpTickers.has(symbol)) return;
     const coin = `xyz:${symbol}`;
-    const signal = AbortSignal.timeout(7000);
-    const info = body => fetchJson("https://api.hyperliquid.xyz/info", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-      signal
-    });
-    const [market, trades] = await Promise.all([
-      info({ type: "metaAndAssetCtxs", dex: "xyz" }),
-      info({ type: "recentTrades", coin })
-    ]);
-    if (request !== lookupRequest) return;
-    const index = market[0]?.universe?.findIndex(asset => asset.name === coin && !asset.isDelisted);
-    const volume = parseFloat(market[1]?.[index]?.dayNtlVlm);
-    const trade = trades.reduce((latest, entry) => {
-      if (entry.coin !== coin || !Number.isFinite(entry.time) || entry.time <= 0 ||
-          !Number.isFinite(Number(entry.px)) || Number(entry.px) <= 0) return latest;
-      return !latest || entry.time > latest.time ? entry : latest;
-    }, null);
-    if (!trade || !Number.isFinite(volume) || volume < 0) return;
-    const time = new Date(trade.time);
+    const quote = await rsReadPerp(coin);
+    if (!quote || request !== lookupRequest) return;
+    const { price, volume, time } = quote;
     document.getElementById("rs-ticker-perp-symbol").textContent = coin;
     document.getElementById("rs-ticker-perp-price").textContent =
-      formatNumber(Number(trade.px), { minimumFractionDigits: 2, maximumFractionDigits: 6 });
+      formatNumber(price, { minimumFractionDigits: 2, maximumFractionDigits: 6 });
     document.getElementById("rs-ticker-perp-volume").textContent =
       formatNumber(volume, { maximumFractionDigits: 0 });
     perpTradeTime.dateTime = time.toISOString();
-    perpTradeTime.textContent = perpTimeFormat.format(time);
+    perpTradeTime.textContent = rsPerpTimeFormat.format(time);
     perpPanel.hidden = false;
   }
 
