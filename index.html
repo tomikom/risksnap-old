@@ -1499,7 +1499,7 @@ div.c {
         <div><dt>Price change per share/unit</dt><dd data-rs-fact="change">—</dd></div>
         <div><dt>Price change (%)</dt><dd data-rs-fact="percent">—</dd></div>
       </dl>
-      <p class="rs-global-markets__note">EOD is the last completed session close. Market price is the latest regular-session quote. Changes are versus the prior close for that quote. Quotes may be delayed.</p>
+      <p class="rs-global-markets__note">EOD is the last completed session close. For stocks and ETFs, Market price and changes appear once a quote for the current regular session is available. Changes are measured against EOD. Quotes may be delayed.</p>
     </div>
     <section id="rs-ticker-perp" aria-labelledby="rs-ticker-perp-title" hidden>
       <h3 id="rs-ticker-perp-title">Hyperliquid perpetual <small id="rs-ticker-perp-symbol"></small></h3>
@@ -2149,6 +2149,27 @@ async function rsReadPerp(coin, metadata) {
   const perpPanel = document.getElementById("rs-ticker-perp");
   const perpTradeTime = document.getElementById("rs-ticker-perp-time");
   const perpEodChange = document.getElementById("rs-ticker-perp-eod-change");
+  function lookupEod(symbol, payload, day) {
+    return day.eod_price ?? payload.eod_prices?.[symbol];
+  }
+
+  function hasCurrentStockSession(symbol, payload, day) {
+    const clock = new Intl.DateTimeFormat("en-CA", {
+      timeZone: day.timezone || "America/New_York",
+      year: "numeric", month: "2-digit", day: "2-digit"
+    });
+    const today = clock.format(new Date());
+    const rawTime = payload.regular_market_times?.[symbol];
+    const quoteTime = new Date(rawTime);
+    if (rawTime && Number.isFinite(quoteTime.getTime())) {
+      return clock.format(quoteTime) === today;
+    }
+    return day.rows?.some(row => {
+      const time = new Date(row.date);
+      return row.date && Number.isFinite(time.getTime()) && clock.format(time) === today;
+    }) ?? false;
+  }
+
   async function loadPerpQuote(symbol, request, stockData) {
     if (!perpTickers.has(symbol)) return;
     const coin = `xyz:${symbol}`;
@@ -2167,9 +2188,10 @@ async function rsReadPerp(coin, metadata) {
 
     const [quoteResult, intradayResult] = await stockData;
     if (request !== lookupRequest) return;
-    const day = intradayResult.value;
-    const currency = day?.currency || quoteResult.value?.currencies?.[symbol];
-    const eod = day?.eod_price;
+    const day = intradayResult.value || {};
+    const payload = quoteResult.value || {};
+    const currency = day.currency || payload.currencies?.[symbol];
+    const eod = lookupEod(symbol, payload, day);
     if (currency === "USD" && Number.isFinite(eod) && eod > 0) {
       perpEodChange.textContent = formatNumber((price - eod) / eod, {
         style: "percent", maximumFractionDigits: 2, signDisplay: "exceptZero"
@@ -2234,15 +2256,21 @@ async function rsReadPerp(coin, metadata) {
       const formatted = formatNumber(value, options);
       return formatted === "—" || !currency ? formatted : `${formatted} ${currency}`;
     };
-    const regular = payload.quote_fields?.[symbol] === "regularMarketPrice";
+    const stock = ["EQUITY", "ETF"].includes(payload.quote_types?.[symbol]);
+    const regular = payload.quote_fields?.[symbol] === "regularMarketPrice" &&
+      (!stock || hasCurrentStockSession(symbol, payload, day));
+    const eod = lookupEod(symbol, payload, day);
+    const market = regular ? payload.prices?.[symbol] : null;
+    const change = Number.isFinite(market) && Number.isFinite(eod) ? market - eod : null;
+    const percent = Number.isFinite(change) && eod > 0 ? change / eod : null;
     facts.marketCap.textContent = money(payload.market_caps?.[symbol], { notation: "compact", maximumFractionDigits: 2 });
     facts.trailingPE.textContent = formatNumber(payload.trailing_pes?.[symbol], { maximumFractionDigits: 2 });
-    facts.eod.textContent = money(day.eod_price);
-    facts.market.textContent = money(regular ? payload.prices?.[symbol] : null);
-    facts.change.textContent = money(regular ? payload.changes?.[symbol] : null, { ...priceOptions, signDisplay: "exceptZero" });
-    const percent = regular ? payload.change_percents?.[symbol] : null;
-    facts.percent.textContent = Number.isFinite(percent)
-      ? formatNumber(percent / 100, { style: "percent", maximumFractionDigits: 2, signDisplay: "exceptZero" }) : "—";
+    facts.eod.textContent = money(eod);
+    facts.market.textContent = money(market);
+    facts.change.textContent = money(change, { ...priceOptions, signDisplay: "exceptZero" });
+    facts.percent.textContent = formatNumber(percent, {
+      style: "percent", maximumFractionDigits: 2, signDisplay: "exceptZero"
+    });
     lookupResult.hidden = !quoteResult.value && !day.rows?.length;
     lookupStatus.textContent = quoteResult.status === "rejected" ? "Quote details are unavailable for this ticker." : "";
   });
