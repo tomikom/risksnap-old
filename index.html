@@ -1351,10 +1351,10 @@ div.c {
   margin-top: 16px;
   min-width: 0;
   padding: 14px;
-  border: 1px solid #919da6;
+  border: 1px solid #7353a0;
   border-radius: 10px;
-  background: linear-gradient(135deg, #e0e5e9, #b5c0c9);
-  color: #202c36;
+  background: linear-gradient(135deg, #573185, #402263);
+  color: #fff;
 }
 .rs-economic-calendar__heading {
   display: flex;
@@ -1363,21 +1363,26 @@ div.c {
   flex-wrap: wrap;
   gap: 8px 12px;
 }
-.rs-economic-calendar h3 { margin: 0; font-size: 17px; }
+.rs-economic-calendar h3 { margin: 0; font-size: 17px; color: #fff; }
 .rs-economic-calendar__guide { margin: 10px 0; font-size: 13px; line-height: 1.5; }
 #rs-economic-calendar-toggle {
   min-height: 36px;
   padding: 6px 10px;
-  border: 1px solid #75838f;
+  border: 1px solid #e9dafa;
   border-radius: 5px;
   background: #fff;
-  color: #202c36;
+  color: #402263;
   font: inherit;
   font-size: 13px;
   cursor: pointer;
 }
 #rs-economic-calendar-body[hidden] { display: none; }
-.rs-economic-calendar h3 small { font-size: 12px; color: #35434e; }
+.rs-economic-calendar h3 small { font-size: 12px; color: #f1e6ff; }
+.rs-economic-calendar .tradingview-widget-copyright .blue-text {
+  color: #f1e6ff;
+  text-decoration: underline;
+}
+.rs-economic-calendar .tradingview-widget-copyright .trademark { color: #f1e6ff; }
 @media (max-width: 580px) {
   .rs-economic-calendar { padding: 10px; }
   #rs-economic-calendar-toggle { min-height: 44px; }
