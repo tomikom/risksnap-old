@@ -1494,12 +1494,13 @@ div.c {
       <dl class="rs-ticker-facts">
         <div><dt>Market cap</dt><dd data-rs-fact="marketCap">—</dd></div>
         <div><dt>Trailing P/E</dt><dd data-rs-fact="trailingPE">—</dd></div>
-        <div><dt>EOD price</dt><dd data-rs-fact="eod">—</dd></div>
+        <div><dt>EOD price <small id="rs-ticker-eod-date"></small></dt><dd data-rs-fact="eod">—</dd></div>
+        <div><dt>Previous close</dt><dd data-rs-fact="previousClose">—</dd></div>
         <div><dt>Market price</dt><dd data-rs-fact="market">—</dd></div>
-        <div><dt>Price change per share/unit</dt><dd data-rs-fact="change">—</dd></div>
-        <div><dt>Price change (%)</dt><dd data-rs-fact="percent">—</dd></div>
+        <div><dt id="rs-ticker-change-label">Price change per share/unit</dt><dd data-rs-fact="change">—</dd></div>
+        <div><dt id="rs-ticker-change-percent-label">Price change (%)</dt><dd data-rs-fact="percent">—</dd></div>
       </dl>
-      <p class="rs-global-markets__note">EOD is the last completed session close. For stocks and ETFs, Market price and changes appear once a quote for the current regular session is available. Changes are measured against EOD. Quotes may be delayed.</p>
+      <p class="rs-global-markets__note">EOD is the last completed session close. Before a new stock or ETF session, the change compares EOD with the previous close. Once a current session quote is available, the change compares Market price with EOD. Quotes may be delayed.</p>
     </div>
     <section id="rs-ticker-perp" aria-labelledby="rs-ticker-perp-title" hidden>
       <h3 id="rs-ticker-perp-title">Hyperliquid perpetual <small id="rs-ticker-perp-symbol"></small></h3>
@@ -2257,15 +2258,29 @@ async function rsReadPerp(coin, metadata) {
       return formatted === "—" || !currency ? formatted : `${formatted} ${currency}`;
     };
     const stock = ["EQUITY", "ETF"].includes(payload.quote_types?.[symbol]);
-    const regular = payload.quote_fields?.[symbol] === "regularMarketPrice" &&
-      (!stock || hasCurrentStockSession(symbol, payload, day));
+    const lastSession = stock && !hasCurrentStockSession(symbol, payload, day);
     const eod = lookupEod(symbol, payload, day);
-    const market = regular ? payload.prices?.[symbol] : null;
-    const change = Number.isFinite(market) && Number.isFinite(eod) ? market - eod : null;
-    const percent = Number.isFinite(change) && eod > 0 ? change / eod : null;
+    const previous = lastSession ? payload.previous_closes?.[symbol] : eod;
+    const regular = payload.quote_fields?.[symbol] === "regularMarketPrice";
+    const market = lastSession ? eod : (regular ? payload.prices?.[symbol] : null);
+    const change = Number.isFinite(market) && Number.isFinite(previous) ? market - previous : null;
+    const percent = Number.isFinite(change) && previous > 0 ? change / previous : null;
+    const sessionTime = new Date(day.rows?.[0]?.date);
+    const reportedEodDate = payload.eod_dates?.[symbol];
+    const eodDate = reportedEodDate || (lastSession && Number.isFinite(sessionTime.getTime())
+      ? new Intl.DateTimeFormat("en-CA", {
+          timeZone: day.timezone || "America/New_York", month: "short", day: "numeric", year: "numeric"
+        }).format(sessionTime)
+      : "");
+    document.getElementById("rs-ticker-eod-date").textContent = eodDate ? `(${eodDate})` : "";
+    document.getElementById("rs-ticker-change-label").textContent =
+      lastSession ? "Last session change per share" : "Price change per share/unit";
+    document.getElementById("rs-ticker-change-percent-label").textContent =
+      lastSession ? "Last session change (%)" : "Price change (%)";
     facts.marketCap.textContent = money(payload.market_caps?.[symbol], { notation: "compact", maximumFractionDigits: 2 });
     facts.trailingPE.textContent = formatNumber(payload.trailing_pes?.[symbol], { maximumFractionDigits: 2 });
     facts.eod.textContent = money(eod);
+    facts.previousClose.textContent = money(previous);
     facts.market.textContent = money(market);
     facts.change.textContent = money(change, { ...priceOptions, signDisplay: "exceptZero" });
     facts.percent.textContent = formatNumber(percent, {
