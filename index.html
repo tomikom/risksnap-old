@@ -1501,6 +1501,15 @@ div.c {
       </dl>
       <p class="rs-global-markets__note">EOD is the last completed session close. Market price is the latest regular-session quote. Changes are versus the prior close for that quote. Quotes may be delayed.</p>
     </div>
+    <section id="rs-ticker-perp" aria-labelledby="rs-ticker-perp-title" hidden>
+      <h3 id="rs-ticker-perp-title">Hyperliquid perpetual <small id="rs-ticker-perp-symbol"></small></h3>
+      <dl class="rs-ticker-facts">
+        <div><dt>Last perp trade</dt><dd id="rs-ticker-perp-price"></dd></div>
+        <div><dt>Trade time (ET)</dt><dd><time id="rs-ticker-perp-time"></time></dd></div>
+        <div><dt>24h volume (USD notional)</dt><dd id="rs-ticker-perp-volume"></dd></div>
+      </dl>
+      <p class="rs-global-markets__note">Market data from trade.xyz on Hyperliquid. The price is for the perpetual contract.</p>
+    </section>
     <div id="rs-ticker-chart-slot"></div>
   </div>
 </section>
@@ -1519,6 +1528,8 @@ div.c {
 .rs-ticker-lookup input { width:165px; max-width:100%; padding:5px 8px; }
 .rs-ticker-lookup #rs-ticker-status:empty { display:none; }
 .rs-ticker-lookup h3 { margin:8px 0; font-size:16px; }
+#rs-ticker-perp { margin: 12px 0 0; }
+#rs-ticker-perp-title small { font-size: 12px; font-weight: 400; }
 .rs-ticker-result-heading { display:flex; align-items:center; flex-wrap:wrap; column-gap:8px; }
 #rs-ticker-news { font-size:13px; white-space:nowrap; }
 .rs-ticker-facts { display:grid; grid-template-columns:repeat(auto-fit,minmax(125px,1fr)); gap:8px; margin:0; }
@@ -2062,6 +2073,59 @@ function rsFillBreakevenRows(rows) {
     return payload;
   }
 
+  // Explicit equity/ETF matches avoid collisions with commodity and index aliases.
+  const perpTickers = new Set([
+    "AAPL", "AMAT", "AMD", "AMZN", "ARM", "ASML", "AVGO", "BABA", "BE",
+    "BX", "COIN", "COST", "CRCL", "CRWD", "CRWV", "CVX", "DELL", "DKNG",
+    "EBAY", "EWJ", "EWT", "EWY", "EWZ", "GEV", "GLW", "GME", "GOOGL",
+    "HIMS", "HOOD", "IBM", "INTC", "IREN", "LLY", "LRCX", "MAGS", "META",
+    "MRVL", "MSFT", "MSTR", "MU", "NBIS", "NET", "NFLX", "NOK", "NOW",
+    "NVDA", "ORCL", "PLTR", "QCOM", "RDDT", "RIVN", "RKLB", "SMH",
+    "SNDK", "SOXL", "TLT", "TSLA", "TSM", "TTWO", "UMC", "URNM", "WDC",
+    "XBI", "XLE", "ZM"
+  ]);
+  const perpPanel = document.getElementById("rs-ticker-perp");
+  const perpTradeTime = document.getElementById("rs-ticker-perp-time");
+  const perpTimeFormat = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Toronto",
+    month: "short", day: "numeric", year: "numeric",
+    hour: "numeric", minute: "2-digit", second: "2-digit"
+  });
+
+  async function loadPerpQuote(symbol, request) {
+    if (!perpTickers.has(symbol)) return;
+    const coin = `xyz:${symbol}`;
+    const signal = AbortSignal.timeout(7000);
+    const info = body => fetchJson("https://api.hyperliquid.xyz/info", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+      signal
+    });
+    const [market, trades] = await Promise.all([
+      info({ type: "metaAndAssetCtxs", dex: "xyz" }),
+      info({ type: "recentTrades", coin })
+    ]);
+    if (request !== lookupRequest) return;
+    const index = market[0]?.universe?.findIndex(asset => asset.name === coin && !asset.isDelisted);
+    const volume = parseFloat(market[1]?.[index]?.dayNtlVlm);
+    const trade = trades.reduce((latest, entry) => {
+      if (entry.coin !== coin || !Number.isFinite(entry.time) || entry.time <= 0 ||
+          !Number.isFinite(Number(entry.px)) || Number(entry.px) <= 0) return latest;
+      return !latest || entry.time > latest.time ? entry : latest;
+    }, null);
+    if (!trade || !Number.isFinite(volume) || volume < 0) return;
+    const time = new Date(trade.time);
+    document.getElementById("rs-ticker-perp-symbol").textContent = coin;
+    document.getElementById("rs-ticker-perp-price").textContent =
+      formatNumber(Number(trade.px), { minimumFractionDigits: 2, maximumFractionDigits: 6 });
+    document.getElementById("rs-ticker-perp-volume").textContent =
+      formatNumber(volume, { maximumFractionDigits: 0 });
+    perpTradeTime.dateTime = time.toISOString();
+    perpTradeTime.textContent = perpTimeFormat.format(time);
+    perpPanel.hidden = false;
+  }
+
   function selectRange(range) {
     selectedRange = range;
     rangeButtons.forEach(button => button.classList.toggle("is-active", button.dataset.range === range));
@@ -2076,12 +2140,15 @@ function rsFillBreakevenRows(rows) {
       panel.hidden = true;
     }
     lookupResult.hidden = true;
+    perpPanel.hidden = true;
     if (!/^[A-Z0-9^][A-Z0-9.^=\-]{0,24}$/.test(symbol)) {
       lookupStatus.textContent = "Enter one Yahoo Finance ticker, such as AAPL or RY.TO.";
       return;
     }
 
     lookupStatus.textContent = `Loading ${symbol}…`;
+    // The supplemental feed must never delay the stock quote or chart.
+    void loadPerpQuote(symbol, request).catch(() => {});
     selectedSymbol = symbol;
     selectedName = symbol;
     const quote = fetchJson(quoteEndpoint, {
