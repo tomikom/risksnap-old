@@ -1,21 +1,20 @@
 <!DOCTYPE html>
 <html>
 	<head>
-	<!-- Global site tag (gtag.js) - Google Analytics -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=UA-162894652-1"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-
-  gtag('config', 'UA-162894652-1');
-</script>
 
 	<!-- begin verification added 09 Jan 2018-->
 	<meta name="google-site-verification" content="kO9DAjiPgMvebkKvDvBeeIEj8IFRIKbyZF115wiSvyw" />
     <meta charset="UTF-8">
 	<!-- end verification added 09 Jan 2018 -->
 		<title>RiskSnap — Market Risk Analysis</title>
+        <!-- Google tag (gtag.js) -->
+        <script async src="https://www.googletagmanager.com/gtag/js?id=G-XGN7WG3XQV"></script>
+        <script>
+          window.dataLayer = window.dataLayer || [];
+          function gtag() { window.dataLayer.push(arguments); }
+          gtag('js', new Date());
+          gtag('config', 'G-XGN7WG3XQV');
+        </script>
 
         <meta name="viewport" content="width=device-width, initial-scale=1">
 
@@ -42,15 +41,6 @@
 			    }
 			  }
 			</style>
-        <!-- Global site tag (gtag.js) - Google Analytics -->
-        <script async src="https://www.googletagmanager.com/gtag/js?id=UA-111540481-1"></script>
-        <script>
-          window.dataLayer = window.dataLayer || [];
-          function gtag(){dataLayer.push(arguments);}
-          gtag('js', new Date());
-
-          gtag('config', 'UA-111540481-1');
-        </script>
 		<link rel="apple-touch-icon" href="/apple-touch-icon.png">
 	<style id="rs-home-navigation-colour">
 /* Home-page navigation, independent of the default template. */
@@ -1361,10 +1351,10 @@ div.c {
   margin-top: 16px;
   min-width: 0;
   padding: 14px;
-  border: 1px solid #cadfd4;
+  border: 1px solid #919da6;
   border-radius: 10px;
-  background: #fff;
-  color: #172b24;
+  background: linear-gradient(135deg, #e0e5e9, #b5c0c9);
+  color: #202c36;
 }
 .rs-economic-calendar__heading {
   display: flex;
@@ -1378,16 +1368,16 @@ div.c {
 #rs-economic-calendar-toggle {
   min-height: 36px;
   padding: 6px 10px;
-  border: 1px solid #7b9b8c;
+  border: 1px solid #75838f;
   border-radius: 5px;
   background: #fff;
-  color: #18382a;
+  color: #202c36;
   font: inherit;
   font-size: 13px;
   cursor: pointer;
 }
 #rs-economic-calendar-body[hidden] { display: none; }
-.rs-economic-calendar h3 small { font-size: 12px; color: #425d51; }
+.rs-economic-calendar h3 small { font-size: 12px; color: #35434e; }
 @media (max-width: 580px) {
   .rs-economic-calendar { padding: 10px; }
   #rs-economic-calendar-toggle { min-height: 44px; }
@@ -1486,32 +1476,43 @@ div.c {
       <p class="rs-global-markets__eyebrow">Single security</p>
       <h2 id="rs-ticker-title">Ticker lookup</h2>
     </div>
+    <button id="rs-ticker-toggle" type="button" aria-expanded="true" aria-controls="rs-ticker-body">Close lookup</button>
+  </div>
+  <div id="rs-ticker-body">
     <form id="rs-ticker-form">
       <label for="rs-ticker-symbol">Yahoo Finance ticker</label>
       <input id="rs-ticker-symbol" type="text" placeholder="e.g. AAPL or RY.TO" maxlength="25"
              autocomplete="off" autocapitalize="characters" spellcheck="false" required>
       <button type="submit">Look up</button>
     </form>
-  </div>
-  <p id="rs-ticker-status" class="rs-global-markets__status" role="status"></p>
-  <div id="rs-ticker-result" hidden>
-    <div class="rs-ticker-result-heading">
-      <h3 id="rs-ticker-name"></h3>
-      <a id="rs-ticker-news" target="_blank" rel="noopener noreferrer">News</a>
+    <p id="rs-ticker-status" class="rs-global-markets__status" role="status"></p>
+    <div id="rs-ticker-result" hidden>
+      <div class="rs-ticker-result-heading">
+        <h3 id="rs-ticker-name"></h3>
+        <a id="rs-ticker-news" target="_blank" rel="noopener noreferrer">News</a>
+      </div>
+      <dl class="rs-ticker-facts">
+        <div><dt>Market cap</dt><dd data-rs-fact="marketCap">—</dd></div>
+        <div><dt>Trailing P/E</dt><dd data-rs-fact="trailingPE">—</dd></div>
+        <div><dt>EOD price</dt><dd data-rs-fact="eod">—</dd></div>
+        <div><dt>Market price</dt><dd data-rs-fact="market">—</dd></div>
+        <div><dt>Price change per share/unit</dt><dd data-rs-fact="change">—</dd></div>
+        <div><dt>Price change (%)</dt><dd data-rs-fact="percent">—</dd></div>
+      </dl>
+      <p class="rs-global-markets__note">EOD is the last completed session close. Market price is the latest regular-session quote. Changes are versus the prior close for that quote. Quotes may be delayed.</p>
     </div>
-    <dl class="rs-ticker-facts">
-      <div><dt>Market cap</dt><dd data-rs-fact="marketCap">—</dd></div>
-      <div><dt>Trailing P/E</dt><dd data-rs-fact="trailingPE">—</dd></div>
-      <div><dt>EOD price</dt><dd data-rs-fact="eod">—</dd></div>
-      <div><dt>Market price</dt><dd data-rs-fact="market">—</dd></div>
-      <div><dt>Price change per share/unit</dt><dd data-rs-fact="change">—</dd></div>
-      <div><dt>Price change (%)</dt><dd data-rs-fact="percent">—</dd></div>
-    </dl>
-    <p class="rs-global-markets__note">EOD is the last completed session close. Market price is the latest regular-session quote. Changes are versus the prior close for that quote. Quotes may be delayed.</p>
+    <div id="rs-ticker-chart-slot"></div>
   </div>
-  <div id="rs-ticker-chart-slot"></div>
 </section>
 <style>
+.rs-portfolio-quotes.rs-ticker-lookup {
+  background: #f1dfae !important;
+  border-color: #b59b61 !important;
+}
+.rs-ticker-lookup .rs-portfolio-quotes__heading { align-items: center; }
+.rs-ticker-lookup #rs-ticker-toggle { min-height: 44px; }
+#rs-ticker-body { margin-top: 8px; }
+#rs-ticker-body[hidden] { display: none; }
 .rs-ticker-lookup form { display:flex; align-items:center; flex-wrap:wrap; gap:7px; }
 .rs-ticker-lookup label { font-size:12px; font-weight:700; }
 .rs-ticker-lookup input, .rs-ticker-lookup button { min-height:36px; box-sizing:border-box; }
@@ -1521,7 +1522,7 @@ div.c {
 .rs-ticker-result-heading { display:flex; align-items:center; flex-wrap:wrap; column-gap:8px; }
 #rs-ticker-news { font-size:13px; white-space:nowrap; }
 .rs-ticker-facts { display:grid; grid-template-columns:repeat(auto-fit,minmax(125px,1fr)); gap:8px; margin:0; }
-.rs-ticker-facts div { background:#fff; border:1px solid #d8e1ec; border-radius:6px; padding:7px; }
+.rs-ticker-facts div { background:#fff7df; border:1px solid #d0bc87; border-radius:6px; padding:7px; }
 .rs-ticker-facts dt { font-size:12px; }
 .rs-ticker-facts dd { margin:3px 0 0; font-weight:700; }
 .rs-ticker-lookup .rs-market-chart-panel { margin:10px 0 0; }
@@ -1529,6 +1530,18 @@ div.c {
 #rs-top10-chart-slot .rs-market-chart-actions button { color:#000; }
 .rs-market-chart-actions button[hidden] { display:none; }
 </style>
+<script>
+(function () {
+  const toggle = document.getElementById("rs-ticker-toggle");
+  const body = document.getElementById("rs-ticker-body");
+  toggle.addEventListener("click", function () {
+    const show = body.hidden;
+    body.hidden = !show;
+    toggle.setAttribute("aria-expanded", String(show));
+    toggle.textContent = show ? "Close lookup" : "Show lookup";
+  });
+})();
+</script>
 
 <!-- RiskSnap landing page correction: exact banner blue and saved-share support, 2026-09-10 -->
 <section class="rs-portfolio-quotes" style="background:#E5F1FF !important;" aria-labelledby="rs-portfolio-quotes-title">
