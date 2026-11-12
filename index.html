@@ -1505,6 +1505,7 @@ div.c {
       <h3 id="rs-ticker-perp-title">Hyperliquid perpetual <small id="rs-ticker-perp-symbol"></small></h3>
       <dl class="rs-ticker-facts">
         <div><dt>Last perp trade</dt><dd id="rs-ticker-perp-price"></dd></div>
+        <div><dt>Perp vs. EOD (%)</dt><dd id="rs-ticker-perp-eod-change">—</dd></div>
         <div><dt>Trade time (ET)</dt><dd><time id="rs-ticker-perp-time"></time></dd></div>
         <div><dt>24h volume (USD notional)</dt><dd id="rs-ticker-perp-volume"></dd></div>
       </dl>
@@ -2147,7 +2148,8 @@ async function rsReadPerp(coin, metadata) {
   ]);
   const perpPanel = document.getElementById("rs-ticker-perp");
   const perpTradeTime = document.getElementById("rs-ticker-perp-time");
-  async function loadPerpQuote(symbol, request) {
+  const perpEodChange = document.getElementById("rs-ticker-perp-eod-change");
+  async function loadPerpQuote(symbol, request, stockData) {
     if (!perpTickers.has(symbol)) return;
     const coin = `xyz:${symbol}`;
     const quote = await rsReadPerp(coin);
@@ -2160,7 +2162,19 @@ async function rsReadPerp(coin, metadata) {
       formatNumber(volume, { maximumFractionDigits: 0 });
     perpTradeTime.dateTime = time.toISOString();
     perpTradeTime.textContent = rsPerpTimeFormat.format(time);
+    perpEodChange.textContent = "—";
     perpPanel.hidden = false;
+
+    const [quoteResult, intradayResult] = await stockData;
+    if (request !== lookupRequest) return;
+    const day = intradayResult.value;
+    const currency = day?.currency || quoteResult.value?.currencies?.[symbol];
+    const eod = day?.eod_price;
+    if (currency === "USD" && Number.isFinite(eod) && eod > 0) {
+      perpEodChange.textContent = formatNumber((price - eod) / eod, {
+        style: "percent", maximumFractionDigits: 2, signDisplay: "exceptZero"
+      });
+    }
   }
 
   function selectRange(range) {
@@ -2184,8 +2198,6 @@ async function rsReadPerp(coin, metadata) {
     }
 
     lookupStatus.textContent = `Loading ${symbol}…`;
-    // The supplemental feed must never delay the stock quote or chart.
-    void loadPerpQuote(symbol, request).catch(() => {});
     selectedSymbol = symbol;
     selectedName = symbol;
     const quote = fetchJson(quoteEndpoint, {
@@ -2194,6 +2206,8 @@ async function rsReadPerp(coin, metadata) {
       body: JSON.stringify({ symbols: [symbol], include_fundamentals: true })
     });
     const intraday = fetchJson(`${intradayEndpoint}?symbol=${encodeURIComponent(symbol)}`);
+    const stockData = Promise.allSettled([quote, intraday]);
+    void loadPerpQuote(symbol, request, stockData).catch(() => {});
     lookupData = { symbol, quote, intraday };
     chartSlot.appendChild(panel);
     panel.hidden = false;
@@ -2201,7 +2215,7 @@ async function rsReadPerp(coin, metadata) {
     selectRange("1d");
     loadChart();
 
-    const [quoteResult, intradayResult] = await Promise.allSettled([quote, intraday]);
+    const [quoteResult, intradayResult] = await stockData;
     if (request !== lookupRequest) return;
     const payload = quoteResult.value || {};
     const day = intradayResult.value || {};
