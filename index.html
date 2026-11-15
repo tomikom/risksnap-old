@@ -3041,7 +3041,15 @@ body > nav { background: linear-gradient(90deg, #ffe45c 0%, #ffab36 50%, #ef5350
 </dialog>
 <script>
 (()=>{
- const groups={'^DJI':['dow','Dow Jones'],'^GSPC':['sp500','S&P 500'],'^NDX':['nasdaq','Nasdaq Composite','Top 10 Composite companies'],'^GSPTSE':['tsx','S&P/TSX Composite'],'CL=F':['energy','Oil and energy companies'],'BTC-USD':['crypto','Crypto-related firms','Top 10 firms'],'CRYPTO-COINS':['coins','Crypto coins','Top 10 coins']};
+ const groups={
+  '^DJI':['dow','Dow Jones'],'^GSPC':['sp500','S&P 500'],
+  '^NDX':['nasdaq','Nasdaq Composite','Top 10 Composite companies'],'^GSPTSE':['tsx','S&P/TSX Composite'],
+  '^FTSE':['ftse100','FTSE 100'],'^GDAXI':['dax','DAX'],'^N225':['nikkei225','Nikkei 225'],
+  '^HSI':['hangseng','Hang Seng'],'000001.SS':['shanghai','Shanghai Composite'],
+  '^NSEI':['nifty50','Nifty 50'],'^KS11':['kospi','KOSPI'],
+  'CL=F':['energy','Oil and energy companies'],'BTC-USD':['crypto','Crypto-related firms','Top 10 firms'],
+  'CRYPTO-COINS':['coins','Crypto coins','Top 10 coins']
+ };
  const dialog=document.getElementById('rs-top10-dialog'),body=document.getElementById('rs-top10-body'),status=document.getElementById('rs-top10-status'),refresh=document.getElementById('rs-top10-refresh');
  let active=null,timer=null,controller=null,opener=null;
  function close(){
