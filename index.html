@@ -1284,7 +1284,7 @@ div.c {
     { place: "Hong Kong", name: "Hang Seng", symbol: "^HSI", size: "HKEX US$6.00T†", locale: "en-HK", access: "Widely available" },
     { place: "China", name: "Shanghai Composite", symbol: "000001.SS", perpUnavailable: true, size: "SSE US$9.84T†", locale: "zh-CN", access: "Eligible securities via Stock Connect" },
     { place: "India", name: "Nifty 50", symbol: "^NSEI", perps: [{ code: "xyz:NIFTY", url: "https://app.hyperliquid.xyz/trade/xyz:NIFTY", venue: "Hyperliquid" }], size: "NSE US$4.91T†", locale: "en-IN", access: "Special registration; limited retail access" },
-    { place: "South Korea", name: "KOSPI", symbol: "^KS11", perps: [{ code: "KOSPI_USDT", url: "https://www.mexc.com/futures/KOSPI_USDT", venue: "MEXC", linkOnly: true }], size: "KRX US$4.95T†", locale: "ko-KR", access: "International broker availability varies" },
+    { place: "South Korea", name: "KOSPI", symbol: "^KS11", perps: [{ code: "KOSPI_USDT", url: "https://www.mexc.com/futures/KOSPI_USDT", venue: "MEXC" }], size: "KRX US$4.95T†", locale: "ko-KR", access: "International broker availability varies" },
     { place: "Taiwan", name: "TWSE Weighted", symbol: "^TWII", size: "TWSE US$4.56T†", locale: "zh-TW", access: "Local registration or arrangements may apply" },
     { place: "Brazil", name: "Bovespa", symbol: "^BVSP", size: "B3 US$0.96T†", locale: "pt-BR", access: "Local representative and custody may apply" },
     { place: "Switzerland", name: "SMI", symbol: "^SSMI", size: "SIX US$2.61T†", locale: "de-CH", access: "Widely available" },
@@ -2056,6 +2056,19 @@ async function rsReadPerp(coin, metadata) {
 }
 
 
+async function rsReadKospiPerp() {
+  const response = await fetch("https://surface-203178530029.northamerica-northeast2.run.app/kospi_perp", {
+    signal: AbortSignal.timeout(12000)
+  });
+  if (!response.ok) throw new Error(`KOSPI perp HTTP ${response.status}`);
+  const quote = await response.json();
+  if (quote.symbol !== "KOSPI_USDT" || quote.unit !== "USDT" ||
+      !Number.isFinite(quote.price) || quote.price <= 0 ||
+      !Number.isFinite(quote.volume) || quote.volume < 0 ||
+      !Number.isFinite(quote.time) || quote.time <= 0) return;
+  return { ...quote, time: new Date(quote.time) };
+}
+
 (function () {
   const panels = document.querySelectorAll("#rs-global-markets-grid [data-index-perp]");
   let refresh = 0;
@@ -2068,7 +2081,9 @@ async function rsReadPerp(coin, metadata) {
       const time = panel.querySelector("time");
       const volume = panel.querySelector("[data-perp-volume]");
       try {
-        const quote = await rsReadPerp(panel.dataset.code, metadata);
+        const quote = await (panel.dataset.code === "KOSPI_USDT"
+          ? rsReadKospiPerp()
+          : rsReadPerp(panel.dataset.code, metadata));
         if (request !== refresh) return;
         if (!quote) throw new Error("Perp quote unavailable");
 
