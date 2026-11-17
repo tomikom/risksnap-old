@@ -911,7 +911,9 @@ div.c {
   text-align: left;
   line-height: 1.3;
 }
-#rs-tech-giants td:last-child, #rs-tech-giants thead th:last-child { text-align: right; }
+#rs-tech-giants td:nth-child(n+3), #rs-tech-giants thead th:nth-child(n+3) { text-align: right; }
+#rs-tech-giants td:last-child a { white-space: nowrap; }
+#rs-tech-giants .rs-tech-cap-note { margin: 5px 0 0; font-size: 12px; }
 #rs-tech-giants tbody th { font-weight: normal; }
 #rs-tech-giants tbody tr:nth-child(even) { background: #edf4fb; }
 #rs-tech-giants a { color: #174a7d; text-decoration: underline; }
@@ -919,7 +921,7 @@ div.c {
 <style>
 .rs-tech-layout {
   display: grid;
-  grid-template-columns: minmax(0, 740px) minmax(0, 540px);
+  grid-template-columns: minmax(0, 520px) minmax(0, 810px);
   gap: 12px;
   align-items: start;
 }
@@ -927,7 +929,43 @@ div.c {
   min-width: 0;
   box-sizing: border-box;
 }
+.rs-ai-financial-layout {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+.rs-ai-financials {
+  flex: 1 1 245px;
+  min-width: 0;
+  font-size: 13px;
+  line-height: 1.3;
+}
+.rs-ai-financials table {
+  width: 100%;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+.rs-ai-financials caption {
+  text-align: left;
+  font-weight: bold;
+}
+.rs-ai-financials th, .rs-ai-financials td {
+  padding: 4px 5px;
+  border-bottom: 1px solid #d8e1ec;
+  text-align: right;
+  white-space: nowrap;
+}
+.rs-ai-financials th:first-child {
+  text-align: left;
+  white-space: normal;
+}
+.rs-ai-financials tbody tr:nth-child(even) { background: #edf4fb; }
+.rs-ai-financials p { margin: 5px 0 0; font-size: 12px; }
+.rs-ai-financials a { color: #174a7d; }
 #rs-ai-funding svg {
+  flex: 2 1 320px;
+  min-width: 0;
   display: block;
   width: 100%;
   height: auto;
@@ -949,28 +987,30 @@ div.c {
     <p class="rs-global-markets__status">Nov. 16, 2026</p>
   </div>
   <table aria-labelledby="rs-tech-giants-title">
-    <thead><tr><th scope="col">Company or coin</th><th scope="col">Person</th><th scope="col">Est. wealth (US$)</th></tr></thead>
+    <thead><tr><th scope="col">Company or coin</th><th scope="col">Person</th><th scope="col">Est. wealth (US$)</th><th scope="col">Market cap / valuation (US$)</th></tr></thead>
     <tbody>
-      <tr><th scope="row">SpaceX / Tesla</th><td>Elon Musk</td><td><a href="https://www.forbes.com/real-time-billionaires/" target="_blank" rel="noopener noreferrer">$887.2B</a></td></tr>
-      <tr><th scope="row">Amazon</th><td>Jeff Bezos</td><td>$384.6B</td></tr>
-      <tr><th scope="row">Alphabet (Google)</th><td>Larry Page</td><td>$244.5B</td></tr>
-      <tr><th scope="row">Alphabet (Google)</th><td>Sergey Brin</td><td>$225.1B</td></tr>
-      <tr><th scope="row">Meta (Facebook)</th><td>Mark Zuckerberg</td><td>$220.4B</td></tr>
-      <tr><th scope="row">Oracle</th><td>Larry Ellison</td><td>$165.5B</td></tr>
-      <tr><th scope="row">Nvidia</th><td>Jensen Huang</td><td>$141.9B</td></tr>
-      <tr><th scope="row">Microsoft</th><td>Bill Gates</td><td>$122.1B</td></tr>
-      <tr><th scope="row">CoreWeave</th><td>Michael Intrator</td><td>&mdash;</td></tr>
-      <tr><th scope="row">Anthropic</th><td>Dario &amp; Daniela Amodei</td><td><a href="https://www.forbes.com/profile/dario-amodei/" target="_blank" rel="noopener noreferrer" title="Forbes estimate as of Nov. 17, 2026">$14.1B</a> / <a href="https://www.forbes.com/profile/daniela-amodei/" target="_blank" rel="noopener noreferrer" title="Forbes estimate as of Nov. 17, 2026">$14.2B</a></td></tr>
-      <tr><th scope="row">TSMC</th><td>Morris Chang</td><td><a href="https://www.forbes.com/profile/morris-chang/" target="_blank" rel="noopener noreferrer">$9.4B</a></td></tr>
-      <tr><th scope="row">Strategy (MSTR)</th><td>Michael Saylor</td><td><a href="https://www.forbes.com/profile/michael-saylor/" target="_blank" rel="noopener noreferrer">$3.9B</a></td></tr>
-      <tr><th scope="row">OpenAI</th><td>Sam Altman</td><td><a href="https://www.forbes.com/profile/sam-altman/" target="_blank" rel="noopener noreferrer" title="Forbes estimate as of Nov. 16, 2026">$3.1B</a></td></tr>
+      <tr><th scope="row">SpaceX / Tesla</th><td>Elon Musk</td><td><a href="https://www.forbes.com/real-time-billionaires/" target="_blank" rel="noopener noreferrer">$887.2B</a></td><td><a href="https://stockanalysis.com/stocks/spcx/market-cap/" target="_blank" rel="noopener noreferrer" title="Nov. 16, 2026">$1.87T</a> / <a href="https://stockanalysis.com/stocks/tsla/market-cap/" target="_blank" rel="noopener noreferrer" title="Nov. 16, 2026">$1.50T</a></td></tr>
+      <tr><th scope="row">Amazon</th><td>Jeff Bezos</td><td>$384.6B</td><td><a href="https://stockanalysis.com/stocks/amzn/market-cap/" target="_blank" rel="noopener noreferrer" title="Nov. 17, 2026">$2.79T</a></td></tr>
+      <tr><th scope="row">Alphabet (Google)</th><td>Larry Page</td><td>$244.5B</td><td><a href="https://stockanalysis.com/stocks/googl/market-cap/" target="_blank" rel="noopener noreferrer" title="Nov. 16, 2026">$3.49T</a></td></tr>
+      <tr><th scope="row">Alphabet (Google)</th><td>Sergey Brin</td><td>$225.1B</td><td><a href="https://stockanalysis.com/stocks/googl/market-cap/" target="_blank" rel="noopener noreferrer" title="Nov. 16, 2026">$3.49T</a></td></tr>
+      <tr><th scope="row">Meta (Facebook)</th><td>Mark Zuckerberg</td><td>$220.4B</td><td><a href="https://stockanalysis.com/stocks/meta/market-cap/" target="_blank" rel="noopener noreferrer" title="Nov. 16, 2026">$1.60T</a></td></tr>
+      <tr><th scope="row">Oracle</th><td>Larry Ellison</td><td>$165.5B</td><td><a href="https://stockanalysis.com/stocks/orcl/market-cap/" target="_blank" rel="noopener noreferrer" title="Nov. 16, 2026">$371.29B</a></td></tr>
+      <tr><th scope="row">Nvidia</th><td>Jensen Huang</td><td>$141.9B</td><td><a href="https://stockanalysis.com/stocks/nvda/market-cap/" target="_blank" rel="noopener noreferrer" title="Nov. 17, 2026">$3.76T</a></td></tr>
+      <tr><th scope="row">Microsoft</th><td>Bill Gates</td><td>$122.1B</td><td><a href="https://stockanalysis.com/stocks/msft/market-cap/" target="_blank" rel="noopener noreferrer" title="Nov. 16, 2026">$3.85T</a></td></tr>
+      <tr><th scope="row">CoreWeave</th><td>Michael Intrator</td><td>&mdash;</td><td><a href="https://stockanalysis.com/stocks/crwv/market-cap/" target="_blank" rel="noopener noreferrer" title="Nov. 16, 2026">$27.74B</a></td></tr>
+      <tr><th scope="row">Anthropic</th><td>Dario &amp; Daniela Amodei</td><td><a href="https://www.forbes.com/profile/dario-amodei/" target="_blank" rel="noopener noreferrer" title="Forbes estimate as of Nov. 17, 2026">$14.1B</a> / <a href="https://www.forbes.com/profile/daniela-amodei/" target="_blank" rel="noopener noreferrer" title="Forbes estimate as of Nov. 17, 2026">$14.2B</a></td><td><a href="https://www.reuters.com/business/anthropic-ipo-raise-much-644-billion-latest-draft-prospectus-shows-2026-11-10/" target="_blank" rel="noopener noreferrer" title="Nov. 10, 2026">Up to $1.4T*</a></td></tr>
+      <tr><th scope="row">TSMC</th><td>Morris Chang</td><td><a href="https://www.forbes.com/profile/morris-chang/" target="_blank" rel="noopener noreferrer">$9.4B</a></td><td><a href="https://stockanalysis.com/stocks/tsm/market-cap/" target="_blank" rel="noopener noreferrer" title="Nov. 16, 2026">$1.74T</a></td></tr>
+      <tr><th scope="row">Strategy (MSTR)</th><td>Michael Saylor</td><td><a href="https://www.forbes.com/profile/michael-saylor/" target="_blank" rel="noopener noreferrer">$3.9B</a></td><td><a href="https://stockanalysis.com/stocks/mstr/market-cap/" target="_blank" rel="noopener noreferrer" title="Nov. 17, 2026">$43.38B</a></td></tr>
+      <tr><th scope="row">OpenAI</th><td>Sam Altman</td><td><a href="https://www.forbes.com/profile/sam-altman/" target="_blank" rel="noopener noreferrer" title="Forbes estimate as of Nov. 16, 2026">$3.1B</a></td><td><a href="https://www.reuters.com/business/openai-secures-11-billion-funding-125-trillion-valuation-bloomberg-news-reports-2026-11-06/" target="_blank" rel="noopener noreferrer" title="Nov. 6, 2026">$1.25T†</a></td></tr>
     </tbody>
   </table>
+  <p class="rs-tech-cap-note">Market caps Nov. 16–17, 2026. *Anthropic IPO estimate, fully diluted. †OpenAI private funding valuation.</p>
 </section>
 <section id="rs-ai-funding" class="rs-global-markets" aria-labelledby="rs-ai-funding-title">
   <div class="rs-global-markets__heading">
     <h2 id="rs-ai-funding-title">Nvidia investment and chip sales</h2>
   </div>
+  <div class="rs-ai-financial-layout">
   <svg viewBox="0 0 500 267" role="img" aria-labelledby="rs-ai-flow-title rs-ai-flow-desc" xmlns="http://www.w3.org/2000/svg">
     <title id="rs-ai-flow-title">How money flows between Nvidia, AI labs and cloud providers</title>
     <desc id="rs-ai-flow-desc">Nvidia announced a US$30 billion investment in OpenAI and agreed to buy about US$10 billion in Anthropic shares tied to its IPO. OpenAI pays CoreWeave for computing capacity, while Anthropic pays cloud providers such as Azure, Nscale and Lambda. Cloud providers buy systems powered by Nvidia GPUs.</desc>
@@ -1014,6 +1054,24 @@ div.c {
       <text x="250" y="257">Arrows show payments and investment commitments</text>
     </g>
   </svg>
+  <div class="rs-ai-financials">
+    <table aria-describedby="rs-ai-financial-note">
+      <caption>Q3 2026 financials (US$B)</caption>
+      <thead>
+        <tr><th scope="col">Measure</th><th scope="col">OpenAI</th><th scope="col">Anthropic</th></tr>
+      </thead>
+      <tbody>
+        <tr><th scope="row">Revenue</th><td>10.00</td><td>16.96</td></tr>
+        <tr><th scope="row">Operating costs</th><td>~20.90*</td><td>17.52</td></tr>
+        <tr><th scope="row">Of which compute &amp; infrastructure</th><td>—</td><td>9.86</td></tr>
+        <tr><th scope="row">Operating loss</th><td>10.90*</td><td>0.57</td></tr>
+      </tbody>
+    </table>
+    <p id="rs-ai-financial-note">*OpenAI costs and loss exclude $2.6B in stock-based pay. Its compute costs were unavailable.</p>
+    <p><a href="https://www.wsj.com/business/earnings/openai-continues-to-suffer-heavy-losses-as-revenue-rises-to-10-billion-d2a96bbb" target="_blank" rel="noopener noreferrer">WSJ</a> &middot;
+      <a href="https://ipo.anthropic.com/documents/us/prospectus.pdf" target="_blank" rel="noopener noreferrer">Anthropic filing</a></p>
+  </div>
+  </div>
   <p style="margin: 5px 0 8px; font-size: 14px; line-height: 1.4;"><strong>How much demand for Nvidia chips could OpenAI and Anthropic sustain with customer revenue, without funding from Nvidia?</strong></p>
   <p class="rs-ai-sources">
     <a href="https://openai.com/index/scaling-ai-for-everyone/" target="_blank" rel="noopener noreferrer">OpenAI</a> &middot;
@@ -1061,24 +1119,24 @@ div.c {
   <div class="rs-market-news__grid">
     <article class="rs-market-news__card">
       <p class="rs-market-news__topic">Iran</p>
-      <h3>Hormuz tanker incident keeps oil traders alert</h3>
-      <p>Reuters reported a tanker crew missing after the vessel was struck twice in the Strait of Hormuz. Oil edged higher early Tuesday, even as recovering Middle East exports supported forecasts of a global surplus.</p>
-      <p><strong>Watch</strong> Brent and WTI. Watch whether tanker traffic slows enough to interrupt the recovery in exports.</p>
-      <footer><a href="https://www.reuters.com/business/energy/oil-slips-supply-surplus-outlook-despite-gulf-tensions-2026-11-17/" target="_blank" rel="noopener noreferrer" aria-label="Reuters — Hormuz tanker incident keeps oil traders alert">Reuters</a></footer>
+      <h3>Iran strikes U.S. radar in Bahrain as Hormuz risks persist</h3>
+      <p>Reuters reported an Iranian drone attack on a U.S. military radar system despite mediation by Oman and Qatar. A tanker crew was also reported missing after an attack in the Strait of Hormuz.</p>
+      <p><strong>Watch</strong> Brent, WTI and Asian LNG. Watch tanker traffic for evidence of renewed export disruption.</p>
+      <footer><a href="https://www.reuters.com/world/middle-east/oman-iran-foreign-ministers-discuss-safeguarding-maritime-corridors-2026-11-17/" target="_blank" rel="noopener noreferrer" aria-label="Reuters — Iran strikes U.S. radar in Bahrain as Hormuz risks persist">Reuters</a></footer>
     </article>
     <article class="rs-market-news__card">
       <p class="rs-market-news__topic">Ukraine</p>
-      <h3>Russia reports another strike on Crimea bridge</h3>
-      <p>The Russian-backed governor of Crimea said Ukraine struck the bridge linking Crimea and southern Russia for a second day. Russian state media also reported drone attacks near industrial areas in Bashkortostan, where several refineries operate.</p>
-      <p><strong>Watch</strong> European diesel and refining margins. Look for confirmed outages or fuel shipment disruptions.</p>
-      <footer><a href="https://www.reuters.com/world/russia-says-ukraine-struck-its-bridge-crimea-second-day-biggest-drone-attack-war-2026-11-17/" target="_blank" rel="noopener noreferrer" aria-label="Reuters — Russia reports another strike on Crimea bridge">Reuters</a></footer>
+      <h3>New strikes hit Crimea and Kyiv infrastructure</h3>
+      <p>Russian-installed officials reported a second consecutive day of attacks on the Crimea bridge, while Russia struck bridges and other infrastructure in Kyiv. Separately, Bulgaria’s defence ministry reported a gas tanker sank in the Black Sea.</p>
+      <p><strong>Watch</strong> Black Sea grain and fuel shipments. Watch for port restrictions and higher shipping insurance costs.</p>
+      <footer><a href="https://www.reuters.com/world/russia-says-ukraine-struck-its-bridge-crimea-second-day-biggest-drone-attack-war-2026-11-17/" target="_blank" rel="noopener noreferrer" aria-label="Reuters — New strikes hit Crimea and Kyiv infrastructure">Reuters</a> · <a href="https://apnews.com/article/3265b6f9e84eb28b349dceb3223fd37f" target="_blank" rel="noopener noreferrer" aria-label="Associated Press — New strikes hit Crimea and Kyiv infrastructure">Associated Press</a></footer>
     </article>
     <article class="rs-market-news__card">
       <p class="rs-market-news__topic">AI and equities</p>
-      <h3>Chip stocks slide ahead of Nvidia earnings</h3>
-      <p>Asian and European tech shares fell after the U.S. tightened restrictions on access to advanced AI chips. Nvidia reports after the U.S. close today, with Anthropic’s market debut expected Thursday.</p>
-      <p><strong>Watch</strong> Nvidia, chip stocks and the Nasdaq. Watch guidance for orders, delivery delays and export restrictions.</p>
-      <footer><a href="https://www.reuters.com/world/china/global-markets-global-markets-2026-11-17/" target="_blank" rel="noopener noreferrer" aria-label="Reuters — Chip stocks slide ahead of Nvidia earnings">Reuters</a></footer>
+      <h3>Nasdaq futures steady before Nvidia earnings</h3>
+      <p>Nasdaq futures edged higher ahead of Nvidia’s first report since Jensen Huang’s departure. Results are due after the U.S. close, and Anthropic’s IPO is expected later this week.</p>
+      <p><strong>Watch</strong> Nvidia, chip stocks and the Nasdaq. Watch data-centre sales guidance and the IPO price for signs of investor demand.</p>
+      <footer><a href="https://www.reuters.com/business/us-stock-futures-slip-ahead-nvidia-results-fed-speakers-focus-2026-11-17/" target="_blank" rel="noopener noreferrer" aria-label="Reuters — Nasdaq futures steady before Nvidia earnings">Reuters</a> · <a href="https://investor.nvidia.com/news/press-release-details/2026/NVIDIA-Announces-CEO-Transition/default.aspx" target="_blank" rel="noopener noreferrer" aria-label="Nvidia — Nasdaq futures steady before Nvidia earnings">Nvidia</a></footer>
     </article>
     <article class="rs-market-news__card">
       <p class="rs-market-news__topic">Asian equities</p>
@@ -1095,11 +1153,11 @@ div.c {
       <footer><a href="https://www.reuters.com/world/china/global-markets-global-markets-2026-11-17/" target="_blank" rel="noopener noreferrer" aria-label="Reuters — Dollar strengthens as traders price in Fed tightening">Reuters</a></footer>
     </article>
     <article class="rs-market-news__card">
-      <p class="rs-market-news__topic">European banks</p>
-      <h3>Deutsche Bank shares slide after leaked-document reports</h3>
-      <p>Deutsche Bank fell about 5.5% in early trading after reports based on leaked records renewed scrutiny of past client relationships. The bank said the matters dated back many years.</p>
-      <p><strong>Watch</strong> Deutsche Bank and European bank shares. Watch for any formal regulatory response.</p>
-      <footer><a href="https://www.reuters.com/world/china/global-markets-global-markets-2026-11-17/" target="_blank" rel="noopener noreferrer" aria-label="Reuters — Deutsche Bank shares slide after leaked-document reports">Reuters</a></footer>
+      <p class="rs-market-news__topic">Canada–China trade</p>
+      <h3>Canada and China expand tariff relief</h3>
+      <p>Mark Carney and Xi Jinping agreed in Shenzhen to extend their trade arrangement and lower tariffs on more pork and seafood products. Ottawa says the added relief covers about C$400 million in exports.</p>
+      <p><strong>Watch</strong> Canadian pork and seafood exporters. Watch implementation dates and Chinese import orders.</p>
+      <footer><a href="https://www.pm.gc.ca/en/news/news-releases/2026/11/17/prime-minister-carney-advances-canadas-strategic-partnership-china" target="_blank" rel="noopener noreferrer" aria-label="Prime Minister of Canada — Canada and China expand tariff relief">Prime Minister of Canada</a></footer>
     </article>
   </div>
 </section>
