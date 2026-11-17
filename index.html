@@ -916,6 +916,33 @@ div.c {
 #rs-tech-giants tbody tr:nth-child(even) { background: #edf4fb; }
 #rs-tech-giants a { color: #174a7d; text-decoration: underline; }
 </style>
+<style>
+.rs-tech-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 740px) minmax(0, 540px);
+  gap: 12px;
+  align-items: start;
+}
+#rs-ai-funding {
+  min-width: 0;
+  box-sizing: border-box;
+}
+#rs-ai-funding svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  font-family: inherit;
+}
+#rs-ai-funding .rs-ai-sources {
+  margin: 5px 0 0;
+  font-size: 12px;
+}
+#rs-ai-funding .rs-ai-sources a { color: #174a7d; }
+@media (max-width: 900px) {
+  .rs-tech-layout { grid-template-columns: minmax(0, 740px); }
+}
+</style>
+<div class="rs-tech-layout">
 <section id="rs-tech-giants" class="rs-global-markets" aria-labelledby="rs-tech-giants-title">
   <div class="rs-global-markets__heading">
     <h2 id="rs-tech-giants-title">Tech and Crypto Giants</h2>
@@ -932,15 +959,68 @@ div.c {
       <tr><th scope="row">Oracle</th><td>Larry Ellison</td><td>$165.5B</td></tr>
       <tr><th scope="row">Nvidia</th><td>Jensen Huang</td><td>$141.9B</td></tr>
       <tr><th scope="row">Microsoft</th><td>Bill Gates</td><td>$122.1B</td></tr>
-      <tr><th scope="row">Bitcoin</th><td>Satoshi Nakamoto</td><td><a href="https://arkm.com/explorer/entity/satoshi-nakamoto" target="_blank" rel="noopener noreferrer">≈$70.7B in attributed BTC</a></td></tr>
-      <tr><th scope="row">Anthropic</th><td>Daniela Amodei</td><td><a href="https://www.forbes.com/profile/daniela-amodei/" target="_blank" rel="noopener noreferrer" title="Forbes estimate as of Nov. 17, 2026">$14.2B</a></td></tr>
-      <tr><th scope="row">Anthropic</th><td>Dario Amodei</td><td><a href="https://www.forbes.com/profile/dario-amodei/" target="_blank" rel="noopener noreferrer" title="Forbes estimate as of Nov. 17, 2026">$14.1B</a></td></tr>
+      <tr><th scope="row">CoreWeave</th><td>Michael Intrator</td><td>&mdash;</td></tr>
+      <tr><th scope="row">Anthropic</th><td>Dario &amp; Daniela Amodei</td><td><a href="https://www.forbes.com/profile/dario-amodei/" target="_blank" rel="noopener noreferrer" title="Forbes estimate as of Nov. 17, 2026">$14.1B</a> / <a href="https://www.forbes.com/profile/daniela-amodei/" target="_blank" rel="noopener noreferrer" title="Forbes estimate as of Nov. 17, 2026">$14.2B</a></td></tr>
       <tr><th scope="row">TSMC</th><td>Morris Chang</td><td><a href="https://www.forbes.com/profile/morris-chang/" target="_blank" rel="noopener noreferrer">$9.4B</a></td></tr>
       <tr><th scope="row">Strategy (MSTR)</th><td>Michael Saylor</td><td><a href="https://www.forbes.com/profile/michael-saylor/" target="_blank" rel="noopener noreferrer">$3.9B</a></td></tr>
       <tr><th scope="row">OpenAI</th><td>Sam Altman</td><td><a href="https://www.forbes.com/profile/sam-altman/" target="_blank" rel="noopener noreferrer" title="Forbes estimate as of Nov. 16, 2026">$3.1B</a></td></tr>
     </tbody>
   </table>
 </section>
+<section id="rs-ai-funding" class="rs-global-markets" aria-labelledby="rs-ai-funding-title">
+  <div class="rs-global-markets__heading">
+    <h2 id="rs-ai-funding-title">Nvidia investment and chip sales</h2>
+  </div>
+  <svg viewBox="0 0 500 267" role="img" aria-labelledby="rs-ai-flow-title rs-ai-flow-desc" xmlns="http://www.w3.org/2000/svg">
+    <title id="rs-ai-flow-title">How money flows between Nvidia, AI labs and cloud providers</title>
+    <desc id="rs-ai-flow-desc">Nvidia announced a US$30 billion investment in OpenAI and agreed to buy about US$10 billion in Anthropic shares tied to its IPO. OpenAI pays CoreWeave for computing capacity, while Anthropic pays cloud providers such as Azure, Nscale and Lambda. Cloud providers buy systems powered by Nvidia GPUs.</desc>
+    <defs>
+      <marker id="rs-ai-flow-arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+        <path d="M0 0L8 4L0 8Z" fill="#276295"/>
+      </marker>
+    </defs>
+    <g fill="none" stroke="#276295" stroke-width="2" marker-end="url(#rs-ai-flow-arrow)">
+      <path d="M209 48V65H145V108"/>
+      <path d="M291 48V65H355V108"/>
+      <path d="M145 145V194"/>
+      <path d="M355 145V194"/>
+      <path d="M57 215H22V29H176"/>
+      <path d="M443 215H478V29H324"/>
+    </g>
+    <g fill="#edf4fb" stroke="#a6bdd3">
+      <rect x="177" y="10" width="146" height="38" rx="6"/>
+      <rect x="57" y="108" width="176" height="37" rx="6"/>
+      <rect x="267" y="108" width="176" height="37" rx="6"/>
+      <rect x="57" y="194" width="176" height="42" rx="6"/>
+      <rect x="267" y="194" width="176" height="42" rx="6"/>
+    </g>
+    <g fill="#173a5c" text-anchor="middle" font-size="17" font-weight="bold">
+      <text x="250" y="35">Nvidia</text>
+      <text x="145" y="132">OpenAI</text>
+      <text x="355" y="132">Anthropic</text>
+      <text x="145" y="221">CoreWeave</text>
+      <text x="355" y="213">Cloud providers</text>
+      <text x="355" y="229" font-size="12" font-weight="normal">Azure, Nscale, Lambda</text>
+    </g>
+    <g fill="#173a5c" text-anchor="middle" font-size="13">
+      <text x="87" y="81">US$30B</text>
+      <text x="87" y="97">announced</text>
+      <text x="417" y="81">~US$10B</text>
+      <text x="417" y="97">tied to IPO</text>
+      <text x="203" y="174">Pays for compute</text>
+      <text x="297" y="174">Pays for compute</text>
+      <text x="36" y="153" transform="rotate(-90 36 153)">Buys GPU systems</text>
+      <text x="464" y="153" transform="rotate(90 464 153)">Buy GPU systems</text>
+      <text x="250" y="257">Arrows show payments and investment commitments</text>
+    </g>
+  </svg>
+  <p class="rs-ai-sources">
+    <a href="https://openai.com/index/scaling-ai-for-everyone/" target="_blank" rel="noopener noreferrer">OpenAI</a> &middot;
+    <a href="https://www.coreweave.com/news/coreweave-announces-agreement-with-openai-to-deliver-ai-infrastructure" target="_blank" rel="noopener noreferrer">CoreWeave</a> &middot;
+    <a href="https://ipo.anthropic.com/documents/us/prospectus.pdf" target="_blank" rel="noopener noreferrer">Anthropic prospectus</a>
+  </p>
+</section>
+</div>
 <style>
 .rs-market-news__grid {
   display: grid;
