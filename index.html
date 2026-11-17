@@ -106,6 +106,7 @@ body > nav > ul > li.dropdown > button.dropbtn {
     		</ul>
 		</nav>
 		<div class="page-content">
+<p class="world-news-link"><a href="https://news.google.com/home?hl=en-CA&amp;gl=CA&amp;ceid=CA%3Aen" target="_blank" rel="noopener noreferrer">Google News <span aria-hidden="true">↗</span></a> &nbsp; <a href="https://www.reuters.com/world/" target="_blank" rel="noopener noreferrer">Reuters World News <span aria-hidden="true">↗</span></a> &nbsp; <a href="https://finance.yahoo.com/?fr=sycsrp_catchall" target="_blank" rel="noopener noreferrer">Yahoo Finance <span aria-hidden="true">↗</span></a></p>
                <!-- Home banner styling loaded before graphics: 2026-10-16 -->
 <style>
 
@@ -932,10 +933,11 @@ div.c {
       <tr><th scope="row">Nvidia</th><td>Jensen Huang</td><td>$141.9B</td></tr>
       <tr><th scope="row">Microsoft</th><td>Bill Gates</td><td>$122.1B</td></tr>
       <tr><th scope="row">Bitcoin</th><td>Satoshi Nakamoto</td><td><a href="https://arkm.com/explorer/entity/satoshi-nakamoto" target="_blank" rel="noopener noreferrer">≈$70.7B in attributed BTC</a></td></tr>
+      <tr><th scope="row">Anthropic</th><td>Daniela Amodei</td><td><a href="https://www.forbes.com/profile/daniela-amodei/" target="_blank" rel="noopener noreferrer" title="Forbes estimate as of Nov. 17, 2026">$14.2B</a></td></tr>
+      <tr><th scope="row">Anthropic</th><td>Dario Amodei</td><td><a href="https://www.forbes.com/profile/dario-amodei/" target="_blank" rel="noopener noreferrer" title="Forbes estimate as of Nov. 17, 2026">$14.1B</a></td></tr>
       <tr><th scope="row">TSMC</th><td>Morris Chang</td><td><a href="https://www.forbes.com/profile/morris-chang/" target="_blank" rel="noopener noreferrer">$9.4B</a></td></tr>
-      <tr><th scope="row">Apple</th><td>Steve Jobs</td><td><a href="https://www.forbes.com/profile/steve-jobs/" target="_blank" rel="noopener noreferrer">$7B (Sept. 2011)</a></td></tr>
       <tr><th scope="row">Strategy (MSTR)</th><td>Michael Saylor</td><td><a href="https://www.forbes.com/profile/michael-saylor/" target="_blank" rel="noopener noreferrer">$3.9B</a></td></tr>
-      <tr><th scope="row">Broadcom</th><td>Hock Tan</td><td><a href="https://www.sec.gov/Archives/edgar/data/1730168/000173016826000028/xslF345X03/wk-form4_1775861306.xml" target="_blank" rel="noopener noreferrer">≈$210M in disclosed shares</a></td></tr>
+      <tr><th scope="row">OpenAI</th><td>Sam Altman</td><td><a href="https://www.forbes.com/profile/sam-altman/" target="_blank" rel="noopener noreferrer" title="Forbes estimate as of Nov. 16, 2026">$3.1B</a></td></tr>
     </tbody>
   </table>
 </section>
@@ -1230,10 +1232,10 @@ div.c {
     { place: "United Kingdom", name: "FTSE 100", symbol: "^FTSE", size: "WFE not reported†", locale: "en-GB", access: "Widely available" },
     { place: "Germany", name: "DAX", symbol: "^GDAXI", size: "Deutsche Börse US$2.88T†", locale: "de-DE", access: "Widely available" },
     { place: "Japan", name: "Nikkei 225", symbol: "^N225", perps: [{ code: "xyz:JP225", url: "https://app.hyperliquid.xyz/trade/xyz:JP225", venue: "Hyperliquid" }], size: "JPX US$8.67T†", locale: "ja-JP", access: "Widely available" },
+    { place: "South Korea", name: "KOSPI", symbol: "^KS11", perps: [{ code: "KOSPI_USDT", url: "https://www.mexc.com/futures/KOSPI_USDT", venue: "MEXC" }], size: "KRX US$4.95T†", locale: "ko-KR", access: "International broker availability varies" },
     { place: "Hong Kong", name: "Hang Seng", symbol: "^HSI", size: "HKEX US$6.00T†", locale: "en-HK", access: "Widely available" },
     { place: "China", name: "Shanghai Composite", symbol: "000001.SS", perpUnavailable: true, size: "SSE US$9.84T†", locale: "zh-CN", access: "Eligible securities via Stock Connect" },
     { place: "India", name: "Nifty 50", symbol: "^NSEI", perps: [{ code: "xyz:NIFTY", url: "https://app.hyperliquid.xyz/trade/xyz:NIFTY", venue: "Hyperliquid" }], size: "NSE US$4.91T†", locale: "en-IN", access: "Special registration; limited retail access" },
-    { place: "South Korea", name: "KOSPI", symbol: "^KS11", perps: [{ code: "KOSPI_USDT", url: "https://www.mexc.com/futures/KOSPI_USDT", venue: "MEXC" }], size: "KRX US$4.95T†", locale: "ko-KR", access: "International broker availability varies" },
     { place: "Taiwan", name: "TWSE Weighted", symbol: "^TWII", size: "TWSE US$4.56T†", locale: "zh-TW", access: "Local registration or arrangements may apply" },
     { place: "Brazil", name: "Bovespa", symbol: "^BVSP", size: "B3 US$0.96T†", locale: "pt-BR", access: "Local representative and custody may apply" },
     { place: "Switzerland", name: "SMI", symbol: "^SSMI", size: "SIX US$2.61T†", locale: "de-CH", access: "Widely available" },
@@ -2556,7 +2558,6 @@ async function rsReadKospiPerp() {
 }
 </style>
 
-<p class="world-news-link"><a href="https://news.google.com/home?hl=en-CA&amp;gl=CA&amp;ceid=CA%3Aen" target="_blank" rel="noopener noreferrer">Google News <span aria-hidden="true">↗</span></a> &nbsp; <a href="https://www.reuters.com/world/" target="_blank" rel="noopener noreferrer">Reuters World News <span aria-hidden="true">↗</span></a> &nbsp; <a href="https://finance.yahoo.com/?fr=sycsrp_catchall" target="_blank" rel="noopener noreferrer">Yahoo Finance <span aria-hidden="true">↗</span></a></p>
 <p>
 <div class="row">
 <div class="column left concentration-panel" style="background-color:#E5F1FF;">
