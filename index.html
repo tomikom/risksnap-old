@@ -1561,6 +1561,13 @@ div.c {
     <button id="rs-ticker-toggle" type="button" aria-expanded="true" aria-controls="rs-ticker-body">Close lookup</button>
   </div>
   <div id="rs-ticker-body">
+    <form id="rs-ticker-search-form" role="search" aria-label="Find a ticker">
+      <label for="rs-ticker-search">Company name</label>
+      <input id="rs-ticker-search" type="search" placeholder="e.g. CoreWeave" maxlength="80" required>
+      <button type="submit">Find ticker</button>
+    </form>
+    <p id="rs-ticker-search-status" class="rs-global-markets__status" role="status"></p>
+    <ul id="rs-ticker-search-results" aria-label="Matching tickers" hidden></ul>
     <form id="rs-ticker-form">
       <label for="rs-ticker-symbol">Yahoo Finance ticker</label>
       <input id="rs-ticker-symbol" type="text" placeholder="e.g. AAPL or RY.TO" maxlength="25"
@@ -1599,8 +1606,21 @@ div.c {
 </section>
 <style>
 .rs-portfolio-quotes.rs-ticker-lookup {
-  background: #f1dfae !important;
-  border-color: #b59b61 !important;
+  background: radial-gradient(circle, rgba(78, 14, 139, 0.28) 1.3px, transparent 1.8px)
+              0 0 / 12px 12px #d79cff !important;
+  border-color: #6d20b3 !important;
+  border-inline-start: 8px solid #6d20b3 !important;
+}
+.rs-ticker-lookup #rs-ticker-title { color: #43266d; }
+.rs-ticker-lookup #rs-ticker-toggle,
+.rs-ticker-lookup button[type="submit"] {
+  background: #56328c;
+  border-color: #56328c;
+}
+.rs-ticker-lookup input:focus-visible,
+.rs-ticker-lookup button:focus-visible {
+  outline: 2px solid #43266d;
+  outline-offset: 2px;
 }
 .rs-ticker-lookup .rs-portfolio-quotes__heading { align-items: center; }
 .rs-ticker-lookup #rs-ticker-toggle { min-height: 44px; }
@@ -1610,6 +1630,12 @@ div.c {
 .rs-ticker-lookup label { font-size:12px; font-weight:700; }
 .rs-ticker-lookup input, .rs-ticker-lookup button { min-height:36px; box-sizing:border-box; }
 .rs-ticker-lookup input { width:165px; max-width:100%; padding:5px 8px; }
+#rs-ticker-search-form { margin-bottom: 8px; }
+#rs-ticker-search { width: 220px; }
+#rs-ticker-search-status:empty { display: none; }
+#rs-ticker-search-results { padding-left: 22px; }
+#rs-ticker-search-results li { margin: 4px 0; }
+#rs-ticker-search-results button { text-align: left; }
 .rs-ticker-lookup #rs-ticker-status:empty { display:none; }
 .rs-ticker-lookup h3 { margin:8px 0; font-size:16px; }
 .rs-market-card__perp {
@@ -2267,6 +2293,58 @@ async function rsReadKospiPerp() {
     if (!response.ok) throw new Error(payload.error || `HTTP ${response.status}`);
     return payload;
   }
+
+  const searchForm = document.getElementById("rs-ticker-search-form");
+  const searchInput = document.getElementById("rs-ticker-search");
+  const searchStatus = document.getElementById("rs-ticker-search-status");
+  const searchResults = document.getElementById("rs-ticker-search-results");
+  const searchEndpoint = endpoint.replace("/asset_history", "/ticker_search");
+  let searchRequest = 0;
+
+  function clearTickerSearch() {
+    searchRequest += 1;
+    searchResults.replaceChildren();
+    searchResults.hidden = true;
+    searchStatus.textContent = "";
+  }
+
+  searchInput.addEventListener("input", clearTickerSearch);
+  searchForm.addEventListener("submit", async event => {
+    event.preventDefault();
+    clearTickerSearch();
+    const query = searchInput.value.trim();
+    if (query.length < 2) {
+      searchStatus.textContent = "Enter at least two letters or a ticker.";
+      return;
+    }
+
+    const request = searchRequest;
+    searchStatus.textContent = "Searching…";
+    try {
+      const data = await fetchJson(`${searchEndpoint}?q=${encodeURIComponent(query)}`);
+      if (request !== searchRequest) return;
+      for (const match of data.matches) {
+        const item = document.createElement("li");
+        const button = document.createElement("button");
+        button.type = "button";
+        button.textContent = [match.name, match.symbol, match.exchange].filter(Boolean).join(" · ");
+        button.addEventListener("click", () => {
+          lookupInput.value = match.symbol;
+          lookupInput.focus();
+          clearTickerSearch();
+          lookupForm.requestSubmit();
+        });
+        item.append(button);
+        searchResults.append(item);
+      }
+      searchResults.hidden = !data.matches.length;
+      searchStatus.textContent = data.matches.length
+        ? "Select a ticker to open its quote and chart."
+        : "No matching tickers found. Try a shorter company name.";
+    } catch {
+      if (request === searchRequest) searchStatus.textContent = "Company search is temporarily unavailable.";
+    }
+  });
 
   // Explicit equity/ETF matches avoid collisions with commodity and index aliases.
   const perpTickers = new Set([
@@ -2966,7 +3044,7 @@ body > nav > ul { background: transparent !important; }
 		<footer>
         <div>
             <span class=""><i class="fas fa-envelope fa-2x" aria-hidden="true"></i></span>
-            <span>We can be contacted at risksnap.contact@gmail.com</span>
+            <span>We can be contacted at <a href="mailto:risksnap.contact@gmail.com" style="color: inherit;">risksnap.contact@gmail.com</a></span>
         </div>
 		</footer>
 	
