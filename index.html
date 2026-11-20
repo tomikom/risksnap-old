@@ -912,9 +912,12 @@ div.c {
   line-height: 1.3;
 }
 #rs-tech-giants td:nth-child(n+3), #rs-tech-giants thead th:nth-child(n+3) { text-align: right; }
-#rs-tech-giants td:last-child a { white-space: nowrap; }
+#rs-tech-giants .rs-tech-table-scroll { overflow-x: auto; }
+#rs-tech-giants td:nth-child(n+4) a, #rs-tech-giants td:last-child { white-space: nowrap; }
 #rs-tech-giants .rs-tech-cap-note { margin: 5px 0 0; font-size: 12px; }
 #rs-tech-giants tbody th { font-weight: normal; }
+#rs-tech-giants tfoot { background: #edf4fb; font-weight: bold; }
+#rs-tech-giants tfoot td { text-align: right; white-space: nowrap; }
 #rs-tech-giants tbody tr:nth-child(even) { background: #edf4fb; }
 #rs-tech-giants a { color: #174a7d; text-decoration: underline; }
 </style>
@@ -984,27 +987,31 @@ div.c {
 <section id="rs-tech-giants" class="rs-global-markets" aria-labelledby="rs-tech-giants-title">
   <div class="rs-global-markets__heading">
     <h2 id="rs-tech-giants-title">Tech and Crypto Giants</h2>
-    <p class="rs-global-markets__status">Nov. 16, 2026</p>
   </div>
-  <table aria-labelledby="rs-tech-giants-title">
-    <thead><tr><th scope="col">Company or coin</th><th scope="col">Person</th><th scope="col">Est. wealth (US$)</th><th scope="col">Market cap / valuation (US$)</th></tr></thead>
+  <div class="rs-tech-table-scroll" tabindex="0" role="region" aria-labelledby="rs-tech-giants-title">
+  <table aria-labelledby="rs-tech-giants-title" aria-describedby="rs-tech-cap-note">
+    <thead><tr><th scope="col">Company or coin</th><th scope="col">Person</th><th scope="col">Est. wealth (US$)</th><th scope="col">Nov. 16–17 cap / valuation (US$)</th><th scope="col">Nov. 19 closing market cap (US$)</th><th scope="col">Difference (US$)</th></tr></thead>
     <tbody>
-      <tr><th scope="row">SpaceX / Tesla</th><td>Elon Musk</td><td><a href="https://www.forbes.com/real-time-billionaires/" target="_blank" rel="noopener noreferrer">$887.2B</a></td><td><a href="https://stockanalysis.com/stocks/spcx/market-cap/" target="_blank" rel="noopener noreferrer" title="Nov. 16, 2026">$1.87T</a> / <a href="https://stockanalysis.com/stocks/tsla/market-cap/" target="_blank" rel="noopener noreferrer" title="Nov. 16, 2026">$1.50T</a></td></tr>
-      <tr><th scope="row">Amazon</th><td>Jeff Bezos</td><td>$384.6B</td><td><a href="https://stockanalysis.com/stocks/amzn/market-cap/" target="_blank" rel="noopener noreferrer" title="Nov. 17, 2026">$2.79T</a></td></tr>
-      <tr><th scope="row">Alphabet (Google)</th><td>Larry Page</td><td>$244.5B</td><td><a href="https://stockanalysis.com/stocks/googl/market-cap/" target="_blank" rel="noopener noreferrer" title="Nov. 16, 2026">$3.49T</a></td></tr>
-      <tr><th scope="row">Alphabet (Google)</th><td>Sergey Brin</td><td>$225.1B</td><td><a href="https://stockanalysis.com/stocks/googl/market-cap/" target="_blank" rel="noopener noreferrer" title="Nov. 16, 2026">$3.49T</a></td></tr>
-      <tr><th scope="row">Meta (Facebook)</th><td>Mark Zuckerberg</td><td>$220.4B</td><td><a href="https://stockanalysis.com/stocks/meta/market-cap/" target="_blank" rel="noopener noreferrer" title="Nov. 16, 2026">$1.60T</a></td></tr>
-      <tr><th scope="row">Oracle</th><td>Larry Ellison</td><td>$165.5B</td><td><a href="https://stockanalysis.com/stocks/orcl/market-cap/" target="_blank" rel="noopener noreferrer" title="Nov. 16, 2026">$371.29B</a></td></tr>
-      <tr><th scope="row">Nvidia</th><td>Jensen Huang</td><td>$141.9B</td><td><a href="https://stockanalysis.com/stocks/nvda/market-cap/" target="_blank" rel="noopener noreferrer" title="Nov. 17, 2026">$3.76T</a></td></tr>
-      <tr><th scope="row">Microsoft</th><td>Bill Gates</td><td>$122.1B</td><td><a href="https://stockanalysis.com/stocks/msft/market-cap/" target="_blank" rel="noopener noreferrer" title="Nov. 16, 2026">$3.85T</a></td></tr>
-      <tr><th scope="row">CoreWeave</th><td>Michael Intrator</td><td>&mdash;</td><td><a href="https://stockanalysis.com/stocks/crwv/market-cap/" target="_blank" rel="noopener noreferrer" title="Nov. 16, 2026">$27.74B</a></td></tr>
-      <tr><th scope="row">Anthropic</th><td>Dario &amp; Daniela Amodei</td><td><a href="https://www.forbes.com/profile/dario-amodei/" target="_blank" rel="noopener noreferrer" title="Forbes estimate as of Nov. 17, 2026">$14.1B</a> / <a href="https://www.forbes.com/profile/daniela-amodei/" target="_blank" rel="noopener noreferrer" title="Forbes estimate as of Nov. 17, 2026">$14.2B</a></td><td><a href="https://www.reuters.com/business/anthropic-ipo-raise-much-644-billion-latest-draft-prospectus-shows-2026-11-10/" target="_blank" rel="noopener noreferrer" title="Nov. 10, 2026">Up to $1.4T*</a></td></tr>
-      <tr><th scope="row">TSMC</th><td>Morris Chang</td><td><a href="https://www.forbes.com/profile/morris-chang/" target="_blank" rel="noopener noreferrer">$9.4B</a></td><td><a href="https://stockanalysis.com/stocks/tsm/market-cap/" target="_blank" rel="noopener noreferrer" title="Nov. 16, 2026">$1.74T</a></td></tr>
-      <tr><th scope="row">Strategy (MSTR)</th><td>Michael Saylor</td><td><a href="https://www.forbes.com/profile/michael-saylor/" target="_blank" rel="noopener noreferrer">$3.9B</a></td><td><a href="https://stockanalysis.com/stocks/mstr/market-cap/" target="_blank" rel="noopener noreferrer" title="Nov. 17, 2026">$43.38B</a></td></tr>
-      <tr><th scope="row">OpenAI</th><td>Sam Altman</td><td><a href="https://www.forbes.com/profile/sam-altman/" target="_blank" rel="noopener noreferrer" title="Forbes estimate as of Nov. 16, 2026">$3.1B</a></td><td><a href="https://www.reuters.com/business/openai-secures-11-billion-funding-125-trillion-valuation-bloomberg-news-reports-2026-11-06/" target="_blank" rel="noopener noreferrer" title="Nov. 6, 2026">$1.25T†</a></td></tr>
+      <tr><th scope="row">SpaceX / Tesla</th><td>Elon Musk</td><td><a href="https://www.forbes.com/real-time-billionaires/" target="_blank" rel="noopener noreferrer">$887.2B</a></td><td><a href="https://stockanalysis.com/stocks/spcx/market-cap/" target="_blank" rel="noopener noreferrer" title="Nov. 16, 2026">$1.87T</a> / <a href="https://stockanalysis.com/stocks/tsla/market-cap/" target="_blank" rel="noopener noreferrer" title="Nov. 16, 2026">$1.50T</a></td><td><a href="https://stockanalysis.com/stocks/spcx/market-cap/" target="_blank" rel="noopener noreferrer" title="Nov. 19, 2026 close">$1.88T</a> / <a href="https://stockanalysis.com/stocks/tsla/market-cap/" target="_blank" rel="noopener noreferrer" title="Nov. 19, 2026 close">$1.48T</a></td><td>+$10B / −$20B</td></tr>
+      <tr><th scope="row">Amazon</th><td>Jeff Bezos</td><td>$384.6B</td><td><a href="https://stockanalysis.com/stocks/amzn/market-cap/" target="_blank" rel="noopener noreferrer" title="Nov. 17, 2026">$2.79T</a></td><td><a href="https://stockanalysis.com/stocks/amzn/market-cap/" target="_blank" rel="noopener noreferrer" title="Nov. 19, 2026 close">$2.78T</a></td><td>−$10B</td></tr>
+      <tr><th scope="row">Alphabet (Google)</th><td>Larry Page</td><td>$244.5B</td><td><a href="https://stockanalysis.com/stocks/googl/market-cap/" target="_blank" rel="noopener noreferrer" title="Nov. 16, 2026">$3.49T</a></td><td><a href="https://stockanalysis.com/stocks/googl/market-cap/" target="_blank" rel="noopener noreferrer" title="Nov. 19, 2026 close">$3.35T</a></td><td>−$140B</td></tr>
+      <tr><th scope="row">Alphabet (Google)</th><td>Sergey Brin</td><td>$225.1B</td><td><a href="https://stockanalysis.com/stocks/googl/market-cap/" target="_blank" rel="noopener noreferrer" title="Nov. 16, 2026">$3.49T</a></td><td><a href="https://stockanalysis.com/stocks/googl/market-cap/" target="_blank" rel="noopener noreferrer" title="Nov. 19, 2026 close">$3.35T</a></td><td>−$140B</td></tr>
+      <tr><th scope="row">Meta (Facebook)</th><td>Mark Zuckerberg</td><td>$220.4B</td><td><a href="https://stockanalysis.com/stocks/meta/market-cap/" target="_blank" rel="noopener noreferrer" title="Nov. 16, 2026">$1.60T</a></td><td><a href="https://stockanalysis.com/stocks/meta/market-cap/" target="_blank" rel="noopener noreferrer" title="Nov. 19, 2026 close">$1.52T</a></td><td>−$80B</td></tr>
+      <tr><th scope="row">Oracle</th><td>Larry Ellison</td><td>$165.5B</td><td><a href="https://stockanalysis.com/stocks/orcl/market-cap/" target="_blank" rel="noopener noreferrer" title="Nov. 16, 2026">$371.29B</a></td><td><a href="https://stockanalysis.com/stocks/orcl/market-cap/" target="_blank" rel="noopener noreferrer" title="Nov. 19, 2026 close">$344.72B</a></td><td>−$26.57B</td></tr>
+      <tr><th scope="row">Nvidia</th><td>Jensen Huang</td><td>$141.9B</td><td><a href="https://stockanalysis.com/stocks/nvda/market-cap/" target="_blank" rel="noopener noreferrer" title="Nov. 17, 2026">$3.76T</a></td><td><a href="https://stockanalysis.com/stocks/nvda/market-cap/" target="_blank" rel="noopener noreferrer" title="Nov. 19, 2026 close">$3.52T</a></td><td>−$240B</td></tr>
+      <tr><th scope="row">Microsoft</th><td>Bill Gates</td><td>$122.1B</td><td><a href="https://stockanalysis.com/stocks/msft/market-cap/" target="_blank" rel="noopener noreferrer" title="Nov. 16, 2026">$3.85T</a></td><td><a href="https://stockanalysis.com/stocks/msft/market-cap/" target="_blank" rel="noopener noreferrer" title="Nov. 19, 2026 close">$3.70T</a></td><td>−$150B</td></tr>
+      <tr><th scope="row">CoreWeave</th><td>Michael Intrator</td><td>&mdash;</td><td><a href="https://stockanalysis.com/stocks/crwv/market-cap/" target="_blank" rel="noopener noreferrer" title="Nov. 16, 2026">$27.74B</a></td><td><a href="https://stockanalysis.com/stocks/crwv/market-cap/" target="_blank" rel="noopener noreferrer" title="Nov. 19, 2026 close">$24.98B</a></td><td>−$2.76B</td></tr>
+      <tr><th scope="row">Anthropic</th><td>Dario &amp; Daniela Amodei</td><td><a href="https://www.forbes.com/profile/dario-amodei/" target="_blank" rel="noopener noreferrer" title="Forbes estimate as of Nov. 17, 2026">$14.1B</a> / <a href="https://www.forbes.com/profile/daniela-amodei/" target="_blank" rel="noopener noreferrer" title="Forbes estimate as of Nov. 17, 2026">$14.2B</a></td><td><a href="https://www.reuters.com/business/anthropic-ipo-raise-much-644-billion-latest-draft-prospectus-shows-2026-11-10/" target="_blank" rel="noopener noreferrer" title="Nov. 10, 2026">Up to $1.4T*</a><br><small>Fully diluted IPO estimate</small></td><td><a href="https://ca.finance.yahoo.com/quote/ANT/" target="_blank" rel="noopener noreferrer" title="Nov. 19, 2026 close">$1.272T</a></td><td>&mdash;</td></tr>
+      <tr><th scope="row">TSMC</th><td>Morris Chang</td><td><a href="https://www.forbes.com/profile/morris-chang/" target="_blank" rel="noopener noreferrer">$9.4B</a></td><td><a href="https://stockanalysis.com/stocks/tsm/market-cap/" target="_blank" rel="noopener noreferrer" title="Nov. 16, 2026">$1.74T</a></td><td><a href="https://stockanalysis.com/stocks/tsm/market-cap/" target="_blank" rel="noopener noreferrer" title="Nov. 19, 2026 close">$1.65T</a></td><td>−$90B</td></tr>
+      <tr><th scope="row">Strategy (MSTR)</th><td>Michael Saylor</td><td><a href="https://www.forbes.com/profile/michael-saylor/" target="_blank" rel="noopener noreferrer">$3.9B</a></td><td><a href="https://stockanalysis.com/stocks/mstr/market-cap/" target="_blank" rel="noopener noreferrer" title="Nov. 17, 2026">$43.38B</a></td><td><a href="https://stockanalysis.com/stocks/mstr/market-cap/" target="_blank" rel="noopener noreferrer" title="Nov. 19, 2026 close">$36.38B</a></td><td>−$7B</td></tr>
+      <tr><th scope="row">OpenAI</th><td>Sam Altman</td><td><a href="https://www.forbes.com/profile/sam-altman/" target="_blank" rel="noopener noreferrer" title="Forbes estimate as of Nov. 16, 2026">$3.1B</a></td><td><a href="https://www.reuters.com/business/openai-secures-11-billion-funding-125-trillion-valuation-bloomberg-news-reports-2026-11-06/" target="_blank" rel="noopener noreferrer" title="Nov. 6, 2026">$1.25T†</a></td><td>&mdash;</td><td>&mdash;</td></tr>
     </tbody>
+    <tfoot>
+      <tr><th scope="row" colspan="2">Total</th><td title="Sum of the displayed wealth estimates">$2,436.0B</td><td>$21.04T</td><td>$20.29T</td><td>−$756.33B</td></tr>
+    </tfoot>
   </table>
-  <p class="rs-tech-cap-note">Market caps Nov. 16–17, 2026. *Anthropic IPO estimate, fully diluted. †OpenAI private funding valuation.</p>
+  </div>
+  <p id="rs-tech-cap-note" class="rs-tech-cap-note">Difference uses the displayed Nov. 19 closing cap minus the earlier cap. Market cap totals use caps from both dates, count Alphabet once, and exclude Anthropic and OpenAI. The wealth total sums the displayed estimates. *Anthropic’s Nov. 10 IPO estimate uses a different share count, so its difference is left blank. †OpenAI’s private funding valuation was reported Nov. 6.</p>
 </section>
 <section id="rs-ai-funding" class="rs-global-markets" aria-labelledby="rs-ai-funding-title">
   <div class="rs-global-markets__heading">
@@ -1065,9 +1072,11 @@ div.c {
         <tr><th scope="row">Operating costs</th><td>~20.90*</td><td>17.52</td><td>38.3</td></tr>
         <tr><th scope="row">Of which compute &amp; infrastructure</th><td>—</td><td>9.86</td><td>—</td></tr>
         <tr><th scope="row">Operating profit (loss)</th><td>(10.90)*</td><td>(0.57)</td><td>77.5</td></tr>
+        <tr><th scope="row">Market cap</th><td><a href="https://www.reuters.com/business/openai-secures-11-billion-funding-125-trillion-valuation-bloomberg-news-reports-2026-11-06/" target="_blank" rel="noopener noreferrer">1,250†</a></td><td><a href="https://ca.finance.yahoo.com/quote/ANT/" target="_blank" rel="noopener noreferrer" title="Nov. 19, 2026 close">1,272</a></td><td><a href="https://stockanalysis.com/stocks/nvda/market-cap/" target="_blank" rel="noopener noreferrer" title="Nov. 19, 2026 close">3,520</a></td></tr>
       </tbody>
     </table>
     <p id="rs-ai-financial-note">*OpenAI costs and loss exclude $2.6B in stock-based pay. Its compute costs were unavailable.</p>
+    <p>Market caps at the Nov. 19 close. †OpenAI uses its Nov. 6 private funding valuation.</p>
     <p>Nvidia Q3 FY2027 · Quarter ended Oct. 25, 2026 (GAAP). Revenue rose 103% year over year. Data Center revenue reached $107.6B (+110%). Q4 revenue guidance is $130B ±3%.</p>
     <p><a href="https://www.wsj.com/business/earnings/openai-continues-to-suffer-heavy-losses-as-revenue-rises-to-10-billion-d2a96bbb" target="_blank" rel="noopener noreferrer">WSJ</a> &middot;
       <a href="https://ipo.anthropic.com/documents/us/prospectus.pdf" target="_blank" rel="noopener noreferrer">Anthropic filing</a> &middot;
