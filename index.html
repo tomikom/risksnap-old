@@ -114,7 +114,7 @@ body > nav > ul > li.dropdown > button.dropbtn {
       <form id="rs-news-form" role="search" aria-label="Search news">
         <label for="rs-news-query">Topic or person</label>
         <div class="rs-news-controls">
-          <input id="rs-news-query" name="q" type="search" placeholder="e.g. Iran or Musk" maxlength="120" required>
+          <input id="rs-news-query" name="q" type="search" maxlength="120" required>
           <button type="submit">Find news</button>
         </div>
       </form>
@@ -191,7 +191,15 @@ body > nav > ul > li.dropdown > button.dropbtn {
       results.hidden = !results.childElementCount;
       status.textContent = results.hidden ? "No headlines found in the past 7 days." : "Recent headlines from GDELT";
     } catch {
-      if (activeSearch === search) status.textContent = "Headlines are temporarily unavailable here.";
+      if (activeSearch !== search) return;
+      const fallback = new URL("https://news.google.com/search");
+      fallback.search = new URLSearchParams({ q: topic, hl: "en-CA", gl: "CA", ceid: "CA:en" });
+      const link = document.createElement("a");
+      link.href = fallback.href;
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
+      link.textContent = "Search this topic on Google News";
+      status.replaceChildren("Headlines are temporarily unavailable here. ", link);
     } finally {
       clearTimeout(timeout);
     }
