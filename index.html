@@ -1015,7 +1015,7 @@ div.c {
 </section>
 <section id="rs-ai-funding" class="rs-global-markets" aria-labelledby="rs-ai-funding-title">
   <div class="rs-global-markets__heading">
-    <h2 id="rs-ai-funding-title">Nvidia investment and chip sales</h2>
+    <h2 id="rs-ai-funding-title">Circular Financing?</h2>
   </div>
   <div class="rs-ai-financial-layout">
   <svg viewBox="0 0 500 267" role="img" aria-labelledby="rs-ai-flow-title rs-ai-flow-desc" xmlns="http://www.w3.org/2000/svg">
@@ -1092,7 +1092,7 @@ div.c {
 </section>
 </div>
 <div class="rs-markets-toolbar"><button id="rs-markets-refresh" class="rs-markets-refresh" type="button">Refresh all markets</button></div>
-<section class="rs-global-markets" aria-labelledby="rs-global-markets-title">
+<section id="rs-equity-markets" class="rs-global-markets" aria-labelledby="rs-global-markets-title">
   <div class="rs-global-markets__heading">
     <div>
       <p class="rs-global-markets__eyebrow">Global market snapshot</p>
@@ -3082,6 +3082,19 @@ section.rs-global-markets:not(.rs-foreign-exchange):not(.rs-market-indicators),
 section.rs-global-markets.rs-market-indicators {
   background: #ffd662 !important;
   border: 2px solid #ffd662 !important;
+}
+</style>
+<style id="rs-equity-markets-palette">
+#rs-equity-markets {
+  background: #cfe8e4 !important;
+  border-color: #86b6af !important;
+}
+#rs-equity-markets .rs-market-card {
+  border-color: #86b6af !important;
+}
+#rs-equity-markets .rs-global-markets__note,
+#rs-equity-markets .rs-global-markets__status {
+  color: #314e55;
 }
 </style>
 <style id="rs-fx-blue-palette">
