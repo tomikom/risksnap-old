@@ -2021,6 +2021,7 @@ div.c {
       <button type="button" class="rs-market-chart-range" data-range="6m">6M</button>
       <button type="button" class="rs-market-chart-range is-active" data-range="1y">1Y</button>
       <button type="button" class="rs-market-chart-range" data-range="3y">3Y</button>
+      <button type="button" class="rs-market-chart-range" data-range="5y" title="Show up to five years of available history">5Y</button>
       <button id="rsMarketChartClose" type="button">Close</button>
     </div>
   </div>
@@ -2172,7 +2173,7 @@ async function rsReadKospiPerp() {
   const format = (value, digits=2) => Number(value).toLocaleString(undefined, { maximumFractionDigits: digits, minimumFractionDigits: digits });
   grid.innerHTML = indicators.map(item => `<article class="rs-market-card" data-indicator="${safe(item.symbol)}">
     <div class="rs-market-card__top"><h3>${safe(item.name)}</h3><span class="rs-market-card__state">${item.type === "periodic" ? "Periodic" : (item.state || "Waiting")}</span></div>
-    ${item.chartName ? '<p class="rs-market-card__place">Bitcoin (BTC/USD)</p>' : ""}
+    ${item.chartName ? '<p class="rs-market-card__place">Bitcoin (BTC-USD)</p>' : ""}
     <p class="rs-market-card__level">${item.value ? safe(item.value) : "&mdash;"}</p>
     <p class="rs-market-card__change is-flat">${item.detail ? safe(item.detail) : "loading..."}</p>
     ${item.perp ? '<div class="rs-market-card__perp" hidden><strong>Hyperliquid perp</strong><span data-perp-price></span><time></time><span data-perp-volume></span></div>' : ""}
@@ -2582,6 +2583,7 @@ async function rsReadKospiPerp() {
     const request = ++chartRequest;
     const symbol = selectedSymbol, range = selectedRange, name = selectedName || symbol;
     const isBreakeven = symbol === "T10YIE";
+    const longRange = range === "3y" || range === "5y";
     title.textContent = `${name} History`;
     status.textContent = "Loading...";
     container.innerHTML = "";
@@ -2610,14 +2612,22 @@ async function rsReadKospiPerp() {
       let rows = cache.get(key);
       if (!rows) {
         const response = isBreakeven
-          ? await fetch(`https://surface-203178530029.northamerica-northeast2.run.app/breakeven_inflation?period=${range === "3y" ? "3y" : "1y"}`)
+          ? await fetch(`https://surface-203178530029.northamerica-northeast2.run.app/breakeven_inflation?period=${longRange ? "5y" : "1y"}`)
           : await fetch(endpoint, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ symbol, range }) });
         const payload = await response.json().catch(() => ({}));
         if (!response.ok) throw new Error(payload.error || `HTTP ${response.status}`);
+        if (!isBreakeven && longRange && payload.range !== range) {
+          throw new Error("The price service did not return the requested chart range.");
+        }
         rows = Array.isArray(payload) ? payload : (payload.rows || payload.history || payload.data || []);
         if (isBreakeven) rows = rsFillBreakevenRows(rows);
         if (isBreakeven && range === "3m") rows = rows.slice(-66);
         if (isBreakeven && range === "6m") rows = rows.slice(-130);
+        if (isBreakeven && range === "3y" && rows.length) {
+          const cutoff = new Date(rows[rows.length - 1].Date || rows[rows.length - 1].date);
+          cutoff.setUTCFullYear(cutoff.getUTCFullYear() - 3);
+          rows = rows.filter(row => new Date(row.Date || row.date) >= cutoff);
+        }
         cache.set(key, rows);
       }
       const quote = await latestPromise;
