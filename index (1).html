@@ -106,7 +106,7 @@ body > nav > ul > li.dropdown > button.dropbtn {
     		</ul>
 		</nav>
 		<div class="page-content">
-<p class="world-news-link"><a href="https://news.google.com/home?hl=en-CA&amp;gl=CA&amp;ceid=CA%3Aen" target="_blank" rel="noopener noreferrer">Google News <span aria-hidden="true">↗</span></a> &nbsp; <a href="https://www.reuters.com/world/" target="_blank" rel="noopener noreferrer">Reuters World News <span aria-hidden="true">↗</span></a> &nbsp; <a href="https://finance.yahoo.com/?fr=sycsrp_catchall" target="_blank" rel="noopener noreferrer">Yahoo Finance <span aria-hidden="true">↗</span></a></p>
+<p class="world-news-link"><a href="https://news.google.com/home?hl=en-CA&amp;gl=CA&amp;ceid=CA%3Aen" target="_blank" rel="noopener noreferrer">Google News <span aria-hidden="true">↗</span></a> &nbsp; <a href="https://www.reuters.com/world/" target="_blank" rel="noopener noreferrer">Reuters World News <span aria-hidden="true">↗</span></a> &nbsp; <a href="https://finance.yahoo.com/?fr=sycsrp_catchall" target="_blank" rel="noopener noreferrer">Yahoo Finance <span aria-hidden="true">↗</span></a> &nbsp; <a href="https://www.google.com/" target="_blank" rel="noopener noreferrer">Google Search <span aria-hidden="true">↗</span></a></p>
                <!-- Home banner styling loaded before graphics: 2026-10-16 -->
 <style>
 
@@ -912,9 +912,12 @@ div.c {
   line-height: 1.3;
 }
 #rs-tech-giants td:nth-child(n+3), #rs-tech-giants thead th:nth-child(n+3) { text-align: right; }
-#rs-tech-giants td:last-child a { white-space: nowrap; }
+#rs-tech-giants .rs-tech-table-scroll { overflow-x: auto; }
+#rs-tech-giants td:nth-child(n+4) a, #rs-tech-giants td:last-child { white-space: nowrap; }
 #rs-tech-giants .rs-tech-cap-note { margin: 5px 0 0; font-size: 12px; }
 #rs-tech-giants tbody th { font-weight: normal; }
+#rs-tech-giants tfoot { background: #edf4fb; font-weight: bold; }
+#rs-tech-giants tfoot td { text-align: right; white-space: nowrap; }
 #rs-tech-giants tbody tr:nth-child(even) { background: #edf4fb; }
 #rs-tech-giants a { color: #174a7d; text-decoration: underline; }
 </style>
@@ -984,31 +987,35 @@ div.c {
 <section id="rs-tech-giants" class="rs-global-markets" aria-labelledby="rs-tech-giants-title">
   <div class="rs-global-markets__heading">
     <h2 id="rs-tech-giants-title">Tech and Crypto Giants</h2>
-    <p class="rs-global-markets__status">Nov. 16, 2026</p>
   </div>
-  <table aria-labelledby="rs-tech-giants-title">
-    <thead><tr><th scope="col">Company or coin</th><th scope="col">Person</th><th scope="col">Est. wealth (US$)</th><th scope="col">Market cap / valuation (US$)</th></tr></thead>
+  <div class="rs-tech-table-scroll" tabindex="0" role="region" aria-labelledby="rs-tech-giants-title">
+  <table aria-labelledby="rs-tech-giants-title" aria-describedby="rs-tech-cap-note">
+    <thead><tr><th scope="col">Company or coin</th><th scope="col">Person</th><th scope="col">Est. wealth (US$)</th><th scope="col">Nov. 16–17 cap / valuation (US$)</th><th scope="col">Nov. 19 closing market cap (US$)</th><th scope="col">Difference to Nov. 19 (US$)</th><th scope="col">Nov. 20 closing market cap (US$)</th><th scope="col">Nov. 19–20 difference (US$)</th></tr></thead>
     <tbody>
-      <tr><th scope="row">SpaceX / Tesla</th><td>Elon Musk</td><td><a href="https://www.forbes.com/real-time-billionaires/" target="_blank" rel="noopener noreferrer">$887.2B</a></td><td><a href="https://stockanalysis.com/stocks/spcx/market-cap/" target="_blank" rel="noopener noreferrer" title="Nov. 16, 2026">$1.87T</a> / <a href="https://stockanalysis.com/stocks/tsla/market-cap/" target="_blank" rel="noopener noreferrer" title="Nov. 16, 2026">$1.50T</a></td></tr>
-      <tr><th scope="row">Amazon</th><td>Jeff Bezos</td><td>$384.6B</td><td><a href="https://stockanalysis.com/stocks/amzn/market-cap/" target="_blank" rel="noopener noreferrer" title="Nov. 17, 2026">$2.79T</a></td></tr>
-      <tr><th scope="row">Alphabet (Google)</th><td>Larry Page</td><td>$244.5B</td><td><a href="https://stockanalysis.com/stocks/googl/market-cap/" target="_blank" rel="noopener noreferrer" title="Nov. 16, 2026">$3.49T</a></td></tr>
-      <tr><th scope="row">Alphabet (Google)</th><td>Sergey Brin</td><td>$225.1B</td><td><a href="https://stockanalysis.com/stocks/googl/market-cap/" target="_blank" rel="noopener noreferrer" title="Nov. 16, 2026">$3.49T</a></td></tr>
-      <tr><th scope="row">Meta (Facebook)</th><td>Mark Zuckerberg</td><td>$220.4B</td><td><a href="https://stockanalysis.com/stocks/meta/market-cap/" target="_blank" rel="noopener noreferrer" title="Nov. 16, 2026">$1.60T</a></td></tr>
-      <tr><th scope="row">Oracle</th><td>Larry Ellison</td><td>$165.5B</td><td><a href="https://stockanalysis.com/stocks/orcl/market-cap/" target="_blank" rel="noopener noreferrer" title="Nov. 16, 2026">$371.29B</a></td></tr>
-      <tr><th scope="row">Nvidia</th><td>Jensen Huang</td><td>$141.9B</td><td><a href="https://stockanalysis.com/stocks/nvda/market-cap/" target="_blank" rel="noopener noreferrer" title="Nov. 17, 2026">$3.76T</a></td></tr>
-      <tr><th scope="row">Microsoft</th><td>Bill Gates</td><td>$122.1B</td><td><a href="https://stockanalysis.com/stocks/msft/market-cap/" target="_blank" rel="noopener noreferrer" title="Nov. 16, 2026">$3.85T</a></td></tr>
-      <tr><th scope="row">CoreWeave</th><td>Michael Intrator</td><td>&mdash;</td><td><a href="https://stockanalysis.com/stocks/crwv/market-cap/" target="_blank" rel="noopener noreferrer" title="Nov. 16, 2026">$27.74B</a></td></tr>
-      <tr><th scope="row">Anthropic</th><td>Dario &amp; Daniela Amodei</td><td><a href="https://www.forbes.com/profile/dario-amodei/" target="_blank" rel="noopener noreferrer" title="Forbes estimate as of Nov. 17, 2026">$14.1B</a> / <a href="https://www.forbes.com/profile/daniela-amodei/" target="_blank" rel="noopener noreferrer" title="Forbes estimate as of Nov. 17, 2026">$14.2B</a></td><td><a href="https://www.reuters.com/business/anthropic-ipo-raise-much-644-billion-latest-draft-prospectus-shows-2026-11-10/" target="_blank" rel="noopener noreferrer" title="Nov. 10, 2026">Up to $1.4T*</a></td></tr>
-      <tr><th scope="row">TSMC</th><td>Morris Chang</td><td><a href="https://www.forbes.com/profile/morris-chang/" target="_blank" rel="noopener noreferrer">$9.4B</a></td><td><a href="https://stockanalysis.com/stocks/tsm/market-cap/" target="_blank" rel="noopener noreferrer" title="Nov. 16, 2026">$1.74T</a></td></tr>
-      <tr><th scope="row">Strategy (MSTR)</th><td>Michael Saylor</td><td><a href="https://www.forbes.com/profile/michael-saylor/" target="_blank" rel="noopener noreferrer">$3.9B</a></td><td><a href="https://stockanalysis.com/stocks/mstr/market-cap/" target="_blank" rel="noopener noreferrer" title="Nov. 17, 2026">$43.38B</a></td></tr>
-      <tr><th scope="row">OpenAI</th><td>Sam Altman</td><td><a href="https://www.forbes.com/profile/sam-altman/" target="_blank" rel="noopener noreferrer" title="Forbes estimate as of Nov. 16, 2026">$3.1B</a></td><td><a href="https://www.reuters.com/business/openai-secures-11-billion-funding-125-trillion-valuation-bloomberg-news-reports-2026-11-06/" target="_blank" rel="noopener noreferrer" title="Nov. 6, 2026">$1.25T†</a></td></tr>
+      <tr><th scope="row">SpaceX / Tesla</th><td>Elon Musk</td><td><a href="https://www.forbes.com/real-time-billionaires/" target="_blank" rel="noopener noreferrer">$887.2B</a></td><td><a href="https://stockanalysis.com/stocks/spcx/market-cap/" target="_blank" rel="noopener noreferrer" title="Nov. 16, 2026">$1.87T</a> / <a href="https://stockanalysis.com/stocks/tsla/market-cap/" target="_blank" rel="noopener noreferrer" title="Nov. 16, 2026">$1.50T</a></td><td><a href="https://stockanalysis.com/stocks/spcx/market-cap/" target="_blank" rel="noopener noreferrer" title="Nov. 19, 2026 close">$1.88T</a> / <a href="https://stockanalysis.com/stocks/tsla/market-cap/" target="_blank" rel="noopener noreferrer" title="Nov. 19, 2026 close">$1.48T</a></td><td>+$10B / −$20B</td><td><a href="https://stockanalysis.com/stocks/spcx/market-cap/" target="_blank" rel="noopener noreferrer" title="Nov. 20, 2026 close">$1.74T</a> / <a href="https://stockanalysis.com/stocks/tsla/market-cap/" target="_blank" rel="noopener noreferrer" title="Nov. 20, 2026 close">$1.37T</a></td><td>−$140B / −$110B</td></tr>
+      <tr><th scope="row">Amazon</th><td>Jeff Bezos</td><td>$384.6B</td><td><a href="https://stockanalysis.com/stocks/amzn/market-cap/" target="_blank" rel="noopener noreferrer" title="Nov. 17, 2026">$2.79T</a></td><td><a href="https://stockanalysis.com/stocks/amzn/market-cap/" target="_blank" rel="noopener noreferrer" title="Nov. 19, 2026 close">$2.78T</a></td><td>−$10B</td><td><a href="https://stockanalysis.com/stocks/amzn/market-cap/" target="_blank" rel="noopener noreferrer" title="Nov. 20, 2026 close">$2.67T</a></td><td>−$110B</td></tr>
+      <tr><th scope="row">Alphabet (Google)</th><td>Larry Page</td><td>$244.5B</td><td><a href="https://stockanalysis.com/stocks/googl/market-cap/" target="_blank" rel="noopener noreferrer" title="Nov. 16, 2026">$3.49T</a></td><td><a href="https://stockanalysis.com/stocks/googl/market-cap/" target="_blank" rel="noopener noreferrer" title="Nov. 19, 2026 close">$3.35T</a></td><td>−$140B</td><td><a href="https://stockanalysis.com/stocks/googl/market-cap/" target="_blank" rel="noopener noreferrer" title="Nov. 20, 2026 close">$3.26T</a></td><td>−$90B</td></tr>
+      <tr><th scope="row">Alphabet (Google)</th><td>Sergey Brin</td><td>$225.1B</td><td><a href="https://stockanalysis.com/stocks/googl/market-cap/" target="_blank" rel="noopener noreferrer" title="Nov. 16, 2026">$3.49T</a></td><td><a href="https://stockanalysis.com/stocks/googl/market-cap/" target="_blank" rel="noopener noreferrer" title="Nov. 19, 2026 close">$3.35T</a></td><td>−$140B</td><td><a href="https://stockanalysis.com/stocks/googl/market-cap/" target="_blank" rel="noopener noreferrer" title="Nov. 20, 2026 close">$3.26T</a></td><td>−$90B</td></tr>
+      <tr><th scope="row">Meta (Facebook)</th><td>Mark Zuckerberg</td><td>$220.4B</td><td><a href="https://stockanalysis.com/stocks/meta/market-cap/" target="_blank" rel="noopener noreferrer" title="Nov. 16, 2026">$1.60T</a></td><td><a href="https://stockanalysis.com/stocks/meta/market-cap/" target="_blank" rel="noopener noreferrer" title="Nov. 19, 2026 close">$1.52T</a></td><td>−$80B</td><td><a href="https://stockanalysis.com/stocks/meta/market-cap/" target="_blank" rel="noopener noreferrer" title="Nov. 20, 2026 close">$1.43T</a></td><td>−$90B</td></tr>
+      <tr><th scope="row">Oracle</th><td>Larry Ellison</td><td>$165.5B</td><td><a href="https://stockanalysis.com/stocks/orcl/market-cap/" target="_blank" rel="noopener noreferrer" title="Nov. 16, 2026">$371.29B</a></td><td><a href="https://stockanalysis.com/stocks/orcl/market-cap/" target="_blank" rel="noopener noreferrer" title="Nov. 19, 2026 close">$344.72B</a></td><td>−$26.57B</td><td><a href="https://stockanalysis.com/stocks/orcl/market-cap/" target="_blank" rel="noopener noreferrer" title="Nov. 20, 2026 close">$315.48B</a></td><td>−$29.24B</td></tr>
+      <tr><th scope="row">Nvidia</th><td>Jensen Huang</td><td>$141.9B</td><td><a href="https://stockanalysis.com/stocks/nvda/market-cap/" target="_blank" rel="noopener noreferrer" title="Nov. 17, 2026">$3.76T</a></td><td><a href="https://stockanalysis.com/stocks/nvda/market-cap/" target="_blank" rel="noopener noreferrer" title="Nov. 19, 2026 close">$3.52T</a></td><td>−$240B</td><td><a href="https://stockanalysis.com/stocks/nvda/market-cap/" target="_blank" rel="noopener noreferrer" title="Nov. 20, 2026 close">$3.03T</a></td><td>−$490B</td></tr>
+      <tr><th scope="row">Microsoft</th><td>Bill Gates</td><td>$122.1B</td><td><a href="https://stockanalysis.com/stocks/msft/market-cap/" target="_blank" rel="noopener noreferrer" title="Nov. 16, 2026">$3.85T</a></td><td><a href="https://stockanalysis.com/stocks/msft/market-cap/" target="_blank" rel="noopener noreferrer" title="Nov. 19, 2026 close">$3.70T</a></td><td>−$150B</td><td><a href="https://stockanalysis.com/stocks/msft/market-cap/" target="_blank" rel="noopener noreferrer" title="Nov. 20, 2026 close">$3.60T</a></td><td>−$100B</td></tr>
+      <tr><th scope="row">CoreWeave</th><td>Michael Intrator</td><td>&mdash;</td><td><a href="https://stockanalysis.com/stocks/crwv/market-cap/" target="_blank" rel="noopener noreferrer" title="Nov. 16, 2026">$27.74B</a></td><td><a href="https://stockanalysis.com/stocks/crwv/market-cap/" target="_blank" rel="noopener noreferrer" title="Nov. 19, 2026 close">$24.98B</a></td><td>−$2.76B</td><td><a href="https://stockanalysis.com/stocks/crwv/market-cap/" target="_blank" rel="noopener noreferrer" title="Nov. 20, 2026 close">$21.97B</a></td><td>−$3.01B</td></tr>
+      <tr><th scope="row">Anthropic</th><td>Dario &amp; Daniela Amodei</td><td><a href="https://www.forbes.com/profile/dario-amodei/" target="_blank" rel="noopener noreferrer" title="Forbes estimate as of Nov. 17, 2026">$14.1B</a> / <a href="https://www.forbes.com/profile/daniela-amodei/" target="_blank" rel="noopener noreferrer" title="Forbes estimate as of Nov. 17, 2026">$14.2B</a></td><td><a href="https://www.reuters.com/business/anthropic-ipo-raise-much-644-billion-latest-draft-prospectus-shows-2026-11-10/" target="_blank" rel="noopener noreferrer" title="Nov. 10, 2026">Up to $1.4T*</a><br><small>Fully diluted IPO estimate</small></td><td><a href="https://ca.finance.yahoo.com/quote/ANT/" target="_blank" rel="noopener noreferrer" title="Nov. 19, 2026 close">$1.272T</a></td><td>&mdash;</td><td><a href="https://ca.finance.yahoo.com/quote/ANT/" target="_blank" rel="noopener noreferrer" title="Nov. 20, 2026 close">$1.188T</a></td><td>−$84B</td></tr>
+      <tr><th scope="row">TSMC</th><td>Morris Chang</td><td><a href="https://www.forbes.com/profile/morris-chang/" target="_blank" rel="noopener noreferrer">$9.4B</a></td><td><a href="https://stockanalysis.com/stocks/tsm/market-cap/" target="_blank" rel="noopener noreferrer" title="Nov. 16, 2026">$1.74T</a></td><td><a href="https://stockanalysis.com/stocks/tsm/market-cap/" target="_blank" rel="noopener noreferrer" title="Nov. 19, 2026 close">$1.65T</a></td><td>−$90B</td><td><a href="https://stockanalysis.com/stocks/tsm/market-cap/" target="_blank" rel="noopener noreferrer" title="Nov. 20, 2026 close">$1.57T</a></td><td>−$80B</td></tr>
+      <tr><th scope="row">Strategy (MSTR)</th><td>Michael Saylor</td><td><a href="https://www.forbes.com/profile/michael-saylor/" target="_blank" rel="noopener noreferrer">$3.9B</a></td><td><a href="https://stockanalysis.com/stocks/mstr/market-cap/" target="_blank" rel="noopener noreferrer" title="Nov. 17, 2026">$43.38B</a></td><td><a href="https://stockanalysis.com/stocks/mstr/market-cap/" target="_blank" rel="noopener noreferrer" title="Nov. 19, 2026 close">$36.38B</a></td><td>−$7B</td><td><a href="https://stockanalysis.com/stocks/mstr/market-cap/" target="_blank" rel="noopener noreferrer" title="Nov. 20, 2026 close">$32.86B</a></td><td>−$3.52B</td></tr>
+      <tr><th scope="row">OpenAI</th><td>Sam Altman</td><td><a href="https://www.forbes.com/profile/sam-altman/" target="_blank" rel="noopener noreferrer" title="Forbes estimate as of Nov. 16, 2026">$3.1B</a></td><td><a href="https://www.reuters.com/business/openai-secures-11-billion-funding-125-trillion-valuation-bloomberg-news-reports-2026-11-06/" target="_blank" rel="noopener noreferrer" title="Nov. 6, 2026">$1.25T†</a></td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td></tr>
     </tbody>
+    <tfoot>
+      <tr><th scope="row" colspan="2">Total</th><td title="Sum of the displayed wealth estimates">$2,436.0B</td><td>$21.04T</td><td>$20.29T</td><td>−$756.33B</td><td>$19.04T</td><td>−$1245.77B</td></tr>
+    </tfoot>
   </table>
-  <p class="rs-tech-cap-note">Market caps Nov. 16–17, 2026. *Anthropic IPO estimate, fully diluted. †OpenAI private funding valuation.</p>
+  </div>
+  <p id="rs-tech-cap-note" class="rs-tech-cap-note">Each difference subtracts the earlier displayed cap from the later one. Market cap totals count Alphabet once and exclude Anthropic and OpenAI to keep the same companies across all dates. The wealth total sums the displayed estimates. *Anthropic’s Nov. 10 IPO estimate uses a different share count, so its difference to Nov. 19 is left blank. †OpenAI’s private funding valuation was reported Nov. 6.</p>
 </section>
 <section id="rs-ai-funding" class="rs-global-markets" aria-labelledby="rs-ai-funding-title">
   <div class="rs-global-markets__heading">
-    <h2 id="rs-ai-funding-title">Nvidia investment and chip sales</h2>
+    <h2 id="rs-ai-funding-title">Circular Financing?</h2>
   </div>
   <div class="rs-ai-financial-layout">
   <svg viewBox="0 0 500 267" role="img" aria-labelledby="rs-ai-flow-title rs-ai-flow-desc" xmlns="http://www.w3.org/2000/svg">
@@ -1058,18 +1065,22 @@ div.c {
     <table aria-describedby="rs-ai-financial-note">
       <caption>Q3 2026 financials (US$B)</caption>
       <thead>
-        <tr><th scope="col">Measure</th><th scope="col">OpenAI</th><th scope="col">Anthropic</th></tr>
+        <tr><th scope="col">Measure</th><th scope="col">OpenAI</th><th scope="col">Anthropic</th><th scope="col">Nvidia</th></tr>
       </thead>
       <tbody>
-        <tr><th scope="row">Revenue</th><td>10.00</td><td>16.96</td></tr>
-        <tr><th scope="row">Operating costs</th><td>~20.90*</td><td>17.52</td></tr>
-        <tr><th scope="row">Of which compute &amp; infrastructure</th><td>—</td><td>9.86</td></tr>
-        <tr><th scope="row">Operating loss</th><td>10.90*</td><td>0.57</td></tr>
+        <tr><th scope="row">Revenue</th><td>10.00</td><td>16.96</td><td>115.8</td></tr>
+        <tr><th scope="row">Operating costs</th><td>~20.90*</td><td>17.52</td><td>38.3</td></tr>
+        <tr><th scope="row">Of which compute &amp; infrastructure</th><td>—</td><td>9.86</td><td>—</td></tr>
+        <tr><th scope="row">Operating profit (loss)</th><td>(10.90)*</td><td>(0.57)</td><td>77.5</td></tr>
+        <tr><th scope="row">Market cap</th><td><a href="https://www.reuters.com/business/openai-secures-11-billion-funding-125-trillion-valuation-bloomberg-news-reports-2026-11-06/" target="_blank" rel="noopener noreferrer">1,250†</a></td><td><a href="https://ca.finance.yahoo.com/quote/ANT/" target="_blank" rel="noopener noreferrer" title="Nov. 19, 2026 close">1,272</a></td><td><a href="https://stockanalysis.com/stocks/nvda/market-cap/" target="_blank" rel="noopener noreferrer" title="Nov. 19, 2026 close">3,520</a></td></tr>
       </tbody>
     </table>
     <p id="rs-ai-financial-note">*OpenAI costs and loss exclude $2.6B in stock-based pay. Its compute costs were unavailable.</p>
+    <p>Market caps at the Nov. 19 close. †OpenAI uses its Nov. 6 private funding valuation.</p>
+    <p>Nvidia Q3 FY2027 · Quarter ended Oct. 25, 2026 (GAAP). Revenue rose 103% year over year. Data Center revenue reached $107.6B (+110%). Q4 revenue guidance is $130B ±3%.</p>
     <p><a href="https://www.wsj.com/business/earnings/openai-continues-to-suffer-heavy-losses-as-revenue-rises-to-10-billion-d2a96bbb" target="_blank" rel="noopener noreferrer">WSJ</a> &middot;
-      <a href="https://ipo.anthropic.com/documents/us/prospectus.pdf" target="_blank" rel="noopener noreferrer">Anthropic filing</a></p>
+      <a href="https://ipo.anthropic.com/documents/us/prospectus.pdf" target="_blank" rel="noopener noreferrer">Anthropic filing</a> &middot;
+      <a href="https://investor.nvidia.com/news/press-release-details/2026/NVIDIA-Announces-Financial-Results-for-Third-Quarter-Fiscal-2027/default.aspx" target="_blank" rel="noopener noreferrer">Nvidia earnings</a></p>
   </div>
   </div>
   <p style="margin: 5px 0 8px; font-size: 14px; line-height: 1.4;"><strong>How much demand for Nvidia chips could OpenAI and Anthropic sustain with customer revenue, without funding from Nvidia?</strong></p>
@@ -1080,90 +1091,8 @@ div.c {
   </p>
 </section>
 </div>
-<style>
-.rs-market-news__grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
-  gap: 10px;
-}
-.rs-market-news__card {
-  min-width: 0;
-  padding: 11px 12px;
-  border: 1px solid #d8e1ec;
-  border-radius: 8px;
-  background: #fff;
-  color: #172536;
-  font-size: 13px;
-  line-height: 1.45;
-}
-.rs-market-news__card h3 {
-  margin: 3px 0 6px;
-  color: #173f70;
-  font-size: 15px;
-  line-height: 1.3;
-}
-.rs-market-news__card p { margin: 0 0 7px; }
-.rs-market-news__card .rs-market-news__topic {
-  margin: 0;
-  color: #475c73;
-  font-size: 12px;
-  font-weight: 700;
-}
-.rs-market-news__card a { color: #244d78; text-decoration: underline; }
-</style>
-<section id="rs-market-news" class="rs-global-markets" aria-labelledby="rs-market-news-title">
-  <div class="rs-global-markets__heading">
-    <h2 id="rs-market-news-title">Global market news</h2>
-    <p class="rs-global-markets__status"><time datetime="2026-11-17">November 17, 2026</time></p>
-  </div>
-  <div class="rs-market-news__grid">
-    <article class="rs-market-news__card">
-      <p class="rs-market-news__topic">Iran</p>
-      <h3>Iran strikes U.S. radar in Bahrain as Hormuz risks persist</h3>
-      <p>Reuters reported an Iranian drone attack on a U.S. military radar system despite mediation by Oman and Qatar. A tanker crew was also reported missing after an attack in the Strait of Hormuz.</p>
-      <p><strong>Watch</strong> Brent, WTI and Asian LNG. Watch tanker traffic for evidence of renewed export disruption.</p>
-      <footer><a href="https://www.reuters.com/world/middle-east/oman-iran-foreign-ministers-discuss-safeguarding-maritime-corridors-2026-11-17/" target="_blank" rel="noopener noreferrer" aria-label="Reuters — Iran strikes U.S. radar in Bahrain as Hormuz risks persist">Reuters</a></footer>
-    </article>
-    <article class="rs-market-news__card">
-      <p class="rs-market-news__topic">Ukraine</p>
-      <h3>New strikes hit Crimea and Kyiv infrastructure</h3>
-      <p>Russian-installed officials reported a second consecutive day of attacks on the Crimea bridge, while Russia struck bridges and other infrastructure in Kyiv. Separately, Bulgaria’s defence ministry reported a gas tanker sank in the Black Sea.</p>
-      <p><strong>Watch</strong> Black Sea grain and fuel shipments. Watch for port restrictions and higher shipping insurance costs.</p>
-      <footer><a href="https://www.reuters.com/world/russia-says-ukraine-struck-its-bridge-crimea-second-day-biggest-drone-attack-war-2026-11-17/" target="_blank" rel="noopener noreferrer" aria-label="Reuters — New strikes hit Crimea and Kyiv infrastructure">Reuters</a> · <a href="https://apnews.com/article/3265b6f9e84eb28b349dceb3223fd37f" target="_blank" rel="noopener noreferrer" aria-label="Associated Press — New strikes hit Crimea and Kyiv infrastructure">Associated Press</a></footer>
-    </article>
-    <article class="rs-market-news__card">
-      <p class="rs-market-news__topic">AI and equities</p>
-      <h3>Nasdaq futures steady before Nvidia earnings</h3>
-      <p>Nasdaq futures edged higher ahead of Nvidia’s first report since Jensen Huang’s departure. Results are due after the U.S. close, and Anthropic’s IPO is expected later this week.</p>
-      <p><strong>Watch</strong> Nvidia, chip stocks and the Nasdaq. Watch data-centre sales guidance and the IPO price for signs of investor demand.</p>
-      <footer><a href="https://www.reuters.com/business/us-stock-futures-slip-ahead-nvidia-results-fed-speakers-focus-2026-11-17/" target="_blank" rel="noopener noreferrer" aria-label="Reuters — Nasdaq futures steady before Nvidia earnings">Reuters</a> · <a href="https://investor.nvidia.com/news/press-release-details/2026/NVIDIA-Announces-CEO-Transition/default.aspx" target="_blank" rel="noopener noreferrer" aria-label="Nvidia — Nasdaq futures steady before Nvidia earnings">Nvidia</a></footer>
-    </article>
-    <article class="rs-market-news__card">
-      <p class="rs-market-news__topic">Asian equities</p>
-      <h3>South Korea’s Kospi falls 2.6%</h3>
-      <p>The Kospi sank to a six-month low, with memory-chip makers Samsung Electronics and SK Hynix both down as weakness in AI stocks carried over from Wall Street.</p>
-      <p><strong>Watch</strong> Kospi and memory-chip shares. Watch whether Nvidia’s outlook changes expectations for semiconductor demand.</p>
-      <footer><a href="https://apnews.com/article/4d5a35288288389d894e63e6bebe8240" target="_blank" rel="noopener noreferrer" aria-label="Associated Press — South Korea’s Kospi falls 2.6%">Associated Press</a></footer>
-    </article>
-    <article class="rs-market-news__card">
-      <p class="rs-market-news__topic">Rates and currencies</p>
-      <h3>Dollar strengthens as traders price in Fed tightening</h3>
-      <p>The U.S. dollar hit its strongest level since April 2025, Reuters reported. Traders expect another rate increase in December, with a small chance of a half-point move. The yen hovered near 160 per dollar.</p>
-      <p><strong>Watch</strong> Two-year Treasury yields and USD/JPY. Watch Fed speakers and any signal of Japanese currency intervention.</p>
-      <footer><a href="https://www.reuters.com/world/china/global-markets-global-markets-2026-11-17/" target="_blank" rel="noopener noreferrer" aria-label="Reuters — Dollar strengthens as traders price in Fed tightening">Reuters</a></footer>
-    </article>
-    <article class="rs-market-news__card">
-      <p class="rs-market-news__topic">Canada–China trade</p>
-      <h3>Canada and China expand tariff relief</h3>
-      <p>Mark Carney and Xi Jinping agreed in Shenzhen to extend their trade arrangement and lower tariffs on more pork and seafood products. Ottawa says the added relief covers about C$400 million in exports.</p>
-      <p><strong>Watch</strong> Canadian pork and seafood exporters. Watch implementation dates and Chinese import orders.</p>
-      <footer><a href="https://www.pm.gc.ca/en/news/news-releases/2026/11/17/prime-minister-carney-advances-canadas-strategic-partnership-china" target="_blank" rel="noopener noreferrer" aria-label="Prime Minister of Canada — Canada and China expand tariff relief">Prime Minister of Canada</a></footer>
-    </article>
-  </div>
-</section>
-
 <div class="rs-markets-toolbar"><button id="rs-markets-refresh" class="rs-markets-refresh" type="button">Refresh all markets</button></div>
-<section class="rs-global-markets" aria-labelledby="rs-global-markets-title">
+<section id="rs-equity-markets" class="rs-global-markets" aria-labelledby="rs-global-markets-title">
   <div class="rs-global-markets__heading">
     <div>
       <p class="rs-global-markets__eyebrow">Global market snapshot</p>
@@ -1641,6 +1570,13 @@ div.c {
     <button id="rs-ticker-toggle" type="button" aria-expanded="true" aria-controls="rs-ticker-body">Close lookup</button>
   </div>
   <div id="rs-ticker-body">
+    <form id="rs-ticker-search-form" role="search" aria-label="Find a ticker">
+      <label for="rs-ticker-search">Company name</label>
+      <input id="rs-ticker-search" type="search" placeholder="e.g. CoreWeave" maxlength="80" required>
+      <button type="submit">Find ticker</button>
+    </form>
+    <p id="rs-ticker-search-status" class="rs-global-markets__status" role="status"></p>
+    <ul id="rs-ticker-search-results" aria-label="Matching tickers" hidden></ul>
     <form id="rs-ticker-form">
       <label for="rs-ticker-symbol">Yahoo Finance ticker</label>
       <input id="rs-ticker-symbol" type="text" placeholder="e.g. AAPL or RY.TO" maxlength="25"
@@ -1679,8 +1615,21 @@ div.c {
 </section>
 <style>
 .rs-portfolio-quotes.rs-ticker-lookup {
-  background: #f1dfae !important;
-  border-color: #b59b61 !important;
+  background: radial-gradient(circle, rgba(127, 22, 69, 0.28) 1.3px, transparent 1.8px)
+              0 0 / 12px 12px #ffabd0 !important;
+  border-color: #a32660 !important;
+  border-inline-start: 8px solid #a32660 !important;
+}
+.rs-ticker-lookup #rs-ticker-title { color: #601237; }
+.rs-ticker-lookup #rs-ticker-toggle,
+.rs-ticker-lookup button[type="submit"] {
+  background: #8b2054;
+  border-color: #8b2054;
+}
+.rs-ticker-lookup input:focus-visible,
+.rs-ticker-lookup button:focus-visible {
+  outline: 2px solid #601237;
+  outline-offset: 2px;
 }
 .rs-ticker-lookup .rs-portfolio-quotes__heading { align-items: center; }
 .rs-ticker-lookup #rs-ticker-toggle { min-height: 44px; }
@@ -1690,6 +1639,12 @@ div.c {
 .rs-ticker-lookup label { font-size:12px; font-weight:700; }
 .rs-ticker-lookup input, .rs-ticker-lookup button { min-height:36px; box-sizing:border-box; }
 .rs-ticker-lookup input { width:165px; max-width:100%; padding:5px 8px; }
+#rs-ticker-search-form { margin-bottom: 8px; }
+#rs-ticker-search { width: 220px; }
+#rs-ticker-search-status:empty { display: none; }
+#rs-ticker-search-results { padding-left: 22px; }
+#rs-ticker-search-results li { margin: 4px 0; }
+#rs-ticker-search-results button { text-align: left; }
 .rs-ticker-lookup #rs-ticker-status:empty { display:none; }
 .rs-ticker-lookup h3 { margin:8px 0; font-size:16px; }
 .rs-market-card__perp {
@@ -2066,6 +2021,7 @@ div.c {
       <button type="button" class="rs-market-chart-range" data-range="6m">6M</button>
       <button type="button" class="rs-market-chart-range is-active" data-range="1y">1Y</button>
       <button type="button" class="rs-market-chart-range" data-range="3y">3Y</button>
+      <button type="button" class="rs-market-chart-range" data-range="5y" title="Show up to five years of available history">5Y</button>
       <button id="rsMarketChartClose" type="button">Close</button>
     </div>
   </div>
@@ -2217,7 +2173,7 @@ async function rsReadKospiPerp() {
   const format = (value, digits=2) => Number(value).toLocaleString(undefined, { maximumFractionDigits: digits, minimumFractionDigits: digits });
   grid.innerHTML = indicators.map(item => `<article class="rs-market-card" data-indicator="${safe(item.symbol)}">
     <div class="rs-market-card__top"><h3>${safe(item.name)}</h3><span class="rs-market-card__state">${item.type === "periodic" ? "Periodic" : (item.state || "Waiting")}</span></div>
-    ${item.chartName ? '<p class="rs-market-card__place">Bitcoin (BTC/USD)</p>' : ""}
+    ${item.chartName ? '<p class="rs-market-card__place">Bitcoin (BTC-USD)</p>' : ""}
     <p class="rs-market-card__level">${item.value ? safe(item.value) : "&mdash;"}</p>
     <p class="rs-market-card__change is-flat">${item.detail ? safe(item.detail) : "loading..."}</p>
     ${item.perp ? '<div class="rs-market-card__perp" hidden><strong>Hyperliquid perp</strong><span data-perp-price></span><time></time><span data-perp-volume></span></div>' : ""}
@@ -2347,6 +2303,58 @@ async function rsReadKospiPerp() {
     if (!response.ok) throw new Error(payload.error || `HTTP ${response.status}`);
     return payload;
   }
+
+  const searchForm = document.getElementById("rs-ticker-search-form");
+  const searchInput = document.getElementById("rs-ticker-search");
+  const searchStatus = document.getElementById("rs-ticker-search-status");
+  const searchResults = document.getElementById("rs-ticker-search-results");
+  const searchEndpoint = endpoint.replace("/asset_history", "/ticker_search");
+  let searchRequest = 0;
+
+  function clearTickerSearch() {
+    searchRequest += 1;
+    searchResults.replaceChildren();
+    searchResults.hidden = true;
+    searchStatus.textContent = "";
+  }
+
+  searchInput.addEventListener("input", clearTickerSearch);
+  searchForm.addEventListener("submit", async event => {
+    event.preventDefault();
+    clearTickerSearch();
+    const query = searchInput.value.trim();
+    if (query.length < 2) {
+      searchStatus.textContent = "Enter at least two letters or a ticker.";
+      return;
+    }
+
+    const request = searchRequest;
+    searchStatus.textContent = "Searching…";
+    try {
+      const data = await fetchJson(`${searchEndpoint}?q=${encodeURIComponent(query)}`);
+      if (request !== searchRequest) return;
+      for (const match of data.matches) {
+        const item = document.createElement("li");
+        const button = document.createElement("button");
+        button.type = "button";
+        button.textContent = [match.name, match.symbol, match.exchange].filter(Boolean).join(" · ");
+        button.addEventListener("click", () => {
+          lookupInput.value = match.symbol;
+          lookupInput.focus();
+          clearTickerSearch();
+          lookupForm.requestSubmit();
+        });
+        item.append(button);
+        searchResults.append(item);
+      }
+      searchResults.hidden = !data.matches.length;
+      searchStatus.textContent = data.matches.length
+        ? "Select a ticker to open its quote and chart."
+        : "No matching tickers found. Try a shorter company name.";
+    } catch {
+      if (request === searchRequest) searchStatus.textContent = "Company search is temporarily unavailable.";
+    }
+  });
 
   // Explicit equity/ETF matches avoid collisions with commodity and index aliases.
   const perpTickers = new Set([
@@ -2575,6 +2583,7 @@ async function rsReadKospiPerp() {
     const request = ++chartRequest;
     const symbol = selectedSymbol, range = selectedRange, name = selectedName || symbol;
     const isBreakeven = symbol === "T10YIE";
+    const longRange = range === "3y" || range === "5y";
     title.textContent = `${name} History`;
     status.textContent = "Loading...";
     container.innerHTML = "";
@@ -2603,14 +2612,22 @@ async function rsReadKospiPerp() {
       let rows = cache.get(key);
       if (!rows) {
         const response = isBreakeven
-          ? await fetch(`https://surface-203178530029.northamerica-northeast2.run.app/breakeven_inflation?period=${range === "3y" ? "3y" : "1y"}`)
+          ? await fetch(`https://surface-203178530029.northamerica-northeast2.run.app/breakeven_inflation?period=${longRange ? "5y" : "1y"}`)
           : await fetch(endpoint, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ symbol, range }) });
         const payload = await response.json().catch(() => ({}));
         if (!response.ok) throw new Error(payload.error || `HTTP ${response.status}`);
+        if (!isBreakeven && longRange && payload.range !== range) {
+          throw new Error("The price service did not return the requested chart range.");
+        }
         rows = Array.isArray(payload) ? payload : (payload.rows || payload.history || payload.data || []);
         if (isBreakeven) rows = rsFillBreakevenRows(rows);
         if (isBreakeven && range === "3m") rows = rows.slice(-66);
         if (isBreakeven && range === "6m") rows = rows.slice(-130);
+        if (isBreakeven && range === "3y" && rows.length) {
+          const cutoff = new Date(rows[rows.length - 1].Date || rows[rows.length - 1].date);
+          cutoff.setUTCFullYear(cutoff.getUTCFullYear() - 3);
+          rows = rows.filter(row => new Date(row.Date || row.date) >= cutoff);
+        }
         cache.set(key, rows);
       }
       const quote = await latestPromise;
@@ -3046,7 +3063,7 @@ body > nav > ul { background: transparent !important; }
 		<footer>
         <div>
             <span class=""><i class="fas fa-envelope fa-2x" aria-hidden="true"></i></span>
-            <span>We can be contacted at risksnap.contact@gmail.com</span>
+            <span>We can be contacted at <a href="mailto:risksnap.contact@gmail.com" style="color: inherit;">risksnap.contact@gmail.com</a></span>
         </div>
 		</footer>
 	
@@ -3075,6 +3092,19 @@ section.rs-global-markets:not(.rs-foreign-exchange):not(.rs-market-indicators),
 section.rs-global-markets.rs-market-indicators {
   background: #ffd662 !important;
   border: 2px solid #ffd662 !important;
+}
+</style>
+<style id="rs-equity-markets-palette">
+#rs-equity-markets {
+  background: #cfe8e4 !important;
+  border-color: #86b6af !important;
+}
+#rs-equity-markets .rs-market-card {
+  border-color: #86b6af !important;
+}
+#rs-equity-markets .rs-global-markets__note,
+#rs-equity-markets .rs-global-markets__status {
+  color: #314e55;
 }
 </style>
 <style id="rs-fx-blue-palette">
