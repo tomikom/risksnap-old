@@ -904,7 +904,36 @@ div.c {
 </style>
 <style>
 #rs-tech-giants { box-sizing: border-box; max-width: 740px; }
-#rs-tech-giants table { width: 100%; border-collapse: collapse; font-size: 13px; }
+#rs-tech-giants table {
+  --company-column-width: 104px;
+  width: 100%;
+  min-width: 900px;
+  table-layout: fixed;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 13px;
+}
+#rs-tech-giants thead th:first-child { width: var(--company-column-width); }
+#rs-tech-giants thead th:nth-child(2) { width: 104px; }
+#rs-tech-giants thead th:nth-child(-n+2) { box-sizing: border-box; }
+#rs-tech-giants tr > :first-child,
+#rs-tech-giants :is(thead, tbody) tr > :nth-child(2) {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  background: #f8fbff;
+}
+#rs-tech-giants :is(thead, tbody) tr > :nth-child(2) {
+  left: var(--company-column-width);
+}
+#rs-tech-giants tbody tr:nth-child(even) > :nth-child(-n+2),
+#rs-tech-giants tfoot th { background: #edf4fb; }
+#rs-tech-giants :is(thead, tbody) tr > :nth-child(2),
+#rs-tech-giants tfoot th { box-shadow: 1px 0 #d8e1ec; }
+@media (max-width: 480px) {
+  #rs-tech-giants table { --company-column-width: 84px; }
+  #rs-tech-giants thead th:nth-child(2) { width: 84px; }
+}
 #rs-tech-giants th, #rs-tech-giants td {
   padding: 4px 6px;
   border-bottom: 1px solid #d8e1ec;
