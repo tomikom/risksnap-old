@@ -1352,7 +1352,7 @@ div.c {
   const chartLink = market => market.chartUrl
     ? `<a class="rs-market-card__chart" href="${safe(market.chartUrl)}" target="_blank" rel="noopener noreferrer">Chart <span aria-hidden="true">↗</span></a>`
     : `<button type="button" class="rs-market-card__chart" data-rs-chart-symbol="${safe(market.symbol)}" data-rs-chart-name="${safe(market.name)}">Chart</button>`;
-  const card = market => `<article class="rs-market-card" data-symbol="${safe(market.symbol)}">
+  const card = market => `<article class="rs-market-card" data-symbol="${safe(market.symbol)}" data-exchange-cap="${safe(market.size)}">
     <div class="rs-market-card__top"><div><p class="rs-market-card__place">${safe(market.place)}</p><h3>${safe(market.name)}</h3><code>${safe(market.symbol)}</code></div><span class="rs-market-card__state">Waiting</span></div>
     <p class="rs-market-card__level">&mdash;</p><p class="rs-market-card__change is-flat">loading...</p>
     <div class="rs-market-card__details"><div><span class="rs-market-card__label">Exchange capitalization</span><span class="rs-market-card__detail">Exchange cap ${safe(market.size)}</span></div></div>
@@ -3188,6 +3188,7 @@ body > nav { background: linear-gradient(90deg, #ffe45c 0%, #ffab36 50%, #ef5350
 .rs-top10-table{width:100%;border-collapse:collapse;font:13px Arial,sans-serif;}
 .rs-top10-table th,.rs-top10-table td{padding:9px 7px;border-bottom:1px solid #dce3ec;text-align:right;}
 .rs-top10-table th:first-child,.rs-top10-table td:first-child,.rs-top10-table th:nth-child(2),.rs-top10-table td:nth-child(2){text-align:left;}
+.rs-top10-table tfoot th,.rs-top10-table tfoot td{font-weight:700;border-top:2px solid #acb9cc;}
 .rs-top10-company{display:block;font-weight:600;min-width:120px;}
 .rs-top10-symbol{font-size:11px;color:#5a6c80;}
 .rs-top10-company-chart { margin-inline-start: 6px; }
@@ -3200,7 +3201,7 @@ body > nav { background: linear-gradient(90deg, #ffe45c 0%, #ffab36 50%, #ef5350
  <div class="rs-top10-head"><h2 id="rs-top10-title">Top 10 companies</h2></div>
  <div class="rs-top10-actions"><button id="rs-top10-refresh" type="button">Refresh</button><button id="rs-top10-close" type="button">Close</button></div>
  <p id="rs-top10-status" role="status" aria-live="polite"></p>
- <div class="rs-top10-scroll"><table class="rs-top10-table"><thead><tr><th>#</th><th id="rs-top10-asset-heading">Company / symbol</th><th id="rs-top10-cap-heading">Market cap</th><th scope="col">Price</th><th id="rs-top10-change-heading">Daily change</th></tr></thead><tbody id="rs-top10-body"></tbody></table></div>
+ <div class="rs-top10-scroll"><table class="rs-top10-table"><thead><tr><th>#</th><th id="rs-top10-asset-heading">Company / symbol</th><th id="rs-top10-cap-heading">Market cap</th><th scope="col">Price</th><th id="rs-top10-change-heading">Daily change</th></tr></thead><tbody id="rs-top10-body"></tbody><tfoot id="rs-top10-summary"></tfoot></table></div>
  <div id="rs-top10-chart-slot"></div>
  <p id="rs-top10-note"></p><p id="rs-top10-source"></p>
 </dialog>
@@ -3216,6 +3217,7 @@ body > nav { background: linear-gradient(90deg, #ffe45c 0%, #ffab36 50%, #ef5350
   'CRYPTO-COINS':['coins','Crypto coins','Top 10 coins']
  };
  const dialog=document.getElementById('rs-top10-dialog'),body=document.getElementById('rs-top10-body'),status=document.getElementById('rs-top10-status'),refresh=document.getElementById('rs-top10-refresh');
+ const summary = document.getElementById('rs-top10-summary');
  let active=null,timer=null,controller=null,opener=null;
  function close(){
   clearInterval(timer);timer=null;controller?.abort();controller=null;active=null;
@@ -3225,6 +3227,44 @@ body > nav { background: linear-gradient(90deg, #ffe45c 0%, #ffab36 50%, #ef5350
  }
  const isNumber=v=>typeof v==='number'&&Number.isFinite(v);
  function cap(value){return isNumber(value)?new Intl.NumberFormat(undefined,{notation:'compact',maximumFractionDigits:2}).format(value):'—';}
+ function displayChange(cell, value) {
+  cell.textContent = isNumber(value) ? (value > 0 ? '+' : '') + value.toFixed(2) + '%' : '—';
+  cell.className = value > 0 ? 'rs-top10-up' : value < 0 ? 'rs-top10-down' : '';
+ }
+ function exchangeCap(size) {
+  const match = /^(.+) US\$([0-9]+(?:\.[0-9]+)?)T†$/.exec(size);
+  return match ? { name: match[1], value: Number(match[2]) * 1e12 } : null;
+ }
+ function companySummary(rows, exchange, currency, equity) {
+  const tr = document.createElement('tr');
+  const label = document.createElement('th');
+  label.scope = 'row';
+  label.colSpan = 2;
+  label.textContent = 'Top 10 total';
+  const marketCap = document.createElement('td');
+  const change = document.createElement('td');
+  const hasCaps = rows.every(row => isNumber(row.market_cap) && row.market_cap > 0);
+  const totalCap = hasCaps ? rows.reduce((sum, row) => sum + row.market_cap, 0) : null;
+  const hasChanges = hasCaps && rows.every(row => isNumber(row.change_percent));
+  const weightedChange = hasChanges
+   ? rows.reduce((sum, row) => sum + (row.market_cap / totalCap) * row.change_percent, 0)
+   : null;
+  marketCap.textContent = cap(totalCap);
+  displayChange(change, weightedChange);
+  const exchangeShare = document.createElement('td');
+  if (equity) {
+   if (exchange && currency === 'USD' && totalCap !== null) {
+    const percent = (totalCap / exchange.value * 100).toFixed(2);
+    exchangeShare.textContent = percent + '% of ' + exchange.name + ' exchange cap';
+    exchangeShare.title = 'Reference exchange cap: US$' + cap(exchange.value);
+   } else {
+    exchangeShare.textContent = '—';
+    exchangeShare.title = 'Exchange cap comparison unavailable in a common currency';
+   }
+  }
+  tr.append(label, marketCap, exchangeShare, change);
+  return tr;
+ }
  function coinNumber(value) {
   return value == null || value === '' ? null : Number(value);
  }
@@ -3272,6 +3312,53 @@ body > nav { background: linear-gradient(90deg, #ffe45c 0%, #ffab36 50%, #ef5350
   });
   return row.price_currency ? price + ' ' + row.price_currency : price;
  }
+ function tsxSnapshot() {
+  return {
+   market_cap_currency: 'USD',
+   source_url: 'https://marketcap.company/stock-indices/s-p-tsx-composite-canada-index-market-cap/',
+   note: 'Market-cap ranking from a November 2026 snapshot.',
+   rows: [
+    ['RY', 'Royal Bank of Canada', 288.80],
+    ['TD', 'Toronto-Dominion Bank', 208.40],
+    ['SHOP', 'Shopify', 185.04],
+    ['BMO', 'Bank of Montreal', 125.96],
+    ['BNS', 'Bank of Nova Scotia', 116.25],
+    ['ENB', 'Enbridge', 109.57],
+    ['CM', 'Canadian Imperial Bank of Commerce', 108.94],
+    ['CNQ', 'Canadian Natural Resources', 106.85],
+    ['BN', 'Brookfield Corporation', 94.85],
+    ['AEM', 'Agnico Eagle Mines', 93.04]
+   ].map(([ticker, company, capBillions]) => ({
+    symbol: ticker + '.TO', company, market_cap: capBillions * 1e9
+   }))
+  };
+ }
+ function renderRankings(rows, coins, data, equityCard) {
+   const fragment=document.createDocumentFragment();rows.forEach((row,i)=>{
+    const tr=document.createElement('tr');const rank=document.createElement('td');rank.textContent=i+1;const company=document.createElement('td');const name=document.createElement('span');name.className='rs-top10-company';name.textContent=row.company;const symbol=document.createElement('span');symbol.className='rs-top10-symbol';symbol.textContent=row.symbol;company.append(name,symbol);
+    if (!coins || (typeof row.coin_slug === 'string' && /^[a-z0-9-]+$/.test(row.coin_slug))) {
+     const chart = document.createElement(coins ? 'a' : 'button');
+     chart.className = 'rs-market-card__chart rs-top10-company-chart';
+     chart.textContent = coins ? 'Chart ↗' : 'Chart';
+     chart.setAttribute('aria-label', 'Chart for '+row.company);
+     if (coins) {
+      chart.href = 'https://www.coinlore.com/coin/'+row.coin_slug;
+      chart.target = '_blank';
+      chart.rel = 'noopener noreferrer';
+     } else {
+      chart.type = 'button';
+      chart.dataset.rsChartSymbol = row.symbol;
+      chart.dataset.rsChartName = row.company;
+     }
+     company.append(chart);
+    }
+    const marketCap=document.createElement('td');marketCap.textContent=cap(row.market_cap);const change=document.createElement('td');displayChange(change,row.change_percent);const price=document.createElement('td');price.textContent=displayPrice(row);tr.append(rank,company,marketCap,price,change);fragment.append(tr);
+   });
+   body.replaceChildren(fragment);
+   const exchange = exchangeCap(equityCard?.dataset.exchangeCap);
+   if (!coins) summary.replaceChildren(companySummary(rows, exchange, data.market_cap_currency, Boolean(equityCard)));
+   document.getElementById('rs-top10-cap-heading').textContent='Market cap ('+data.market_cap_currency+')';
+ }
  async function update(){
   if(!active||document.hidden)return;
   controller?.abort();const current=new AbortController();controller=current;const group=active[0];
@@ -3282,13 +3369,29 @@ body > nav { background: linear-gradient(90deg, #ffe45c 0%, #ffab36 50%, #ef5350
    const url = coins
     ? 'https://api.coinlore.net/api/tickers/?start=0&limit=10'
     : 'https://surface-203178530029.northamerica-northeast2.run.app/market_top_companies?group='+encodeURIComponent(group);
-   const result = await fetch(url, {signal:current.signal});
-   const payload = await result.json();
-   if(!result.ok)throw new Error(payload.error||'Rankings unavailable');
-   if(current!==controller||active?.[0]!==group)return;
-   const data = coins ? coinRankings(payload) : payload;
-   if(!Array.isArray(data.rows)||data.rows.length!==10)throw new Error('Ten rankings are not available yet.');
-   let rows = data.rows;
+   let data;
+   let usingSnapshot = false;
+   try {
+    const signal = group === 'tsx'
+     ? AbortSignal.any([current.signal, AbortSignal.timeout(12000)])
+     : current.signal;
+    const result = await fetch(url, {signal});
+    const payload = await result.json();
+    if (!result.ok) throw new Error(payload.error || 'Rankings unavailable');
+    data = coins ? coinRankings(payload) : payload;
+    if (!Array.isArray(data.rows) || data.rows.length !== 10) {
+     throw new Error('Ten rankings are not available yet.');
+    }
+   } catch (error) {
+    if (group !== 'tsx' || current.signal.aborted) throw error;
+    data = tsxSnapshot();
+    usingSnapshot = true;
+   }
+   if (current !== controller || active?.[0] !== group) return;
+   const equityCard = opener?.closest('#rs-global-markets-grid .rs-market-card');
+   let rows = data.rows.map(row => coins ? row : {...row, price: null, change_percent: null});
+   renderRankings(rows, coins, data, equityCard);
+   if (usingSnapshot) status.textContent = 'Live TSX rankings unavailable. Showing a November 2026 snapshot while quotes load.';
    let quoteTimestamp;
    if (!coins) {
     const symbols = rows.map(row => companyQuoteSymbol(row, group));
@@ -3308,27 +3411,8 @@ body > nav { background: linear-gradient(90deg, #ffe45c 0%, #ffab36 50%, #ef5350
     rows = rows.map((row, index) => companyQuote(row, symbols[index], quotes));
     quoteTimestamp = quotes.timestamp;
    }
-   const fragment=document.createDocumentFragment();rows.forEach((row,i)=>{
-    const tr=document.createElement('tr');const rank=document.createElement('td');rank.textContent=i+1;const company=document.createElement('td');const name=document.createElement('span');name.className='rs-top10-company';name.textContent=row.company;const symbol=document.createElement('span');symbol.className='rs-top10-symbol';symbol.textContent=row.symbol;company.append(name,symbol);
-    if (!coins || (typeof row.coin_slug === 'string' && /^[a-z0-9-]+$/.test(row.coin_slug))) {
-     const chart = document.createElement(coins ? 'a' : 'button');
-     chart.className = 'rs-market-card__chart rs-top10-company-chart';
-     chart.textContent = coins ? 'Chart ↗' : 'Chart';
-     chart.setAttribute('aria-label', 'Chart for '+row.company);
-     if (coins) {
-      chart.href = 'https://www.coinlore.com/coin/'+row.coin_slug;
-      chart.target = '_blank';
-      chart.rel = 'noopener noreferrer';
-     } else {
-      chart.type = 'button';
-      chart.dataset.rsChartSymbol = row.symbol;
-      chart.dataset.rsChartName = row.company;
-     }
-     company.append(chart);
-    }
-    const marketCap=document.createElement('td');marketCap.textContent=cap(row.market_cap);const change=document.createElement('td');change.textContent=isNumber(row.change_percent)?(row.change_percent>0?'+':'')+row.change_percent.toFixed(2)+'%':'—';change.className=row.change_percent>0?'rs-top10-up':row.change_percent<0?'rs-top10-down':'';const price=document.createElement('td');price.textContent=displayPrice(row);tr.append(rank,company,marketCap,price,change);fragment.append(tr);
-   });body.replaceChildren(fragment);document.getElementById('rs-top10-cap-heading').textContent='Market cap ('+data.market_cap_currency+')';
-   const date=new Date(data.retrieved_at);status.textContent=(data.stale?'Previous snapshot — ':'Retrieved ')+(Number.isNaN(date.getTime())?'time unavailable':date.toLocaleString())+'. '+(data.warning||'Refreshes every 5 minutes while open.');
+   if (!coins) renderRankings(rows, coins, data, equityCard);
+   const date=new Date(data.retrieved_at);status.textContent=usingSnapshot ? 'Live TSX rankings unavailable. Showing a November 2026 snapshot.' : (data.stale?'Previous snapshot — ':'Retrieved ')+(Number.isNaN(date.getTime())?'time unavailable':date.toLocaleString())+'. '+(data.warning||'Refreshes every 5 minutes while open.');
    if (!coins) {
     const quoteDate = new Date(quoteTimestamp);
     status.textContent += Number.isFinite(quoteDate.getTime())
@@ -3336,12 +3420,13 @@ body > nav { background: linear-gradient(90deg, #ffe45c 0%, #ffab36 50%, #ef5350
      : ' Stock quotes temporarily unavailable.';
    }
    document.getElementById('rs-top10-note').textContent = coins ? data.note :
-    (data.note || '') + ' Price and daily change use the latest available regular-session Yahoo Finance quote, compared with its previous close. Market caps come from the ranking source.';
+    (data.note || '') + ' Price and daily change use the latest available regular-session Yahoo Finance quote, compared with its previous close. Market caps come from the ranking source. The total row weights daily changes by the displayed market caps. The weighted change requires all ten market caps and daily changes.'
+    + (equityCard ? ' The exchange percentage divides the Top 10 market cap by the exchange capitalization shown on the card, using USD for both amounts.' : '');
    const source=document.getElementById('rs-top10-source');source.replaceChildren();try{const url=new URL(data.source_url);if(url.protocol==='https:'){const a=document.createElement('a');a.href=url.href;a.textContent='Data source: '+url.hostname;a.target='_blank';a.rel='noopener noreferrer';source.append(a);}}catch{}
   }catch(error){if(current===controller&&active?.[0]===group)status.textContent=(body.children.length?'Showing the previous snapshot. ':'')+(error.name==='AbortError'?'Request timed out; please try Refresh.':error.message);}
   finally{clearTimeout(timeout);if(current===controller)refresh.disabled=false;}
  }
- function open(group,button){active=group;opener=button;body.replaceChildren();document.getElementById('rs-top10-title').textContent='Top 10 — '+group[1];
+ function open(group,button){active=group;opener=button;body.replaceChildren();summary.replaceChildren();document.getElementById('rs-top10-title').textContent='Top 10 — '+group[1];
   document.getElementById('rs-top10-asset-heading').textContent=group[0]==='coins'?'Coin / symbol':'Company / symbol';
   document.getElementById('rs-top10-change-heading').textContent=group[0]==='coins'?'24h change':'Daily change';document.getElementById('rs-top10-note').textContent='';document.getElementById('rs-top10-source').replaceChildren();if(!dialog.open)dialog.showModal();update();clearInterval(timer);timer=setInterval(update,300000);}
  document.querySelectorAll('#rs-global-markets-grid .rs-market-card,#rs-market-indicators-grid .rs-market-card').forEach(card=>{
