@@ -957,6 +957,27 @@ div.c {
   gap: 12px;
   align-items: start;
 }
+.rs-ai-column { min-width: 0; display: grid; gap: 12px; }
+#rs-openai-revenue { color: #173a5c; }
+.rs-openai-payers {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  text-align: center;
+  margin-top: 10px;
+}
+.rs-openai-payer, .rs-openai-recipient {
+  background: #edf4fb;
+  border: 1px solid #a6bdd3;
+  border-radius: 6px;
+  padding: 7px 3px;
+}
+.rs-openai-payer { font-size: 13px; overflow-wrap: anywhere; }
+.rs-openai-payer strong { display: block; }
+.rs-openai-arrow { color: #276295; font-size: 21px; line-height: 1; }
+.rs-openai-recipient { grid-column: 1 / -1; font-weight: bold; }
+#rs-openai-revenue p { margin: 8px 0 0; font-size: 13px; }
+#rs-openai-revenue a { color: #174a7d; }
 #rs-ai-funding {
   min-width: 0;
   box-sizing: border-box;
@@ -1042,6 +1063,24 @@ div.c {
   </div>
   <p id="rs-tech-cap-note" class="rs-tech-cap-note">Each difference subtracts the earlier displayed cap from the later one. Market cap totals count Alphabet once and exclude Anthropic and OpenAI to keep the same companies across all dates. The wealth total sums the displayed estimates. *Anthropic’s Nov. 10 IPO estimate uses a different share count, so its difference to Nov. 19 is left blank. †OpenAI’s private funding valuation was reported Nov. 6.</p>
 </section>
+<div class="rs-ai-column">
+<section id="rs-openai-revenue" class="rs-global-markets" aria-labelledby="rs-openai-revenue-title">
+  <div class="rs-global-markets__heading">
+    <h2 id="rs-openai-revenue-title">Who Pays OpenAI?</h2>
+  </div>
+  <div class="rs-openai-payers" role="img" aria-label="Individuals pay for ChatGPT subscriptions, businesses pay for employee subscriptions, and developers and businesses pay API usage fees. All three payments go to OpenAI.">
+    <div class="rs-openai-payer"><strong>Individuals</strong>ChatGPT subscriptions</div>
+    <div class="rs-openai-payer"><strong>Employers</strong>Employee subscriptions</div>
+    <div class="rs-openai-payer"><strong>Developers and businesses</strong>API usage fees</div>
+    <span class="rs-openai-arrow" aria-hidden="true">↓</span>
+    <span class="rs-openai-arrow" aria-hidden="true">↓</span>
+    <span class="rs-openai-arrow" aria-hidden="true">↓</span>
+    <div class="rs-openai-recipient">OpenAI</div>
+  </div>
+  <p>The split between subscription revenue and usage fees is undisclosed.
+    <a href="https://openai.com/index/a-business-that-scales-with-the-value-of-intelligence/" target="_blank" rel="noopener noreferrer">OpenAI business model</a></p>
+  <p><strong>Can customer revenue grow fast enough to cover OpenAI’s compute costs?</strong></p>
+</section>
 <section id="rs-ai-funding" class="rs-global-markets" aria-labelledby="rs-ai-funding-title">
   <div class="rs-global-markets__heading">
     <h2 id="rs-ai-funding-title">Circular Financing?</h2>
@@ -1119,6 +1158,7 @@ div.c {
     <a href="https://ipo.anthropic.com/documents/us/prospectus.pdf" target="_blank" rel="noopener noreferrer">Anthropic prospectus</a>
   </p>
 </section>
+</div>
 </div>
 <div class="rs-markets-toolbar"><button id="rs-markets-refresh" class="rs-markets-refresh" type="button">Refresh all markets</button></div>
 <section id="rs-equity-markets" class="rs-global-markets" aria-labelledby="rs-global-markets-title">
@@ -3125,11 +3165,11 @@ section.rs-global-markets.rs-market-indicators {
 </style>
 <style id="rs-equity-markets-palette">
 #rs-equity-markets {
-  background: #cfe8e4 !important;
-  border-color: #86b6af !important;
+  background: #78c0ff !important;
+  border-color: #4e8cc8 !important;
 }
 #rs-equity-markets .rs-market-card {
-  border-color: #86b6af !important;
+  border-color: #4e8cc8 !important;
 }
 #rs-equity-markets .rs-global-markets__note,
 #rs-equity-markets .rs-global-markets__status {
