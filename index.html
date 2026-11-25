@@ -978,11 +978,13 @@ div.c {
 <style>
 .rs-tech-layout {
   display: grid;
-  grid-template-columns: minmax(0, 810px);
+  grid-template-columns: minmax(0, 680px) minmax(0, 310px);
   gap: 12px;
   align-items: start;
 }
-.rs-ai-column { min-width: 0; display: grid; gap: 12px; }
+.rs-ai-column { min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; }
+.rs-tech-layout section { min-width: 0; box-sizing: border-box; }
+.rs-tech-layout .rs-global-markets__heading h2 { font-size: 16px; }
 #rs-openai-revenue { color: #173a5c; }
 .rs-openai-payers {
   display: grid;
@@ -1003,6 +1005,20 @@ div.c {
 .rs-openai-recipient { grid-column: 1 / -1; font-weight: bold; }
 #rs-openai-revenue p { margin: 8px 0 0; font-size: 13px; }
 #rs-openai-revenue a { color: #174a7d; }
+#rs-softbank-bet { min-width: 0; color: #173a5c; font-size: 13px; }
+.rs-softbank-flow { display: grid; gap: 8px; text-align: center; margin-top: 12px; }
+.rs-softbank-flow .rs-openai-recipient { grid-column: auto; }
+.rs-softbank-step { margin: 0; color: #173a5c; }
+.rs-softbank-risk {
+  display: grid;
+  gap: 8px;
+  margin-top: 4px;
+  padding: 10px;
+  border: 2px dashed #276295;
+  border-radius: 8px;
+}
+#rs-softbank-bet > p { margin: 8px 0 0; }
+#rs-softbank-bet a { color: #174a7d; }
 #rs-ai-funding {
   min-width: 0;
   box-sizing: border-box;
@@ -1014,13 +1030,15 @@ div.c {
   gap: 12px;
 }
 .rs-ai-financials {
-  flex: 1 1 245px;
+  flex: 1 1 270px;
   min-width: 0;
-  font-size: 13px;
+  font-size: 12px;
   line-height: 1.3;
 }
 .rs-ai-financials table {
   width: 100%;
+  table-layout: fixed;
+  font-size: 12px;
   border-collapse: collapse;
   font-variant-numeric: tabular-nums;
 }
@@ -1029,12 +1047,14 @@ div.c {
   font-weight: bold;
 }
 .rs-ai-financials th, .rs-ai-financials td {
-  padding: 4px 5px;
+  padding: 3px 4px;
   border-bottom: 1px solid #d8e1ec;
   text-align: right;
-  white-space: nowrap;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 .rs-ai-financials th:first-child {
+  width: 32%;
   text-align: left;
   white-space: normal;
 }
@@ -1042,7 +1062,9 @@ div.c {
 .rs-ai-financials p { margin: 5px 0 0; font-size: 12px; }
 .rs-ai-financials a { color: #174a7d; }
 #rs-ai-funding svg {
-  flex: 2 1 320px;
+  flex: 1 1 300px;
+  max-width: 420px;
+  margin-inline: auto;
   min-width: 0;
   display: block;
   width: 100%;
@@ -1054,8 +1076,8 @@ div.c {
   font-size: 12px;
 }
 #rs-ai-funding .rs-ai-sources a { color: #174a7d; }
-@media (max-width: 900px) {
-  .rs-tech-layout { grid-template-columns: minmax(0, 740px); }
+@media (max-width: 760px) {
+  .rs-tech-layout { grid-template-columns: minmax(0, 680px); }
 }
 </style>
 <div class="rs-tech-layout">
@@ -1118,8 +1140,8 @@ div.c {
       <text x="87" y="97">announced</text>
       <text x="417" y="81">~US$10B</text>
       <text x="417" y="97">tied to IPO</text>
-      <text x="203" y="174">Pays for compute</text>
-      <text x="297" y="174">Pays for compute</text>
+      <text x="201" y="174" font-size="11">Pays for compute</text>
+      <text x="410" y="174" font-size="11">Pays for compute</text>
       <text x="36" y="153" transform="rotate(-90 36 153)">Buys GPU systems</text>
       <text x="464" y="153" transform="rotate(90 464 153)">Buy GPU systems</text>
       <text x="250" y="257">Arrows show payments and investment commitments</text>
@@ -1155,6 +1177,26 @@ div.c {
   </p>
 </section>
 </div>
+<section id="rs-softbank-bet" class="rs-global-markets" aria-labelledby="rs-softbank-title">
+  <div class="rs-global-markets__heading">
+    <h2 id="rs-softbank-title">SoftBank’s OpenAI Bet</h2>
+  </div>
+  <div class="rs-softbank-flow">
+    <div class="rs-openai-recipient">Lenders</div>
+    <p class="rs-softbank-step">↓ US$10B loan, guaranteed by SoftBank Group</p>
+    <div class="rs-openai-recipient">SoftBank Group &amp; Vision Fund 2</div>
+    <p class="rs-softbank-step">↓ US$64.6B invested through October 2026</p>
+    <div class="rs-openai-recipient">OpenAI</div>
+    <div class="rs-softbank-risk">
+      <strong>If OpenAI’s private share valuation falls far enough</strong>
+      <p class="rs-softbank-step">↓ Potential margin call</p>
+      <div class="rs-openai-recipient">The borrower could have to post more cash</div>
+    </div>
+  </div>
+  <p>A Vision Fund 2 financing subsidiary is the borrower. The collateral is cash. The trigger references the value of OpenAI preferred shares.</p>
+  <p><a href="https://group.softbank/en/news/press/20261001">SoftBank investment disclosure</a> ·
+    <a href="https://group.softbank/media/Project/sbg/sbg/pdf/ir/presentations/2026/investor-finance_q2fy2026_01_en.pdf">Loan terms (slide 20)</a></p>
+</section>
 </div>
 <div class="rs-markets-toolbar"><button id="rs-markets-refresh" class="rs-markets-refresh" type="button">Refresh all markets</button></div>
 <section id="rs-equity-markets" class="rs-global-markets" aria-labelledby="rs-global-markets-title">
