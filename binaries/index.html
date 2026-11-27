@@ -15,7 +15,7 @@
 	<meta name="google-site-verification" content="kO9DAjiPgMvebkKvDvBeeIEj8IFRIKbyZF115wiSvyw" />
     <meta charset="UTF-8">
 	<!-- end verification added 09 Jan 2018 -->
-		<title>Exotic Options | RiskSnap</title>
+		<title>Binary Options | RiskSnap</title>
 
         <meta name="viewport" content="width=device-width, initial-scale=1">
 
@@ -91,7 +91,7 @@ body > nav > ul > li.dropdown > button.dropbtn { color:#0000ff !important; backg
 				<li><a class="menufont" href="/dispersion">Dispersion Index</a></li>
 				<li><a class="menufont" href="/stockselection">Stock Selection</a></li>
 				<li><a class="menufont" href="/options">Options &amp; Strategies</a></li>
-				<li><a class="menufont" href="/binaries/">Binary Options</a></li>
+				<li><a class="menufont" href="/exotics/">Binary Options</a></li>
                 <li><a class="menufont" href="/gamma">Gamma</a></li>
 				<li><a class="menufont" href="/surface">Surface</a></li>
 				<li><a class="menufont" href="/contact">Contact</a></li>
@@ -99,7 +99,7 @@ body > nav > ul > li.dropdown > button.dropbtn { color:#0000ff !important; backg
 		</nav>
 		<div class="page-content">
             <main class="exotics-page">
-  <h1>Exotic Options</h1>
+  <h1>Binary Options</h1>
   <section aria-labelledby="kpi-title">
     <h2 id="kpi-title">KPI Binary Options</h2>
     <p>Cboe KPI binaries settle on a reported company metric, such as quarterly earnings per share, AWS revenue or vehicle production. The strike is in the same units as the metric.</p>
@@ -121,20 +121,20 @@ body > nav > ul > li.dropdown > button.dropbtn { color:#0000ff !important; backg
       <div class="kpi-grid">
         <label>Strike<input id="kpi-strike" type="number" step="any" required></label>
         <label>Expected KPI (forward estimate)<input id="kpi-forward" type="number" step="any" required aria-describedby="kpi-forward-help"></label>
-        <label>KPI standard deviation<input id="kpi-sd" type="number" step="any" min="0" required aria-describedby="kpi-sd-help"></label>
-        <label>Distribution<select id="kpi-model"><option value="normal">Normal</option><option value="lognormal">Lognormal</option></select></label>
+        <label>KPI standard deviation (%)<input id="kpi-sd" type="number" step="any" min="0" required aria-describedby="kpi-sd-help"></label>
+        <label>Distribution<select id="kpi-model"><option value="normal">Normal</option><option value="lognormal" selected>Lognormal</option></select></label>
         <label>Days to payout<input id="kpi-days" type="number" step="1" min="0" placeholder="Optional"></label>
         <label>Annual discount rate (%)<input id="kpi-rate" type="number" step="any" value="0"></label>
       </div>
       <p id="kpi-forward-help">Enter the consensus estimate for the reporting period, if available, or your own forecast. Cboe supplies historical reported values. The calculator takes the expected KPI as an input.</p>
-      <p id="kpi-sd-help">Enter one standard deviation for this specific release, in KPI units. For a revenue metric in US$ billions, enter 2 for US$2 billion of uncertainty. Leave days blank for an undiscounted estimate.</p>
+      <p id="kpi-sd-help">Enter the standard deviation for this release as a percentage of the expected KPI’s magnitude. For an expected KPI of 100, enter 2 for a standard deviation of 2 KPI units. Leave days blank for an undiscounted estimate.</p>
       <button type="submit">Calculate</button>
       <div id="kpi-result" role="status" aria-live="polite"></div>
     </form>
     <details>
       <summary>Pricing assumptions</summary>
       <p>The normal model uses the expected KPI as its mean and allows negative outcomes. The lognormal model requires a positive mean and matches the entered standard deviation. Its call and put probabilities use N(d₂) and N(−d₂), respectively, for positive strikes. Both models multiply the probability by the discounted US$1 payout.</p>
-      <p>With positive uncertainty the models are continuous, so equality carries zero modeled probability even if the company rounds its reported figure. With zero uncertainty, an expected KPI equal to the strike pays the call. Values are model estimates based on your inputs. Market prices can reflect different assumptions and a risk premium.</p>
+      <p>In the normal model, when the expected KPI equals the strike, any positive standard deviation gives a 50% payout probability for each side. With positive uncertainty the models are continuous, so equality carries zero modeled probability even if the company rounds its reported figure. With zero uncertainty, an expected KPI equal to the strike pays the call. Values are model estimates based on your inputs. Market prices can reflect different assumptions and a risk premium.</p>
     </details>
   </section>
 
@@ -142,7 +142,7 @@ body > nav > ul > li.dropdown > button.dropbtn { color:#0000ff !important; backg
     <h2 id="history-title">Reported KPI history</h2>
     <p id="kpi-history-heading"></p>
     <p id="kpi-historical-sd"></p>
-    <p>The historical benchmark is the sample standard deviation of year-over-year changes for matching fiscal quarters. It measures past variation around a simple forecast using the prior year’s same-quarter value. It can differ substantially from the uncertainty around today’s forecast.</p>
+    <p>The historical benchmark is the sample standard deviation of year-over-year changes for matching fiscal quarters. It uses log changes, ln(current/prior), when all usable ratios are positive. If any usable ratio is zero or negative, it uses relative changes, current/prior − 1, for the whole series. Quarters with a zero prior value are excluded. This benchmark describes historical changes. The pricing input measures uncertainty around the forecast for the upcoming release.</p>
     <div class="kpi-scroll" role="region" aria-label="Reported KPI history" tabindex="0">
       <table>
         <thead><tr><th scope="col">Fiscal period</th><th scope="col">Date in Cboe data</th><th scope="col">Reported value</th></tr></thead>
@@ -219,7 +219,7 @@ body > nav > ul > li.dropdown > button.dropbtn { color:#0000ff !important; backg
   function showMetric() {
     const symbol = metric.value;
     const { label, rows } = series[symbol];
-    get('units').textContent = symbol + ' · ' + label + '. Enter the strike, forecast and uncertainty in the metric’s quoted units.';
+    get('units').textContent = symbol + ' · ' + label + '. Enter the strike and forecast in the metric’s quoted units.';
     get('history-heading').textContent = names[company.value] + ' · ' + label + ' · ' + symbol;
     const history = get('history');
     history.replaceChildren();
@@ -228,20 +228,24 @@ body > nav > ul > li.dropdown > button.dropbtn { color:#0000ff !important; backg
       addRow(history, [period, date, number.format(value)]);
       if (!byQuarter.has(period)) byQuarter.set(period, value);
     }
-    const errors = [];
+    const ratios = [];
     for (const [period, value] of byQuarter) {
       const match = /^(\d{4})(Q[1-4])$/.exec(period);
       if (!match) continue;
       const prior = byQuarter.get(String(Number(match[1]) - 1) + match[2]);
-      if (prior !== undefined) errors.push(value - prior);
+      if (prior !== undefined && prior !== 0) ratios.push(value / prior);
     }
     const benchmark = get('historical-sd');
-    if (errors.length < 2) {
+    if (ratios.length < 2) {
       benchmark.textContent = 'Historical benchmark unavailable. At least two year-over-year comparisons are needed.';
     } else {
+      const useLog = ratios.every(ratio => ratio > 0);
+      const errors = ratios.map(ratio => useLog ? Math.log(ratio) : ratio - 1);
       const average = errors.reduce((sum, value) => sum + value, 0) / errors.length;
       const variance = errors.reduce((sum, value) => sum + (value - average) ** 2, 0) / (errors.length - 1);
-      benchmark.textContent = 'Historical benchmark: ' + number.format(Math.sqrt(variance)) + ' in KPI units, from ' + errors.length + ' year-over-year comparisons.';
+      const method = useLog ? 'log changes' : 'relative changes';
+      benchmark.textContent = 'Historical benchmark: ' + percent.format(Math.sqrt(variance)) +
+        ' standard deviation of ' + method + ' across ' + errors.length + ' year-over-year comparisons.';
     }
     for (const id of ['strike', 'forward', 'sd']) get(id).value = '';
     result.replaceChildren();
@@ -272,7 +276,14 @@ body > nav > ul > li.dropdown > button.dropbtn { color:#0000ff !important; backg
     event.preventDefault();
     const strike = get('strike').valueAsNumber;
     const forward = get('forward').valueAsNumber;
-    const sd = get('sd').valueAsNumber;
+    const sdPercent = get('sd').valueAsNumber;
+    const sd = Math.abs(forward) * (sdPercent / 100);
+    if (sdPercent > 0 && (sd === 0 || !Number.isFinite(sd))) {
+      result.textContent = forward === 0
+        ? 'A percentage standard deviation requires a nonzero expected KPI.'
+        : 'Enter an expected KPI and standard deviation within a calculable range.';
+      return;
+    }
     const days = get('days').valueAsNumber || 0;
     const rate = get('rate').valueAsNumber || 0;
     const discount = Math.exp(-(rate / 100) * (days / 365));
