@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+	<!-- Global site tag (gtag.js) - Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-162894652-1"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'UA-162894652-1');
+</script>
+
+	<!-- begin verification added 09 Jan 2018-->
+	<meta name="google-site-verification" content="kO9DAjiPgMvebkKvDvBeeIEj8IFRIKbyZF115wiSvyw" />
+    <meta charset="UTF-8">
+	<!-- end verification added 09 Jan 2018 -->
+		<title>Exotic Options | RiskSnap</title>
+
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+
+		<!-- link to main stylesheet -->
+        <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.5.0/css/all.css" integrity="sha384-B4dIYHKNBt8Bc12p+WXckhzcICo0wtJAoU8YZTY5qE0Id1GSseTk6S+L3BlXeVIU" crossorigin="anonymous">
+        <!-- link rel="stylesheet" type="text/css" href="http://maxcdn.bootstrapcdn.com/font-awesome/4.1.0/css/font-awesome.min.css" -->
+			<link rel="stylesheet" type="text/css" href="/css/main.css">
+			<style>
+			  nav .menufont,
+			  nav .dropbtn {
+			    font-weight: 400 !important;
+			  }
+			  /* Slightly strengthen the visible navigation row without enlarging
+			     the home icon or the Risk dropdown contents. */
+			  nav > ul > li:not(:first-child) > .menufont,
+			  nav > ul > li > .dropbtn {
+			    font-size: 17px !important;
+			    font-weight: 600 !important;
+			  }
+			  @media (max-width: 700px) {
+			    nav > ul > li:not(:first-child) > .menufont,
+			    nav > ul > li > .dropbtn {
+			      font-size: 14px !important;
+			    }
+			  }
+			</style>
+        <!-- Global site tag (gtag.js) - Google Analytics -->
+        <script async src="https://www.googletagmanager.com/gtag/js?id=UA-111540481-1"></script>
+        <script>
+          window.dataLayer = window.dataLayer || [];
+          function gtag(){dataLayer.push(arguments);}
+          gtag('js', new Date());
+
+          gtag('config', 'UA-111540481-1');
+        </script>
+		<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+	<style>
+/* Shared navigation: yellow through orange to red. */
+body > nav {
+  background: linear-gradient(90deg, #ffe45c 0%, #ffab36 50%, #ef5350 100%) !important;
+  border-bottom: 1px solid #c9a900;
+}
+body > nav > ul {
+  background: transparent !important;
+}
+body > nav > ul > li.dropdown > button.dropbtn { color:#0000ff !important; background:transparent !important; border:0 !important; box-shadow:none !important; }
+</style>
+</head>
+	<body>
+        <img alt="risksnap-icon" src="/images/RiskSnap.png" style="width:125px; height:auto;" />
+		<nav>
+    		<ul>
+                <li><a class="menufont" href="/"><i class="fas fa-home fa-2x" aria-hidden="true"></i></a></li>
+  			    <li class="dropdown">
+                  <button class="dropbtn">Risk</button>
+                  <div class="dropdown-content">
+					<a class="menufont" href="/netting">Portfolio</a>
+                    <a class="menufont" href="/metrics">Metrics</a>
+					<a class="menufont" href="/marketriskfactors">Market</a>
+					<a class="menufont" href="/structuredproducts">Structured Products</a>
+					<a class="menufont" href="/regulations">Regulations</a>
+					<a class="menufont" href="/resources">Resources</a>
+                    <a class="menufont" href="/newsworthy">Newsworthy</a>
+                  </div>
+                </li>
+				<li><a class="menufont" href="/products">Solutions</a></li>
+				
+				<li><a class="menufont" href="/rates_and_inflation">Rates and Inflation</a></li>
+				<li><a class="menufont" href="/foreignexchange">Foreign Exchange, Gold and Oil</a></li>
+				<li><a class="menufont" href="/equities">Equities and Futures</a></li>
+				<li><a class="menufont" href="/correlations" style="color:#0000FF !important; font-weight:bold;">Correlations, Portfolios</a></li>
+				<li><a class="menufont" href="/portfolio_optimization">Portfolio Optimization</a></li>
+				<li><a class="menufont" href="/dispersion">Dispersion Index</a></li>
+				<li><a class="menufont" href="/stockselection">Stock Selection</a></li>
+				<li><a class="menufont" href="/options">Options &amp; Strategies</a></li>
+				<li><a class="menufont" href="/binaries/">Binary Options</a></li>
+                <li><a class="menufont" href="/gamma">Gamma</a></li>
+				<li><a class="menufont" href="/surface">Surface</a></li>
+				<li><a class="menufont" href="/contact">Contact</a></li>
+    		</ul>
+		</nav>
+		<div class="page-content">
+            <main class="exotics-page">
+  <h1>Exotic Options</h1>
+  <section aria-labelledby="kpi-title">
+    <h2 id="kpi-title">KPI Binary Options</h2>
+    <p>Cboe KPI binaries settle on a reported company metric, such as quarterly earnings per share, AWS revenue or vehicle production. The strike is in the same units as the metric.</p>
+    <div class="kpi-pair">
+      <p><strong>Call pays US$1</strong> when the reported KPI is at or above the strike.</p>
+      <p><strong>Put pays US$1</strong> when the reported KPI is below the strike.</p>
+    </div>
+    <p>Each contract pays zero when its condition is unmet.</p>
+  </section>
+
+  <section class="kpi-card" aria-labelledby="pricer-title">
+    <h2 id="pricer-title">Price a KPI binary</h2>
+    <form id="kpi-form">
+      <div class="kpi-grid">
+        <label>Company<select id="kpi-company"></select></label>
+        <label>Reported metric<select id="kpi-metric"></select></label>
+      </div>
+      <p id="kpi-units"></p>
+      <div class="kpi-grid">
+        <label>Strike<input id="kpi-strike" type="number" step="any" required></label>
+        <label>Expected KPI (forward estimate)<input id="kpi-forward" type="number" step="any" required aria-describedby="kpi-forward-help"></label>
+        <label>KPI standard deviation<input id="kpi-sd" type="number" step="any" min="0" required aria-describedby="kpi-sd-help"></label>
+        <label>Distribution<select id="kpi-model"><option value="normal">Normal</option><option value="lognormal">Lognormal</option></select></label>
+        <label>Days to payout<input id="kpi-days" type="number" step="1" min="0" placeholder="Optional"></label>
+        <label>Annual discount rate (%)<input id="kpi-rate" type="number" step="any" value="0"></label>
+      </div>
+      <p id="kpi-forward-help">Enter the consensus estimate for the reporting period, if available, or your own forecast. Cboe supplies historical reported values. The calculator takes the expected KPI as an input.</p>
+      <p id="kpi-sd-help">Enter one standard deviation for this specific release, in KPI units. For a revenue metric in US$ billions, enter 2 for US$2 billion of uncertainty. Leave days blank for an undiscounted estimate.</p>
+      <button type="submit">Calculate</button>
+      <div id="kpi-result" role="status" aria-live="polite"></div>
+    </form>
+    <details>
+      <summary>Pricing assumptions</summary>
+      <p>The normal model uses the expected KPI as its mean and allows negative outcomes. The lognormal model requires a positive mean and matches the entered standard deviation. Its call and put probabilities use N(d₂) and N(−d₂), respectively, for positive strikes. Both models multiply the probability by the discounted US$1 payout.</p>
+      <p>With positive uncertainty the models are continuous, so equality carries zero modeled probability even if the company rounds its reported figure. With zero uncertainty, an expected KPI equal to the strike pays the call. Values are model estimates based on your inputs. Market prices can reflect different assumptions and a risk premium.</p>
+    </details>
+  </section>
+
+  <section class="kpi-card" aria-labelledby="history-title">
+    <h2 id="history-title">Reported KPI history</h2>
+    <p id="kpi-history-heading"></p>
+    <p id="kpi-historical-sd"></p>
+    <p>The historical benchmark is the sample standard deviation of year-over-year changes for matching fiscal quarters. It measures past variation around a simple forecast using the prior year’s same-quarter value. It can differ substantially from the uncertainty around today’s forecast.</p>
+    <div class="kpi-scroll" role="region" aria-label="Reported KPI history" tabindex="0">
+      <table>
+        <thead><tr><th scope="col">Fiscal period</th><th scope="col">Date in Cboe data</th><th scope="col">Reported value</th></tr></thead>
+        <tbody id="kpi-history"></tbody>
+      </table>
+    </div>
+    <p>Source data as of November 26, 2026. <a href="https://www.cboe.com/markets/us/options/market-statistics/product-data/kpi-settlement-values/">Cboe KPI history and settlement data</a></p>
+  </section>
+
+  <section class="kpi-card" aria-labelledby="companies-title">
+    <h2 id="companies-title">Companies and example metrics</h2>
+    <p>Select a company in the pricer to see its available metrics in the Cboe data snapshot. <a href="https://www.cboe.com/markets/us/options/market-statistics/reference-data/">Cboe’s series file lists current strikes and expirations</a>.</p>
+    <div class="kpi-scroll" role="region" aria-label="Companies and example metrics" tabindex="0">
+      <table><thead><tr><th scope="col">Company</th><th scope="col">Example metric</th><th scope="col">KPI symbol</th></tr></thead>
+        <tbody id="kpi-catalog"></tbody>
+      </table>
+    </div>
+  </section>
+</main>
+<style>
+.exotics-page{margin:24px auto;padding:0 16px;max-width:1000px;font-family:Arial,Helvetica,sans-serif;color:#173248;box-sizing:border-box}
+.exotics-page h1,.exotics-page h2{line-height:1.2;margin:0 0 .65em}
+.exotics-page p{font-size:1rem;line-height:1.5;margin:.65em 0;color:inherit}
+.exotics-page .kpi-card{margin:24px 0;padding:clamp(14px,3vw,24px);border:1px solid #b8cddd;border-radius:8px;background:#f3f8fc}
+.kpi-pair,.kpi-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 20px}
+.kpi-pair p{padding:12px;background:#edf4fb;border-left:3px solid #477ca4;margin:0}
+.kpi-grid label{min-width:0;font-weight:600}
+.kpi-grid select,.kpi-grid input{display:block;box-sizing:border-box;width:100%;min-height:44px;margin-top:5px;padding:7px;border:1px solid #7996ab;border-radius:4px;color:#173248;background:white;font:inherit;font-weight:400}
+#kpi-form button{padding:10px 16px;border:0;border-radius:4px;color:white;background:#17496c;font:inherit;cursor:pointer}
+#kpi-result:not(:empty){margin:14px 0;padding:12px;border:1px solid #7996ab;background:#fff;border-radius:4px}
+.kpi-card details{margin-top:14px}
+.kpi-card summary{cursor:pointer}
+.kpi-scroll{max-width:100%;overflow:auto}
+.kpi-scroll table{width:100%;border-collapse:collapse;background:#fff}
+.kpi-scroll th,.kpi-scroll td{padding:8px 10px;border-bottom:1px solid #d5e2ec;text-align:left}
+.kpi-scroll th{background:#dceaf5;color:#173248}
+.exotics-page a{color:#17496c;text-decoration:underline}
+@media(max-width:560px){.kpi-pair,.kpi-grid{grid-template-columns:1fr}.kpi-scroll th,.kpi-scroll td{padding:6px}}
+</style>
+<script id="kpi-data" type="application/json">{"KAAPL":{"company":"AAPL","label":"Earnings Per Share ($/share)","rows":[["2026Q2","2026-04-30",2.01],["2026Q1","2026-01-29",2.84],["2025Q4","2025-10-30",1.85],["2025Q3","2025-07-31",1.57],["2025Q2","2025-05-01",1.65],["2025Q1","2025-01-30",2.4],["2024Q4","2024-10-31",0.97],["2024Q3","2024-08-01",1.4]]},"KBAPL":{"company":"AAPL","label":"Revenue ($b)","rows":[["2026Q2","2026-04-30",111.184],["2026Q1","2026-01-29",143.756],["2025Q4","2025-10-30",102.466],["2025Q3","2025-07-31",94.036],["2025Q2","2025-05-01",95.359],["2025Q1","2025-01-30",124.3],["2024Q4","2024-10-31",94.93],["2024Q3","2024-08-01",85.777]]},"KCAPL":{"company":"AAPL","label":"iPhone Net Sales ($b)","rows":[["2026Q2","2026-04-30",56.994],["2026Q1","2026-01-29",85.269],["2025Q4","2025-10-30",49.025],["2025Q3","2025-07-31",44.582],["2025Q2","2025-05-01",46.841],["2025Q1","2025-01-30",69.138],["2024Q4","2024-10-31",46.222],["2024Q3","2024-08-01",39.296]]},"KDAPL":{"company":"AAPL","label":"Services Net Sales ($b)","rows":[["2026Q2","2026-04-30",30.976],["2026Q1","2026-01-29",30.013],["2025Q4","2025-10-30",28.75],["2025Q3","2025-07-31",27.423],["2025Q2","2025-05-01",26.645],["2025Q1","2025-01-30",26.34],["2024Q4","2024-10-31",24.972],["2024Q3","2024-08-01",24.213]]},"KEAPL":{"company":"AAPL","label":"Americas Net Sales ($b)","rows":[["2026Q2","2026-04-30",45.093],["2026Q1","2026-01-29",58.529],["2025Q4","2025-10-30",44.192],["2025Q3","2025-07-31",41.198],["2025Q2","2025-05-01",40.315],["2025Q1","2025-01-30",52.648],["2024Q4","2024-10-31",41.664],["2024Q3","2024-08-01",37.678]]},"KFAPL":{"company":"AAPL","label":"Greater China Net Sales ($b)","rows":[["2026Q2","2026-04-30",20.497],["2026Q1","2026-01-29",25.526],["2025Q4","2025-10-30",14.493],["2025Q3","2025-07-31",15.369],["2025Q2","2025-05-01",16.002],["2025Q1","2025-01-30",18.513],["2024Q4","2024-10-31",15.033],["2024Q3","2024-08-01",14.728]]},"KAAMD":{"company":"AMD","label":"Earnings Per Share ($/share)","rows":[["2026Q1","2026-05-05",0.84],["2025Q4","2026-02-03",0.92],["2025Q3","2025-11-04",0.75],["2025Q2","2025-08-05",0.54],["2025Q1","2025-05-06",0.44],["2024Q4","2025-02-04",0.29],["2024Q3","2024-10-29",0.47],["2024Q2","2024-07-30",0.16]]},"KBAMD":{"company":"AMD","label":"Revenue ($b)","rows":[["2026Q1","2026-05-05",10.253],["2025Q4","2026-02-03",10.27],["2025Q3","2025-11-04",9.246],["2025Q2","2025-08-05",7.685],["2025Q1","2025-05-06",7.438],["2024Q4","2025-02-04",7.658],["2024Q3","2024-10-29",6.819],["2024Q2","2024-07-30",5.835]]},"KCAMD":{"company":"AMD","label":"Data Center Revenue ($b)","rows":[["2026Q1","2026-05-05",5.775],["2025Q4","2026-02-03",5.38],["2025Q3","2025-11-04",4.341],["2025Q2","2025-08-05",3.24],["2025Q1","2025-05-06",3.674],["2024Q4","2025-02-04",3.859],["2024Q3","2024-10-29",3.549],["2024Q2","2024-07-30",2.834]]},"KDAMD":{"company":"AMD","label":"Gaming Revenue ($b)","rows":[["2026Q1","2026-05-05",3.605],["2025Q4","2026-02-03",3.94],["2025Q3","2025-11-04",4.048],["2025Q2","2025-08-05",3.621],["2025Q1","2025-05-06",2.941],["2024Q4","2025-02-04",0.563],["2024Q3","2024-10-29",0.462],["2024Q2","2024-07-30",0.648]]},"KEAMD":{"company":"AMD","label":"Operating Margin (%)","rows":[["2026Q1","2026-05-05",14.0],["2025Q4","2026-02-03",17.0],["2025Q3","2025-11-04",14.0],["2025Q2","2025-08-05",-2.0],["2025Q1","2025-05-06",11.0],["2024Q4","2025-02-04",11.0],["2024Q3","2024-10-29",11.0],["2024Q2","2024-07-30",5.0]]},"KAAMZ":{"company":"AMZN","label":"Earnings Per Share ($/share)","rows":[["2026Q1","2026-04-29",2.78],["2025Q4","2026-02-05",1.95],["2025Q3","2025-10-30",1.95],["2025Q2","2025-07-31",1.68],["2025Q1","2025-05-01",1.59],["2024Q4","2025-02-06",1.86],["2024Q3","2024-10-31",1.43],["2024Q2","2024-08-01",1.26]]},"KBAMZ":{"company":"AMZN","label":"Revenue ($b)","rows":[["2026Q1","2026-04-29",181.519],["2025Q4","2026-02-05",213.386],["2025Q3","2025-10-30",180.169],["2025Q2","2025-07-31",167.702],["2025Q1","2025-05-01",155.667],["2024Q4","2025-02-06",187.792],["2024Q3","2024-10-31",158.877],["2024Q2","2024-08-01",147.977]]},"KCAMZ":{"company":"AMZN","label":"AWS Revenue ($b)","rows":[["2026Q1","2026-04-29",37.587],["2025Q4","2026-02-05",35.579],["2025Q3","2025-10-30",33.006],["2025Q2","2025-07-31",30.873],["2025Q1","2025-05-01",29.267],["2024Q4","2025-02-06",28.786],["2024Q3","2024-10-31",27.452],["2024Q2","2024-08-01",26.281]]},"KDAMZ":{"company":"AMZN","label":"North America Revenue ($b)","rows":[["2026Q1","2026-04-29",104.143],["2025Q4","2026-02-05",127.083],["2025Q3","2025-10-30",106.267],["2025Q2","2025-07-31",100.068],["2025Q1","2025-05-01",92.887],["2024Q4","2025-02-06",115.586],["2024Q3","2024-10-31",95.537],["2024Q2","2024-08-01",90.033]]},"KEAMZ":{"company":"AMZN","label":"International Revenue ($b)","rows":[["2026Q1","2026-04-29",39.789],["2025Q4","2026-02-05",50.724],["2025Q3","2025-10-30",40.896],["2025Q2","2025-07-31",36.761],["2025Q1","2025-05-01",33.513],["2024Q4","2025-02-06",43.42],["2024Q3","2024-10-31",35.888],["2024Q2","2024-08-01",31.663]]},"KFAMZ":{"company":"AMZN","label":"Advertising Services Net Sales ($b)","rows":[["2026Q1","2026-04-29",17.243],["2025Q4","2026-02-05",21.317],["2025Q3","2025-10-30",17.703],["2025Q2","2025-07-31",15.694],["2025Q1","2025-05-01",13.921],["2024Q4","2025-02-06",17.288],["2024Q3","2024-10-31",14.331],["2024Q2","2024-08-01",12.771]]},"KABAC":{"company":"BAC","label":"Earnings Per Share ($/share)","rows":[["2026Q1","2026-04-15",1.11],["2025Q4","2026-01-14",0.98],["2025Q3","2025-10-15",1.06],["2025Q2","2025-07-16",0.89],["2025Q1","2025-04-15",0.9],["2024Q4","2025-01-16",0.82],["2024Q3","2024-10-15",0.81],["2024Q2","2024-07-16",0.83]]},"KBBAC":{"company":"BAC","label":"Revenue ($b)","rows":[["2026Q1","2026-04-15",30.272],["2025Q4","2026-01-14",28.367],["2025Q3","2025-10-15",28.088],["2025Q2","2025-07-16",26.463],["2025Q1","2025-04-15",27.366],["2024Q4","2025-01-16",25.347],["2024Q3","2024-10-15",25.345],["2024Q2","2024-07-16",25.377]]},"KCBAC":{"company":"BAC","label":"Net Interest Income ($b)","rows":[["2026Q1","2026-04-15",15.745],["2025Q4","2026-01-14",15.75],["2025Q3","2025-10-15",15.233],["2025Q2","2025-07-16",14.67],["2025Q1","2025-04-15",14.443],["2024Q4","2025-01-16",14.359],["2024Q3","2024-10-15",13.967],["2024Q2","2024-07-16",13.702]]},"KDBAC":{"company":"BAC","label":"Total Credit Loss Provisions ($b)","rows":[["2026Q1","2026-04-15",1.337],["2025Q4","2026-01-14",1.308],["2025Q3","2025-10-15",1.295],["2025Q2","2025-07-16",1.592],["2025Q1","2025-04-15",1.48],["2024Q4","2025-01-16",1.452],["2024Q3","2024-10-15",1.542],["2024Q2","2024-07-16",1.508]]},"KEBAC":{"company":"BAC","label":"Net Income ($b)","rows":[["2026Q1","2026-04-15",8.584],["2025Q4","2026-01-14",7.647],["2025Q3","2025-10-15",8.469],["2025Q2","2025-07-16",7.116],["2025Q1","2025-04-15",7.396],["2024Q4","2025-01-16",6.665],["2024Q3","2024-10-15",6.896],["2024Q2","2024-07-16",6.897]]},"KACIT":{"company":"C","label":"Earnings Per Share ($/share)","rows":[["2025Q4","2026-01-14",1.19],["2025Q3","2025-10-14",1.86],["2025Q2","2025-07-15",1.96],["2025Q1","2025-04-15",1.96],["2024Q4","2025-01-15",1.34],["2024Q3","2024-10-15",1.51],["2024Q2","2024-07-12",1.52],["2024Q1","2024-04-12",1.58]]},"KBCIT":{"company":"C","label":"Revenue ($b)","rows":[["2025Q4","2026-01-14",19.871],["2025Q3","2025-10-14",22.09],["2025Q2","2025-07-15",21.668],["2025Q1","2025-04-15",21.596],["2024Q4","2025-01-15",19.581],["2024Q3","2024-10-15",20.315],["2024Q2","2024-07-12",20.139],["2024Q1","2024-04-12",21.104]]},"KCCIT":{"company":"C","label":"Net Interest Income ($b)","rows":[["2025Q4","2026-01-14",15.665],["2025Q3","2025-10-14",14.94],["2025Q2","2025-07-15",15.175],["2025Q1","2025-04-15",14.012],["2024Q4","2025-01-15",13.733],["2024Q3","2024-10-15",13.362],["2024Q2","2024-07-12",13.293],["2024Q1","2024-04-12",13.507]]},"KDCIT":{"company":"C","label":"Total Provision for Credit Losses ($b)","rows":[["2025Q4","2026-01-14",2.22],["2025Q3","2025-10-14",2.45],["2025Q2","2025-07-15",2.872],["2025Q1","2025-04-15",2.723],["2024Q4","2025-01-15",2.593],["2024Q3","2024-10-15",2.675],["2024Q2","2024-07-12",2.476],["2024Q1","2024-04-12",2.365]]},"KECIT":{"company":"C","label":"Net Income ($b)","rows":[["2025Q4","2026-01-14",2.471],["2025Q3","2025-10-14",3.752],["2025Q2","2025-07-15",4.019],["2025Q1","2025-04-15",4.064],["2024Q4","2025-01-15",2.856],["2024Q3","2024-10-15",3.238],["2024Q2","2024-07-12",3.217],["2024Q1","2024-04-12",3.371]]},"KBCOI":{"company":"COIN","label":"Revenue ($b)","rows":[["2026Q1","2026-05-07",1.413],["2025Q4","2026-02-12",1.781],["2025Q3","2025-10-30",1.868],["2025Q2","2025-07-31",1.497],["2025Q1","2025-05-08",2.034],["2024Q4","2025-02-13",2.271],["2024Q3","2024-10-30",1.205],["2024Q2","2024-08-01",1.449]]},"KCCOI":{"company":"COIN","label":"Transaction Revenue ($m)","rows":[["2026Q1","2026-05-07",755.8],["2025Q4","2026-02-12",982.7],["2025Q3","2025-10-30",1046.3],["2025Q2","2025-07-31",764.3],["2025Q1","2025-05-08",1262.208],["2024Q4","2025-02-13",1556.0],["2024Q3","2024-10-30",572.5],["2024Q2","2024-08-01",780.9]]},"KDCOI":{"company":"COIN","label":"Subscription & Services Revenue ($m)","rows":[["2026Q1","2026-05-07",583.5],["2025Q4","2026-02-12",727.4],["2025Q3","2025-10-30",746.7],["2025Q2","2025-07-31",655.8],["2025Q1","2025-05-08",698.1],["2024Q4","2025-02-13",641.1],["2024Q3","2024-10-30",556.1],["2024Q2","2024-08-01",599.0]]},"KZCOI":{"company":"COIN","label":"Loss Per Share ($/share)","rows":[["2026Q1","2026-05-07",1.49],["2025Q4","2026-02-12",2.49],["2025Q3","2025-10-30",-1.5],["2025Q2","2025-07-31",-5.14],["2025Q1","2025-05-08",-0.24],["2024Q4","2025-02-13",-4.68],["2024Q3","2024-10-30",-0.28],["2024Q2","2024-08-01",-0.14]]},"KADIS":{"company":"DIS","label":"Earnings Per Share ($/share)","rows":[["2026Q4","2026-11-17",1.51],["2026Q2","2026-05-06",1.27],["2026Q1","2026-02-02",1.34],["2025Q4","2025-11-13",0.73],["2025Q3","2025-08-06",2.92],["2025Q2","2025-05-07",1.81],["2025Q1","2025-02-05",1.4],["2024Q4","2024-11-14",0.25],["2024Q3","2024-08-07",1.43]]},"KBDIS":{"company":"DIS","label":"Revenue ($b)","rows":[["2026Q4","2026-11-17",25.947],["2026Q2","2026-05-06",25.168],["2026Q1","2026-02-02",25.981],["2025Q4","2025-11-13",22.464],["2025Q3","2025-08-06",23.65],["2025Q2","2025-05-07",23.621],["2025Q1","2025-02-05",24.69],["2024Q4","2024-11-14",22.574],["2024Q3","2024-08-07",23.155]]},"KCDIS":{"company":"DIS","label":"Entertainment SVOD Operating Income ($m)","rows":[["2026Q4","2026-11-17",824.0],["2026Q2","2026-05-06",582.0],["2026Q1","2026-02-02",450.0],["2025Q4","2025-11-13",691.0],["2025Q3","2025-08-06",1022.0],["2025Q2","2025-05-07",1258.0],["2025Q1","2025-02-05",1703.0],["2024Q4","2024-11-14",1067.0],["2024Q3","2024-08-07",1201.0]]},"KDDIS":{"company":"DIS","label":"Experiences Revenue ($b)","rows":[["2026Q4","2026-11-17",10.105],["2026Q2","2026-05-06",9.487],["2026Q1","2026-02-02",10.006],["2025Q4","2025-11-13",8.766],["2025Q3","2025-08-06",9.086],["2025Q2","2025-05-07",8.889],["2025Q1","2025-02-05",9.415],["2024Q4","2024-11-14",8.24],["2024Q3","2024-08-07",8.386]]},"KEDIS":{"company":"DIS","label":"Sports Segment Operating Income ($m)","rows":[["2026Q4","2026-11-17",1393.0],["2026Q2","2026-05-06",652.0],["2026Q1","2026-02-02",191.0],["2025Q4","2025-11-13",911.0],["2025Q3","2025-08-06",1037.0],["2025Q2","2025-05-07",687.0],["2025Q1","2025-02-05",247.0],["2024Q4","2024-11-14",929.0],["2024Q3","2024-08-07",802.0]]},"KAFOR":{"company":"F","label":"Earnings Per Share ($/share)","rows":[["2026Q1","2026-04-29",0.63],["2025Q4","2026-02-10",-2.77],["2025Q3","2025-10-23",0.6],["2025Q2","2025-07-30",-0.01],["2025Q1","2025-05-05",0.12],["2024Q4","2025-02-05",-0.49],["2024Q3","2024-10-28",0.22],["2024Q2","2024-07-24",0.46]]},"KBFOR":{"company":"F","label":"Revenue ($b)","rows":[["2026Q1","2026-04-29",43.253],["2025Q4","2026-02-10",45.9],["2025Q3","2025-10-23",50.534],["2025Q2","2025-07-30",50.184],["2025Q1","2025-05-05",40.659],["2024Q4","2025-02-05",48.2],["2024Q3","2024-10-28",46.196],["2024Q2","2024-07-24",47.808]]},"KCFOR":{"company":"F","label":"Ford Pro Segment Revenue ($b)","rows":[["2026Q1","2026-04-29",14.7],["2025Q4","2026-02-10",14.9],["2025Q3","2025-10-23",17.4],["2025Q2","2025-07-30",18.8],["2025Q1","2025-05-05",15.2],["2024Q4","2025-02-05",16.2],["2024Q3","2024-10-28",15.7],["2024Q2","2024-07-24",17.0]]},"KDFOR":{"company":"F","label":"Ford Model E Segment Revenue ($b)","rows":[["2026Q1","2026-04-29",1.2],["2025Q4","2026-02-10",1.3],["2025Q3","2025-10-23",1.8],["2025Q2","2025-07-30",2.4],["2025Q1","2025-05-05",1.2],["2024Q4","2025-02-05",1.4],["2024Q3","2024-10-28",1.2],["2024Q2","2024-07-24",1.1]]},"KEFOR":{"company":"F","label":"Ford Blue Segment Revenue ($b)","rows":[["2026Q1","2026-04-29",23.9],["2025Q4","2026-02-10",26.2],["2025Q3","2025-10-23",28.0],["2025Q2","2025-07-30",25.8],["2025Q1","2025-05-05",21.0],["2024Q4","2025-02-05",27.3],["2024Q3","2024-10-28",26.2],["2024Q2","2024-07-24",26.7]]},"KAGOG":{"company":"GOOGL","label":"Earnings Per Share ($/share)","rows":[["2026Q2","2026-07-22",9.11],["2026Q1","2026-04-29",5.11],["2025Q4","2026-02-04",2.82],["2025Q3","2025-10-29",2.87],["2025Q2","2025-07-23",2.31],["2025Q1","2025-04-24",2.81],["2024Q4","2025-02-04",2.15],["2024Q3","2024-10-29",2.12]]},"KBGOG":{"company":"GOOGL","label":"Revenue ($b)","rows":[["2026Q2","2026-07-22",119.796],["2026Q1","2026-04-29",109.896],["2025Q4","2026-02-04",113.828],["2025Q3","2025-10-29",102.346],["2025Q2","2025-07-23",96.428],["2025Q1","2025-04-24",90.234],["2024Q4","2025-02-04",96.469],["2024Q3","2024-10-29",88.268]]},"KCGOG":{"company":"GOOGL","label":"YouTube Ads Revenue ($b)","rows":[["2026Q2","2026-07-22",11.055],["2026Q1","2026-04-29",9.883],["2025Q4","2026-02-04",11.383],["2025Q3","2025-10-29",10.261],["2025Q2","2025-07-23",9.796],["2025Q1","2025-04-24",8.927],["2024Q4","2025-02-04",10.473],["2024Q3","2024-10-29",8.921]]},"KDGOG":{"company":"GOOGL","label":"Google Cloud Revenue ($b)","rows":[["2026Q2","2026-07-22",24.768],["2026Q1","2026-04-29",20.028],["2025Q4","2026-02-04",17.664],["2025Q3","2025-10-29",15.157],["2025Q2","2025-07-23",13.624],["2025Q1","2025-04-24",12.26],["2024Q4","2025-02-04",11.955],["2024Q3","2024-10-29",11.353]]},"KAHOD":{"company":"HOOD","label":"Earnings Per Share ($/share)","rows":[["2026Q1","2026-04-28",0.38],["2025Q4","2026-02-10",0.66],["2025Q3","2025-11-05",0.61],["2025Q2","2025-07-30",0.42],["2025Q1","2025-04-30",0.37],["2024Q4","2025-02-12",1.01],["2024Q3","2024-10-30",0.17],["2024Q2","2024-08-07",0.21]]},"KBHOD":{"company":"HOOD","label":"Revenue ($b)","rows":[["2026Q1","2026-04-28",1.067],["2025Q4","2026-02-10",1.283],["2025Q3","2025-11-05",1.274],["2025Q2","2025-07-30",0.989],["2025Q1","2025-04-30",0.927],["2024Q4","2025-02-12",1.014],["2024Q3","2024-10-30",0.637],["2024Q2","2024-08-07",0.682]]},"KCHOD":{"company":"HOOD","label":"Funded Customers (#m)","rows":[["2026Q1","2026-04-28",27.4],["2025Q4","2026-02-10",27.0],["2025Q3","2025-11-05",26.8],["2025Q2","2025-07-30",26.5],["2025Q1","2025-04-30",25.8],["2024Q4","2025-02-12",25.2],["2024Q3","2024-10-30",24.3],["2024Q2","2024-08-07",24.2]]},"KDHOD":{"company":"HOOD","label":"Average Revenue Per User","rows":[["2026Q1","2026-04-28",157.0],["2025Q4","2026-02-10",191.0],["2025Q3","2025-11-05",191.0],["2025Q2","2025-07-30",151.0],["2025Q1","2025-04-30",145.0],["2024Q4","2025-02-12",164.0],["2024Q3","2024-10-30",105.0],["2024Q2","2024-08-07",113.0]]},"KEHOD":{"company":"HOOD","label":"Robinhood Gold Subscribers (#m)","rows":[["2026Q1","2026-04-28",4.3],["2025Q4","2026-02-10",4.2],["2025Q3","2025-11-05",3.9],["2025Q2","2025-07-30",3.5],["2025Q1","2025-04-30",3.2],["2024Q4","2025-02-12",2.6],["2024Q3","2024-10-30",2.2],["2024Q2","2024-08-07",2.0]]},"KBINT":{"company":"INTC","label":"Revenue ($b)","rows":[["2026Q2","2026-07-23",16.128],["2026Q1","2026-04-23",13.577],["2025Q4","2026-01-22",13.674],["2025Q3","2025-10-23",13.653],["2025Q2","2025-07-24",12.859],["2025Q1","2025-04-24",12.667],["2024Q4","2025-01-30",14.26],["2024Q3","2024-10-31",13.284]]},"KCINT":{"company":"INTC","label":"Client Computing Revenue ($b)","rows":[["2026Q2","2026-07-23",8.877],["2026Q1","2026-04-23",7.727],["2025Q4","2026-01-22",8.193],["2025Q3","2025-10-23",8.535],["2025Q2","2025-07-24",7.871],["2025Q1","2025-04-24",7.629],["2024Q4","2025-01-30",8.017],["2024Q3","2024-10-31",7.33]]},"KDINT":{"company":"INTC","label":"Data Center and AI Revenue ($b)","rows":[["2026Q2","2026-07-23",6.262],["2026Q1","2026-04-23",5.052],["2025Q4","2026-01-22",4.737],["2025Q3","2025-10-23",4.117],["2025Q2","2025-07-24",3.939],["2025Q1","2025-04-24",4.126],["2024Q4","2025-01-30",3.387],["2024Q3","2024-10-31",3.349]]},"KEINT":{"company":"INTC","label":"Intel Foundry Revenue ($b)","rows":[["2026Q2","2026-07-23",5.765],["2026Q1","2026-04-23",5.421],["2025Q4","2026-01-22",4.507],["2025Q3","2025-10-23",4.235],["2025Q2","2025-07-24",4.417],["2025Q1","2025-04-24",4.667],["2024Q4","2025-01-30",4.502],["2024Q3","2024-10-31",4.352]]},"KFINT":{"company":"INTC","label":"Operating Margin (%)","rows":[["2026Q2","2026-07-23",11.1],["2026Q1","2026-04-23",-23.1],["2025Q4","2026-01-22",4.2],["2025Q3","2025-10-23",5.0],["2025Q2","2025-07-24",-24.7],["2025Q1","2025-04-24",-2.4],["2024Q4","2025-01-30",2.9],["2024Q3","2024-10-31",-68.2]]},"KZINT":{"company":"INTC","label":"Loss Per Share ($/share)","rows":[["2026Q2","2026-07-23",2.16],["2026Q1","2026-04-23",0.73],["2025Q4","2026-01-22",0.12],["2025Q3","2025-10-23",-0.9],["2025Q2","2025-07-24",0.67],["2025Q1","2025-04-24",0.19],["2024Q4","2025-01-30",0.03],["2024Q3","2024-10-31",3.88]]},"KAJPM":{"company":"JPM","label":"Earnings Per Share ($/share)","rows":[["2026Q1","2026-04-14",5.94],["2025Q4","2026-01-13",4.63],["2025Q3","2025-10-14",5.07],["2025Q2","2025-07-15",5.24],["2025Q1","2025-04-11",5.07],["2024Q4","2025-01-15",4.81],["2024Q3","2024-10-11",4.37],["2024Q2","2024-07-12",6.12]]},"KBJPM":{"company":"JPM","label":"Revenue ($b)","rows":[["2026Q1","2026-04-14",49.836],["2025Q4","2026-01-13",45.798],["2025Q3","2025-10-14",46.427],["2025Q2","2025-07-15",44.912],["2025Q1","2025-04-11",45.31],["2024Q4","2025-01-15",42.768],["2024Q3","2024-10-11",42.654],["2024Q2","2024-07-12",50.2]]},"KCJPM":{"company":"JPM","label":"Net Interest Income ($b)","rows":[["2026Q1","2026-04-14",25.366],["2025Q4","2026-01-13",24.995],["2025Q3","2025-10-14",23.966],["2025Q2","2025-07-15",23.209],["2025Q1","2025-04-11",23.273],["2024Q4","2025-01-15",23.35],["2024Q3","2024-10-11",23.405],["2024Q2","2024-07-12",22.746]]},"KDJPM":{"company":"JPM","label":"Total Credit Loss Provisions ($b)","rows":[["2026Q1","2026-04-14",2.507],["2025Q4","2026-01-13",4.655],["2025Q3","2025-10-14",3.403],["2025Q2","2025-07-15",2.849],["2025Q1","2025-04-11",3.305],["2024Q4","2025-01-15",2.631],["2024Q3","2024-10-11",3.111],["2024Q2","2024-07-12",3.052]]},"KEJPM":{"company":"JPM","label":"Net Income ($b)","rows":[["2026Q1","2026-04-14",16.494],["2025Q4","2026-01-13",13.025],["2025Q3","2025-10-14",14.393],["2025Q2","2025-07-15",14.987],["2025Q1","2025-04-11",14.643],["2024Q4","2025-01-15",14.005],["2024Q3","2024-10-11",12.898],["2024Q2","2024-07-12",18.149]]},"KBMAR":{"company":"MARA","label":"Revenue ($m)","rows":[["2026Q1","2026-05-11",174.614],["2025Q4","2026-02-26",202.314],["2025Q3","2025-11-04",252.41],["2025Q2","2025-07-29",238.485],["2025Q1","2025-05-09",213.884],["2024Q4","2025-02-26",214.394],["2024Q3","2024-11-12",131.647],["2024Q2","2024-08-01",145.139]]},"KCMAR":{"company":"MARA","label":"Total Blocks Won (#BTC)","rows":[["2026Q1","2026-05-11",653.0],["2025Q4","2026-02-26",595.0],["2025Q3","2025-11-04",633.0],["2025Q2","2025-07-29",694.0],["2025Q1","2025-05-09",666.0],["2024Q4","2025-02-26",703.0],["2024Q3","2024-11-12",604.0],["2024Q2","2024-08-01",457.0]]},"KDMAR":{"company":"MARA","label":"Energized Hashrate (#EH/s)","rows":[["2026Q1","2026-05-11",72.2],["2025Q4","2026-02-26",66.4],["2025Q3","2025-11-04",60.4],["2025Q2","2025-07-29",57.4],["2025Q1","2025-05-09",54.3],["2024Q4","2025-02-26",53.2],["2024Q3","2024-11-12",36.9],["2024Q2","2024-08-01",31.5]]},"KEMAR":{"company":"MARA","label":"Bitcoin Holdings (#k BTC)","rows":[["2026Q1","2026-05-11",35.303],["2025Q4","2026-02-26",53.822],["2025Q3","2025-11-04",52.85],["2025Q2","2025-07-29",49.951],["2025Q1","2025-05-09",47.531],["2024Q4","2025-02-26",44.893],["2024Q3","2024-11-12",26.747],["2024Q2","2024-08-01",18.488]]},"KFMAR":{"company":"MARA","label":"Bitcoins Mined (#k BTC)","rows":[["2026Q1","2026-05-11",2.247],["2025Q4","2026-02-26",2.011],["2025Q3","2025-11-04",2.144],["2025Q2","2025-07-29",2.358],["2025Q1","2025-05-09",2.286],["2024Q4","2025-02-26",2.492],["2024Q3","2024-11-12",2.07],["2024Q2","2024-08-01",2.058]]},"KGMAR":{"company":"MARA","label":"Bitcoins Purchased (#k BTC)","rows":[["2026Q1","2026-05-11",0.0],["2025Q4","2026-02-26",1.67],["2025Q3","2025-11-04",2.257],["2025Q2","2025-07-29",0.0],["2025Q1","2025-05-09",0.34],["2024Q4","2025-02-26",15.574],["2024Q3","2024-11-12",6.21],["2024Q2","2024-08-01",0.0]]},"KZMAR":{"company":"MARA","label":"Loss Per Share ($/share)","rows":[["2026Q1","2026-05-11",3.31],["2025Q4","2026-02-26",4.52],["2025Q3","2025-11-04",-0.27],["2025Q2","2025-07-29",-1.84],["2025Q1","2025-05-09",1.55],["2024Q4","2025-02-26",-1.24],["2024Q3","2024-11-12",0.42],["2024Q2","2024-08-01",0.72]]},"KAMET":{"company":"META","label":"Earnings Per Share ($/share)","rows":[["2026Q1","2026-04-29",10.44],["2025Q4","2026-01-28",8.88],["2025Q3","2025-10-29",1.05],["2025Q2","2025-07-30",7.14],["2025Q1","2025-04-30",6.43],["2024Q4","2025-01-29",8.02],["2024Q3","2024-10-30",6.03],["2024Q2","2024-07-31",5.16]]},"KBMET":{"company":"META","label":"Revenue ($b)","rows":[["2026Q1","2026-04-29",56.311],["2025Q4","2026-01-28",59.893],["2025Q3","2025-10-29",51.242],["2025Q2","2025-07-30",47.516],["2025Q1","2025-04-30",42.314],["2024Q4","2025-01-29",48.385],["2024Q3","2024-10-30",40.589],["2024Q2","2024-07-31",39.071]]},"KCMET":{"company":"META","label":"Family Daily Active People (b)","rows":[["2026Q1","2026-04-29",3.56],["2025Q4","2026-01-28",3.58],["2025Q3","2025-10-29",3.54],["2025Q2","2025-07-30",3.48],["2025Q1","2025-04-30",3.43],["2024Q4","2025-01-29",3.35],["2024Q3","2024-10-30",3.29],["2024Q2","2024-07-31",3.27]]},"KDMET":{"company":"META","label":"Advertising Revenue ($b)","rows":[["2026Q1","2026-04-29",55.024],["2025Q4","2026-01-28",58.137],["2025Q3","2025-10-29",50.082],["2025Q2","2025-07-30",46.563],["2025Q1","2025-04-30",41.392],["2024Q4","2025-01-29",46.783],["2024Q3","2024-10-30",39.885],["2024Q2","2024-07-31",38.329]]},"KEMET":{"company":"META","label":"Operating Margin (%)","rows":[["2026Q1","2026-04-29",41.0],["2025Q4","2026-01-28",41.0],["2025Q3","2025-10-29",40.0],["2025Q2","2025-07-30",43.0],["2025Q1","2025-04-30",41.0],["2024Q4","2025-01-29",48.0],["2024Q3","2024-10-30",43.0],["2024Q2","2024-07-31",38.0]]},"KAMSF":{"company":"MSFT","label":"Earnings Per Share ($/share)","rows":[["2026Q3","2026-04-29",4.27],["2026Q2","2026-01-28",5.16],["2026Q1","2025-10-29",3.72],["2025Q4","2025-07-30",3.65],["2025Q3","2025-04-30",3.46],["2025Q2","2025-01-29",3.23],["2025Q1","2024-10-30",3.3],["2024Q4","2024-07-30",2.95]]},"KBMSF":{"company":"MSFT","label":"Revenue ($b)","rows":[["2026Q3","2026-04-29",82.886],["2026Q2","2026-01-28",81.273],["2026Q1","2025-10-29",77.673],["2025Q4","2025-07-30",76.441],["2025Q3","2025-04-30",70.066],["2025Q2","2025-01-29",69.632],["2025Q1","2024-10-30",65.585],["2024Q4","2024-07-30",64.727]]},"KCMSF":{"company":"MSFT","label":"Intelligent Cloud Revenue ($b)","rows":[["2026Q3","2026-04-29",34.681],["2026Q2","2026-01-28",32.907],["2026Q1","2025-10-29",30.897],["2025Q4","2025-07-30",29.878],["2025Q3","2025-04-30",26.751],["2025Q2","2025-01-29",25.544],["2025Q1","2024-10-30",24.092],["2024Q4","2024-07-30",28.515]]},"KDMSF":{"company":"MSFT","label":"Microsoft Cloud Revenue ($b)","rows":[["2026Q3","2026-04-29",54.5],["2026Q2","2026-01-28",51.5],["2026Q1","2025-10-29",49.1],["2025Q4","2025-07-30",46.7],["2025Q3","2025-04-30",42.4],["2025Q2","2025-01-29",40.9],["2025Q1","2024-10-30",38.9],["2024Q4","2024-07-30",36.8]]},"KEMSF":{"company":"MSFT","label":"More Personal Computing Revenue ($b)","rows":[["2026Q3","2026-04-29",13.192],["2026Q2","2026-01-28",14.25],["2026Q1","2025-10-29",13.756],["2025Q4","2025-07-30",13.451],["2025Q3","2025-04-30",13.371],["2025Q2","2025-01-29",14.651],["2025Q1","2024-10-30",13.176],["2024Q4","2024-07-30",15.895]]},"KANFX":{"company":"NFLX","label":"Earnings Per Share ($/share)","rows":[["2026Q2","2026-07-16",0.8],["2026Q1","2026-04-16",1.23],["2025Q4","2026-01-20",0.56],["2025Q3","2025-10-21",5.87],["2025Q2","2025-07-17",7.19],["2025Q1","2025-04-17",6.61],["2024Q4","2025-01-21",4.27],["2024Q3","2024-10-17",5.4]]},"KBNFX":{"company":"NFLX","label":"Revenue ($b)","rows":[["2026Q2","2026-07-16",12.559],["2026Q1","2026-04-16",12.249],["2025Q4","2026-01-20",12.05],["2025Q3","2025-10-21",11.51],["2025Q2","2025-07-17",11.079],["2025Q1","2025-04-17",10.542],["2024Q4","2025-01-21",10.247],["2024Q3","2024-10-17",9.824]]},"KCNFX":{"company":"NFLX","label":"UCAN Revenue ($b)","rows":[["2026Q2","2026-07-16",5.431],["2026Q1","2026-04-16",5.245],["2025Q4","2026-01-20",5.339],["2025Q3","2025-10-21",5.071],["2025Q2","2025-07-17",4.929],["2025Q1","2025-04-17",4.617],["2024Q4","2025-01-21",4.517],["2024Q3","2024-10-17",4.322]]},"KDNFX":{"company":"NFLX","label":"EMEA Revenue ($b)","rows":[["2026Q2","2026-07-16",4.033],["2026Q1","2026-04-16",3.998],["2025Q4","2026-01-20",3.872],["2025Q3","2025-10-21",3.699],["2025Q2","2025-07-17",3.538],["2025Q1","2025-04-17",3.404],["2024Q4","2025-01-21",3.288],["2024Q3","2024-10-17",3.133]]},"KENFX":{"company":"NFLX","label":"Operating Margin (%)","rows":[["2026Q2","2026-07-16",33.4],["2026Q1","2026-04-16",32.3],["2025Q4","2026-01-20",24.5],["2025Q3","2025-10-21",28.22],["2025Q2","2025-07-17",34.1],["2025Q1","2025-04-17",31.746],["2024Q4","2025-01-21",22.2],["2024Q3","2024-10-17",29.6]]},"KANVD":{"company":"NVDA","label":"Earnings Per Share ($/share)","rows":[["2027Q3","2026-11-17",2.7],["2027Q1","2026-05-20",2.39],["2026Q4","2026-02-25",1.76],["2026Q3","2025-11-19",1.3],["2026Q2","2025-08-27",1.08],["2026Q1","2025-05-28",0.76],["2025Q4","2025-02-26",0.89],["2025Q3","2024-11-20",0.78],["2025Q2","2024-08-28",0.67]]},"KBNVD":{"company":"NVDA","label":"Revenue ($b)","rows":[["2027Q3","2026-11-17",115.844],["2027Q1","2026-05-20",81.615],["2026Q4","2026-02-25",68.127],["2026Q3","2025-11-19",57.006],["2026Q2","2025-08-27",46.743],["2026Q1","2025-05-28",44.062],["2025Q4","2025-02-26",39.331],["2025Q3","2024-11-20",35.082],["2025Q2","2024-08-28",30.04]]},"KCNVD":{"company":"NVDA","label":"Data Center Revenue ($b)","rows":[["2027Q3","2026-11-17",107.6],["2027Q1","2026-05-20",75.246],["2026Q4","2026-02-25",62.314],["2026Q3","2025-11-19",51.215],["2026Q2","2025-08-27",41.096],["2026Q1","2025-05-28",39.112],["2025Q4","2025-02-26",35.58],["2025Q3","2024-11-20",30.771],["2025Q2","2024-08-28",26.272]]},"KDNVD":{"company":"NVDA","label":"Edge Computing Revenue ($b)","rows":[["2027Q3","2026-11-17",8.2],["2027Q1","2026-05-20",6.369],["2026Q4","2026-02-25",5.813],["2026Q3","2025-11-19",5.791],["2026Q2","2025-08-27",5.647],["2026Q1","2025-05-28",4.95],["2025Q4","2025-02-26",3.751],["2025Q3","2024-11-20",4.311],["2025Q2","2024-08-28",3.768]]},"KAPLT":{"company":"PLTR","label":"Earnings Per Share ($/share)","rows":[["2026Q1","2026-05-04",0.34],["2025Q4","2026-02-02",0.24],["2025Q3","2025-11-03",0.18],["2025Q2","2025-08-04",0.13],["2025Q1","2025-05-05",0.08],["2024Q4","2025-02-03",0.03],["2024Q3","2024-11-04",0.06],["2024Q2","2024-08-05",0.06]]},"KBPLT":{"company":"PLTR","label":"Revenue ($b)","rows":[["2026Q1","2026-05-04",1.632],["2025Q4","2026-02-02",1.406],["2025Q3","2025-11-03",1.181],["2025Q2","2025-08-04",1.003],["2025Q1","2025-05-05",0.883],["2024Q4","2025-02-03",0.827],["2024Q3","2024-11-04",0.725],["2024Q2","2024-08-05",0.678]]},"KCPLT":{"company":"PLTR","label":"Net Income ($m)","rows":[["2026Q1","2026-05-04",870.527],["2025Q4","2026-02-02",608.676],["2025Q3","2025-11-03",475.599],["2025Q2","2025-08-04",326.727],["2025Q1","2025-05-05",217.717],["2024Q4","2025-02-03",79.009],["2024Q3","2024-11-04",143.525],["2024Q2","2024-08-05",134.126]]},"KDPLT":{"company":"PLTR","label":"Closed Deals of at Least $1 Million (#)","rows":[["2026Q1","2026-05-04",206.0],["2025Q4","2026-02-02",180.0],["2025Q3","2025-11-03",204.0],["2025Q2","2025-08-04",157.0],["2025Q1","2025-05-05",139.0],["2024Q4","2025-02-03",129.0],["2024Q3","2024-11-04",104.0]]},"KASMC":{"company":"SMCI","label":"Earnings Per Share ($/share)","rows":[["2026Q3","2026-05-05",0.72],["2026Q2","2026-02-03",0.6],["2026Q1","2025-11-04",0.26],["2025Q4","2025-08-05",0.31],["2025Q3","2025-05-06",0.17],["2025Q2","2025-02-11",0.51],["2025Q1","2024-11-05",0.67],["2024Q4","2024-08-06",5.51]]},"KBSMC":{"company":"SMCI","label":"Revenue ($b)","rows":[["2026Q3","2026-05-05",10.243],["2026Q2","2026-02-03",12.682],["2026Q1","2025-11-04",5.017],["2025Q4","2025-08-05",5.756],["2025Q3","2025-05-06",4.599],["2025Q2","2025-02-11",5.677],["2025Q1","2024-11-05",5.937],["2024Q4","2024-08-06",5.308]]},"KCSMC":{"company":"SMCI","label":"Gross Margin (%)","rows":[["2026Q3","2026-05-05",9.9],["2026Q2","2026-02-03",6.3],["2026Q1","2025-11-04",9.3],["2025Q4","2025-08-05",9.5],["2025Q3","2025-05-06",9.6],["2025Q2","2025-02-11",11.8],["2025Q1","2024-11-05",13.1],["2024Q4","2024-08-06",11.2]]},"KDSMC":{"company":"SMCI","label":"Net Income ($m)","rows":[["2026Q3","2026-05-05",483.387],["2026Q2","2026-02-03",400.564],["2026Q1","2025-11-04",168.285],["2025Q4","2025-08-05",195.154],["2025Q3","2025-05-06",108.777],["2025Q2","2025-02-11",320.596],["2025Q1","2024-11-05",424.327],["2024Q4","2024-08-06",352.727]]},"KASOF":{"company":"SOFI","label":"Earnings Per Share ($/share)","rows":[["2026Q1","2026-04-29",0.12],["2025Q4","2026-01-30",0.13],["2025Q3","2025-10-28",0.11],["2025Q2","2025-07-29",0.08],["2025Q1","2025-04-29",0.06],["2024Q4","2025-01-27",0.29],["2024Q3","2024-10-29",0.05],["2024Q2","2024-07-30",0.01]]},"KBSOF":{"company":"SOFI","label":"Revenue ($b)","rows":[["2026Q1","2026-04-29",1.1],["2025Q4","2026-01-30",1.025],["2025Q3","2025-10-28",0.961],["2025Q2","2025-07-29",0.854],["2025Q1","2025-04-29",0.771],["2024Q4","2025-01-27",0.734],["2024Q3","2024-10-29",0.697],["2024Q2","2024-07-30",0.598]]},"KCSOF":{"company":"SOFI","label":"Technology Platform Revenue ($m)","rows":[["2026Q1","2026-04-29",75.086],["2025Q4","2026-01-30",122.373],["2025Q3","2025-10-28",114.578],["2025Q2","2025-07-29",109.833],["2025Q1","2025-04-29",103.427],["2024Q4","2025-01-27",102.835],["2024Q3","2024-10-29",102.539],["2024Q2","2024-07-30",95.438]]},"KDSOF":{"company":"SOFI","label":"Financial Services Revenue ($m)","rows":[["2026Q1","2026-04-29",428.543],["2025Q4","2026-01-30",456.741],["2025Q3","2025-10-28",419.623],["2025Q2","2025-07-29",362.533],["2025Q1","2025-04-29",303.119],["2024Q4","2025-01-27",256.52],["2024Q3","2024-10-29",238.308],["2024Q2","2024-07-30",176.132]]},"KESOF":{"company":"SOFI","label":"Lending Revenue ($m)","rows":[["2026Q1","2026-04-29",642.42],["2025Q4","2026-01-30",498.682],["2025Q3","2025-10-28",493.382],["2025Q2","2025-07-29",443.512],["2025Q1","2025-04-29",413.373],["2024Q4","2025-01-27",417.796],["2024Q3","2024-10-29",396.245],["2024Q2","2024-07-30",340.705]]},"KBSPC":{"company":"SPCX","label":"Revenue ($b)","rows":[["2026Q2","2026-08-04",7.814],["2026Q1","2026-03-31",4.694],["2025Q2","2025-06-30",4.071]]},"KZSPC":{"company":"SPCX","label":"Loss Per Share ($/share)","rows":[["2026Q2","2026-08-04",0.09],["2026Q1","2026-03-31",1.27],["2025Q2","2025-06-30",0.34]]},"KATGT":{"company":"TGT","label":"Earnings Per Share ($/share)","rows":[["2026Q3","2026-11-18",2.65],["2026Q1","2026-05-20",1.71],["2025Q4","2026-03-03",2.3],["2025Q3","2025-11-19",1.51],["2025Q2","2025-08-20",2.05],["2025Q1","2025-05-21",2.27],["2024Q4","2025-03-04",2.41],["2024Q3","2024-11-20",1.85],["2024Q2","2024-08-21",2.57]]},"KBTGT":{"company":"TGT","label":"Revenue ($b)","rows":[["2026Q3","2026-11-18",27.067],["2026Q1","2026-05-20",25.443],["2025Q4","2026-03-03",30.453],["2025Q3","2025-11-19",25.27],["2025Q2","2025-08-20",25.211],["2025Q1","2025-05-21",23.846],["2024Q4","2025-03-04",30.915],["2024Q3","2024-11-20",25.228],["2024Q2","2024-08-21",25.021]]},"KCTGT":{"company":"TGT","label":"Food & Beverage Net Sales ($b)","rows":[["2026Q3","2026-11-18",6.406],["2026Q1","2026-05-20",6.263],["2025Q4","2026-03-03",6.638],["2025Q3","2025-11-19",6.008],["2025Q2","2025-08-20",5.588],["2025Q1","2025-05-21",5.902],["2024Q4","2025-03-04",6.52],["2024Q3","2024-11-20",5.917],["2024Q2","2024-08-21",5.538]]},"KDTGT":{"company":"TGT","label":"Apparel & Accessories Net Sales ($b)","rows":[["2026Q3","2026-11-18",3.691],["2026Q1","2026-05-20",3.846],["2025Q4","2026-03-03",4.1],["2025Q3","2025-11-19",3.838],["2025Q2","2025-08-20",4.086],["2025Q1","2025-05-21",3.711],["2024Q4","2025-03-04",4.344],["2024Q3","2024-11-20",4.003],["2024Q2","2024-08-21",4.261]]},"KETGT":{"company":"TGT","label":"Operating Margin (%)","rows":[["2026Q3","2026-11-18",6.2],["2026Q1","2026-05-20",4.5],["2025Q4","2026-03-03",4.5],["2025Q3","2025-11-19",3.8],["2025Q2","2025-08-20",5.2],["2025Q1","2025-05-21",6.2],["2024Q4","2025-03-04",4.7],["2024Q3","2024-11-20",4.6],["2024Q2","2024-08-21",6.4]]},"KDTSL":{"company":"TSLA","label":"Model 3/Y Production (#k)","rows":[["2026Q2","2026-07-02",442.936],["2026Q1","2026-04-02",394.611],["2025Q4","2026-01-02",422.652],["2025Q3","2025-10-02",435.826],["2025Q2","2025-07-02",396.835],["2025Q1","2025-04-02",345.454],["2024Q4","2025-01-02",436.718],["2024Q3","2024-10-02",443.668]]},"KATSL":{"company":"TSLA","label":"Earnings Per Share ($/share)","rows":[["2026Q2","2026-07-22",0.32],["2026Q1","2026-04-22",0.13],["2025Q4","2026-01-28",0.24],["2025Q3","2025-10-22",0.39],["2025Q2","2025-07-23",0.33],["2025Q1","2025-04-22",0.12],["2024Q4","2025-01-29",0.66],["2024Q3","2024-10-23",0.62]]},"KBTSL":{"company":"TSLA","label":"Revenue ($b)","rows":[["2026Q2","2026-07-22",28.236],["2026Q1","2026-04-22",22.387],["2025Q4","2026-01-28",24.901],["2025Q3","2025-10-22",28.095],["2025Q2","2025-07-23",22.496],["2025Q1","2025-04-22",19.335],["2024Q4","2025-01-29",25.707],["2024Q3","2024-10-23",25.182]]},"KCTSL":{"company":"TSLA","label":"Total Automotive Revenue ($b)","rows":[["2026Q2","2026-07-22",20.516],["2026Q1","2026-04-22",16.234],["2025Q4","2026-01-28",17.693],["2025Q3","2025-10-22",21.205],["2025Q2","2025-07-23",16.661],["2025Q1","2025-04-22",13.967],["2024Q4","2025-01-29",19.798],["2024Q3","2024-10-23",20.016]]},"KETSL":{"company":"TSLA","label":"Supercharger Connectors (#k)","rows":[["2026Q2","2026-07-22",82.357],["2026Q1","2026-04-22",79.918],["2025Q4","2026-01-28",77.682],["2025Q3","2025-10-22",73.817],["2025Q2","2025-07-23",70.228],["2025Q1","2025-04-22",67.316],["2024Q4","2025-01-29",65.495],["2024Q3","2024-10-23",62.421]]},"KFTSL":{"company":"TSLA","label":"Free Cash Flow ($b)","rows":[["2026Q2","2026-07-22",-1.092],["2026Q1","2026-04-22",1.444],["2025Q4","2026-01-28",1.42],["2025Q3","2025-10-22",3.99],["2025Q2","2025-07-23",0.146],["2025Q1","2025-04-22",0.664],["2024Q4","2025-01-29",2.031],["2024Q3","2024-10-23",2.742]]}}</script>
+<script>
+(() => {
+  const names = {
+    AAPL: 'Apple', AMD: 'AMD', AMZN: 'Amazon', BAC: 'Bank of America',
+    C: 'Citigroup', COIN: 'Coinbase', DIS: 'Disney', F: 'Ford',
+    GOOGL: 'Alphabet', HOOD: 'Robinhood', INTC: 'Intel', JPM: 'JPMorgan',
+    MARA: 'MARA', META: 'Meta', MSFT: 'Microsoft', NFLX: 'Netflix',
+    NVDA: 'Nvidia', PLTR: 'Palantir', SMCI: 'Super Micro Computer',
+    SOFI: 'SoFi', SPCX: 'SpaceX', TGT: 'Target', TSLA: 'Tesla'
+  };
+  const examples = {
+    AAPL: 'KCAPL', AMD: 'KCAMD', AMZN: 'KCAMZ', BAC: 'KCBAC',
+    C: 'KCCIT', COIN: 'KCCOI', DIS: 'KDDIS', F: 'KCFOR',
+    GOOGL: 'KCGOG', HOOD: 'KCHOD', INTC: 'KCINT', JPM: 'KCJPM',
+    MARA: 'KFMAR', META: 'KBMET', MSFT: 'KCMSF', NFLX: 'KCNFX',
+    NVDA: 'KCNVD', PLTR: 'KCPLT', SMCI: 'KCSMC', SOFI: 'KCSOF',
+    SPCX: 'KBSPC', TGT: 'KCTGT', TSLA: 'KDTSL'
+  };
+  const series = JSON.parse(document.getElementById('kpi-data').textContent);
+  const get = id => document.getElementById('kpi-' + id);
+  const company = get('company');
+  const metric = get('metric');
+  const form = get('form');
+  const result = get('result');
+  const number = new Intl.NumberFormat('en-US', { maximumFractionDigits: 6 });
+  const price = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 4, maximumFractionDigits: 6 });
+  const percent = new Intl.NumberFormat('en-US', { style: 'percent', maximumFractionDigits: 2 });
+
+  function addRow(body, cells) {
+    const row = body.insertRow();
+    for (const value of cells) row.insertCell().textContent = value;
+  }
+
+  function showMetric() {
+    const symbol = metric.value;
+    const { label, rows } = series[symbol];
+    get('units').textContent = symbol + ' · ' + label + '. Enter the strike, forecast and uncertainty in the metric’s quoted units.';
+    get('history-heading').textContent = names[company.value] + ' · ' + label + ' · ' + symbol;
+    const history = get('history');
+    history.replaceChildren();
+    const byQuarter = new Map();
+    for (const [period, date, value] of rows) {
+      addRow(history, [period, date, number.format(value)]);
+      if (!byQuarter.has(period)) byQuarter.set(period, value);
+    }
+    const errors = [];
+    for (const [period, value] of byQuarter) {
+      const match = /^(\d{4})(Q[1-4])$/.exec(period);
+      if (!match) continue;
+      const prior = byQuarter.get(String(Number(match[1]) - 1) + match[2]);
+      if (prior !== undefined) errors.push(value - prior);
+    }
+    const benchmark = get('historical-sd');
+    if (errors.length < 2) {
+      benchmark.textContent = 'Historical benchmark unavailable. At least two year-over-year comparisons are needed.';
+    } else {
+      const average = errors.reduce((sum, value) => sum + value, 0) / errors.length;
+      const variance = errors.reduce((sum, value) => sum + (value - average) ** 2, 0) / (errors.length - 1);
+      benchmark.textContent = 'Historical benchmark: ' + number.format(Math.sqrt(variance)) + ' in KPI units, from ' + errors.length + ' year-over-year comparisons.';
+    }
+    for (const id of ['strike', 'forward', 'sd']) get(id).value = '';
+    result.replaceChildren();
+  }
+
+  function showCompany() {
+    metric.replaceChildren();
+    for (const [symbol, item] of Object.entries(series)) {
+      if (item.company === company.value) metric.add(new Option(item.label + ' (' + symbol + ')', symbol));
+    }
+    metric.value = examples[company.value];
+    showMetric();
+  }
+
+  // Evaluate the small tail directly to avoid subtracting two numbers near one.
+  function normalTail(z) {
+    if (!z) return 0.5;
+    const x = Math.abs(z) / Math.SQRT2;
+    const t = 1 / (1 + 0.5 * x);
+    const tail = 0.5 * t * Math.exp(-x * x - 1.26551223 +
+      t * (1.00002368 + t * (0.37409196 + t * (0.09678418 +
+      t * (-0.18628806 + t * (0.27886807 + t * (-1.13520398 +
+      t * (1.48851587 + t * (-0.82215223 + t * 0.17087277)))))))));
+    return z > 0 ? 1 - tail : tail;
+  }
+
+  form.addEventListener('submit', event => {
+    event.preventDefault();
+    const strike = get('strike').valueAsNumber;
+    const forward = get('forward').valueAsNumber;
+    const sd = get('sd').valueAsNumber;
+    const days = get('days').valueAsNumber || 0;
+    const rate = get('rate').valueAsNumber || 0;
+    const discount = Math.exp(-(rate / 100) * (days / 365));
+    if (!Number.isFinite(discount) || discount === 0) {
+      result.textContent = 'Enter a rate and days to payout within a calculable range.';
+      return;
+    }
+    const lognormal = get('model').value === 'lognormal';
+    if (lognormal && forward <= 0) {
+      result.textContent = 'Enter a positive expected KPI for the lognormal model, or choose the normal model.';
+      return;
+    }
+    let call, put;
+    if (sd === 0 || (lognormal && strike <= 0)) {
+      call = Number(forward >= strike);
+      put = 1 - call;
+    } else {
+      let z = (forward - strike) / sd;
+      if (lognormal) {
+        const relativeSd = sd / forward;
+        const logSd = Math.sqrt(Math.log1p(relativeSd ** 2));
+        if (logSd === 0 || !Number.isFinite(logSd)) {
+          result.textContent = 'Enter a standard deviation within a calculable range for the lognormal model.';
+          return;
+        }
+        z = (Math.log(forward) - Math.log(strike)) / logSd - logSd / 2;
+      }
+      call = normalTail(z);
+      put = normalTail(-z);
+    }
+    result.textContent = 'Call ' + price.format(discount * call) + ' (' + percent.format(call) +
+      ' payout probability) · Put ' + price.format(discount * put) + ' (' + percent.format(put) + ' payout probability)';
+  });
+
+  for (const [ticker, name] of Object.entries(names)) {
+    const symbol = examples[ticker];
+    company.add(new Option(name + ' (' + ticker + ')', ticker));
+    addRow(get('catalog'), [name + ' (' + ticker + ')', series[symbol].label, symbol]);
+  }
+  form.addEventListener('input', () => result.replaceChildren());
+  company.addEventListener('change', showCompany);
+  metric.addEventListener('change', showMetric);
+  showCompany();
+})();
+</script>
+</div><!-- page-content -->
+		<footer>
+        <div>
+            <span class=""><i class="fas fa-envelope fa-2x" aria-hidden="true"></i></span>
+            <span>We can be contacted at risksnap.contact@gmail.com</span>
+        </div>
+		</footer>
+	</body>
+</html>
